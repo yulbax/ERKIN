@@ -1,0 +1,109 @@
+package io.github.yulbax.erkin.ui.viewmodel
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ProfileOperationResult
+import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.util.redactSensitiveData
+import io.github.yulbax.erkin.vpn.VpnCommandBus
+import io.github.yulbax.erkin.vpn.VpnStateRepository
+import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+
+sealed interface ServerError {
+    data object InvalidLink : ServerError
+    data object EmptySubscription : ServerError
+    data class FetchFailed(val reason: String) : ServerError
+}
+
+data class ServersUiState(
+    val profiles: List<ProfileEntity> = emptyList(),
+    val selected: ProfileEntity? = null,
+    val delays: Map<Long, ProxyDelay> = emptyMap(),
+    val error: ServerError? = null
+)
+
+class ProfileViewModel(
+    private val profileRepository: ProfileRepository,
+    stateRepository: VpnStateRepository,
+    private val commandBus: VpnCommandBus,
+    private val log: AppLog
+) : ViewModel() {
+
+    private val _error = MutableStateFlow<ServerError?>(null)
+
+    val uiState: StateFlow<ServersUiState> = combine(
+        profileRepository.profiles,
+        profileRepository.selected,
+        stateRepository.proxyDelays,
+        _error
+    ) { profiles, selected, delays, error ->
+        ServersUiState(profiles, selected, delays, error)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
+
+    fun testAll() {
+        commandBus.testProxies()
+    }
+
+    fun clearError() {
+        _error.value = null
+    }
+
+    fun add(raw: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            handleResult("add server", profileRepository.add(raw))
+        }
+    }
+
+    fun update(profile: ProfileEntity, name: String, link: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            handleResult("edit server", profileRepository.update(profile, name, link))
+        }
+    }
+
+    fun refreshSubscription(profile: ProfileEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            handleResult("subscription refresh", profileRepository.refreshSubscription(profile))
+        }
+    }
+
+    fun select(profile: ProfileEntity) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.select(profile) }
+    }
+
+    fun delete(profile: ProfileEntity) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.delete(profile) }
+    }
+
+    private fun handleResult(operation: String, result: ProfileOperationResult) {
+        when (result) {
+            is ProfileOperationResult.Success -> {
+                if (result.affected > 1) log.i(TAG, "$operation: ${result.affected} servers")
+            }
+            ProfileOperationResult.InvalidLink -> {
+                log.w(TAG, "$operation: unsupported or invalid link")
+                _error.value = ServerError.InvalidLink
+            }
+            ProfileOperationResult.EmptySubscription -> {
+                log.w(TAG, "$operation: subscription returned no servers")
+                _error.value = ServerError.EmptySubscription
+            }
+            is ProfileOperationResult.FetchFailed -> {
+                log.w(TAG, "$operation: subscription fetch failed", result.cause)
+                _error.value = ServerError.FetchFailed(redactSensitiveData(result.cause.message ?: "unknown error"))
+            }
+        }
+    }
+
+    private companion object {
+        const val TAG = "Servers"
+    }
+}
