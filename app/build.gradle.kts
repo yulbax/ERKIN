@@ -30,6 +30,9 @@ val byeDpiHealthProbeUrl = healthProbeUrl(
     "https://www.youtube.com/generate_204"
 )
 
+val baseVersionCode = 10000
+val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
+
 val releaseStoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull
 val releaseStorePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
 val releaseKeyAlias = providers.environmentVariable("KEY_ALIAS").orNull
@@ -51,7 +54,7 @@ android {
         applicationId = "io.github.yulbax.erkin"
         minSdk = 29
         targetSdk = 37
-        versionCode = 10000
+        versionCode = baseVersionCode
         versionName = providers.gradleProperty("erkin.versionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -64,6 +67,11 @@ android {
             "String",
             "BYEDPI_HEALTH_PROBE_URL",
             byeDpiHealthProbeUrl.asBuildConfigString()
+        )
+        buildConfigField(
+            "String[]",
+            "UPDATE_ABIS",
+            updateAbis.joinToString(prefix = "{", postfix = "}") { it.asBuildConfigString() }
         )
     }
 
@@ -166,12 +174,17 @@ tasks.matching { it.name == "preReleaseBuild" }.configureEach {
 }
 
 androidComponents {
-    onVariants(selector().withBuildType("release")) { variant ->
+    onVariants { variant ->
         variant.outputs.forEach { output ->
             val abi = output.filters
                 .firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }
                 ?.identifier ?: "universal"
-            (output as VariantOutputImpl).outputFileName.set(output.versionName.map { "ERKIN-$it-android-$abi.apk" })
+            val abiCode = updateAbis.indexOf(abi)
+            check(abiCode >= 0) { "No update ABI code for $abi" }
+            output.versionCode.set(baseVersionCode * 10 + abiCode)
+            if (variant.buildType == "release") {
+                (output as VariantOutputImpl).outputFileName.set(output.versionName.map { "ERKIN-$it-android-$abi.apk" })
+            }
         }
     }
 }

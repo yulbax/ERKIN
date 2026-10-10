@@ -41,6 +41,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.components.AppSearchBar
+import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.platform.LocalMessages
 import kotlinx.coroutines.launch
 
@@ -139,6 +140,7 @@ fun MainScreen(
                     modifier = Modifier.padding(innerPadding)
                 )
             }
+            UpdatePrompt()
         }
     }
 }

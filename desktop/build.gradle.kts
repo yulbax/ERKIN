@@ -112,6 +112,7 @@ compose.desktop {
     application {
         mainClass = "io.github.yulbax.erkin.desktop.MainKt"
         jvmArgs += listOf("-Derkin.version=$appVersion", "-Derkin.byedpi.version=$byeDpiVersion")
+        if (System.getProperty("os.name").startsWith("Windows")) jvmArgs += "-Derkin.updateAsset=windows-x86_64.msi"
 
         buildTypes.release.proguard {
             isEnabled.set(true)

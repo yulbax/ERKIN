@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.desktop
 
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.update.UpdatePlatform
 import io.github.yulbax.erkin.util.DiagnosticsReport
 import io.github.yulbax.erkin.util.DiagnosticsSource
 import io.github.yulbax.erkin.util.FileAppLog
@@ -10,6 +11,7 @@ import io.github.yulbax.erkin.vpn.VpnController
 import io.github.yulbax.erkin.vpn.VpnHost
 import java.io.File
 import kotlinx.coroutines.Dispatchers
+import kotlin.system.exitProcess
 import kotlinx.coroutines.withContext
 
 object DesktopHost : VpnHost {
@@ -60,5 +62,16 @@ class DesktopVersionInfo(private val service: DesktopService) : VersionInfo {
 
     override suspend fun coreVersion(): String? = withContext(Dispatchers.IO) {
         service.peek()?.core?.ifBlank { null }
+    }
+}
+
+class DesktopUpdatePlatform(private val controller: VpnController) : UpdatePlatform {
+    override val assetSuffix: String? = System.getProperty("erkin.updateAsset")?.ifBlank { null }
+    override val downloadDir: File = File(System.getProperty("java.io.tmpdir"), "erkin-updates")
+
+    override fun install(file: File) {
+        ProcessBuilder("msiexec", "/i", file.absolutePath).start()
+        controller.shutdown()
+        exitProcess(0)
     }
 }

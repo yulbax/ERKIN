@@ -137,4 +137,11 @@
     <string name="logs_clear">پاک کردن</string>
     <string name="logs_clear_title">گزارش پاک شود؟</string>
     <string name="logs_clear_message">رویدادهای برنامه و هسته حذف می‌شوند.</string>
+    <string name="update_available_title">ERKIN %1$s در دسترس است</string>
+    <string name="update_available_text">نسخهٔ نصب‌شده: %1$s.</string>
+    <string name="update_download">به‌روزرسانی</string>
+    <string name="update_later">بعداً</string>
+    <string name="update_open_page">باز کردن صفحه</string>
+    <string name="update_downloading">در حال دانلود ERKIN %1$s</string>
+    <string name="update_failed">دانلود به‌روزرسانی ممکن نشد. می‌توانید آن را از صفحهٔ انتشار دریافت کنید.</string>
 </resources>
