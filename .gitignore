@@ -1,0 +1,41 @@
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+
+# Kotlin compiler daemon sessions
+.kotlin
+
+# Backup files
+*.bak
+
+# Native binding — built from sing-box by CI (scripts/build-libbox.sh), not committed
+/app/libs/*.aar
+/desktop/libs/
+
+# CI / native-build scratch
+/.libbox-build/
+/.go/
+/.gocache/
+/.android-sdk/
+
+# AI assistant personal settings
+.claude/
+
+# Local Gradle daemon JVM config
+gradle/gradle-daemon-jvm.properties
+
+# Firebase App Distribution service-account credentials — never commit
+/firebase-service-account.json
+
+# Release signing keystore — never commit; CI gets it from a base64 secret
+*.jks
+*.keystore
+
+# Personal coding-preferences file, carried across projects
+rules.md

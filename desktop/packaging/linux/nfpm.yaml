@@ -1,0 +1,50 @@
+name: erkin
+arch: amd64
+platform: linux
+version: ${ERKIN_VERSION}
+release: 1
+section: net
+priority: optional
+maintainer: yulbax <yulbax@users.noreply.github.com>
+description: Per-app split VPN with ByeDPI, built on sing-box.
+vendor: yulbax
+homepage: https://github.com/yulbax/ERKIN
+license: GPL-3.0-only
+replaces: [frkn]
+conflicts: [frkn]
+
+contents:
+  - src: /opt/erkin/bin/ERKIN
+    dst: /usr/bin/erkin
+    type: symlink
+  - src: ./erkin.service
+    dst: /usr/lib/systemd/system/erkin.service
+  - src: ./erkin.desktop
+    dst: /usr/share/applications/erkin.desktop
+  - src: ${ERKIN_ICON}
+    dst: /usr/share/icons/hicolor/256x256/apps/erkin.png
+  - src: ${ERKIN_LICENSE}
+    dst: /usr/share/licenses/erkin/LICENSE
+
+scripts:
+  postinstall: ./scripts/postinstall.sh
+  preremove: ./scripts/preremove.sh
+  postremove: ./scripts/postremove.sh
+
+overrides:
+  deb:
+    depends: [systemd, libx11-6, libxext6, libxrender1, libxtst6, libxi6, fontconfig, libfreetype6, libharfbuzz0b, liblcms2-2, libgl1]
+  rpm:
+    depends: [systemd, libX11, libXext, libXrender, libXtst, libXi, fontconfig, freetype, harfbuzz, lcms2, libglvnd-glx]
+  archlinux:
+    depends: [systemd, libx11, libxext, libxrender, libxtst, libxi, fontconfig, freetype2, harfbuzz, lcms2, libglvnd]
+
+deb:
+  compression: zstd
+
+rpm:
+  compression: zstd
+
+archlinux:
+  scripts:
+    postupgrade: ./scripts/postinstall.sh

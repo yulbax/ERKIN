@@ -1,0 +1,17 @@
+[Unit]
+Description=ERKIN VPN service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStartPre=-modprobe -a inet_diag tcp_diag udp_diag
+ExecStart=/opt/erkin/lib/app/resources/erkin-service run
+Restart=on-failure
+RestartSec=5
+RuntimeDirectory=erkin
+RuntimeDirectoryMode=0755
+StateDirectory=erkin
+StateDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

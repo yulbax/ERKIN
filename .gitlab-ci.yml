@@ -1,0 +1,227 @@
+variables:
+  ANDROID_SDK_ROOT: "${CI_PROJECT_DIR}/.android-sdk"
+  ANDROID_HOME: "${CI_PROJECT_DIR}/.android-sdk"
+  GRADLE_USER_HOME: "${CI_PROJECT_DIR}/.gradle"
+  ANDROID_COMPILE_SDK: "37.0"
+  ANDROID_BUILD_TOOLS: "36.1.0"
+  NDK_VERSION: "28.0.13004108"
+  CMAKE_VERSION: "3.22.1"
+  CMDLINE_TOOLS_VERSION: "11076708"
+  SING_BOX_TAG: "v1.260910.0"
+  LIBBOX_CACHE_REV: "7"
+  GO_VERSION: "1.25.0"
+  GOPATH: "${CI_PROJECT_DIR}/.go"
+  GOCACHE: "${CI_PROJECT_DIR}/.gocache"
+  GOTOOLCHAIN: "local"
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/erkin/${CI_COMMIT_TAG}"
+
+stages:
+  - autotag
+  - libbox
+  - quality
+  - build
+  - upload
+  - release
+
+autotag:
+  stage: autotag
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      set -e
+      VERSION="$(sed -n 's/^erkin\.versionName=//p' gradle.properties | head -n1)"
+      [ -n "$VERSION" ] || { echo "ERROR: erkin.versionName not found in gradle.properties"; exit 1; }
+      TAG="v${VERSION}"
+      echo "gradle.properties erkin.versionName=${VERSION} -> tag ${TAG}"
+      CODE="$(curl -sS -o /dev/null -w '%{http_code}' --header "PRIVATE-TOKEN: ${TAG_PAT}" "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/tags/${TAG}")"
+      if [ "$CODE" = "200" ]; then
+        echo "Tag ${TAG} already exists — version not bumped, nothing to do."
+        exit 0
+      fi
+      if [ "$CODE" != "404" ]; then
+        echo "ERROR: unexpected HTTP ${CODE} querying tag (check TAG_PAT / permissions)."; exit 1
+      fi
+      echo "Version bumped — creating ${TAG} at ${CI_COMMIT_SHA} (this starts the release pipeline)…"
+      RESP="$(curl -sS -w '\n%{http_code}' --request POST --header "PRIVATE-TOKEN: ${TAG_PAT}" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/tags?tag_name=${TAG}&ref=${CI_COMMIT_SHA}")"
+      STATUS="$(printf '%s' "$RESP" | tail -n1)"
+      BODY="$(printf '%s' "$RESP" | sed '$d')"
+      echo "HTTP ${STATUS}: ${BODY}"
+      if [ "$STATUS" != "201" ]; then
+        echo "ERROR: tag creation failed. 403 usually = TAG_PAT lacks 'api' scope, or a Protected-tags rule blocks creation."
+        exit 1
+      fi
+
+.android_base:
+  image: eclipse-temurin:17-jdk
+  cache:
+    key: "android-${CI_COMMIT_REF_SLUG}"
+    paths:
+      - .android-sdk/
+      - .gradle/caches/
+      - .gradle/wrapper/
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq wget unzip git > /dev/null
+    - export SDK_MANAGER="${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager"
+    - |
+      if [ ! -x "$SDK_MANAGER" ]; then
+        echo "Installing Android command-line tools…"
+        mkdir -p "${ANDROID_SDK_ROOT}/cmdline-tools"
+        wget -q "https://dl.google.com/android/repository/commandlinetools-linux-${CMDLINE_TOOLS_VERSION}_latest.zip" -O cmdline-tools.zip
+        unzip -q cmdline-tools.zip -d "${ANDROID_SDK_ROOT}/cmdline-tools"
+        mv "${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools" "${ANDROID_SDK_ROOT}/cmdline-tools/latest"
+        rm cmdline-tools.zip
+      fi
+    - yes | "$SDK_MANAGER" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+    - >
+      "$SDK_MANAGER" --sdk_root="$ANDROID_SDK_ROOT" --channel=3
+      "platforms;android-${ANDROID_COMPILE_SDK}"
+      "platforms;android-36"
+      "build-tools;${ANDROID_BUILD_TOOLS}"
+      "ndk;${NDK_VERSION}"
+      "cmake;${CMAKE_VERSION}"
+    - chmod +x ./gradlew
+
+libbox:
+  extends: .android_base
+  stage: libbox
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  cache:
+    - key: "android-${CI_COMMIT_REF_SLUG}"
+      paths:
+        - .android-sdk/
+    - key: "libbox-${SING_BOX_TAG}-${LIBBOX_CACHE_REV}"
+      paths:
+        - app/libs/libbox.aar
+    - key: "gomobile-${GO_VERSION}"
+      paths:
+        - .go/pkg/mod/
+        - .gocache/
+  script:
+    - |
+      if [ -f app/libs/libbox.aar ]; then
+        echo "Cached libbox.aar present for ${SING_BOX_TAG} — skipping build."
+        exit 0
+      fi
+    - wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tgz
+    - rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tgz
+    - export PATH="/usr/local/go/bin:${GOPATH}/bin:${PATH}"
+    - go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
+    - go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+    - export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
+    - CORE_TARGETS=android bash scripts/build-libbox.sh
+  artifacts:
+    paths:
+      - app/libs/libbox.aar
+    expire_in: 30 days
+
+quality:
+  extends: .android_base
+  stage: quality
+  needs: ["libbox"]
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
+    - export PATH="${ANDROID_SDK_ROOT}/cmake/${CMAKE_VERSION}/bin:${PATH}"
+    - ./gradlew testDebugUnitTest lintDebug assembleDebug --no-daemon
+
+build:release:
+  extends: .android_base
+  stage: build
+  rules:
+    - if: $CI_COMMIT_TAG
+  needs: ["libbox", "quality"]
+  script:
+    - export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
+    - export PATH="${ANDROID_SDK_ROOT}/cmake/${CMAKE_VERSION}/bin:${PATH}"
+    - |
+      if [ -n "${KEYSTORE_BASE64:-}" ]; then
+        export KEYSTORE_FILE="${CI_PROJECT_DIR}/release.jks"
+        printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_FILE"
+      fi
+      test -n "${KEYSTORE_FILE:-}" && test -s "$KEYSTORE_FILE" || {
+        echo "ERROR: configure KEYSTORE_BASE64 or a valid KEYSTORE_FILE"; exit 1;
+      }
+      test -n "${KEYSTORE_PASSWORD:-}" && test -n "${KEY_ALIAS:-}" && test -n "${KEY_PASSWORD:-}" || {
+        echo "ERROR: release signing passwords/alias are missing"; exit 1;
+      }
+      VERSION="$(sed -n 's/^erkin\.versionName=//p' gradle.properties | head -n1)"
+      test "${CI_COMMIT_TAG}" = "v${VERSION}" || {
+        echo "ERROR: tag ${CI_COMMIT_TAG} does not match versionName ${VERSION}"; exit 1;
+      }
+      export KEYSTORE_FILE
+      ./gradlew assembleRelease --no-daemon
+  artifacts:
+    name: "erkin-release-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - app/build/outputs/apk/release/*.apk
+    expire_in: 30 days
+
+upload:apk:
+  stage: upload
+  image: curlimages/curl:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  needs: ["build:release"]
+  script:
+    - |
+      set -e
+      VERSION="${CI_COMMIT_TAG#v}"
+      for abi in arm64-v8a x86_64 armeabi-v7a universal; do
+        APK="app/build/outputs/apk/release/ERKIN-${VERSION}-android-${abi}.apk"
+        test -f "$APK" || { echo "Missing release artifact: $APK"; exit 1; }
+        curl --fail --location --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+          --upload-file "$APK" \
+          "${PACKAGE_REGISTRY_URL}/erkin-${CI_COMMIT_TAG}-${abi}.apk"
+      done
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  needs: ["upload:apk"]
+  variables:
+    GIT_DEPTH: 0                 # full history + tags, needed for the changelog
+  script:
+    - apk add --no-cache git
+    - |
+      PREV="$(git tag --sort=-creatordate | grep -v "^${CI_COMMIT_TAG}$" | head -n1)"
+      {
+        if [ -n "$PREV" ]; then
+          echo "Changes since ${PREV}:"; echo
+          git log --no-merges --pretty='- %s (%h)' "${PREV}..${CI_COMMIT_TAG}"
+        else
+          echo "Initial release."; echo
+          git log --no-merges --pretty='- %s (%h)'
+        fi
+      } > release_notes.md
+    - cat release_notes.md
+  release:
+    tag_name: "${CI_COMMIT_TAG}"
+    name: "ERKIN ${CI_COMMIT_TAG}"
+    description: release_notes.md
+    assets:
+      links:
+        - name: "erkin-${CI_COMMIT_TAG}-arm64-v8a.apk"
+          url: "${PACKAGE_REGISTRY_URL}/erkin-${CI_COMMIT_TAG}-arm64-v8a.apk"
+          link_type: "package"
+        - name: "erkin-${CI_COMMIT_TAG}-x86_64.apk"
+          url: "${PACKAGE_REGISTRY_URL}/erkin-${CI_COMMIT_TAG}-x86_64.apk"
+          link_type: "package"
+        - name: "erkin-${CI_COMMIT_TAG}-armeabi-v7a.apk"
+          url: "${PACKAGE_REGISTRY_URL}/erkin-${CI_COMMIT_TAG}-armeabi-v7a.apk"
+          link_type: "package"
+        - name: "erkin-${CI_COMMIT_TAG}-universal.apk"
+          url: "${PACKAGE_REGISTRY_URL}/erkin-${CI_COMMIT_TAG}-universal.apk"
+          link_type: "package"

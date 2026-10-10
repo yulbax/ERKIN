@@ -1,0 +1,287 @@
+name: Release
+
+# On a push to main: read erkin.versionName from gradle.properties and, ONLY if the
+# matching tag doesn't exist yet (i.e. you bumped the version), build the FOSS release
+# APKs plus the Windows MSI and cut a GitHub Release with the tag. Quality checks still run when the
+# version is unchanged. Mirrors the GitLab pipeline (.gitlab-ci.yml).
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SING_BOX_TAG: "v1.260910.0"
+  LIBBOX_CACHE_REV: "10"    # bump to force a fresh libbox.aar rebuild (busts the cache)
+  GO_VERSION: "1.25.0"
+  NFPM_VERSION: "2.47.0"
+  NFPM_SHA256: "0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783"
+  NDK_VERSION: "28.0.13004108"
+  ANDROID_COMPILE_SDK: "37.0"
+  BUILD_TOOLS: "36.1.0"
+  CMAKE_VERSION: "3.22.1"
+  GOTOOLCHAIN: "local"
+
+jobs:
+  # ── Decide whether to release: only when v<versionName> has no tag yet. ──────────
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      should_release: ${{ steps.v.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: v
+        run: |
+          VERSION="$(sed -n 's/^erkin\.versionName=//p' gradle.properties | head -n1)"
+          [ -n "$VERSION" ] || { echo "erkin.versionName not found in gradle.properties"; exit 1; }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" != "push" ]; then
+            echo "Pull request: quality checks only."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists — version not bumped, nothing to release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version bumped to $VERSION — will build and release v$VERSION."
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── Build sing-box's libbox.aar (3 ABIs). Cached by sing-box tag + rev. ──────────
+  libbox:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/libs/libbox.aar
+            desktop/libs/windows
+            desktop/libs/linux
+          key: libbox-${{ env.SING_BOX_TAG }}-${{ env.LIBBOX_CACHE_REV }}-${{ hashFiles('desktop/service/**', 'scripts/build-libbox.sh', 'gradle.properties') }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Provision NDK + gomobile and build libbox
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -e
+          # android-36 (integer-named) is for gomobile, which can't parse the preview
+          # "android-37.0" platform name. --channel=3 (canary) is needed for android-37.0.
+          sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "platforms;android-36" "ndk;${NDK_VERSION}"
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
+          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          bash scripts/build-libbox.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: libbox
+          path: app/libs/libbox.aar
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-core
+          path: desktop/libs/windows
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-core
+          path: desktop/libs/linux
+          retention-days: 1
+
+  quality:
+    needs: libbox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: libbox
+          path: app/libs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests, Android Lint, and debug build
+        run: ./gradlew testDebugUnitTest :shared:desktopTest :ui:desktopTest lintDebug assembleDebug --no-daemon
+
+  # ── Build the release APKs (arm64 + x86_64 + armv7 + universal), signed. ─────────
+  build:
+    needs: [check, libbox, quality]
+    if: needs.check.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: libbox
+          path: app/libs
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          test -s "$RUNNER_TEMP/release.jks"
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+      - name: Assemble release
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          ./gradlew assembleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apks
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 7
+
+  windows:
+    needs: [check, libbox]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-core
+          path: desktop/libs/windows
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Android platform for KMP configuration
+        shell: pwsh
+        run: sdkmanager --channel=3 "platforms;android-$env:ANDROID_COMPILE_SDK"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Desktop tests and MSI
+        shell: bash
+        run: ./gradlew -Perkin.desktopOnly :shared:desktopTest :ui:desktopTest :desktop:packageServiceMsi --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: msi
+          path: desktop/build/compose/binaries/main-release/msi/*.msi
+          retention-days: 7
+
+  linux:
+    needs: [check, libbox]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-core
+          path: desktop/libs/linux
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Android platform for KMP configuration
+        run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install nFPM
+        run: |
+          curl -fsSL -o nfpm.tar.gz "https://github.com/goreleaser/nfpm/releases/download/v${NFPM_VERSION}/nfpm_${NFPM_VERSION}_Linux_x86_64.tar.gz"
+          echo "${NFPM_SHA256}  nfpm.tar.gz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/nfpm" && tar -xzf nfpm.tar.gz -C "$RUNNER_TEMP/nfpm" nfpm && rm nfpm.tar.gz
+          echo "$RUNNER_TEMP/nfpm" >> "$GITHUB_PATH"
+      - name: Linux packages
+        run: |
+          chmod +x desktop/libs/linux/erkin-service
+          SKIP_CORE=1 bash scripts/build-linux-packages.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: desktop/build/linux-packages/*
+          retention-days: 7
+
+  # ── Create the tag + GitHub Release with the four APKs and the MSI attached. ─────────────────
+  release:
+    needs: [check, build, windows, linux]
+    if: needs.check.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0          # full history + tags, needed for the changelog
+      - uses: actions/download-artifact@v4
+        with:
+          name: apks
+          path: apks
+      - uses: actions/download-artifact@v4
+        with:
+          name: msi
+          path: msi
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-packages
+          path: linux
+      - name: Generate changelog
+        run: |
+          VERSION="${{ needs.check.outputs.version }}"
+          # The v$VERSION tag doesn't exist yet (softprops creates it below), so the
+          # newest existing tag is the previous release.
+          PREV="$(git tag --sort=-creatordate | grep -v "^v${VERSION}$" | head -n1)"
+          {
+            if [ -n "$PREV" ]; then
+              echo "**Changes since ${PREV}:**"
+              echo
+              git log --no-merges --pretty='- %s (%h)' "${PREV}..HEAD"
+            else
+              echo "**Initial release.**"
+              echo
+              git log --no-merges --pretty='- %s (%h)'
+            fi
+          } > CHANGELOG.md
+          cat CHANGELOG.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ needs.check.outputs.version }}"
+          target_commitish: ${{ github.sha }}
+          name: "ERKIN v${{ needs.check.outputs.version }}"
+          body_path: CHANGELOG.md
+          files: |
+            apks/*.apk
+            msi/*.msi
+            linux/*

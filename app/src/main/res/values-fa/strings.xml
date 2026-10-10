@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ERKIN</string>
+    <string name="vpn_notification_channel">وضعیت VPN</string>
+    <string name="vpn_notification_stop">توقف</string>
+    <string name="notification_vpn_up">VPN فعال</string>
+    <string name="notification_vpn_down">VPN قطع</string>
+    <string name="notification_byedpi_up">ByeDPI فعال</string>
+    <string name="notification_byedpi_down">ByeDPI قطع</string>
+    <string name="notification_byedpi_off">ByeDPI خاموش</string>
+    <string name="notification_speed"> ↓%1$s ↑%2$s</string>
+</resources>
