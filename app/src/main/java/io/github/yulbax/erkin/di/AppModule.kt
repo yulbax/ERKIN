@@ -9,7 +9,10 @@ import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsDao
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileDao
+import io.github.yulbax.erkin.update.UpdateChecker
+import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
@@ -73,4 +76,10 @@ class AppModule {
 
     @Single
     fun vpnCommandBus(): VpnCommandBus = VpnCommandBus()
+
+    @Single
+    fun updateChecker(versionInfo: VersionInfo): UpdateChecker = UpdateChecker(versionInfo)
+
+    @Single
+    fun updateDownloader(): UpdateDownloader = UpdateDownloader()
 }

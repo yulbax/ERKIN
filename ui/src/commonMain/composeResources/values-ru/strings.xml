@@ -139,4 +139,11 @@
     <string name="logs_clear">Очистить</string>
     <string name="logs_clear_title">Очистить журнал?</string>
     <string name="logs_clear_message">Записи приложения и ядра будут удалены.</string>
+    <string name="update_available_title">Доступна версия ERKIN %1$s</string>
+    <string name="update_available_text">Установлена версия %1$s.</string>
+    <string name="update_download">Обновить</string>
+    <string name="update_later">Позже</string>
+    <string name="update_open_page">Открыть страницу</string>
+    <string name="update_downloading">Загрузка ERKIN %1$s</string>
+    <string name="update_failed">Не удалось загрузить обновление. Его можно скачать со страницы релиза.</string>
 </resources>

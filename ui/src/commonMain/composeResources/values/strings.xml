@@ -140,4 +140,11 @@
     <string name="logs_clear">Clear</string>
     <string name="logs_clear_title">Clear the log?</string>
     <string name="logs_clear_message">App and core log entries will be deleted.</string>
+    <string name="update_available_title">ERKIN %1$s is available</string>
+    <string name="update_available_text">Installed version: %1$s.</string>
+    <string name="update_download">Update</string>
+    <string name="update_later">Later</string>
+    <string name="update_open_page">Open page</string>
+    <string name="update_downloading">Downloading ERKIN %1$s</string>
+    <string name="update_failed">Could not download the update. You can get it from the release page.</string>
 </resources>

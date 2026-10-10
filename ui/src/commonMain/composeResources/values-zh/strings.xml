@@ -136,4 +136,11 @@
     <string name="logs_clear">清除</string>
     <string name="logs_clear_title">清除日志？</string>
     <string name="logs_clear_message">将删除应用和内核的日志记录。</string>
+    <string name="update_available_title">ERKIN %1$s 已发布</string>
+    <string name="update_available_text">当前版本：%1$s。</string>
+    <string name="update_download">更新</string>
+    <string name="update_later">稍后</string>
+    <string name="update_open_page">打开页面</string>
+    <string name="update_downloading">正在下载 ERKIN %1$s</string>
+    <string name="update_failed">无法下载更新。可以从发布页面获取。</string>
 </resources>

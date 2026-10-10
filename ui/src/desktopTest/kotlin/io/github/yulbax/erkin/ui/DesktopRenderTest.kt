@@ -22,6 +22,7 @@ import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.proxy.ParsedProfile
+import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.di.uiModule
 import io.github.yulbax.erkin.ui.screens.About
 import io.github.yulbax.erkin.ui.screens.License
@@ -30,6 +31,13 @@ import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.screens.apps.Apps
 import io.github.yulbax.erkin.ui.screens.settings.Settings
 import io.github.yulbax.erkin.ui.theme.ERKINTheme
+import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
+import io.github.yulbax.erkin.update.AppRelease
+import io.github.yulbax.erkin.update.AppVersion
+import io.github.yulbax.erkin.update.ReleaseAsset
+import io.github.yulbax.erkin.update.UpdateChecker
+import io.github.yulbax.erkin.update.UpdateDownloader
+import io.github.yulbax.erkin.update.UpdatePlatform
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.DiagnosticsSource
 import io.github.yulbax.erkin.util.VersionInfo
@@ -101,6 +109,9 @@ class DesktopRenderTest {
                     }
                     single<VersionInfo> { FakeVersionInfo }
                     single<InstalledAppsSource> { FakeInstalledApps(installedApps) }
+                    single { UpdateChecker(get()) { null } }
+                    single { UpdateDownloader() }
+                    single<UpdatePlatform> { NoUpdatePlatform }
                 },
                 uiModule
             )
@@ -126,6 +137,18 @@ class DesktopRenderTest {
         render("logs", width = 420, height = 600) { Logs() }
         render("about", width = 420, height = 600) { About() }
         render("license", width = 420, height = 600) { License() }
+    }
+
+    @Test
+    fun rendersUpdatePrompt() {
+        val release = AppRelease(
+            version = AppVersion.parse("1.4.0")!!,
+            pageUrl = "https://github.com/yulbax/ERKIN/releases/tag/v1.4.0",
+            assets = listOf(ReleaseAsset("ERKIN-1.4.0-windows-x86_64.msi", "https://example.com", 1, null))
+        )
+        render("update", width = 420, height = 600) {
+            UpdatePrompt(UpdateViewModel(UpdateChecker(FakeVersionInfo) { release }, UpdateDownloader(), NoUpdatePlatform))
+        }
     }
 
     private fun render(name: String, width: Int, height: Int, content: @Composable () -> Unit) = runBlocking {
@@ -176,6 +199,12 @@ class DesktopRenderTest {
 
     private object NoSiteProbe : ByeDpiSiteProbe {
         override fun probe(socksPort: Int, groups: List<SiteGroup>): Flow<SiteResult> = emptyFlow()
+    }
+
+    private object NoUpdatePlatform : UpdatePlatform {
+        override val assetSuffix: String = "windows-x86_64.msi"
+        override val downloadDir: File = File("build/update-test")
+        override fun install(file: File) = Unit
     }
 
     private object FakeVersionInfo : VersionInfo {

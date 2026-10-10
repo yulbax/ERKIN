@@ -10,6 +10,9 @@ import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
+import io.github.yulbax.erkin.update.UpdateChecker
+import io.github.yulbax.erkin.update.UpdateDownloader
+import io.github.yulbax.erkin.update.UpdatePlatform
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.DiagnosticsSource
 import io.github.yulbax.erkin.util.FileAppLog
@@ -93,4 +96,7 @@ val desktopModule = module {
         }
     }
     single<VpnLauncher> { DesktopVpnLauncher(get()) }
+    single { UpdateChecker(get()) }
+    single { UpdateDownloader() }
+    single<UpdatePlatform> { DesktopUpdatePlatform(get()) }
 }
