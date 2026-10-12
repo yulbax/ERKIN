@@ -8,6 +8,7 @@ import kotlin.concurrent.thread
 
 class CiadpiProcess(
     private val binary: File,
+    private val protectSocket: File,
     private val log: AppLog,
     private val unsupportedOptions: Set<String> = if (DesktopPaths.isWindows) WINDOWS_UNSUPPORTED else emptySet()
 ) : ByeDpiProcess {
@@ -23,7 +24,7 @@ class CiadpiProcess(
         if (supported.size != args.size) {
             log.w(TAG, "dropping options this ciadpi build does not support: ${args.filter { it in unsupportedOptions }}")
         }
-        val started = ProcessBuilder(listOf(binary.absolutePath, "-i", "127.0.0.1", "-p", port.toString()) + supported)
+        val started = ProcessBuilder(listOf(binary.absolutePath, "-i", "127.0.0.1", "-p", port.toString(), "-P", protectSocket.absolutePath) + supported)
             .redirectErrorStream(true)
             .start()
         process = started

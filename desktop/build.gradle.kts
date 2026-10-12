@@ -1,7 +1,6 @@
 import java.net.URI
 import java.security.MessageDigest
 import java.util.zip.GZIPInputStream
-import java.util.zip.ZipInputStream
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -37,28 +36,28 @@ dependencies {
 
 val bundledResourcesDir = layout.buildDirectory.dir("bundled-resources")
 
+data class ByeDpiArchive(val name: String, val sha256: String, val entry: String)
+
 fun registerBundledBinaries(
     os: String,
     executableSuffix: String,
-    archiveName: String,
-    archiveSha256: String,
-    archiveEntry: String
+    byeDpiArchive: ByeDpiArchive?
 ) = tasks.register("prepare${os.replaceFirstChar { it.uppercase() }}Binaries") {
     group = "distribution"
-    description = "Bundles erkin-service built by scripts/build-libbox.sh and the official byedpi release for $os."
-    val archiveUrl = "https://github.com/hufrea/byedpi/releases/download/v0.$byeDpiVersion/$archiveName"
-    val coreFiles = listOf("erkin-service$executableSuffix", "sing-box-LICENSE.txt")
-        .map { layout.projectDirectory.dir("libs/$os").file(it).asFile }
-    val outputDir = bundledResourcesDir.map { it.dir(os) }
+    description = "Bundles erkin-service built by scripts/build-libbox.sh and byedpi for $os."
     val ciadpiName = "ciadpi$executableSuffix"
-    inputs.property("byeDpiArchive", "$archiveUrl $archiveSha256 $archiveEntry")
+    val coreNames = listOf("erkin-service$executableSuffix", "sing-box-LICENSE.txt") +
+        if (byeDpiArchive == null) listOf(ciadpiName) else emptyList()
+    val coreFiles = coreNames.map { layout.projectDirectory.dir("libs/$os").file(it).asFile }
+    val outputDir = bundledResourcesDir.map { it.dir(os) }
+    val archiveName = byeDpiArchive?.name
+    val archiveSha256 = byeDpiArchive?.sha256
+    val archiveEntry = byeDpiArchive?.entry
+    val archiveUrl = archiveName?.let { "https://github.com/hufrea/byedpi/releases/download/v0.$byeDpiVersion/$it" }
+    inputs.property("byeDpiArchive", listOfNotNull(archiveUrl, archiveSha256, archiveEntry).joinToString(" "))
     inputs.files(coreFiles).withPropertyName("core").optional()
     outputs.dir(outputDir)
     doLast {
-        fun unzipEntry(archive: ByteArray, name: String): ByteArray? = ZipInputStream(archive.inputStream()).use { zip ->
-            generateSequence { zip.nextEntry }.firstOrNull { it.name == name }?.let { zip.readBytes() }
-        }
-
         fun untarEntry(archive: ByteArray, name: String): ByteArray? {
             val tar = GZIPInputStream(archive.inputStream()).use { it.readBytes() }
             var offset = 0
@@ -77,16 +76,17 @@ fun registerBundledBinaries(
         val missing = coreFiles.filterNot { it.isFile }
         check(missing.isEmpty()) {
             "Missing ${missing.joinToString { it.name }} in desktop/libs/$os. " +
-                "Run CORE_TARGETS=$os scripts/build-libbox.sh first."
+                "Run CORE_TARGETS=$os scripts/build-libbox.sh" +
+                (if (archiveName == null) " and scripts/build-ciadpi.sh" else "") + " first."
         }
         val target = outputDir.get().asFile.apply { mkdirs() }
         coreFiles.forEach { it.copyTo(File(target, it.name), overwrite = true).setExecutable(true) }
+        if (archiveUrl == null || archiveSha256 == null || archiveEntry == null) return@doLast
         val bytes = URI(archiveUrl).toURL().openStream().use { it.readBytes() }
         val actual = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
         check(actual == archiveSha256) { "Checksum mismatch for $archiveUrl: $actual" }
-        val ciadpi = if (archiveName.endsWith(".zip")) unzipEntry(bytes, archiveEntry) else untarEntry(bytes, archiveEntry)
         File(target, ciadpiName).apply {
-            writeBytes(checkNotNull(ciadpi) { "Missing $archiveEntry in $archiveUrl" })
+            writeBytes(checkNotNull(untarEntry(bytes, archiveEntry)) { "Missing $archiveEntry in $archiveUrl" })
             setExecutable(true)
         }
     }
@@ -95,17 +95,17 @@ fun registerBundledBinaries(
 val prepareWindowsBinaries = registerBundledBinaries(
     os = "windows",
     executableSuffix = ".exe",
-    archiveName = "byedpi-$byeDpiVersion-x86_64-w64.zip",
-    archiveSha256 = "70d2c94147193cb915f9c6eb5144b8d404dacbcfa90bda2383b6b211afafa456",
-    archiveEntry = "ciadpi.exe"
+    byeDpiArchive = null
 )
 
 val prepareLinuxBinaries = registerBundledBinaries(
     os = "linux",
     executableSuffix = "",
-    archiveName = "byedpi-$byeDpiVersion-x86_64.tar.gz",
-    archiveSha256 = "98f73c32eacb571ebd88d790f6376ed9e70f02d44c1fe862472ecea75cd7117d",
-    archiveEntry = "ciadpi-x86_64"
+    byeDpiArchive = ByeDpiArchive(
+        name = "byedpi-$byeDpiVersion-x86_64.tar.gz",
+        sha256 = "98f73c32eacb571ebd88d790f6376ed9e70f02d44c1fe862472ecea75cd7117d",
+        entry = "ciadpi-x86_64"
+    )
 )
 
 compose.desktop {

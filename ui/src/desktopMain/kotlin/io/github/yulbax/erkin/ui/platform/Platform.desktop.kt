@@ -79,13 +79,12 @@ actual fun rememberAppIcon(appId: String, path: String?): ImageBitmap? =
 
 private object ExecutableIcons {
     private const val SIZE = 64
-    private val isWindows = System.getProperty("os.name").startsWith("Windows")
     private val icons = ConcurrentHashMap<String, ImageBitmap>()
 
     fun cached(path: String): ImageBitmap? = icons[path]
 
     fun load(path: String): ImageBitmap? {
-        if (!isWindows) return null
+        if (!supportsAppIcons) return null
         icons[path]?.let { return it }
         val file = File(path).takeIf { it.isFile } ?: return null
         val icon = runCatching { FileSystemView.getFileSystemView().getSystemIcon(file, SIZE, SIZE) }.getOrNull()
@@ -161,6 +160,10 @@ actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.DIRECT
 actual val supportsSystemAppsFilter: Boolean = false
 
 actual val scrollbarAlwaysVisible: Boolean = true
+
+actual val drawerSwipeToOpen: Boolean = false
+
+actual val supportsAppIcons: Boolean = System.getProperty("os.name").startsWith("Windows")
 
 @OptIn(ExperimentalTextApi::class)
 actual val platformTextStyle: PlatformTextStyle? by lazy {

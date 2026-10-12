@@ -204,3 +204,19 @@ func (e *engine) traffic() (up int64, down int64, ok bool) {
 	up, down = server.TrafficManager().Total()
 	return up, down, true
 }
+
+func (e *engine) defaultInterfaceIndex() (int, error) {
+	active := e.running()
+	if active == nil {
+		return 0, errors.New("sing-box is not running")
+	}
+	monitor := service.FromContext[adapter.NetworkManager](active.ctx).InterfaceMonitor()
+	if monitor == nil {
+		return 0, errors.New("no interface monitor")
+	}
+	defaultInterface := monitor.DefaultInterface()
+	if defaultInterface == nil {
+		return 0, errors.New("no default interface")
+	}
+	return defaultInterface.Index, nil
+}

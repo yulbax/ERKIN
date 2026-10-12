@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.ui.screens.apps
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -28,8 +30,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.HoverHint
 import io.github.yulbax.erkin.ui.platform.rememberAppIcon
+import io.github.yulbax.erkin.ui.platform.supportsAppIcons
 import io.github.yulbax.erkin.ui.viewmodel.AppInfo
 
 @Composable
@@ -38,27 +42,41 @@ internal fun AppsList(
     vpnEnabled: Boolean,
     onConnectionTypeChange: (String, String, Boolean, ConnectionType) -> Unit
 ) {
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(
-            count = apps.size,
-            key = { apps[it].packageName },
-            contentType = { "app_row" }
-        ) { index ->
-            val app = apps[index]
-            AppRow(
-                app = app,
-                vpnEnabled = vpnEnabled,
-                onConnectionTypeChange = { type ->
-                    onConnectionTypeChange(app.packageName, app.name, app.isSystemApp, type)
-                }
-            )
-            if (index < apps.lastIndex) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
+    val listState = rememberLazyListState()
+    Box(Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(end = 8.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(
+                count = apps.size,
+                key = { apps[it].packageName },
+                contentType = { "app_row" }
+            ) { index ->
+                val app = apps[index]
+                AppRow(
+                    app = app,
+                    vpnEnabled = vpnEnabled,
+                    onConnectionTypeChange = { type ->
+                        onConnectionTypeChange(app.packageName, app.name, app.isSystemApp, type)
+                    }
                 )
+                if (index < apps.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
             }
         }
+        VerticalScrollbar(
+            state = listState,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(vertical = 8.dp),
+            sections = remember(apps) { appSections(apps) }
+        )
     }
 }
 
@@ -77,22 +95,24 @@ private fun AppRow(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            if (imageBitmap != null) {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = app.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
+        if (supportsAppIcons) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+            ) {
+                if (imageBitmap != null) {
+                    Image(
+                        bitmap = imageBitmap,
+                        contentDescription = app.name,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+        }
 
         Column(modifier = Modifier.weight(1f)) {
             Text(

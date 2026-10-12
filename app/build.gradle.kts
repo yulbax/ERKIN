@@ -30,7 +30,7 @@ val byeDpiHealthProbeUrl = healthProbeUrl(
     "https://www.youtube.com/generate_204"
 )
 
-val baseVersionCode = 10000
+val baseVersionCode = 10001
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
 
 val releaseStoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull

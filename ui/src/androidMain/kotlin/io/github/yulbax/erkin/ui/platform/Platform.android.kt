@@ -169,6 +169,10 @@ actual val supportsSystemAppsFilter: Boolean = true
 
 actual val scrollbarAlwaysVisible: Boolean = false
 
+actual val drawerSwipeToOpen: Boolean = true
+
+actual val supportsAppIcons: Boolean = true
+
 actual val platformTextStyle: PlatformTextStyle? = null
 
 @Composable

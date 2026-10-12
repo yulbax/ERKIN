@@ -158,7 +158,7 @@ class DesktopEngineIntegrationTest {
 
     @Test
     fun ciadpiProcessStartsStopsAndReportsUnexpectedExit() {
-        val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), SilentLog)
+        val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock"), SilentLog)
         val port = freeLoopbackPort()
         val exits = CountDownLatch(1)
         ciadpi.start(port, listOf("-d1")) { exits.countDown() }
@@ -168,7 +168,7 @@ class DesktopEngineIntegrationTest {
         assertFalse(ciadpi.isRunning)
         assertFalse("intentional stop must not be reported as a crash", exits.await(2, TimeUnit.SECONDS))
 
-        val crashing = CiadpiProcess(File(binDir, "ciadpi"), SilentLog)
+        val crashing = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock"), SilentLog)
         val codes = mutableListOf<Int>()
         val crashed = CountDownLatch(1)
         crashing.start(port, listOf("--definitely-invalid-option")) { code -> codes += code; crashed.countDown() }
@@ -179,7 +179,7 @@ class DesktopEngineIntegrationTest {
 
     @Test
     fun ciadpiSkipsOptionsItsBuildDoesNotSupport() {
-        val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), SilentLog, unsupportedOptions = setOf("--definitely-invalid"))
+        val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock"), SilentLog, unsupportedOptions = setOf("--definitely-invalid"))
         val port = freeLoopbackPort()
         val exits = CountDownLatch(1)
         ciadpi.start(port, listOf("-d1", "--definitely-invalid")) { exits.countDown() }

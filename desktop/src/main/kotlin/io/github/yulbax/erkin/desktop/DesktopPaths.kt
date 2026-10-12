@@ -21,6 +21,8 @@ object DesktopPaths {
         ?: if (isWindows) File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN Service/erkin.sock")
         else File("/run/erkin/erkin.sock")
 
+    val protectSocket: File = File(serviceSocket.parentFile, "protect.sock")
+
     val installDir: File? = System.getProperty("compose.application.resources.dir")?.let {
         ProcessHandle.current().info().command().map { command -> File(command).parentFile }.orElse(null)
     }
