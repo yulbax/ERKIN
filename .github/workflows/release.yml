@@ -69,7 +69,7 @@ jobs:
             app/libs/libbox.aar
             desktop/libs/windows
             desktop/libs/linux
-          key: libbox-${{ env.SING_BOX_TAG }}-${{ env.LIBBOX_CACHE_REV }}-${{ hashFiles('desktop/service/**', 'scripts/build-libbox.sh', 'gradle.properties') }}
+          key: libbox-${{ env.SING_BOX_TAG }}-${{ env.LIBBOX_CACHE_REV }}-${{ hashFiles('desktop/service/**', 'scripts/build-libbox.sh', 'scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch', 'gradle.properties') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
@@ -91,6 +91,12 @@ jobs:
           go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
           export PATH="$(go env GOPATH)/bin:$PATH"
           bash scripts/build-libbox.sh
+      - name: Build patched ciadpi.exe
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q gcc-mingw-w64-x86-64
+          bash scripts/build-ciadpi.sh
       - uses: actions/upload-artifact@v4
         with:
           name: libbox
@@ -264,7 +270,9 @@ jobs:
           # newest existing tag is the previous release.
           PREV="$(git tag --sort=-creatordate | grep -v "^v${VERSION}$" | head -n1)"
           {
-            if [ -n "$PREV" ]; then
+            if [ -f "changelog/${VERSION}.md" ]; then
+              cat "changelog/${VERSION}.md"
+            elif [ -n "$PREV" ]; then
               echo "**Changes since ${PREV}:**"
               echo
               git log --no-merges --pretty='- %s (%h)' "${PREV}..HEAD"

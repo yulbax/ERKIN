@@ -38,9 +38,10 @@ type response struct {
 const maxMessageSize = 16 << 20
 
 type server struct {
-	engine   engine
-	workDir  string
-	listener net.Listener
+	engine    engine
+	workDir   string
+	listener  net.Listener
+	protector net.Listener
 
 	ownerMutex sync.Mutex
 	owner      net.Conn
@@ -70,10 +71,23 @@ func listen(socketPath string, workDir string) (*server, error) {
 		_ = listener.Close()
 		return nil, err
 	}
-	return &server{workDir: workDir, listener: listener}, nil
+	protectPath := protectSocketPath(socketPath)
+	_ = os.Remove(protectPath)
+	protector, err := net.Listen("unix", relativeTo(workDir, protectPath))
+	if err != nil {
+		_ = listener.Close()
+		return nil, err
+	}
+	if err = allowClients(protectPath); err != nil {
+		_ = listener.Close()
+		_ = protector.Close()
+		return nil, err
+	}
+	return &server{workDir: workDir, listener: listener, protector: protector}, nil
 }
 
 func (s *server) serve() error {
+	go s.serveProtect()
 	for {
 		conn, err := s.listener.Accept()
 		if err != nil {
@@ -88,6 +102,7 @@ func (s *server) serve() error {
 
 func (s *server) shutdown() {
 	_ = s.listener.Close()
+	_ = s.protector.Close()
 	_ = s.engine.stop()
 }
 

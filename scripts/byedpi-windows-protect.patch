@@ -1,0 +1,94 @@
+--- a/extend.c
++++ b/extend.c
+@@ -2,6 +2,15 @@
+ 
+ #ifdef _WIN32
+     #include <ws2tcpip.h>
++    #include <afunix.h>
++    #include <stdint.h>
++    
++    #ifndef IP_UNICAST_IF
++    #define IP_UNICAST_IF 31
++    #endif
++    #ifndef IPV6_UNICAST_IF
++    #define IPV6_UNICAST_IF 31
++    #endif
+     
+     #ifndef TCP_MAXRT
+     #define TCP_MAXRT 5
+@@ -686,3 +695,44 @@
+     return 0;
+ }
+ #endif
++
++#ifdef _WIN32
++static int protect(int conn_fd, const char *path)
++{
++    struct sockaddr_un sa = { .sun_family = AF_UNIX };
++    strncpy(sa.sun_path, path, sizeof(sa.sun_path) - 1);
++    
++    SOCKET fd = socket(AF_UNIX, SOCK_STREAM, 0);
++    if (fd == INVALID_SOCKET) {
++        uniperror("socket");
++        return -1;
++    }
++    DWORD tv = 1000;
++    setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv));
++    setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv, sizeof(tv));
++    
++    if (connect(fd, (struct sockaddr *)&sa, sizeof(sa))) {
++        uniperror("connect");
++        closesocket(fd);
++        return -1;
++    }
++    uint32_t index = 0;
++    int n = recv(fd, (char *)&index, sizeof(index), MSG_WAITALL);
++    closesocket(fd);
++    if (n != sizeof(index) || !index) {
++        LOG(LOG_E, "protect: no interface index\n");
++        return -1;
++    }
++    DWORD no = 0;
++    setsockopt(conn_fd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&no, sizeof(no));
++    
++    DWORD index4 = htonl(index);
++    if (setsockopt(conn_fd, IPPROTO_IP, IP_UNICAST_IF, (char *)&index4, sizeof(index4))) {
++        uniperror("setsockopt IP_UNICAST_IF");
++        return -1;
++    }
++    DWORD index6 = index;
++    setsockopt(conn_fd, IPPROTO_IPV6, IPV6_UNICAST_IF, (char *)&index6, sizeof(index6));
++    return 0;
++}
++#endif
+--- a/extend.h
++++ b/extend.h
+@@ -22,7 +22,7 @@
+     
+ static bool check_l34(struct desync_params *dp, int st, const union sockaddr_u *dst);
+ 
+-#ifdef __linux__
++#if defined(__linux__) || defined(_WIN32)
+ static int protect(int conn_fd, const char *path);
+ #else
+ #define protect(fd, path) 0
+--- a/main.c
++++ b/main.c
+@@ -186,6 +186,8 @@
+     {"await-int",     1, 0, 'W'}, //
+     #ifdef __linux__
+     {"drop-sack",     0, 0, 'Y'},
++    #endif
++    #if defined(__linux__) || defined(_WIN32)
+     {"protect-path",  1, 0, 'P'}, //
+     #endif
+     {"ipset",         1, 0, 'j'},
+@@ -1180,7 +1182,7 @@
+                 dp->custom_dst = 1;
+             break;
+ 
+-        #ifdef __linux__
++        #if defined(__linux__) || defined(_WIN32)
+         case 'P':
+             params.protect_path = optarg;
+             break;

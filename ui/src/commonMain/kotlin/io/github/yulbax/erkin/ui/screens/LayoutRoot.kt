@@ -43,6 +43,7 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.components.AppSearchBar
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.platform.LocalMessages
+import io.github.yulbax.erkin.ui.platform.drawerSwipeToOpen
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +69,7 @@ fun MainScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = drawerSwipeToOpen || drawerState.isOpen,
         drawerContent = {
             val navigate: (Screen) -> Unit = { screen ->
                 scope.launch { drawerState.close() }

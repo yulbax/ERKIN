@@ -82,7 +82,7 @@ val desktopModule = module {
                     listener = controller,
                     log = log
                 ),
-                byeDpi = CiadpiProcess(DesktopPaths.ciadpi, log),
+                byeDpi = CiadpiProcess(DesktopPaths.ciadpi, DesktopPaths.protectSocket, log),
                 store = get(),
                 stateRepository = stateRepository,
                 health = HealthMonitor(stateRepository, log, SocksHealthProbe(ProbeUrls.VPN, ProbeUrls.BYEDPI)),
