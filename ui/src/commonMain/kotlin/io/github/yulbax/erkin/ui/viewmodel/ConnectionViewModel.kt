@@ -28,7 +28,8 @@ data class ErkinUiState(
     val homeHintSeen: Boolean = true,
     val hasRoutedApps: Boolean = false,
     val hasVpnApps: Boolean = false,
-    val hasByedpiApps: Boolean = false
+    val hasByedpiApps: Boolean = false,
+    val bypassLan: Boolean = false
 )
 
 class ConnectionViewModel(
@@ -45,7 +46,7 @@ class ConnectionViewModel(
         appDao.getAllApps()
     ) { settings, apps ->
         val routed = RoutedApps.from(apps)
-        ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi)
+        ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi, settings.bypassLan)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ErkinUiState())
 
     fun dismissHomeHint() {

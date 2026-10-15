@@ -36,6 +36,7 @@
     <string name="direct_dns">DNS مستقیم (شبکه زیرین)</string>
     <string name="sniff_destination">شناسایی مقصد (sniff)</string>
     <string name="bypass_lan">دور زدن LAN (IPهای خصوصی مستقیم)</string>
+    <string name="local_network_denied">دسترسی به شبکه محلی را در تنظیمات سیستم مجاز کنید، وگرنه دور زدن LAN کار نمی‌کند</string>
     <string name="byedpi_cli_args">خط فرمان ByeDPI</string>
     <string name="show_system_apps">نمایش برنامه‌های سیستمی</string>
     <string name="autostart_title">اتصال خودکار</string>

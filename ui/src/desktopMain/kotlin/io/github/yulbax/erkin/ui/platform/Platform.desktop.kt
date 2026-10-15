@@ -52,6 +52,9 @@ actual fun rememberShowMessage(): (String) -> Unit = LocalMessages.current
 actual fun rememberVpnStartRequest(onGranted: () -> Unit): () -> Unit = onGranted
 
 @Composable
+actual fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): () -> Unit = { onResult(true) }
+
+@Composable
 actual fun rememberSharer(): Sharer = remember { DesktopSharer() }
 
 private class DesktopSharer : Sharer {

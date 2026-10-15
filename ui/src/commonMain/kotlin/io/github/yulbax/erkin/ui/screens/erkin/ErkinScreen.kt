@@ -51,11 +51,14 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.platform.rememberSharer
+import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
+import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rememberVpnStartRequest
 import io.github.yulbax.erkin.ui.viewmodel.ServerError
 import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
@@ -86,7 +89,14 @@ fun ErkinScreen(
     var showByeDpiDialog by remember { mutableStateOf(false) }
     val byeDpiTest by viewModel.byeDpiTest.collectAsStateWithLifecycle()
 
-    val onConnectClick = rememberVpnStartRequest(onGranted = viewModel::startVpn)
+    val startVpn = rememberVpnStartRequest(onGranted = viewModel::startVpn)
+    val showMessage = rememberShowMessage()
+    val localNetworkDenied = stringResource(Res.string.local_network_denied)
+    val requestLocalNetwork = rememberLocalNetworkRequest { granted ->
+        if (!granted) showMessage(localNetworkDenied)
+        startVpn()
+    }
+    val onConnectClick = { if (ui.bypassLan) requestLocalNetwork() else startVpn() }
 
     val connected = state.isActive
 
