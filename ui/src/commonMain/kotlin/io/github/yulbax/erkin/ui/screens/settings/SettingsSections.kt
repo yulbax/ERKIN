@@ -47,7 +47,6 @@ import io.github.yulbax.erkin.ui.platform.rememberSystemVpnSettings
 import kotlinx.coroutines.launch
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
-import io.github.yulbax.erkin.vpn.core.TunStack
 
 @Composable
 internal fun ByeDpiSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
@@ -126,15 +125,6 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
                     selected = network.preferredFingerprint,
                     optionLabel = { it?.wire ?: fromConfigLabel },
                     onSelect = viewModel::setPreferredFingerprint
-                )
-            },
-            {
-                DropdownSetting(
-                    label = stringResource(Res.string.tun_stack),
-                    options = TunStack.entries,
-                    selected = network.tunStack,
-                    optionLabel = TunStack::wire,
-                    onSelect = viewModel::setTunStack
                 )
             },
             {

@@ -30,7 +30,6 @@
     <string name="network_title">Сеть</string>
     <string name="tls_fingerprint">Отпечаток TLS</string>
     <string name="fingerprint_from_config">Из конфига</string>
-    <string name="tun_stack">Стек TUN</string>
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
     <string name="remote_dns">Удалённый DNS (через прокси, DoT)</string>

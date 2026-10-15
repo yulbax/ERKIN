@@ -49,6 +49,16 @@ class BackupCodecTest {
     }
 
     @Test
+    fun acceptsBackupsThatStillCarryARemovedTunStack() {
+        val backup = BackupCodec.decode(
+            """{"version":4,"settings":{"tunStack":"system","mtu":1500}}"""
+        )
+
+        assertNotNull(backup)
+        assertEquals(1500, backup?.settings?.mtu)
+    }
+
+    @Test
     fun rejectsUnsupportedVersionsAndInvalidSettings() {
         assertFalse(BackupCodec.isValid(validBackup().copy(version = 0)))
         assertFalse(

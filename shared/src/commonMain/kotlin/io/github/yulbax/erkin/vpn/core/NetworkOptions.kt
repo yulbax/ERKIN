@@ -1,7 +1,6 @@
 package io.github.yulbax.erkin.vpn.core
 
 data class NetworkOptions(
-    val tunStack: TunStack = TunStack.GVISOR,
     val mtu: Int = 9000,
     val ipv6Mode: Ipv6Mode = Ipv6Mode.DISABLE,
     val dnsRemote: String = "1.1.1.1",
