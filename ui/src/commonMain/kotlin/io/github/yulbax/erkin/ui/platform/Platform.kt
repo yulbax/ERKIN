@@ -28,6 +28,9 @@ expect fun rememberShowMessage(): (String) -> Unit
 expect fun rememberVpnStartRequest(onGranted: () -> Unit): () -> Unit
 
 @Composable
+expect fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): () -> Unit
+
+@Composable
 expect fun rememberSharer(): Sharer
 
 @Composable

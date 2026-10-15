@@ -66,6 +66,21 @@ actual fun rememberVpnStartRequest(onGranted: () -> Unit): () -> Unit {
 }
 
 @Composable
+actual fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): () -> Unit {
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission(), onResult)
+    return {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
+            context.checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
+        ) {
+            onResult(true)
+        } else {
+            launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+        }
+    }
+}
+
+@Composable
 actual fun rememberSharer(): Sharer {
     val context = LocalContext.current
     return remember(context) { AndroidSharer(context) }

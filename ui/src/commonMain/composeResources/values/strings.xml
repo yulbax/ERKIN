@@ -36,6 +36,7 @@
     <string name="direct_dns">Direct DNS (underlying network)</string>
     <string name="sniff_destination">Sniff destination</string>
     <string name="bypass_lan">Bypass LAN (private IPs direct)</string>
+    <string name="local_network_denied">Allow local network access in system settings, otherwise LAN bypass will not work</string>
     <string name="byedpi_cli_args">ByeDPI command line</string>
     <string name="show_system_apps">Show system apps</string>
     <string name="autostart_title">Auto-connect</string>

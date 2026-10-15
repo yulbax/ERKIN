@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.AppConfigBackup
 import io.github.yulbax.erkin.data.BackupSelection
 import io.github.yulbax.erkin.ui.components.AppDialog
@@ -41,6 +42,7 @@ import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.viewmodel.SettingsUiState
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
 import io.github.yulbax.erkin.ui.platform.rememberFilePicker
+import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
 import io.github.yulbax.erkin.ui.platform.rememberSharer
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rememberSystemVpnSettings
@@ -114,6 +116,11 @@ internal fun AutostartSection(ui: SettingsUiState, viewModel: SettingsViewModel)
 internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
     val network = ui.network
     val fromConfigLabel = stringResource(Res.string.fingerprint_from_config)
+    val showMessage = rememberShowMessage()
+    val localNetworkDenied = stringResource(Res.string.local_network_denied)
+    val requestLocalNetwork = rememberLocalNetworkRequest { granted ->
+        if (granted) viewModel.setBypassLan(true) else showMessage(localNetworkDenied)
+    }
 
     GroupCard(
         title = stringResource(Res.string.network_title),
@@ -162,7 +169,9 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
                 SwitchRow(stringResource(Res.string.sniff_destination), network.sniff) { viewModel.setSniff(it) }
             },
             {
-                SwitchRow(stringResource(Res.string.bypass_lan), network.bypassLan) { viewModel.setBypassLan(it) }
+                SwitchRow(stringResource(Res.string.bypass_lan), network.bypassLan) { enabled ->
+                    if (enabled) requestLocalNetwork() else viewModel.setBypassLan(false)
+                }
             }
         )
     )

@@ -36,6 +36,7 @@
     <string name="direct_dns">Прямой DNS (основная сеть)</string>
     <string name="sniff_destination">Определять назначение (sniff)</string>
     <string name="bypass_lan">Обход LAN (приватные IP напрямую)</string>
+    <string name="local_network_denied">Разрешите доступ к локальной сети в настройках системы, иначе обход LAN не будет работать</string>
     <string name="byedpi_cli_args">Командная строка ByeDPI</string>
     <string name="show_system_apps">Показывать системные приложения</string>
     <string name="autostart_title">Автоподключение</string>
