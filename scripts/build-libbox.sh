@@ -167,6 +167,12 @@ else
   die "Cannot find randomized fingerprint case in $FP_FILE — upstream changed; update the ERKIN uTLS patch."
 fi
 
+# ── 2c. ERKIN testbox: our own package (core/testbox), compiled into libbox.aar and
+# erkin-service next to the core. It adds a new directory and modifies no upstream file.
+say "Adding the ERKIN testbox package"
+rm -rf testbox
+cp -r "$REPO_ROOT/core/testbox" testbox
+
 if [ "$BUILD_ANDROID" = "1" ]; then
   # ── 3. Pre-flight: assert Tailscale is gone from the dependency graph. ──────────
   say "Checking dependency graph for Tailscale leakage"
@@ -186,7 +192,7 @@ if [ "$BUILD_ANDROID" = "1" ]; then
     -trimpath -buildvcs=false \
     -ldflags "$LDFLAGS" \
     -tags "$TAGS" \
-    ./experimental/libbox
+    ./experimental/libbox ./testbox
 
   # ── 5. Size sanity. The dep-graph check above is the authoritative Tailscale guard;
   # this is just a backstop. Three ABIs (arm64+amd64+arm) clean ≈ 53 MB; a Tailscale

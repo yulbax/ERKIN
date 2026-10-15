@@ -4,11 +4,14 @@ import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.HealthSnapshot
 import io.github.yulbax.erkin.vpn.ProbeParams
 import io.github.yulbax.erkin.vpn.ProbeUrls
+import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.SocksHealthProbe
 import io.github.yulbax.erkin.vpn.VpnState
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
@@ -108,10 +111,9 @@ class DesktopEngineIntegrationTest {
                             "users": [{"username": "$user", "password": "$pass"}]}],
               "outbounds": [
                 {"type": "direct", "tag": "p1"},
-                {"type": "direct", "tag": "p2"},
-                {"type": "selector", "tag": "proxy", "outbounds": ["p1", "p2"], "default": "p1"}
+                {"type": "selector", "tag": "health", "outbounds": ["p1", "p1"]}
               ],
-              "route": {"final": "proxy"}
+              "route": {"final": "p1"}
             }
         """.trimIndent()
 
@@ -131,17 +133,20 @@ class DesktopEngineIntegrationTest {
         repeat(2) {
             client.start(config)
             assertNotNull(runCatching { client.start(config) }.exceptionOrNull())
-            assertTrue(client.select("proxy", "p2"))
-            assertFalse(client.select("proxy", "missing"))
+            assertLatencyTestWorks(client)
             assertNotNull(client.delay("p1", ProbeUrls.VPN, 10_000))
             val snapshot: HealthSnapshot = runBlocking {
                 withTimeout(30.seconds) {
-                    SocksHealthProbe(ProbeUrls.VPN, ProbeUrls.BYEDPI)
-                        .observe(ProbeParams(FakeEngine(socksPort, user, pass), byeDpiPort = null, vpnActive = true) { false })
+                    val engine = FakeEngine(socksPort, user, pass) {
+                        client.delay(ConfigBuilder.HEALTH_GROUP_TAG, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS)
+                    }
+                    SocksHealthProbe(ProbeUrls.BYEDPI)
+                        .observe(ProbeParams(engine, byeDpiPort = null, vpnActive = true) { false })
                         .first()
                 }
             }
-            assertTrue("probe through authenticated SOCKS failed", snapshot.vpnUp)
+            assertTrue("health urltest through the health group failed", snapshot.vpnUp)
+            assertEquals("country must resolve through the authenticated probe SOCKS", 2, snapshot.vpnCountry.length)
             assertTrue("traffic must be counted", checkNotNull(client.traffic()).down > 0)
             client.stop()
             assertNull(client.traffic())
@@ -188,6 +193,23 @@ class DesktopEngineIntegrationTest {
         ciadpi.stop()
     }
 
+    @Test
+    fun serviceMeasuresServersWithoutARunningCore() {
+        ServiceClient.connect(startService()).use(::assertLatencyTestWorks)
+    }
+
+    private fun assertLatencyTestWorks(client: ServiceClient) {
+        val config = ConfigBuilder.buildLatencyTest(
+            listOf(
+                EngineProxy("p1", """{"type":"direct"}"""),
+                EngineProxy("p2", """{"type":"socks","server":"127.0.0.1","server_port":${freeLoopbackPort()}}""")
+            )
+        )
+        val delays = ServerLatencyProbe.parse(client.urlTest(config, ProbeUrls.VPN, 10_000))
+        assertTrue("a working server must be measured: $delays", delays[1L] is ProxyDelay.Measured)
+        assertEquals(ProxyDelay.Failed, delays[2L])
+    }
+
     private fun waitForPort(port: Int): Boolean {
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
         while (System.nanoTime() < deadline) {
@@ -200,12 +222,12 @@ class DesktopEngineIntegrationTest {
     private class FakeEngine(
         override val probeSocksPort: Int,
         override val probeUsername: String,
-        override val probePassword: String
+        override val probePassword: String,
+        private val measure: () -> Int?
     ) : VpnEngine {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
-        override fun selectProxy(tag: String): Boolean = true
-        override fun testProxies() = Unit
+        override suspend fun measureVpnDelay(): Int? = measure()
         override fun hasFingerprintError(): Boolean = false
         override fun stop() = Unit
     }

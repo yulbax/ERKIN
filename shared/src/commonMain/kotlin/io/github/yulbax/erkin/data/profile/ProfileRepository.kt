@@ -1,12 +1,15 @@
 package io.github.yulbax.erkin.data.profile
 
 import io.github.yulbax.erkin.data.AppDatabase
+import io.github.yulbax.erkin.data.BackupCodec
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ParsedProfile
+import io.github.yulbax.erkin.proxy.SubscriptionParser
 import io.github.yulbax.erkin.util.AppLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import java.io.InputStream
 
 interface SubscriptionProfileSource {
     suspend fun fetch(url: String): List<ParsedProfile>
@@ -27,9 +30,13 @@ class ProfileRepository(
         return when {
             parsed != null -> insertSingle(parsed)
             input.isHttpUrl() -> importSubscription(input)
-            else -> ProfileOperationResult.InvalidLink
+            else -> insertAll(SubscriptionParser.parseBody(input))
         }
     }
+
+    fun readConfigFile(open: () -> InputStream?): String? = runCatching {
+        open()?.use { with(BackupCodec) { it.readBounded(MAX_CONFIG_FILE_BYTES) } }?.decodeToString()
+    }.getOrNull()?.takeIf { it.isNotBlank() }
 
     suspend fun update(
         profile: ProfileEntity,
@@ -146,12 +153,16 @@ class ProfileRepository(
         val parsed = fetchSubscription(url)
         if (parsed !is FetchResult.Success) return parsed.toOperationResult()
         if (parsed.profiles.isEmpty()) return ProfileOperationResult.EmptySubscription
+        return insertAll(parsed.profiles, subscriptionUrl = url)
+    }
 
+    private suspend fun insertAll(profiles: List<ParsedProfile>, subscriptionUrl: String = ""): ProfileOperationResult {
+        if (profiles.isEmpty()) return ProfileOperationResult.InvalidLink
         database.transaction {
-            val ids = profileDao.insertAll(parsed.profiles.map { it.toEntity(subscriptionUrl = url) })
+            val ids = profileDao.insertAll(profiles.map { it.toEntity(subscriptionUrl) })
             ensureSelection(preferredId = ids.firstOrNull())
         }
-        return ProfileOperationResult.Success(affected = parsed.profiles.size)
+        return ProfileOperationResult.Success(affected = profiles.size)
     }
 
     private suspend fun fetchSubscription(url: String): FetchResult = try {
@@ -172,6 +183,7 @@ class ProfileRepository(
 
     private companion object {
         const val TAG = "ProfileRepository"
+        const val MAX_CONFIG_FILE_BYTES = 1L shl 20
     }
 
     private fun String.isHttpUrl(): Boolean =

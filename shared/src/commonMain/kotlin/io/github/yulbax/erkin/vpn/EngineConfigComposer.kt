@@ -37,7 +37,6 @@ object EngineConfigComposer {
     fun compose(inputs: SessionInputs, ownPackage: String, byeDpiPort: Int): AppliedConfig {
         val selected = inputs.selected
         check(selected != null || inputs.profiles.isEmpty()) { "No server selected" }
-        val profiles = if (selected == null) emptyList() else inputs.profiles
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
         val routed = RoutedApps.from(foreignApps, hasServers = selected != null)
         check(!routed.isEmpty) {
@@ -46,7 +45,7 @@ object EngineConfigComposer {
 
         return AppliedConfig(
             engineConfig = EngineConfig(
-                proxies = profiles.map { it.engineProxy() },
+                proxies = listOfNotNull(selected).map { it.engineProxy() },
                 activeProxyTag = selected?.let { ProxyTag.of(it.id) }.orEmpty(),
                 byeDpiPackages = routed.byeDpiPackages,
                 vpnPackages = routed.vpnPackages,
@@ -56,7 +55,7 @@ object EngineConfigComposer {
                 directPaths = routed.directPaths
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
-            membershipKey = profiles.joinToString("|") { "${it.id}:${it.name}:${it.outboundJson}" },
+            membershipKey = selected?.let { "${it.id}:${it.outboundJson}" }.orEmpty(),
             sessionRequirements = selected?.engineProxy()?.sessionRequirements.orEmpty(),
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}" },
@@ -66,6 +65,6 @@ object EngineConfigComposer {
 
     const val NO_SERVERS_NO_BYEDPI = "Add a server, or assign apps to ByeDPI to run without one"
 
-    private fun ProfileEntity.engineProxy(): EngineProxy =
+    fun ProfileEntity.engineProxy(): EngineProxy =
         protocol?.engineProxy(ProxyTag.of(id), outboundJson) ?: EngineProxy(ProxyTag.of(id), outboundJson)
 }

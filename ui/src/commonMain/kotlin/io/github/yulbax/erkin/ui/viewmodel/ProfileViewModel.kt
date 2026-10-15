@@ -7,9 +7,9 @@ import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
-import io.github.yulbax.erkin.vpn.VpnCommandBus
-import io.github.yulbax.erkin.vpn.VpnStateRepository
+import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.InputStream
 
 sealed interface ServerError {
     data object InvalidLink : ServerError
@@ -28,29 +30,50 @@ data class ServersUiState(
     val profiles: List<ProfileEntity> = emptyList(),
     val selected: ProfileEntity? = null,
     val delays: Map<Long, ProxyDelay> = emptyMap(),
+    val testingIds: Set<Long> = emptySet(),
     val error: ServerError? = null
-)
+) {
+    val testing: Boolean get() = testingIds.isNotEmpty()
+}
 
 class ProfileViewModel(
     private val profileRepository: ProfileRepository,
-    stateRepository: VpnStateRepository,
-    private val commandBus: VpnCommandBus,
+    private val latencyProbe: ServerLatencyProbe,
     private val log: AppLog
 ) : ViewModel() {
 
     private val _error = MutableStateFlow<ServerError?>(null)
+    private val _delays = MutableStateFlow<Map<Long, ProxyDelay>>(emptyMap())
+    private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
 
     val uiState: StateFlow<ServersUiState> = combine(
         profileRepository.profiles,
         profileRepository.selected,
-        stateRepository.proxyDelays,
+        _delays,
+        _testingIds,
         _error
-    ) { profiles, selected, delays, error ->
-        ServersUiState(profiles, selected, delays, error)
+    ) { profiles, selected, delays, testingIds, error ->
+        ServersUiState(profiles, selected, delays, testingIds, error)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
 
     fun testAll() {
-        commandBus.testProxies()
+        if (_testingIds.value.isNotEmpty()) return
+        val ids = uiState.value.profiles.map { it.id }.toSet()
+        if (ids.isEmpty()) return
+        _delays.value -= ids
+        _testingIds.value = ids
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                _delays.value = latencyProbe.measureAll()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (t: Throwable) {
+                log.w(TAG, "latency test failed", t)
+                _delays.value = ids.associateWith { ProxyDelay.Failed }
+            } finally {
+                _testingIds.value = emptySet()
+            }
+        }
     }
 
     fun clearError() {
@@ -60,6 +83,12 @@ class ProfileViewModel(
     fun add(raw: String) {
         viewModelScope.launch(Dispatchers.IO) {
             handleResult("add server", profileRepository.add(raw))
+        }
+    }
+
+    fun readConfigFile(open: () -> InputStream?, onRead: (String?) -> Unit) {
+        viewModelScope.launch {
+            onRead(withContext(Dispatchers.IO) { profileRepository.readConfigFile(open) })
         }
     }
 

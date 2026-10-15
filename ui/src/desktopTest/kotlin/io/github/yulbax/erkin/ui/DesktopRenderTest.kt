@@ -18,6 +18,7 @@ import io.github.yulbax.erkin.data.ConfigBackupRepository
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
+import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
@@ -43,6 +44,7 @@ import io.github.yulbax.erkin.util.DiagnosticsSource
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
+import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.SiteGroup
 import io.github.yulbax.erkin.vpn.SiteResult
 import io.github.yulbax.erkin.vpn.VpnCommandBus
@@ -96,6 +98,7 @@ class DesktopRenderTest {
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
                     single { ConfigBackupRepository(get(), get()) }
+                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _ -> "{}" } }
                     single { VpnStateRepository() }
                     single { VpnCommandBus() }
                     single<VpnLauncher> { VpnLauncher { } }

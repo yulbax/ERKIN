@@ -206,6 +206,35 @@ class ProfileRefreshTest {
     }
 
     @Test
+    fun addingAFileWithSeveralLinksImportsEachServer() = runBlocking {
+        val body = listOf(
+            "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
+            "not a link",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        ).joinToString("\n")
+
+        assertEquals(ProfileOperationResult.Success(affected = 2), repository.add(body))
+
+        val stored = database.profileDao().getAll()
+        assertEquals(listOf("Netherlands", "Germany"), stored.map { it.name })
+        assertTrue(stored.all { it.subscriptionUrl.isEmpty() })
+    }
+
+    @Test
+    fun addingTextWithoutAnyLinkIsRejected() = runBlocking {
+        assertEquals(ProfileOperationResult.InvalidLink, repository.add("just some notes\nand more"))
+        assertTrue(database.profileDao().getAll().isEmpty())
+    }
+
+    @Test
+    fun readsAConfigFileAndRejectsOversizedOrBlankOnes() {
+        assertEquals(AWG_CONFIG, repository.readConfigFile { AWG_CONFIG.byteInputStream() })
+        assertNull(repository.readConfigFile { "  \n".byteInputStream() })
+        assertNull(repository.readConfigFile { ByteArray(2 shl 20).inputStream() })
+        assertNull(repository.readConfigFile { null })
+    }
+
+    @Test
     fun deletingTheLastServerMovesVpnAppsToDirect() = runBlocking {
         val id = database.profileDao().insert(
             ProfileEntity(name = "Only", type = ProxyProtocol.VLESS.wire, link = "vless://id@example.com:443", outboundJson = "{}")

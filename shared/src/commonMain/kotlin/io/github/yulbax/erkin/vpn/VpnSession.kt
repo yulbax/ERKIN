@@ -5,7 +5,6 @@ import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
 import io.github.yulbax.erkin.vpn.core.ByeDpiQualityCheck
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import kotlinx.coroutines.CancellationException
@@ -96,9 +95,12 @@ class VpnSession(
             throw error
         }
         val serverSwitched = desired.selectedTag != current.selectedTag
-        if (!desired.isStructuralChangeFrom(current) && !serverSwitched) return ReloadOutcome.Done
+        if (!desired.isStructuralChangeFrom(current) && !serverSwitched) {
+            if (desired.configName != current.configName) commit(desired)
+            return ReloadOutcome.Done
+        }
 
-        stateRepository.update(VpnState.Verifying)
+        resetChannels()
         applyReload(desired)
         startHealth()
         return ReloadOutcome.Done
@@ -107,14 +109,9 @@ class VpnSession(
     suspend fun recover() {
         if (!isRunning) return
         log.i(TAG, "vpn channel down; reloading service")
+        resetChannels()
         applyReload(EngineConfigComposer.compose(store.load(), ownPackage, byeDpiPort))
-        stateRepository.update(VpnState.Verifying)
         startHealth()
-    }
-
-    fun testProxies() {
-        if (!isRunning) return
-        engine.testProxies()
     }
 
     fun checkByeDpi() {
@@ -167,13 +164,6 @@ class VpnSession(
         stateRepository.updateStats { it.copy(uplink = uplinkBytesPerSec, downlink = downlinkBytesPerSec) }
     }
 
-    fun onProxyDelays(delays: Map<String, ProxyDelay>) {
-        if (!isRunning) return
-        stateRepository.updateProxyDelays(
-            delays.mapNotNull { (tag, delay) -> ProxyTag.profileId(tag)?.let { it to delay } }.toMap()
-        )
-    }
-
     fun markStopping() {
         if (phase != Phase.Idle) phase = Phase.Stopping
     }
@@ -221,6 +211,13 @@ class VpnSession(
     private fun stopByeDpi() {
         stateRepository.byeDpiStopped()
         byeDpi.stop()
+    }
+
+    private fun resetChannels() {
+        health.stop()
+        byeDpiCheckJob?.cancel()
+        stateRepository.channelsReconnecting()
+        stateRepository.update(VpnState.Verifying)
     }
 
     private fun applyReload(config: AppliedConfig) {

@@ -21,7 +21,7 @@ class HealthMonitorTest {
 
     @Test
     fun aDeadByeDpiChannelNeverReloadsAWorkingVpn() = runBlocking {
-        val (reloads, byedpiChecks) = run(vpnDelayMs = 120, byedpiDelayMs = null)
+        val (reloads, byedpiChecks) = run(vpnDelayMs = 120, byedpiUp = false)
 
         assertEquals(0, reloads)
         assertTrue("the site list check must run even while ByeDPI is down", byedpiChecks >= 1)
@@ -29,18 +29,18 @@ class HealthMonitorTest {
 
     @Test
     fun aDeadVpnChannelStillTriggersAReload() = runBlocking {
-        val (reloads, _) = run(vpnDelayMs = null, byedpiDelayMs = 80)
+        val (reloads, _) = run(vpnDelayMs = null, byedpiUp = true)
 
         assertTrue(reloads >= 1)
     }
 
-    private suspend fun run(vpnDelayMs: Int?, byedpiDelayMs: Int?): Pair<Int, Int> {
+    private suspend fun run(vpnDelayMs: Int?, byedpiUp: Boolean): Pair<Int, Int> {
         val reloads = AtomicInteger()
         val byedpiChecks = AtomicInteger()
         val probe = object : HealthProbe {
             override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
                 repeat(SNAPSHOTS) {
-                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiDelayMs, fpError = false))
+                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiUp, fpError = false))
                     delay(5)
                 }
             }
@@ -68,8 +68,7 @@ class HealthMonitorTest {
         override val probePassword: String = ""
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
-        override fun selectProxy(tag: String): Boolean = true
-        override fun testProxies() = Unit
+        override suspend fun measureVpnDelay(): Int? = null
         override fun hasFingerprintError(): Boolean = false
         override fun stop() = Unit
     }

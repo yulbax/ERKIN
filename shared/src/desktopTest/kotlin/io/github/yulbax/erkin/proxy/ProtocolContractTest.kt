@@ -62,9 +62,11 @@ class ProtocolContractTest {
             val expected = if (protocol.handler.placement == EnginePlacement.ENDPOINT) endpoints else outbounds
             assertTrue("$protocol placed as ${protocol.handler.placement}", protocol.wire in expected)
         }
-        val selector = config.getValue("outbounds").jsonArray.map { it.jsonObject }
-            .single { it["tag"]?.jsonPrimitive?.content == ConfigBuilder.PROXY_GROUP_TAG }
-        assertEquals(proxies.map { it.tag }, selector.getValue("outbounds").jsonArray.map { it.jsonPrimitive.content })
+        val latencyTest = Json.parseToJsonElement(ConfigBuilder.buildLatencyTest(proxies)).jsonObject
+        parsedSamples().forEach { (protocol, _) ->
+            val section = if (protocol.handler.placement == EnginePlacement.ENDPOINT) "endpoints" else "outbounds"
+            assertTrue("$protocol in the latency test $section", protocol.wire in latencyTest.tags(section))
+        }
     }
 
     @Test

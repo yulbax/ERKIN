@@ -21,10 +21,6 @@ fun healthProbeUrl(name: String, defaultValue: String): String =
         }
 }
 
-val vpnHealthProbeUrl = healthProbeUrl(
-    "erkin.vpnHealthProbeUrl",
-    "https://www.gstatic.com/generate_204"
-)
 val byeDpiHealthProbeUrl = healthProbeUrl(
     "erkin.byeDpiHealthProbeUrl",
     "https://www.youtube.com/generate_204"
@@ -58,11 +54,6 @@ android {
         versionName = providers.gradleProperty("erkin.versionName").get()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField(
-            "String",
-            "VPN_HEALTH_PROBE_URL",
-            vpnHealthProbeUrl.asBuildConfigString()
-        )
         buildConfigField(
             "String",
             "BYEDPI_HEALTH_PROBE_URL",

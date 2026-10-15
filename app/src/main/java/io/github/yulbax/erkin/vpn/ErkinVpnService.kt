@@ -51,7 +51,7 @@ class ErkinVpnService :
                 health = HealthMonitor(
                     vpnStateRepository,
                     erkinLog,
-                    SocksHealthProbe(BuildConfig.VPN_HEALTH_PROBE_URL, BuildConfig.BYEDPI_HEALTH_PROBE_URL)
+                    SocksHealthProbe(BuildConfig.BYEDPI_HEALTH_PROBE_URL)
                 ),
                 quality = SocksSiteProbe,
                 log = erkinLog,

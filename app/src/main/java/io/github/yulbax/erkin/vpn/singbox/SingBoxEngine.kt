@@ -5,10 +5,10 @@ import io.github.yulbax.erkin.vpn.DefaultNetworkMonitor
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
 import io.github.yulbax.erkin.vpn.core.FingerprintErrorWatch
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import io.github.yulbax.erkin.vpn.core.TunAddress
 import io.github.yulbax.erkin.vpn.core.TunConfig
 import io.github.yulbax.erkin.vpn.core.TunPlatform
+import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
@@ -29,6 +29,12 @@ import libbox.StringIterator
 import libbox.SystemProxyStatus
 import libbox.TunOptions
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 class SingBoxEngine(
     appContext: Context,
@@ -46,6 +52,7 @@ class SingBoxEngine(
     private var boxService: BoxService? = null
     private var statusClient: CommandClient? = null
     private var groupClient: CommandClient? = null
+    private val healthReadings = MutableStateFlow<UrlTestReading?>(null)
 
     private val workDir = File(appContext.filesDir, "work")
     private val boxLogFile = File(workDir, "box.log")
@@ -99,13 +106,21 @@ class SingBoxEngine(
 
     override fun hasFingerprintError(): Boolean = fingerprintErrors.hasError()
 
-    override fun selectProxy(tag: String): Boolean = runCatching {
-        Libbox.newStandaloneCommandClient().selectOutbound(ConfigBuilder.PROXY_GROUP_TAG, tag)
-    }.isSuccess
-
-    override fun testProxies() {
-        runCatching { groupClient?.urlTest(ConfigBuilder.PROXY_GROUP_TAG) }
-            .onFailure { log.w(TAG, "urlTest failed", it) }
+    override suspend fun measureVpnDelay(): Int? {
+        val client = groupClient ?: return null
+        val requestedAtSec = System.currentTimeMillis() / 1_000
+        val requested = withContext(Dispatchers.IO) {
+            runCatching { client.urlTest(ConfigBuilder.HEALTH_GROUP_TAG) }
+        }
+        requested.exceptionOrNull()?.let {
+            log.w(TAG, "health urlTest failed", it)
+            return null
+        }
+        return withTimeoutOrNull(VPN_DELAY_TIMEOUT_MS.toLong()) {
+            healthReadings.filterNotNull()
+                .first { it.testedAtSec >= requestedAtSec && it.delayMs > 0 }
+                .delayMs
+        }
     }
 
     override fun stop() {
@@ -141,21 +156,14 @@ class SingBoxEngine(
         }
 
         override fun writeGroups(groups: OutboundGroupIterator) {
-            val delays = mutableMapOf<String, ProxyDelay>()
             while (groups.hasNext()) {
                 val group = groups.next()
-                if (group.tag != ConfigBuilder.PROXY_GROUP_TAG) continue
                 val items = group.items
-                while (items.hasNext()) {
+                if (group.tag == ConfigBuilder.HEALTH_GROUP_TAG && items.hasNext()) {
                     val item = items.next()
-                    when {
-                        item.urlTestTime <= 0L -> Unit
-                        item.urlTestDelay <= 0 -> delays[item.tag] = ProxyDelay.Failed
-                        else -> delays[item.tag] = ProxyDelay.Measured(item.urlTestDelay)
-                    }
+                    healthReadings.value = UrlTestReading(item.urlTestTime, item.urlTestDelay)
                 }
             }
-            listener.onProxyDelays(delays)
         }
 
         override fun connected() {}
@@ -170,7 +178,7 @@ class SingBoxEngine(
     private fun startCommandClient() {
         statusClient = connectClient(Libbox.CommandStatus)
         groupClient = connectClient(Libbox.CommandGroup)?.also { client ->
-            runCatching { client.setGroupExpand(ConfigBuilder.PROXY_GROUP_TAG, true) }
+            runCatching { client.setGroupExpand(ConfigBuilder.HEALTH_GROUP_TAG, true) }
         }
     }
 
@@ -253,6 +261,8 @@ class SingBoxEngine(
     override fun serviceReload() {}
     override fun getSystemProxyStatus(): SystemProxyStatus = SystemProxyStatus()
     override fun setSystemProxyEnabled(enabled: Boolean) {}
+
+    private data class UrlTestReading(val testedAtSec: Long, val delayMs: Int)
 
     private companion object {
         const val TAG = "SingBoxEngine"

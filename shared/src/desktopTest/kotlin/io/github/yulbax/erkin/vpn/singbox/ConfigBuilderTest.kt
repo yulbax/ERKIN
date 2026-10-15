@@ -43,6 +43,37 @@ class ConfigBuilderTest {
     }
 
     @Test
+    fun healthGroupHoldsOnlyTheActiveServer() {
+        val outbounds = Json.parseToJsonElement(
+            ConfigBuilder.build(proxies, "p2", emptyList(), listOf("com.vpn.app"), listOf("com.vpn.app"), 1081, 2080, "user", "pass")
+        ).jsonObject.getValue("outbounds").jsonArray.map { it.jsonObject }
+        val health = outbounds.single { it["tag"]?.jsonPrimitive?.content == ConfigBuilder.HEALTH_GROUP_TAG }
+        assertEquals("selector", health.getValue("type").jsonPrimitive.content)
+        assertEquals(setOf("p2"), health.getValue("outbounds").jsonArray.map { it.jsonPrimitive.content }.toSet())
+    }
+
+    @Test
+    fun noHealthGroupWithoutServers() {
+        val outbounds = Json.parseToJsonElement(
+            ConfigBuilder.build(emptyList(), "", listOf("org.telegram"), emptyList(), listOf("org.telegram"), 1081, 2080, "user", "pass")
+        ).jsonObject.getValue("outbounds").jsonArray.map { it.jsonObject }
+        assertFalse(outbounds.any { it["tag"]?.jsonPrimitive?.content == ConfigBuilder.HEALTH_GROUP_TAG })
+    }
+
+    @Test
+    fun latencyTestConfigHoldsEveryServerAndNothingThatListens() {
+        val config = Json.parseToJsonElement(ConfigBuilder.buildLatencyTest(proxies)).jsonObject
+        assertFalse(config.containsKey("inbounds"))
+        assertEquals(
+            proxies.map { it.tag },
+            config.getValue("outbounds").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content }
+        )
+        val dns = config.getValue("dns").jsonObject.getValue("servers").jsonArray.single().jsonObject
+        assertEquals("local", dns.getValue("tag").jsonPrimitive.content)
+        assertEquals("local", config.getValue("route").jsonObject.getValue("default_domain_resolver").jsonPrimitive.content)
+    }
+
+    @Test
     fun desktopConfigRoutesByProcessAndDefaultsToDirect() {
         val config = Json.parseToJsonElement(
             ConfigBuilder.build(
@@ -58,7 +89,7 @@ class ConfigBuilderTest {
         assertFalse(rules.any { it["action"]?.jsonPrimitive?.content == "reject" })
         assertEquals(listOf("ciadpi.exe"), rules.processRule("direct"))
         assertEquals(listOf("discord.exe"), rules.processRule("byedpi"))
-        assertEquals(listOf("telegram.exe"), rules.processRule("proxy"))
+        assertEquals(listOf("telegram.exe"), rules.processRule("p1"))
         assertTrue(rules.none { it.containsKey("package_name") })
 
         val tun = config.getValue("inbounds").jsonArray.first().jsonObject
@@ -129,12 +160,9 @@ class ConfigBuilderTest {
         val outbounds = config.getValue("outbounds").jsonArray.map { it.jsonObject }
         assertTrue(outbounds.none { it["type"]?.jsonPrimitive?.content == "awg" })
 
-        val selector = outbounds.single { it["tag"]?.jsonPrimitive?.content == ConfigBuilder.PROXY_GROUP_TAG }
-        assertEquals(
-            listOf("p1", "p2", "p3"),
-            selector.getValue("outbounds").jsonArray.map { it.jsonPrimitive.content }
-        )
-        assertEquals("p3", selector.getValue("default").jsonPrimitive.content)
+        assertTrue(outbounds.none { it["type"]?.jsonPrimitive?.content == "selector" && it["tag"]?.jsonPrimitive?.content != ConfigBuilder.HEALTH_GROUP_TAG })
+        val remoteDns = config.getValue("dns").jsonObject.getValue("servers").jsonArray.first().jsonObject
+        assertEquals("p3", remoteDns.getValue("detour").jsonPrimitive.content)
 
         assertEquals("ipv4_only", config.getValue("dns").jsonObject.getValue("strategy").jsonPrimitive.content)
 
@@ -195,7 +223,7 @@ class ConfigBuilderTest {
                 else -> null
             }
         }
-        assertEquals(listOf("name:direct", "path:byedpi", "path:direct", "name:proxy"), keys)
+        assertEquals(listOf("name:direct", "path:byedpi", "path:direct", "name:p1"), keys)
         val pathDirect = rules.first { it.containsKey("process_path") && it.getValue("outbound").jsonPrimitive.content == "direct" }
         assertEquals("C:\\venv\\python.exe", pathDirect.getValue("process_path").jsonArray.single().jsonPrimitive.content)
     }
@@ -210,7 +238,7 @@ class ConfigBuilderTest {
             )
         ).jsonObject
         val outbounds = config.getValue("outbounds").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content }
-        assertFalse(ConfigBuilder.PROXY_GROUP_TAG in outbounds)
+        assertEquals(listOf("byedpi", "direct"), outbounds)
         val route = config.getValue("route").jsonObject
         assertEquals("direct", route.getValue("final").jsonPrimitive.content)
         val remoteDns = config.getValue("dns").jsonObject.getValue("servers").jsonArray.first().jsonObject

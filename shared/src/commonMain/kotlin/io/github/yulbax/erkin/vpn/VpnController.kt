@@ -3,7 +3,6 @@ package io.github.yulbax.erkin.vpn
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.Telemetry
 import io.github.yulbax.erkin.vpn.core.EngineListener
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -79,8 +78,6 @@ class VpnController(
     override fun onThroughput(uplinkBytesPerSec: Long, downlinkBytesPerSec: Long) =
         session.onThroughput(uplinkBytesPerSec, downlinkBytesPerSec)
 
-    override fun onProxyDelays(delays: Map<String, ProxyDelay>) = session.onProxyDelays(delays)
-
     override fun onStopRequested() = stop(token = null, force = true)
 
     fun shutdown() {
@@ -145,7 +142,6 @@ class VpnController(
             }
             Command.Recover -> session.recover()
             Command.CheckByeDpi -> session.checkByeDpi()
-            Command.TestProxies -> session.testProxies()
             Command.Start, Command.Stop -> Unit
         }
     }
