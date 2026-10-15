@@ -270,9 +270,7 @@ jobs:
           # newest existing tag is the previous release.
           PREV="$(git tag --sort=-creatordate | grep -v "^v${VERSION}$" | head -n1)"
           {
-            if [ -f "changelog/${VERSION}.md" ]; then
-              cat "changelog/${VERSION}.md"
-            elif [ -n "$PREV" ]; then
+            if [ -n "$PREV" ]; then
               echo "**Changes since ${PREV}:**"
               echo
               git log --no-merges --pretty='- %s (%h)' "${PREV}..HEAD"
