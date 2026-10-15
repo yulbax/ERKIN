@@ -39,3 +39,4 @@ gradle/gradle-daemon-jvm.properties
 
 # Personal coding-preferences file, carried across projects
 rules.md
+/changelog/
