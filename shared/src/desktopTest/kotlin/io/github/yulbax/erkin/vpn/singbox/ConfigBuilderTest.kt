@@ -96,7 +96,64 @@ class ConfigBuilderTest {
         assertFalse(tun.containsKey("include_package"))
         assertEquals("true", tun.getValue("strict_route").jsonPrimitive.content)
         assertEquals(ConfigBuilder.DESKTOP_INTERFACE_NAME, tun.getValue("interface_name").jsonPrimitive.content)
-        assertFalse(config.containsKey("experimental"))
+    }
+
+    @Test
+    fun desktopAnswersNamesWithFakeIpAndResolvesEachChannelItsOwnWay() {
+        val config = Json.parseToJsonElement(
+            ConfigBuilder.build(
+                proxies, "p1", listOf("discord.exe"), listOf("telegram.exe"), listOf("discord.exe", "telegram.exe"),
+                1081, 2080, "user", "pass",
+                routing = AppRouting.DesktopProcesses(listOf("ciadpi.exe"), SystemDns.Server("192.168.1.1"), byeDpiProbePort = 3080)
+            )
+        ).jsonObject
+
+        val dns = config.getValue("dns").jsonObject
+        val servers = dns.getValue("servers").jsonArray.map { it.jsonObject }.associateBy { it.getValue("tag").jsonPrimitive.content }
+        assertEquals("fakeip", servers.getValue("fakeip").getValue("type").jsonPrimitive.content)
+        assertEquals("192.168.1.1", servers.getValue("system").getValue("server").jsonPrimitive.content)
+        val dnsRules = dns.getValue("rules").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("system", "system", "fakeip"), dnsRules.map { it.getValue("server").jsonPrimitive.content })
+        assertEquals("1", dnsRules.last().getValue("rewrite_ttl").jsonPrimitive.content)
+        assertTrue(dnsRules.none { it.containsKey("process_name") })
+
+        val direct = config.getValue("outbounds").jsonArray.map { it.jsonObject }.single { it["tag"]?.jsonPrimitive?.content == "direct" }
+        assertEquals("system", direct.getValue("domain_resolver").jsonPrimitive.content)
+
+        val rules = config.getValue("route").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
+        val byeDpiResolve = rules.indexOfFirst {
+            it["action"]?.jsonPrimitive?.content == "resolve" && it["process_name"]?.jsonArray?.map { name -> name.jsonPrimitive.content } == listOf("discord.exe")
+        }
+        val byeDpiRoute = rules.indexOfFirst {
+            it["action"]?.jsonPrimitive?.content == "route" && it["outbound"]?.jsonPrimitive?.content == "byedpi" && it.containsKey("process_name")
+        }
+        assertTrue(byeDpiResolve in 0 until byeDpiRoute)
+        assertEquals("byedpi-dns", rules[byeDpiResolve].getValue("server").jsonPrimitive.content)
+
+        val probe = config.getValue("inbounds").jsonArray.map { it.jsonObject }.single { it["tag"]?.jsonPrimitive?.content == "byedpi-probe-in" }
+        assertEquals(3080, probe.getValue("listen_port").jsonPrimitive.content.toInt())
+        assertFalse(probe.containsKey("users"))
+        val probeRoute = rules.single { it["inbound"]?.jsonArray?.single()?.jsonPrimitive?.content == "byedpi-probe-in" && it["action"]?.jsonPrimitive?.content == "route" }
+        assertEquals("byedpi", probeRoute.getValue("outbound").jsonPrimitive.content)
+
+        val cache = config.getValue("experimental").jsonObject.getValue("cache_file").jsonObject
+        assertEquals("true", cache.getValue("store_fakeip").jsonPrimitive.content)
+    }
+
+    @Test
+    fun desktopWithoutAKnownSystemResolverFallsBackToTheDirectDnsSetting() {
+        val config = Json.parseToJsonElement(
+            ConfigBuilder.build(
+                proxies, "p1", emptyList(), listOf("telegram.exe"), listOf("telegram.exe"),
+                1081, 2080, "user", "pass",
+                routing = AppRouting.DesktopProcesses(emptyList(), SystemDns.Unknown)
+            )
+        ).jsonObject
+        val tags = config.getValue("dns").jsonObject.getValue("servers").jsonArray.map { it.jsonObject.getValue("tag").jsonPrimitive.content }
+        assertFalse("system" in tags)
+        val direct = config.getValue("outbounds").jsonArray.map { it.jsonObject }.single { it["tag"]?.jsonPrimitive?.content == "direct" }
+        assertEquals("local", direct.getValue("domain_resolver").jsonPrimitive.content)
+        assertFalse(config.getValue("inbounds").jsonArray.any { it.jsonObject["tag"]?.jsonPrimitive?.content == "byedpi-probe-in" })
     }
 
     @Test
@@ -216,7 +273,7 @@ class ConfigBuilderTest {
             )
         ).jsonObject
         val rules = config.getValue("route").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
-        val keys = rules.mapNotNull { rule ->
+        val keys = rules.filter { it["action"]?.jsonPrimitive?.content == "route" }.mapNotNull { rule ->
             when {
                 rule.containsKey("process_path") -> "path:" + rule.getValue("outbound").jsonPrimitive.content
                 rule.containsKey("process_name") -> "name:" + rule.getValue("outbound").jsonPrimitive.content
@@ -224,7 +281,7 @@ class ConfigBuilderTest {
             }
         }
         assertEquals(listOf("name:direct", "path:byedpi", "path:direct", "name:p1"), keys)
-        val pathDirect = rules.first { it.containsKey("process_path") && it.getValue("outbound").jsonPrimitive.content == "direct" }
+        val pathDirect = rules.first { it.containsKey("process_path") && it["outbound"]?.jsonPrimitive?.content == "direct" }
         assertEquals("C:\\venv\\python.exe", pathDirect.getValue("process_path").jsonArray.single().jsonPrimitive.content)
     }
 

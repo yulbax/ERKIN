@@ -28,6 +28,7 @@ class ServiceEngine(
     override val probeSocksPort: Int = freeLoopbackPort()
     override val probeUsername: String = randomToken()
     override val probePassword: String = randomToken()
+    private val byeDpiProbeSocksPort: Int = freeLoopbackPort()
 
     @Volatile private var client: ServiceClient? = null
     private var traffic: ScheduledExecutorService? = null
@@ -48,6 +49,8 @@ class ServiceEngine(
     override suspend fun measureVpnDelay(): Int? = withContext(Dispatchers.IO) {
         client?.runCatching { delay(ConfigBuilder.HEALTH_GROUP_TAG, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()
     }
+
+    override fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiProbeSocksPort
 
     override fun hasFingerprintError(): Boolean = fingerprintErrors.hasError()
 
@@ -98,7 +101,7 @@ class ServiceEngine(
         probeUser = probeUsername,
         probePass = probePassword,
         options = config.network,
-        routing = AppRouting.DesktopProcesses(directProcesses),
+        routing = AppRouting.DesktopProcesses(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort),
         directPaths = config.directPaths
     )
 
