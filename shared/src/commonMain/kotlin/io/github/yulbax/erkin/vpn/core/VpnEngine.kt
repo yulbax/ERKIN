@@ -13,6 +13,8 @@ interface VpnEngine {
 
     suspend fun measureVpnDelay(): Int?
 
+    fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiPort
+
     fun hasFingerprintError(): Boolean
 
     fun stop()

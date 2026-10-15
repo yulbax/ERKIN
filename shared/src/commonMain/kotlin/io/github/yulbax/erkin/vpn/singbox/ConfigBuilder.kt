@@ -22,9 +22,19 @@ sealed interface AppRouting {
         override val appRuleKey: String = "package_name"
     }
 
-    data class DesktopProcesses(val directProcesses: List<String>) : AppRouting {
+    data class DesktopProcesses(
+        val directProcesses: List<String>,
+        val systemDns: SystemDns = SystemDns.Local,
+        val byeDpiProbePort: Int? = null
+    ) : AppRouting {
         override val appRuleKey: String = "process_name"
     }
+}
+
+sealed interface SystemDns {
+    data object Local : SystemDns
+    data class Server(val address: String) : SystemDns
+    data object Unknown : SystemDns
 }
 
 object ConfigBuilder {
@@ -37,6 +47,17 @@ object ConfigBuilder {
     private const val LIBBOX_MIN_REPORTED_GROUP_SIZE = 2
     const val DESKTOP_INTERFACE_NAME = "ERKIN"
     private const val PROBE_INBOUND_TAG = "probe-in"
+    private const val BYEDPI_PROBE_INBOUND_TAG = "byedpi-probe-in"
+    private const val BYEDPI_DNS_TAG = "byedpi-dns"
+    private const val LOCAL_DNS_TAG = "local"
+    private const val SYSTEM_DNS_TAG = "system"
+    private const val FAKEIP_DNS_TAG = "fakeip"
+    private const val FAKEIP_INET4 = "198.18.0.0/15"
+    private const val FAKEIP_INET6 = "fc00::/18"
+    private const val FAKEIP_TTL = 1
+    private const val FAKEIP_CACHE_FILE = "fakeip.db"
+    private val SYSTEM_DNS_SUFFIXES = listOf("lan", "local", "localdomain", "home.arpa", "internal", "localhost")
+    private const val SINGLE_LABEL_DOMAIN = "^[^.]+$"
     private const val REMOTE_DNS_TAG = "remote"
     private const val IPV4_ONLY = "ipv4_only"
     private const val PROCESS_PATH_KEY = "process_path"
@@ -68,6 +89,12 @@ object ConfigBuilder {
         val sessionRequirements = active?.sessionRequirements.orEmpty()
         val dnsStrategy =
             if (EngineRequirement.IPV4_ONLY in sessionRequirements) IPV4_ONLY else options.ipv6Mode.dnsStrategy
+        val desktop = routing as? AppRouting.DesktopProcesses
+        val systemDnsTag = when (desktop?.systemDns) {
+            SystemDns.Local, is SystemDns.Server -> SYSTEM_DNS_TAG
+            SystemDns.Unknown, null -> LOCAL_DNS_TAG
+        }
+        val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { byeDpiPackages.isNotEmpty() }
 
         val config = buildJsonObject {
             putJsonObject("log") {
@@ -85,27 +112,69 @@ object ConfigBuilder {
                         if (active != null) put("detour", active.tag)
                     })
                     add(buildJsonObject {
-                        put("tag", "local")
+                        put("tag", LOCAL_DNS_TAG)
                         put("type", "udp")
                         put("server", options.dnsDirect)
                     })
                     if (byeDpiPackages.isNotEmpty()) {
                         add(buildJsonObject {
-                            put("tag", "byedpi-dns")
+                            put("tag", BYEDPI_DNS_TAG)
                             put("type", "tls")
                             put("server", options.dnsRemote)
                             put("detour", "byedpi")
                         })
                     }
+                    when (val systemDns = desktop?.systemDns) {
+                        SystemDns.Local -> add(buildJsonObject {
+                            put("tag", SYSTEM_DNS_TAG)
+                            put("type", "local")
+                        })
+                        is SystemDns.Server -> add(buildJsonObject {
+                            put("tag", SYSTEM_DNS_TAG)
+                            put("type", "udp")
+                            put("server", systemDns.address)
+                        })
+                        SystemDns.Unknown, null -> Unit
+                    }
+                    if (desktop != null) {
+                        add(buildJsonObject {
+                            put("tag", FAKEIP_DNS_TAG)
+                            put("type", "fakeip")
+                            put("inet4_range", FAKEIP_INET4)
+                            if (ipv6Enabled) put("inet6_range", FAKEIP_INET6)
+                        })
+                    }
                 }
-                if (byeDpiPackages.isNotEmpty()) {
+                if (desktop != null) {
+                    putJsonArray("rules") {
+                        add(buildJsonObject {
+                            putJsonArray("domain_suffix") { SYSTEM_DNS_SUFFIXES.forEach { add(it) } }
+                            put("action", "route")
+                            put("server", systemDnsTag)
+                        })
+                        add(buildJsonObject {
+                            put("domain_regex", SINGLE_LABEL_DOMAIN)
+                            put("action", "route")
+                            put("server", systemDnsTag)
+                        })
+                        add(buildJsonObject {
+                            putJsonArray("query_type") {
+                                add("A")
+                                add("AAAA")
+                            }
+                            put("action", "route")
+                            put("server", FAKEIP_DNS_TAG)
+                            put("rewrite_ttl", FAKEIP_TTL)
+                        })
+                    }
+                } else if (byeDpiPackages.isNotEmpty()) {
                     putJsonArray("rules") {
                         add(buildJsonObject {
                             putJsonArray(routing.appRuleKey) {
                                 byeDpiPackages.forEach { add(it) }
                             }
                             put("action", "route")
-                            put("server", "byedpi-dns")
+                            put("server", BYEDPI_DNS_TAG)
                         })
                     }
                 }
@@ -146,6 +215,14 @@ object ConfigBuilder {
                         })
                     }
                 })
+                if (byeDpiProbePort != null) {
+                    add(buildJsonObject {
+                        put("type", "socks")
+                        put("tag", BYEDPI_PROBE_INBOUND_TAG)
+                        put("listen", "127.0.0.1")
+                        put("listen_port", byeDpiProbePort)
+                    })
+                }
             }
 
             putJsonArray("outbounds") {
@@ -167,6 +244,7 @@ object ConfigBuilder {
                 add(buildJsonObject {
                     put("type", "direct")
                     put("tag", "direct")
+                    if (desktop != null) put("domain_resolver", systemDnsTag)
                 })
             }
 
@@ -182,10 +260,25 @@ object ConfigBuilder {
                         put("action", "hijack-dns")
                     })
                     if (EngineRequirement.RESOLVE_BEFORE_DIAL in sessionRequirements) {
+                        if (desktop == null) {
+                            add(buildJsonObject {
+                                put("action", "resolve")
+                                put("server", REMOTE_DNS_TAG)
+                                put("strategy", dnsStrategy)
+                            })
+                        } else {
+                            add(resolveRule("inbound", listOf(PROBE_INBOUND_TAG), REMOTE_DNS_TAG, dnsStrategy))
+                            appMatchers(vpnPackages, routing.appRuleKey).forEach { (key, apps) ->
+                                add(resolveRule(key, apps, REMOTE_DNS_TAG, dnsStrategy))
+                            }
+                        }
+                    }
+                    if (byeDpiProbePort != null) {
+                        add(resolveRule("inbound", listOf(BYEDPI_PROBE_INBOUND_TAG), BYEDPI_DNS_TAG, dnsStrategy))
                         add(buildJsonObject {
-                            put("action", "resolve")
-                            put("server", REMOTE_DNS_TAG)
-                            put("strategy", dnsStrategy)
+                            putJsonArray("inbound") { add(BYEDPI_PROBE_INBOUND_TAG) }
+                            put("action", "route")
+                            put("outbound", "byedpi")
                         })
                     }
                     add(buildJsonObject {
@@ -207,6 +300,11 @@ object ConfigBuilder {
                             put("outbound", "direct")
                         })
                     }
+                    if (desktop != null) {
+                        appMatchers(byeDpiPackages, routing.appRuleKey).forEach { (key, apps) ->
+                            add(resolveRule(key, apps, BYEDPI_DNS_TAG, dnsStrategy))
+                        }
+                    }
                     val appRules = listOf(
                         byeDpiPackages to "byedpi",
                         vpnPackages to proxyTarget,
@@ -224,10 +322,33 @@ object ConfigBuilder {
                 }
                 put("final", if (routing is AppRouting.AndroidPackages) proxyTarget else "direct")
                 put("auto_detect_interface", true)
-                put("default_domain_resolver", "local")
+                put("default_domain_resolver", LOCAL_DNS_TAG)
+            }
+
+            if (desktop != null) {
+                putJsonObject("experimental") {
+                    putJsonObject("cache_file") {
+                        put("enabled", true)
+                        put("path", FAKEIP_CACHE_FILE)
+                        put("store_fakeip", true)
+                    }
+                }
             }
         }
         return json.encodeToString(JsonObject.serializer(), config)
+    }
+
+    private fun appMatchers(apps: List<String>, appRuleKey: String): List<Pair<String, List<String>>> =
+        listOf(
+            PROCESS_PATH_KEY to apps.filter(::isExecutablePath),
+            appRuleKey to apps.filterNot(::isExecutablePath)
+        ).filter { it.second.isNotEmpty() }
+
+    private fun resolveRule(key: String, values: List<String>, server: String, strategy: String): JsonObject = buildJsonObject {
+        putJsonArray(key) { values.forEach { add(it) } }
+        put("action", "resolve")
+        put("server", server)
+        put("strategy", strategy)
     }
 
     fun buildLatencyTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions()): String {

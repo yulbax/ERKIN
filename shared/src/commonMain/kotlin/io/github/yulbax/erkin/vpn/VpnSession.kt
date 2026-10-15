@@ -53,6 +53,8 @@ class VpnSession(
     val configName: String get() = appliedConfig?.configName.orEmpty()
     private val isRunning: Boolean get() = phase == Phase.Running
 
+    private val byeDpiProbePort: Int get() = engine.byeDpiProbePort(byeDpiPort)
+
     suspend fun start(systemInitiated: Boolean) {
         if (phase != Phase.Idle) return
         phase = Phase.Starting
@@ -117,7 +119,7 @@ class VpnSession(
     fun checkByeDpi() {
         if (!isRunning || !byeDpi.isRunning) return
         if (byeDpiCheckJob?.isActive == true) return
-        val port = byeDpiPort
+        val port = byeDpiProbePort
         val checkGeneration = generation
         byeDpiCheckJob = scope.launch {
             stateRepository.updateStats { it.copy(byedpiChecking = true) }
@@ -195,7 +197,7 @@ class VpnSession(
         stateRepository.updateStats {
             it.copy(
                 configName = config.configName,
-                byeDpiPort = if (config.needsByeDpi) byeDpiPort else 0
+                byeDpiPort = if (config.needsByeDpi) byeDpiProbePort else 0
             )
         }
     }
@@ -205,7 +207,7 @@ class VpnSession(
         val run = ++byeDpiRun
         byeDpiStartedAt = TimeSource.Monotonic.markNow()
         byeDpi.start(byeDpiPort, byeDpiArgs) { code -> onByeDpiExit(run, code) }
-        stateRepository.updateStats { it.copy(byeDpiPort = byeDpiPort) }
+        stateRepository.updateStats { it.copy(byeDpiPort = byeDpiProbePort) }
     }
 
     private fun stopByeDpi() {
@@ -252,7 +254,7 @@ class VpnSession(
             params = HealthParams(
                 probe = ProbeParams(
                     engine = engine,
-                    byeDpiPort = byeDpiPort.takeIf { byeDpi.isRunning },
+                    byeDpiPort = byeDpiProbePort.takeIf { byeDpi.isRunning },
                     vpnActive = config.vpnActive,
                     isFingerprintError = { engine.hasFingerprintError() }
                 ),
