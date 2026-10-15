@@ -37,6 +37,7 @@ kotlin {
             implementation(libs.jetbrains.navigation.compose)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+            implementation(libs.markdown.renderer.m3)
         }
         getByName("desktopMain").dependencies {
             implementation(libs.kotlinx.coroutines.swing)

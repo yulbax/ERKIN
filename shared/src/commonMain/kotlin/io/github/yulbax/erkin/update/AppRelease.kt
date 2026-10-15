@@ -24,7 +24,12 @@ data class AppVersion(private val parts: List<Int>) : Comparable<AppVersion> {
 
 data class ReleaseAsset(val name: String, val url: String, val size: Long, val sha256: String?)
 
-data class AppRelease(val version: AppVersion, val pageUrl: String, val assets: List<ReleaseAsset>) {
+data class AppRelease(
+    val version: AppVersion,
+    val pageUrl: String,
+    val assets: List<ReleaseAsset>,
+    val notes: String = ""
+) {
     fun asset(suffix: String): ReleaseAsset? = assets.firstOrNull { it.name == "ERKIN-$version-$suffix" }
 }
 

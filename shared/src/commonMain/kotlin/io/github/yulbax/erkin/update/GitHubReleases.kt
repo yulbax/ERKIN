@@ -31,7 +31,8 @@ object GitHubReleases {
                     size = asset.size,
                     sha256 = asset.digest?.takeIf { it.startsWith(SHA256_PREFIX) }?.removePrefix(SHA256_PREFIX)
                 )
-            }
+            },
+            notes = release.body.orEmpty().trim()
         )
     }
 
@@ -55,6 +56,7 @@ object GitHubReleases {
         @SerialName("html_url") val page: String,
         val draft: Boolean = false,
         val prerelease: Boolean = false,
+        val body: String? = null,
         val assets: List<AssetJson> = emptyList()
     )
 
