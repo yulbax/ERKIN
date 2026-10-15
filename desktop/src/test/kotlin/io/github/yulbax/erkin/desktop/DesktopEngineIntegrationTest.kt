@@ -15,8 +15,8 @@ import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
-import io.github.yulbax.erkin.vpn.singbox.AppRouting
-import io.github.yulbax.erkin.vpn.singbox.ConfigBuilder
+import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
+import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
@@ -63,37 +63,35 @@ class DesktopEngineIntegrationTest {
 
     @Test
     fun windowsStyleConfigPassesServiceCheck() {
-        val config = ConfigBuilder.build(
-            proxies = listOf(EngineProxy("p1", """{"type":"vless","server":"a.example","server_port":443,"uuid":"b5e6f6c2-6f5e-4c57-9a1c-1a9a2e2c3d4e","tls":{"enabled":true,"server_name":"a.example"}}""")),
+        val config = MihomoConfigBuilder.build(
+            proxies = listOf(EngineProxy("p1", """{"type":"vless","server":"a.example","port":443,"udp":true,"uuid":"b5e6f6c2-6f5e-4c57-9a1c-1a9a2e2c3d4e","tls":true,"servername":"a.example"}""")),
             activeProxyTag = "p1",
             byeDpiPackages = listOf("Discord.exe"),
             vpnPackages = listOf("Telegram.exe"),
-            tunneledPackages = listOf("Discord.exe", "Telegram.exe"),
             byeDpiPort = 1081,
             probePort = 2080,
             probeUser = "user",
             probePass = "pass",
             options = NetworkOptions(),
-            routing = AppRouting.DesktopProcesses(listOf("ciadpi.exe"))
+            platform = MihomoPlatform.Desktop(listOf("ciadpi.exe"), byeDpiProbePort = 3080)
         )
-        val noServers = ConfigBuilder.build(
+        val noServers = MihomoConfigBuilder.build(
             proxies = emptyList(),
             activeProxyTag = "",
             byeDpiPackages = listOf("Discord.exe"),
             vpnPackages = emptyList(),
-            tunneledPackages = listOf("Discord.exe"),
             byeDpiPort = 1081,
             probePort = 2080,
             probeUser = "user",
             probePass = "pass",
             options = NetworkOptions(),
-            routing = AppRouting.DesktopProcesses(listOf("ciadpi.exe")),
+            platform = MihomoPlatform.Desktop(listOf("ciadpi.exe")),
             directPaths = listOf("C:\\venv\\python.exe")
         )
         ServiceClient.connect(startService()).use { client ->
             client.check(config)
             client.check(noServers)
-            val failure = runCatching { client.check("""{"outbounds": [{"type": "no-such-type"}]}""") }.exceptionOrNull()
+            val failure = runCatching { client.check("""{"proxies": [{"name": "x", "type": "no-such-type"}]}""") }.exceptionOrNull()
             assertNotNull("an invalid config must be rejected", failure)
         }
     }
@@ -106,14 +104,12 @@ class DesktopEngineIntegrationTest {
         val pass = randomToken()
         val config = """
             {
-              "log": {"level": "warn", "output": "box.log"},
-              "inbounds": [{"type": "socks", "tag": "probe-in", "listen": "127.0.0.1", "listen_port": $socksPort,
-                            "users": [{"username": "$user", "password": "$pass"}]}],
-              "outbounds": [
-                {"type": "direct", "tag": "p1"},
-                {"type": "selector", "tag": "health", "outbounds": ["p1", "p1"]}
-              ],
-              "route": {"final": "p1"}
+              "mode": "rule",
+              "log-level": "warning",
+              "listeners": [{"name": "probe-in", "type": "socks", "listen": "127.0.0.1", "port": $socksPort,
+                             "users": [{"username": "$user", "password": "$pass"}]}],
+              "proxies": [{"name": "p1", "type": "direct"}],
+              "rules": ["MATCH,p1"]
             }
         """.trimIndent()
 
@@ -122,7 +118,7 @@ class DesktopEngineIntegrationTest {
         assertEquals(File(workDir, "svc").absoluteFile, service.hello?.workDir)
         assertTrue(service.hello?.core.orEmpty().isNotEmpty())
 
-        val firstStart = runCatching { client.start(config) }.exceptionOrNull()
+        val firstStart = runCatching { client.start(config, "", "") }.exceptionOrNull()
         assumeTrue(
             "this kernel cannot report socket owners (inet_diag/tcp_diag/udp_diag not loaded)",
             firstStart?.message?.contains(VpnState.PROCESS_LOOKUP_UNAVAILABLE) != true
@@ -131,28 +127,28 @@ class DesktopEngineIntegrationTest {
         client.stop()
 
         repeat(2) {
-            client.start(config)
-            assertNotNull(runCatching { client.start(config) }.exceptionOrNull())
+            client.start(config, "", "")
+            assertNotNull(runCatching { client.start(config, "", "") }.exceptionOrNull())
             assertLatencyTestWorks(client)
             assertNotNull(client.delay("p1", ProbeUrls.VPN, 10_000))
             val snapshot: HealthSnapshot = runBlocking {
                 withTimeout(30.seconds) {
                     val engine = FakeEngine(socksPort, user, pass) {
-                        client.delay(ConfigBuilder.HEALTH_GROUP_TAG, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS)
+                        client.delay("p1", ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS)
                     }
                     SocksHealthProbe(ProbeUrls.BYEDPI)
-                        .observe(ProbeParams(engine, byeDpiPort = null, vpnActive = true) { false })
+                        .observe(ProbeParams(engine, byeDpiPort = null, vpnActive = true))
                         .first()
                 }
             }
-            assertTrue("health urltest through the health group failed", snapshot.vpnUp)
+            assertTrue("health urltest of the active server failed", snapshot.vpnUp)
             assertEquals("country must resolve through the authenticated probe SOCKS", 2, snapshot.vpnCountry.length)
             assertTrue("traffic must be counted", checkNotNull(client.traffic()).down > 0)
             client.stop()
             assertNull(client.traffic())
         }
 
-        client.start(config)
+        client.start(config, "", "")
         client.close()
         ServiceClient.connect(socket).use { other ->
             val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
@@ -199,13 +195,8 @@ class DesktopEngineIntegrationTest {
     }
 
     private fun assertLatencyTestWorks(client: ServiceClient) {
-        val config = ConfigBuilder.buildLatencyTest(
-            listOf(
-                EngineProxy("p1", """{"type":"direct"}"""),
-                EngineProxy("p2", """{"type":"socks","server":"127.0.0.1","server_port":${freeLoopbackPort()}}""")
-            )
-        )
-        val delays = ServerLatencyProbe.parse(client.urlTest(config, ProbeUrls.VPN, 10_000))
+        val proxies = """[{"name":"p1","type":"direct"},{"name":"p2","type":"socks5","server":"127.0.0.1","port":${freeLoopbackPort()}}]"""
+        val delays = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000))
         assertTrue("a working server must be measured: $delays", delays[1L] is ProxyDelay.Measured)
         assertEquals(ProxyDelay.Failed, delays[2L])
     }
@@ -228,7 +219,6 @@ class DesktopEngineIntegrationTest {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
         override suspend fun measureVpnDelay(): Int? = measure()
-        override fun hasFingerprintError(): Boolean = false
         override fun stop() = Unit
     }
 

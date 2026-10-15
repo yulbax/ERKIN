@@ -18,8 +18,7 @@ import kotlinx.coroutines.flow.shareIn
 data class ProbeParams(
     val engine: VpnEngine,
     val byeDpiPort: Int?,
-    val vpnActive: Boolean,
-    val isFingerprintError: () -> Boolean
+    val vpnActive: Boolean
 )
 
 data class HealthParams(
@@ -34,13 +33,12 @@ data class HealthSnapshot(
     val vpnDelayMs: Int?,
     val vpnCountry: String,
     val byedpiActive: Boolean,
-    val byedpiUp: Boolean,
-    val fpError: Boolean
+    val byedpiUp: Boolean
 ) {
     val vpnUp get() = vpnDelayMs != null
     val anyUp get() = vpnUp || byedpiUp
     val allActiveUp get() = (!vpnActive || vpnUp) && (!byedpiActive || byedpiUp)
-    val vpnHealthy get() = (!vpnActive || vpnUp) && !fpError
+    val vpnHealthy get() = !vpnActive || vpnUp
 }
 
 interface HealthProbe {
@@ -94,7 +92,6 @@ class HealthMonitor(
                 vpnUp = s.vpnUp,
                 vpnLatencyMs = s.vpnDelayMs ?: 0,
                 vpnCountry = s.vpnCountry,
-                vpnCycling = s.vpnActive && !s.vpnUp && s.fpError,
                 byedpiActive = s.byedpiActive,
                 byedpiUp = s.byedpiUp
             )
@@ -124,10 +121,6 @@ class HealthMonitor(
     }
 
     private suspend fun recover(failures: Int, s: HealthSnapshot, params: HealthParams) {
-        if (s.fpError) {
-            params.onRecoveryReload()
-            return
-        }
         if (failures % REFRESH_SUBSCRIPTION_AFTER_FAILURES == 0) params.onRefreshSubscription()
         if (failures % RELOAD_EVERY_N_FAILURES == 0) params.onRecoveryReload()
     }

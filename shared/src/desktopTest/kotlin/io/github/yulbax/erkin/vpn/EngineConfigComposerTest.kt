@@ -54,7 +54,7 @@ class EngineConfigComposerTest {
     private fun inputs(apps: List<App>): SessionInputs {
         val parsed = requireNotNull(LinkParser.parse(VLESS))
         val profile = ProfileEntity(
-            id = 1, name = parsed.name, type = parsed.protocol.wire, link = VLESS, outboundJson = parsed.outboundJson()
+            id = 1, name = parsed.name, type = parsed.protocol.wire, link = VLESS, outboundJson = parsed.proxyJson()
         )
         return SessionInputs(
             selected = profile,

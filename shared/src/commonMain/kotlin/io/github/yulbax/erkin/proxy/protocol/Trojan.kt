@@ -2,7 +2,6 @@ package io.github.yulbax.erkin.proxy.protocol
 
 import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.ProtocolHandler
-import io.github.yulbax.erkin.proxy.ServerAddress
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -19,18 +18,14 @@ object Trojan : ProtocolHandler {
         val host = q["host"] ?: ""
         val sni = q["sni"] ?: host.ifEmpty { uri.host }
 
-        val outbound = buildJsonObject {
-            put("type", "trojan")
-            put("server", uri.host)
-            put("server_port", uri.port)
+        val descriptor = buildJsonObject {
+            proxy("trojan", uri.host, uri.port)
             put("password", uri.userInfo ?: "")
-            transport(net, q["path"]?.let { decodeComponent(it) } ?: "/", host, q["serviceName"])?.let { put("transport", it) }
-            put("tls", tlsBlock(sni, null, null, null, q["fp"] ?: "", q["allowInsecure"] == "1", q["alpn"] ?: ""))
+            tls(TlsStyle.SNI, sni, q["fp"] ?: "", q["allowInsecure"] == "1", q["alpn"] ?: "")
+            transport(net, q["path"]?.let { decodeComponent(it) } ?: "/", host, q["serviceName"], XhttpParams(q["mode"], q["extra"]))
         }
-        return ParsedLink(uri.fragmentName(uri.host), outbound)
+        return ParsedLink(uri.fragmentName(uri.host), descriptor)
     }
 
-    override fun server(descriptor: JsonObject): ServerAddress? = outboundServer(descriptor)
-
-    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(descriptor)
+    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(enabled = true)
 }

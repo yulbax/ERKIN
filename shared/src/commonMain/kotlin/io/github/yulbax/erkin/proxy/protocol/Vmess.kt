@@ -2,7 +2,6 @@ package io.github.yulbax.erkin.proxy.protocol
 
 import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.ProtocolHandler
-import io.github.yulbax.erkin.proxy.ServerAddress
 import io.github.yulbax.erkin.proxy.descriptorJson
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
@@ -24,20 +23,16 @@ object Vmess : ProtocolHandler {
         val path = str("path").ifEmpty { "/" }
         val sni = str("sni").ifEmpty { host }.ifEmpty { str("add") }
 
-        val outbound = buildJsonObject {
-            put("type", "vmess")
-            put("server", str("add"))
-            put("server_port", str("port").toIntOrNull() ?: 443)
+        val descriptor = buildJsonObject {
+            proxy("vmess", str("add"), str("port").toIntOrNull() ?: 443)
             put("uuid", str("id"))
-            put("security", str("scy").ifEmpty { "auto" })
-            put("alter_id", str("aid").toIntOrNull() ?: 0)
-            transport(net, path, host, str("path"))?.let { put("transport", it) }
-            if (tls) put("tls", tlsBlock(sni, null, null, null, fp = "", insecure = false, alpn = str("alpn")))
+            put("alterId", str("aid").toIntOrNull() ?: 0)
+            put("cipher", str("scy").ifEmpty { "auto" })
+            if (tls) tls(TlsStyle.V2RAY, sni, fp = "", insecure = false, alpn = str("alpn"))
+            transport(net, path, host, str("path"))
         }
-        return ParsedLink(name, outbound)
+        return ParsedLink(name, descriptor)
     }
 
-    override fun server(descriptor: JsonObject): ServerAddress? = outboundServer(descriptor)
-
-    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(descriptor)
+    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(descriptor.flag("tls"))
 }

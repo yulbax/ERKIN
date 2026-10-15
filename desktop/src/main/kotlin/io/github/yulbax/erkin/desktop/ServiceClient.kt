@@ -51,14 +51,18 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
 
     fun check(config: String) = call("check", timeoutMs = CHECK_TIMEOUT_MS) { put("config", config) }.throwIfFailed()
 
-    fun start(config: String) = call("start", timeoutMs = START_TIMEOUT_MS) { put("config", config) }.throwIfFailed()
+    fun start(config: String, resolvedProxy: String, resolver: String) = call("start", timeoutMs = START_TIMEOUT_MS) {
+        put("config", config)
+        put("resolved", resolvedProxy)
+        put("resolver", resolver)
+    }.throwIfFailed()
 
     fun stop() = call("stop", timeoutMs = STOP_TIMEOUT_MS).throwIfFailed()
 
     fun clearLog() = call("clearLog").throwIfFailed()
 
-    fun urlTest(config: String, url: String, timeoutMs: Int): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
-        put("config", config)
+    fun urlTest(proxies: String, url: String, timeoutMs: Int): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
+        put("proxies", proxies)
         put("url", url)
         put("timeout", timeoutMs)
     }.let { reply ->
@@ -66,8 +70,8 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
         checkNotNull(reply["delays"]) { "ERKIN service returned no delays" }.toString()
     }
 
-    fun delay(outbound: String, url: String, timeoutMs: Int): Int? = call("delay", timeoutMs = timeoutMs + 2_000L) {
-        put("outbound", outbound)
+    fun delay(proxy: String, url: String, timeoutMs: Int): Int? = call("delay", timeoutMs = timeoutMs + 2_000L) {
+        put("proxy", proxy)
         put("url", url)
         put("timeout", timeoutMs)
     }.let { reply -> reply["delay"]?.jsonPrimitive?.intOrNull?.takeIf { reply.ok && it > 0 } }

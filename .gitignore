@@ -14,12 +14,11 @@
 # Backup files
 *.bak
 
-# Native binding — built from sing-box by CI (scripts/build-libbox.sh), not committed
+# Native core — built from mihomo by CI (scripts/build-mihomo.sh, scripts/build-service.sh), not committed
 /app/libs/*.aar
 /desktop/libs/
 
 # CI / native-build scratch
-/.libbox-build/
 /.go/
 /.gocache/
 /.android-sdk/
@@ -40,3 +39,4 @@ gradle/gradle-daemon-jvm.properties
 # Personal coding-preferences file, carried across projects
 rules.md
 /changelog/
+/app/libs/*-sources.jar

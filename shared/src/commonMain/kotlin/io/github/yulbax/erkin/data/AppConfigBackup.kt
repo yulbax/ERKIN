@@ -97,6 +97,6 @@ fun BackupProfile.toEntity(parsed: ParsedProfile) = ProfileEntity(
     name = name,
     type = parsed.protocol.wire,
     link = link,
-    outboundJson = parsed.outboundJson(),
+    outboundJson = parsed.proxyJson(),
     subscriptionUrl = subscriptionUrl
 )

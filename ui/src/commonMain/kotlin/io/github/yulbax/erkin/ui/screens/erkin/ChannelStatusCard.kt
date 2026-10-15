@@ -55,7 +55,6 @@ internal fun ChannelStatusCard(
     country: String = "",
     shape: Shape,
     modifier: Modifier = Modifier,
-    cycling: Boolean = false,
     reachable: Int = 0,
     total: Int = 0,
     checking: Boolean = false,
@@ -79,7 +78,6 @@ internal fun ChannelStatusCard(
         up && type == ConnectionType.BYEDPI -> stringResource(Res.string.channel_status_online_plain)
         up && latencyMs > 0 -> stringResource(Res.string.channel_status_online, latencyMs)
         up -> stringResource(Res.string.channel_status_ready)
-        cycling -> stringResource(Res.string.channel_status_generating_fp)
         else -> stringResource(Res.string.channel_status_connecting)
     }
     val statusColor = MaterialTheme.colorScheme.onSurfaceVariant

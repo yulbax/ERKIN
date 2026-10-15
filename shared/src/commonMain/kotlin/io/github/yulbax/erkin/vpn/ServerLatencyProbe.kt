@@ -1,14 +1,15 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.core.EngineProxy
+import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
-import io.github.yulbax.erkin.vpn.singbox.ConfigBuilder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 fun interface ProxyLatencyTester {
-    suspend fun measure(config: String, url: String, timeoutMs: Int): String
+    suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int): String
 }
 
 class ServerLatencyProbe(
@@ -19,8 +20,7 @@ class ServerLatencyProbe(
         val inputs = store.load()
         if (inputs.profiles.isEmpty()) return emptyMap()
         val proxies = with(EngineConfigComposer) { inputs.profiles.map { it.engineProxy() } }
-        val config = ConfigBuilder.buildLatencyTest(proxies, inputs.settings.networkOptions())
-        return parse(tester.measure(config, ProbeUrls.VPN, TIMEOUT_MS))
+        return parse(tester.measure(proxies, inputs.settings.networkOptions(), ProbeUrls.VPN, TIMEOUT_MS))
     }
 
     companion object {

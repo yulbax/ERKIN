@@ -4,7 +4,6 @@ import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import java.io.ByteArrayOutputStream
 import java.util.zip.Deflater
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -25,32 +24,31 @@ class AmneziaVpnLinkTest {
         assertEquals(ProxyProtocol.AMNEZIAWG, parsed.protocol)
         assertEquals("Home server", parsed.name)
 
-        val endpoint = parsed.outbound
-        assertEquals("awg", endpoint.getValue("type").jsonPrimitive.content)
-        assertEquals(listOf("10.8.1.10/32"), endpoint.getValue("address").jsonArray.map { it.jsonPrimitive.content })
-
-        val peer = endpoint.getValue("peers").jsonArray.single().jsonObject
-        assertEquals("129.101.124.211", peer.getValue("address").jsonPrimitive.content)
-        assertEquals(42874, peer.getValue("port").jsonPrimitive.content.toInt())
-        assertEquals(25, peer.getValue("persistent_keepalive_interval").jsonPrimitive.content.toInt())
-        assertEquals(1280, endpoint.getValue("mtu").jsonPrimitive.content.toInt())
+        val proxy = parsed.proxy
+        assertEquals("wireguard", proxy.getValue("type").jsonPrimitive.content)
+        assertEquals("10.8.1.10/32", proxy.getValue("ip").jsonPrimitive.content)
+        assertEquals("129.101.124.211", proxy.getValue("server").jsonPrimitive.content)
+        assertEquals(42874, proxy.getValue("port").jsonPrimitive.content.toInt())
+        assertEquals(25, proxy.getValue("persistent-keepalive").jsonPrimitive.content.toInt())
+        assertEquals(1280, proxy.getValue("mtu").jsonPrimitive.content.toInt())
     }
 
     @Test
-    fun mapsAmneziaWg3ParametersToForkFieldNames() {
-        val endpoint = requireNotNull(LinkParser.parse(link(AMNEZIA_JSON))).outbound
+    fun mapsAmneziaWg3ParametersToMihomoOptions() {
+        val options = requireNotNull(LinkParser.parse(link(AMNEZIA_JSON))).proxy.getValue("amnezia-wg-option").jsonObject
 
-        assertEquals("aHeaderKey=", endpoint.getValue("header_protection_key").jsonPrimitive.content)
-        assertEquals("100-120", endpoint.getValue("rekey_after_time").jsonPrimitive.content)
-        assertEquals("3-7", endpoint.getValue("rekey_timeout").jsonPrimitive.content)
-        assertEquals("150-180", endpoint.getValue("reject_after_time").jsonPrimitive.content)
-        assertEquals("5-15", endpoint.getValue("keepalive_timeout").jsonPrimitive.content)
-        assertEquals("15-20", endpoint.getValue("max_handshake_attempts").jsonPrimitive.content)
-        assertEquals(true, endpoint.getValue("random_trailers").jsonPrimitive.content.toBoolean())
-        assertEquals(true, endpoint.getValue("disable_cookies").jsonPrimitive.content.toBoolean())
-        assertEquals("<b 0xf3>", endpoint.getValue("i1").jsonPrimitive.content)
-        assertFalse(endpoint.getValue("jc").jsonPrimitive.isString)
-        assertTrue(endpoint.keys.none { it == "DisableCookies" || it == "RandomTrailers" })
+        assertEquals(3, options.getValue("version").jsonPrimitive.content.toInt())
+        assertEquals("aHeaderKey=", options.getValue("header-protection-key").jsonPrimitive.content)
+        assertEquals("100-120", options.getValue("rekey-after-time").jsonPrimitive.content)
+        assertEquals("3-7", options.getValue("rekey-timeout").jsonPrimitive.content)
+        assertEquals("150-180", options.getValue("reject-after-time").jsonPrimitive.content)
+        assertEquals("5-15", options.getValue("keepalive-timeout").jsonPrimitive.content)
+        assertEquals("15-20", options.getValue("max-handshake-attempts").jsonPrimitive.content)
+        assertEquals(true, options.getValue("random-trailers").jsonPrimitive.content.toBoolean())
+        assertEquals(true, options.getValue("disable-cookies").jsonPrimitive.content.toBoolean())
+        assertEquals("<b 0xf3>", options.getValue("i1").jsonPrimitive.content)
+        assertFalse(options.getValue("jc").jsonPrimitive.isString)
+        assertTrue(options.keys.none { it == "DisableCookies" || it == "RandomTrailers" })
     }
 
     @Test

@@ -21,7 +21,7 @@
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">版本</string>
     <string name="about_app">ERKIN</string>
-    <string name="about_singbox">sing-box（核心）</string>
+    <string name="about_core">mihomo（核心）</string>
     <string name="about_byedpi">byedpi (ciadpi)</string>
     <string name="about_legal">法律信息</string>
     <string name="about_license_row">许可证</string>
@@ -85,7 +85,6 @@
     <string name="channel_status_online_plain">在线</string>
     <string name="channel_status_ready">本地通道已就绪</string>
     <string name="channel_status_connecting">连接中…</string>
-    <string name="channel_status_generating_fp">正在生成指纹…</string>
     <string name="channel_status_no_apps">未选择应用</string>
     <string name="byedpi_test_title">ByeDPI 绕过测试</string>
     <string name="byedpi_test_summary">%1$d 个可达 · 已测 %2$d / %3$d</string>

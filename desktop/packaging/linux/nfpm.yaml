@@ -6,7 +6,7 @@ release: 1
 section: net
 priority: optional
 maintainer: yulbax <yulbax@users.noreply.github.com>
-description: Per-app split VPN with ByeDPI, built on sing-box.
+description: Per-app split VPN with ByeDPI, built on mihomo.
 vendor: yulbax
 homepage: https://github.com/yulbax/ERKIN
 license: GPL-3.0-only

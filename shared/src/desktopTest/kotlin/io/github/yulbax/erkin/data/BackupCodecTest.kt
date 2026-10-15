@@ -64,7 +64,7 @@ class BackupCodecTest {
     }
 
     @Test
-    fun rejectsAmbiguousSelectionAndMismatchedProfileSchema() {
+    fun rejectsAmbiguousSelectionAndMismatchedProfileType() {
         val profile = requireNotNull(validBackup().profiles).single()
         assertFalse(
             BackupCodec.isValid(
@@ -74,18 +74,6 @@ class BackupCodecTest {
         assertFalse(
             BackupCodec.isValid(
                 validBackup().copy(profiles = listOf(profile.copy(type = "trojan")))
-            )
-        )
-        assertFalse(
-            BackupCodec.isValid(
-                validBackup().copy(
-                    profiles = listOf(
-                        profile.copy(
-                            outboundJson =
-                                """{"type":"vless","server":"other.example","server_port":443}"""
-                        )
-                    )
-                )
             )
         )
     }
@@ -122,7 +110,7 @@ class BackupCodecTest {
                 name = "Example",
                 type = "vless",
                 link = VALID_LINK,
-                outboundJson = """{"type":"vless","server":"example.com","server_port":443}""",
+                outboundJson = """{"type":"vless","server":"example.com","port":443}""",
                 selected = true
             )
         )

@@ -20,11 +20,11 @@ class LinkParserTest {
         requireNotNull(parsed)
         assertEquals("Primary", parsed.name)
         assertEquals(ProxyProtocol.VLESS, parsed.protocol)
-        assertEquals("example.com", parsed.outbound["server"]?.jsonPrimitive?.content)
-        assertEquals("user-id", parsed.outbound["uuid"]?.jsonPrimitive?.content)
+        assertEquals("example.com", parsed.proxy["server"]?.jsonPrimitive?.content)
+        assertEquals("user-id", parsed.proxy["uuid"]?.jsonPrimitive?.content)
         assertEquals(
             "edge.example.com",
-            parsed.outbound["tls"]?.jsonObject?.get("server_name")?.jsonPrimitive?.content
+            parsed.proxy["servername"]?.jsonPrimitive?.content
         )
     }
 

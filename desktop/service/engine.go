@@ -1,33 +1,15 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"errors"
+	"net"
 	"net/netip"
 	"sync"
 	"time"
 
-	"github.com/sagernet/sing-box"
-	"github.com/sagernet/sing-box/adapter"
-	"github.com/sagernet/sing-box/common/urltest"
-	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-box/experimental/clashapi"
-	"github.com/sagernet/sing-box/experimental/deprecated"
-	"github.com/sagernet/sing-box/include"
-	"github.com/sagernet/sing-box/log"
-	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing/common/control"
-	E "github.com/sagernet/sing/common/exceptions"
-	"github.com/sagernet/sing/common/json"
-	"github.com/sagernet/sing/service"
+	"github.com/yulbax/erkin/mihomocore"
 )
-
-type instance struct {
-	box      *box.Box
-	ctx      context.Context
-	cancel   context.CancelFunc
-	adapters []tunDevice
-}
 
 type tunDevice struct {
 	name      string
@@ -36,190 +18,105 @@ type tunDevice struct {
 
 type engine struct {
 	mutex   sync.Mutex
-	current *instance
-}
-
-func baseContext() context.Context {
-	return include.Context(service.ContextWith(context.Background(), deprecated.NewStderrManager(log.StdLogger())))
-}
-
-func parse(ctx context.Context, content string) (option.Options, error) {
-	options, err := json.UnmarshalExtendedContext[option.Options](ctx, []byte(content))
-	if err != nil {
-		return options, err
-	}
-	if options.Experimental == nil {
-		options.Experimental = &option.ExperimentalOptions{}
-	}
-	if options.Experimental.ClashAPI == nil {
-		options.Experimental.ClashAPI = &option.ClashAPIOptions{}
-	}
-	return options, nil
-}
-
-func create(content string, prepare func(option.Options) error) (*instance, error) {
-	ctx, cancel := context.WithCancel(baseContext())
-	options, err := parse(ctx, content)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-	if prepare != nil {
-		if err = prepare(options); err != nil {
-			cancel()
-			return nil, err
-		}
-	}
-	created, err := box.New(box.Options{Context: ctx, Options: options})
-	if err != nil {
-		cancel()
-		return nil, err
-	}
-	return &instance{box: created, ctx: ctx, cancel: cancel, adapters: tunAdapters(options)}, nil
-}
-
-func (i *instance) close() error {
-	i.cancel()
-	done := make(chan error, 1)
-	go func() { done <- i.box.Close() }()
-	select {
-	case err := <-done:
-		for _, tun := range i.adapters {
-			_ = releaseAdapter(tun.name, tun.addresses)
-		}
-		return err
-	case <-time.After(C.FatalStopTimeout):
-		return errors.New("sing-box did not close in time")
-	}
-}
-
-func tunAdapters(options option.Options) []tunDevice {
-	var adapters []tunDevice
-	for _, inbound := range options.Inbounds {
-		tun, isTun := inbound.Options.(*option.TunInboundOptions)
-		if !isTun || tun.InterfaceName == "" {
-			continue
-		}
-		adapters = append(adapters, tunDevice{name: tun.InterfaceName, addresses: tun.Address})
-	}
-	return adapters
-}
-
-func releaseAdapters(options option.Options) error {
-	for _, tun := range tunAdapters(options) {
-		if err := releaseAdapter(tun.name, tun.addresses); err != nil {
-			return E.Cause(err, "release adapter ", tun.name)
-		}
-	}
-	return nil
+	running bool
+	tun     tunDevice
 }
 
 func check(config string) error {
-	checked, err := create(config, nil)
-	if err != nil {
-		return err
-	}
-	checked.cancel()
-	return checked.box.Close()
+	return mihomocore.Validate(config, true)
 }
 
-func (e *engine) start(config string) error {
+func (e *engine) start(config string, resolvedProxy string, resolver string) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	if e.current != nil {
-		return errors.New("sing-box is already running")
+	if e.running {
+		return errors.New("mihomo is already running")
 	}
 	if err := checkProcessLookup(); err != nil {
 		return err
 	}
-	started, err := create(config, releaseAdapters)
-	if err != nil {
+	tun := tunDeviceOf(config)
+	if tun.name != "" {
+		if err := releaseAdapter(tun.name, tun.addresses); err != nil {
+			return err
+		}
+	}
+	if err := mihomocore.Apply(config, true, resolvedProxy, resolver); err != nil {
+		mihomocore.Shutdown()
 		return err
 	}
-	if err = started.box.Start(); err != nil {
-		_ = started.close()
-		return err
-	}
-	e.current = started
+	e.running = true
+	e.tun = tun
 	return nil
 }
 
 func (e *engine) stop() error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	if e.current == nil {
+	if !e.running {
 		return nil
 	}
-	stopping := e.current
-	e.current = nil
-	return stopping.close()
+	e.running = false
+	mihomocore.Shutdown()
+	if e.tun.name != "" {
+		return releaseAdapter(e.tun.name, e.tun.addresses)
+	}
+	return nil
 }
 
-func (e *engine) running() *instance {
+func (e *engine) isRunning() bool {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	return e.current
+	return e.running
 }
 
-func (e *engine) delay(outboundTag string, link string, timeout time.Duration) int {
-	active := e.running()
-	if active == nil {
+func (e *engine) delay(proxy string, link string, timeout time.Duration) int {
+	if !e.isRunning() {
 		return -1
 	}
-	outbound, loaded := active.box.Outbound().Outbound(outboundTag)
-	if !loaded {
-		return -1
-	}
-	ctx, cancel := context.WithTimeout(active.ctx, timeout)
-	defer cancel()
-	delay, err := urltest.URLTest(ctx, link, outbound)
-	if err != nil || delay == 0 {
-		return -1
-	}
-	return int(delay)
+	return int(mihomocore.URLTest(proxy, link, int32(timeout/time.Millisecond)))
 }
 
 func (e *engine) traffic() (up int64, down int64, ok bool) {
-	active := e.running()
-	if active == nil {
+	if !e.isRunning() {
 		return 0, 0, false
 	}
-	server, isClash := service.FromContext[adapter.ClashServer](active.ctx).(*clashapi.Server)
-	if !isClash {
-		return 0, 0, false
-	}
-	up, down = server.TrafficManager().Total()
-	return up, down, true
+	total := mihomocore.TotalTraffic()
+	return total.Up, total.Down, true
 }
 
 func (e *engine) defaultInterfaceIndex() (int, error) {
-	defaultInterface, err := e.defaultInterface()
+	if !e.isRunning() {
+		return 0, errors.New("mihomo is not running")
+	}
+	name := mihomocore.DefaultInterface()
+	if name == "" {
+		return 0, errors.New("no default interface")
+	}
+	defaultInterface, err := net.InterfaceByName(name)
 	if err != nil {
 		return 0, err
 	}
 	return defaultInterface.Index, nil
 }
 
-func (e *engine) defaultInterfaceName() string {
-	defaultInterface, err := e.defaultInterface()
-	if err != nil {
-		return ""
+func tunDeviceOf(config string) tunDevice {
+	var parsed struct {
+		Tun struct {
+			Enable       bool     `json:"enable"`
+			Device       string   `json:"device"`
+			Inet4Address []string `json:"inet4-address"`
+			Inet6Address []string `json:"inet6-address"`
+		} `json:"tun"`
 	}
-	return defaultInterface.Name
-}
-
-func (e *engine) defaultInterface() (*control.Interface, error) {
-	active := e.running()
-	if active == nil {
-		return nil, errors.New("sing-box is not running")
+	if err := json.Unmarshal([]byte(config), &parsed); err != nil || !parsed.Tun.Enable {
+		return tunDevice{}
 	}
-	monitor := service.FromContext[adapter.NetworkManager](active.ctx).InterfaceMonitor()
-	if monitor == nil {
-		return nil, errors.New("no interface monitor")
+	device := tunDevice{name: parsed.Tun.Device}
+	for _, address := range append(parsed.Tun.Inet4Address, parsed.Tun.Inet6Address...) {
+		if prefix, err := netip.ParsePrefix(address); err == nil {
+			device.addresses = append(device.addresses, prefix)
+		}
 	}
-	defaultInterface := monitor.DefaultInterface()
-	if defaultInterface == nil {
-		return nil, errors.New("no default interface")
-	}
-	return defaultInterface, nil
+	return device
 }

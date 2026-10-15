@@ -3,12 +3,14 @@ package io.github.yulbax.erkin.proxy
 import io.github.yulbax.erkin.data.AppConfigBackup
 import io.github.yulbax.erkin.data.BackupCodec
 import io.github.yulbax.erkin.data.BackupProfile
-import io.github.yulbax.erkin.vpn.core.EnginePlacement
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
-import io.github.yulbax.erkin.vpn.singbox.ConfigBuilder
+import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
+import io.github.yulbax.erkin.vpn.mihomo.MihomoProxy
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -43,51 +45,43 @@ class ProtocolContractTest {
             val parsed = requireNotNull(LinkParser.parse(sample)) { "$protocol sample did not parse" }
             assertEquals(protocol, parsed.protocol)
             assertTrue("$protocol name", parsed.name.isNotBlank())
-            val server = requireNotNull(protocol.handler.server(parsed.outbound)) { "$protocol server" }
+            val server = requireNotNull(protocol.handler.server(parsed.proxy)) { "$protocol server" }
             assertTrue("$protocol host", server.host.isNotBlank())
             assertTrue("$protocol port ${server.port}", server.port in 1..65535)
         }
     }
 
     @Test
-    fun theEngineConfigPlacesEveryProtocolWhereItsCodecSays() {
+    fun everyProtocolBecomesAMihomoProxy() {
         val proxies = parsedSamples().map { (protocol, parsed) ->
-            protocol.engineProxy(protocol.wire, parsed.outboundJson())
+            protocol.engineProxy(protocol.wire, parsed.proxyJson())
         }
-        val config = build(proxies, activeTag = proxies.first().tag)
-        val outbounds = config.tags("outbounds")
-        val endpoints = config.tags("endpoints")
-
-        parsedSamples().forEach { (protocol, _) ->
-            val expected = if (protocol.handler.placement == EnginePlacement.ENDPOINT) endpoints else outbounds
-            assertTrue("$protocol placed as ${protocol.handler.placement}", protocol.wire in expected)
+        proxies.forEach { proxy ->
+            val converted = MihomoProxy.of(proxy, null)
+            assertTrue("${proxy.tag} converts", converted != null)
+            assertEquals(proxy.tag, converted?.getValue("name")?.jsonPrimitive?.content)
+            assertEquals(proxy.tag, build(proxies, activeTag = proxy.tag).names("proxies").first())
         }
-        val latencyTest = Json.parseToJsonElement(ConfigBuilder.buildLatencyTest(proxies)).jsonObject
-        parsedSamples().forEach { (protocol, _) ->
-            val section = if (protocol.handler.placement == EnginePlacement.ENDPOINT) "endpoints" else "outbounds"
-            assertTrue("$protocol in the latency test $section", protocol.wire in latencyTest.tags(section))
-        }
+        val tested = Json.parseToJsonElement(MihomoConfigBuilder.proxiesForTest(proxies)) as JsonArray
+        assertEquals(proxies.map { it.tag }, tested.map { it.jsonObject.getValue("name").jsonPrimitive.content })
     }
 
     @Test
     fun sessionRequirementsOfTheActiveProxyShapeTheEngineConfig() {
         val proxies = parsedSamples().map { (protocol, parsed) ->
-            protocol.engineProxy(protocol.wire, parsed.outboundJson())
+            protocol.engineProxy(protocol.wire, parsed.proxyJson())
         }
         proxies.forEach { active ->
             val config = build(proxies, activeTag = active.tag, NetworkOptions(ipv6Mode = Ipv6Mode.ENABLE))
-            val rules = config.getValue("route").jsonObject.getValue("rules").jsonArray.map { it.jsonObject }
-            val resolves = rules.any { it["action"]?.jsonPrimitive?.content == "resolve" }
-            val strategy = config.getValue("dns").jsonObject.getValue("strategy").jsonPrimitive.content
-            assertEquals("${active.tag} resolve rule", EngineRequirement.RESOLVE_BEFORE_DIAL in active.requirements, resolves)
-            assertEquals("${active.tag} ipv4_only", EngineRequirement.IPV4_ONLY in active.requirements, strategy == "ipv4_only")
+            val ipv6 = config.getValue("dns").jsonObject.getValue("ipv6").jsonPrimitive.boolean
+            assertEquals("${active.tag} ipv4 only", EngineRequirement.IPV4_ONLY in active.requirements, !ipv6)
         }
     }
 
     @Test
     fun eachParsedSampleSurvivesABackupRoundTrip() {
         val profiles = parsedSamples().map { (protocol, parsed) ->
-            BackupProfile(name = parsed.name, type = protocol.wire, link = parsed.link, outboundJson = parsed.outboundJson())
+            BackupProfile(name = parsed.name, type = protocol.wire, link = parsed.link, outboundJson = parsed.proxyJson())
         }
         val backup = AppConfigBackup(version = AppConfigBackup.CURRENT_VERSION, profiles = profiles)
 
@@ -102,12 +96,11 @@ class ProtocolContractTest {
 
     private fun build(proxies: List<EngineProxy>, activeTag: String, options: NetworkOptions = NetworkOptions()): JsonObject =
         Json.parseToJsonElement(
-            ConfigBuilder.build(
+            MihomoConfigBuilder.build(
                 proxies = proxies,
                 activeProxyTag = activeTag,
                 byeDpiPackages = emptyList(),
                 vpnPackages = listOf("org.telegram"),
-                tunneledPackages = listOf("org.telegram"),
                 byeDpiPort = 1081,
                 probePort = 2080,
                 probeUser = "user",
@@ -116,8 +109,8 @@ class ProtocolContractTest {
             )
         ).jsonObject
 
-    private fun JsonObject.tags(section: String): List<String> =
-        this[section]?.jsonArray?.mapNotNull { it.jsonObject["tag"]?.jsonPrimitive?.content }.orEmpty()
+    private fun JsonObject.names(section: String): List<String> =
+        this[section]?.jsonArray?.mapNotNull { it.jsonObject["name"]?.jsonPrimitive?.content }.orEmpty()
 
     private companion object {
         val VMESS = "vmess://" + Base64.getEncoder().encodeToString(

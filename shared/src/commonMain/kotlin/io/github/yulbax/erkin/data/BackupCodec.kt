@@ -9,9 +9,6 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 object BackupCodec {
     private const val MAX_PACKAGE_NAME_LENGTH = 255
@@ -97,15 +94,8 @@ object BackupCodec {
 
         val parsed = LinkParser.parse(profile.link) ?: return false
         if (parsed.protocol.wire != profile.type) return false
-        val outbound = runCatching { json.parseToJsonElement(profile.outboundJson) as? JsonObject }
-            .getOrNull() ?: return false
-        val type = runCatching { outbound["type"]?.jsonPrimitive?.contentOrNull }.getOrNull()
-        val handler = parsed.protocol.handler
-        val server = handler.server(outbound) ?: return false
-        return type == parsed.outbound["type"]?.jsonPrimitive?.contentOrNull &&
-            server == handler.server(parsed.outbound) &&
-            server.host.isNotBlank() &&
-            server.port in 1..65535
+        val server = parsed.protocol.handler.server(parsed.proxy) ?: return false
+        return server.host.isNotBlank() && server.port in 1..65535
     }
 
     private fun isValidSubscriptionUrl(value: String): Boolean {

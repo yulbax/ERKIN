@@ -3,14 +3,12 @@ package io.github.yulbax.erkin.desktop
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
-import io.github.yulbax.erkin.vpn.core.FingerprintErrorWatch
 import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
-import io.github.yulbax.erkin.vpn.singbox.AppRouting
-import io.github.yulbax.erkin.vpn.singbox.ConfigBuilder
-import java.io.File
+import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
+import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -31,12 +29,12 @@ class ServiceEngine(
     private val byeDpiProbeSocksPort: Int = freeLoopbackPort()
 
     @Volatile private var client: ServiceClient? = null
+    @Volatile private var activeProxyTag: String = ""
     private var traffic: ScheduledExecutorService? = null
-    private val fingerprintErrors = FingerprintErrorWatch(::boxLog)
 
     @Synchronized
     override fun start(config: EngineConfig) {
-        check(client == null) { "sing-box is already running" }
+        check(client == null) { "mihomo is already running" }
         launch(config)
     }
 
@@ -46,13 +44,14 @@ class ServiceEngine(
         launch(config)
     }
 
-    override suspend fun measureVpnDelay(): Int? = withContext(Dispatchers.IO) {
-        client?.runCatching { delay(ConfigBuilder.HEALTH_GROUP_TAG, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()
+    override suspend fun measureVpnDelay(): Int? {
+        val tag = activeProxyTag.takeIf { it.isNotEmpty() } ?: return null
+        return withContext(Dispatchers.IO) {
+            client?.runCatching { delay(tag, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()
+        }
     }
 
     override fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiProbeSocksPort
-
-    override fun hasFingerprintError(): Boolean = fingerprintErrors.hasError()
 
     @Synchronized
     override fun stop() {
@@ -61,18 +60,16 @@ class ServiceEngine(
 
     private fun launch(config: EngineConfig) {
         val connected = service.connect()
-        fingerprintErrors.markCoreStart()
-        connected.start(buildConfig(config))
+        activeProxyTag = config.activeProxyTag
+        connected.start(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.dnsRemote)
         client = connected
-        log.i(TAG, "sing-box started by the ERKIN service ${service.hello?.version.orEmpty()}")
+        log.i(TAG, "mihomo started by the ERKIN service ${service.hello?.version.orEmpty()}")
         traffic = sampleTraffic(connected)
     }
 
-    private fun boxLog(): File? = service.hello?.workDir?.let { File(it, "box.log") }
-
     private fun sampleTraffic(connected: ServiceClient): ScheduledExecutorService {
         var last: ServiceClient.Traffic? = null
-        return Executors.newSingleThreadScheduledExecutor { Thread(it, "sing-box-traffic").apply { isDaemon = true } }
+        return Executors.newSingleThreadScheduledExecutor { Thread(it, "mihomo-traffic").apply { isDaemon = true } }
             .apply {
                 scheduleAtFixedRate({
                     val now = runCatching { connected.traffic() }.getOrNull() ?: return@scheduleAtFixedRate
@@ -87,21 +84,20 @@ class ServiceEngine(
         client = null
         traffic?.shutdownNow()
         traffic = null
-        if (stopping.isOpen) runCatching { stopping.stop() }.onFailure { log.w(TAG, "sing-box stop failed", it) }
+        if (stopping.isOpen) runCatching { stopping.stop() }.onFailure { log.w(TAG, "mihomo stop failed", it) }
     }
 
-    private fun buildConfig(config: EngineConfig): String = ConfigBuilder.build(
+    private fun buildConfig(config: EngineConfig): String = MihomoConfigBuilder.build(
         proxies = config.proxies,
         activeProxyTag = config.activeProxyTag,
         byeDpiPackages = config.byeDpiPackages,
         vpnPackages = config.vpnPackages,
-        tunneledPackages = config.tunneledPackages,
         byeDpiPort = config.byeDpiSocksPort,
         probePort = probeSocksPort,
         probeUser = probeUsername,
         probePass = probePassword,
         options = config.network,
-        routing = AppRouting.DesktopProcesses(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort),
+        platform = MihomoPlatform.Desktop(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort),
         directPaths = config.directPaths
     )
 

@@ -46,11 +46,11 @@ Get the latest APKs, the Windows installer and the Linux packages from
 
 ERKIN combines two engines behind a single tunnel interface:
 
-- **sing-box** owns the tunnel and dispatches traffic per app — *VPN* apps to the
-  upstream server, *ByeDPI* apps to the local bypass proxy, *Direct* apps straight out.
-  ERKIN uses [amnezia-box](https://github.com/amnezia-vpn/amnezia-box), the Amnezia fork
-  of [sing-box](https://github.com/SagerNet/sing-box) that adds AmneziaWG. The same core
-  runs everywhere: as a Go Mobile library inside the app on Android, and as the
+- **[mihomo](https://github.com/MetaCubeX/mihomo)** owns the tunnel and dispatches traffic
+  per app — *VPN* apps to the upstream server, *ByeDPI* apps to the local bypass proxy,
+  *Direct* apps straight out. ERKIN uses the official mihomo release behind a thin wrapper
+  (`core/mihomo`). The same core runs everywhere: as a Go Mobile library inside the app on
+  Android (wired to the VPN service the way ClashMetaForAndroid does it), and inside the
   `erkin-service` background service (a Windows service or a systemd unit) on the desktop.
   The desktop app talks to it over a local socket; if the app goes away, the service tears
   the tunnel down.
@@ -61,19 +61,20 @@ ERKIN combines two engines behind a single tunnel interface:
 
 ERKIN is fully open-source — no Google services, no proprietary dependencies.
 
-The sing-box core is built from source by `scripts/build-libbox.sh` rather than committed
-as a binary. It needs Go 1.25.
+The mihomo core is built from source by `scripts/build-mihomo.sh` (Android) and
+`scripts/build-service.sh` (desktop service) rather than committed as a binary. It needs
+Go 1.25.
 
 ### Android
 
-Install the SagerNet `gomobile` tools and point `ANDROID_NDK_HOME` at NDK 28:
+Install the `gomobile` tools and point `ANDROID_NDK_HOME` at NDK 28:
 
 ```bash
-go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
-go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20250808145247-395d808d53cd
+go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250808145247-395d808d53cd
 export PATH="$(go env GOPATH)/bin:$PATH"
 export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.0.13004108"
-CORE_TARGETS=android bash scripts/build-libbox.sh
+bash scripts/build-mihomo.sh
 ./gradlew assembleRelease
 ```
 
@@ -86,7 +87,7 @@ The tunnel runs in a small background service, `erkin-service.exe`, built from t
 (no C toolchain needed):
 
 ```bash
-CORE_TARGETS=windows bash scripts/build-libbox.sh   # → desktop/libs/windows/erkin-service.exe
+TARGETS=windows bash scripts/build-service.sh   # → desktop/libs/windows/erkin-service.exe
 ```
 
 The installer itself must be built on Windows with JDK 21:
@@ -112,8 +113,7 @@ and removes the service again.
 
 ## Built with
 
-- [amnezia-box](https://github.com/amnezia-vpn/amnezia-box) /
-  [sing-box](https://github.com/SagerNet/sing-box) — the VPN core
+- [mihomo](https://github.com/MetaCubeX/mihomo) — the VPN core
 - [ByeDPI](https://github.com/hufrea/byedpi) — the DPI-bypass engine
 - Kotlin Multiplatform, Compose Multiplatform, Room, Koin, JNA,
   [ComposeNativeTray](https://github.com/kdroidfilter/ComposeNativeTray)

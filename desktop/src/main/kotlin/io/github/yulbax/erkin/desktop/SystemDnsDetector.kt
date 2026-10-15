@@ -1,6 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
-import io.github.yulbax.erkin.vpn.singbox.SystemDns
+import io.github.yulbax.erkin.vpn.mihomo.SystemDns
 import java.io.File
 import java.net.InetAddress
 

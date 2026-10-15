@@ -14,7 +14,6 @@ internal data class WgConfig(
     val privateKey: String,
     val addresses: List<String>,
     val mtu: Int?,
-    val listenPort: Int?,
     val peers: List<WgPeer>,
     val interfaceValues: Map<String, String>
 ) {
@@ -44,7 +43,6 @@ internal object WgIni {
             privateKey = interfaceSection["privatekey"] ?: error("missing PrivateKey"),
             addresses = interfaceSection["address"]?.splitList()?.map(::withPrefix) ?: error("missing Address"),
             mtu = interfaceSection["mtu"]?.toIntOrNull() ?: fallbackMtu,
-            listenPort = interfaceSection["listenport"]?.toIntOrNull(),
             peers = peerSections.map(::peer),
             interfaceValues = interfaceSection
         )

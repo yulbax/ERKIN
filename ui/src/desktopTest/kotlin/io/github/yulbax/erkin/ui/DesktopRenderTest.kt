@@ -98,7 +98,7 @@ class DesktopRenderTest {
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
                     single { ConfigBackupRepository(get(), get()) }
-                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _ -> "{}" } }
+                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _ -> "{}" } }
                     single { VpnStateRepository() }
                     single { VpnCommandBus() }
                     single<VpnLauncher> { VpnLauncher { } }
