@@ -34,6 +34,7 @@ object MihomoConfigBuilder {
 
     const val BYEDPI_PROXY = "byedpi"
     const val DESKTOP_INTERFACE_NAME = "ERKIN"
+    private const val TUN_STACK = "gvisor"
     private const val DIRECT = "DIRECT"
     private const val REJECT = "REJECT"
     private const val PROBE_LISTENER = "probe-in"
@@ -87,7 +88,7 @@ object MihomoConfigBuilder {
             if (desktop != null) {
                 putJsonObject("tun") {
                     put("enable", true)
-                    put("stack", options.tunStack.wire)
+                    put("stack", TUN_STACK)
                     put("device", DESKTOP_INTERFACE_NAME)
                     put("auto-route", true)
                     put("strict-route", true)

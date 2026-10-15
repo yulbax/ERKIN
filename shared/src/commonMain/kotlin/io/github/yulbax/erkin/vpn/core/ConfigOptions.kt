@@ -29,14 +29,3 @@ enum class TlsFingerprint(val wire: String) {
             value?.let { v -> entries.firstOrNull { it.wire == v } }
     }
 }
-
-enum class TunStack(val wire: String) {
-    GVISOR("gvisor"),
-    SYSTEM("system"),
-    MIXED("mixed");
-
-    companion object {
-        fun fromWire(value: String?): TunStack =
-            entries.firstOrNull { it.wire == value } ?: GVISOR
-    }
-}

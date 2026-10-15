@@ -24,7 +24,6 @@ data class AppConfigBackup(
 data class BackupSettings(
     val showSystemApps: Boolean = SETTINGS_DEFAULTS.showSystemApps,
     val byeDpiArgs: String = SETTINGS_DEFAULTS.byeDpiArgs,
-    val tunStack: String = SETTINGS_DEFAULTS.tunStack,
     val mtu: Int = SETTINGS_DEFAULTS.mtu,
     val ipv6Mode: String = SETTINGS_DEFAULTS.ipv6Mode,
     val dnsRemote: String = SETTINGS_DEFAULTS.dnsRemote,
@@ -53,7 +52,6 @@ data class BackupProfile(
 fun SettingsEntity.toBackupSettings() = BackupSettings(
     showSystemApps = showSystemApps,
     byeDpiArgs = byeDpiArgs,
-    tunStack = tunStack,
     mtu = mtu,
     ipv6Mode = ipv6Mode,
     dnsRemote = dnsRemote,
@@ -70,7 +68,6 @@ fun SettingsEntity.toBackupSettings() = BackupSettings(
 fun BackupSettings.toEntity() = SettingsEntity(
     showSystemApps = showSystemApps,
     byeDpiArgs = byeDpiArgs,
-    tunStack = tunStack,
     mtu = mtu,
     ipv6Mode = ipv6Mode,
     dnsRemote = dnsRemote,

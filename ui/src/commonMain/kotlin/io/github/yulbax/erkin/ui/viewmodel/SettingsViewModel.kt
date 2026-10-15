@@ -14,7 +14,6 @@ import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
-import io.github.yulbax.erkin.vpn.core.TunStack
 import java.io.InputStream
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharingStarted
@@ -39,7 +38,6 @@ class SettingsViewModel(
     fun setAutoConnect(value: Boolean) = update { it.copy(autoConnect = value) }
     fun setNewAppsConnectionType(value: ConnectionType) = update { it.copy(newAppsConnectionType = value.wire) }
 
-    fun setTunStack(value: TunStack) = updateNetwork { it.copy(tunStack = value) }
     fun setMtu(value: Int) = updateNetwork { it.copy(mtu = value.coerceIn(NetworkOptions.MTU_RANGE)) }
     fun setIpv6Mode(value: Ipv6Mode) = updateNetwork { it.copy(ipv6Mode = value) }
     fun setDnsRemote(value: String) = updateNetwork { it.copy(dnsRemote = value.trim()) }

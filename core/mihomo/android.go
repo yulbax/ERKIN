@@ -72,7 +72,7 @@ func Setup(homeDir string, logPath string, timezone string) {
 	}
 }
 
-func Start(content string, tunFd int32, mtu int32, stack string, gateway string, dnsHijack string, resolvedProxy string, resolverAddress string, platform Platform) error {
+func Start(content string, tunFd int32, mtu int32, gateway string, dnsHijack string, resolvedProxy string, resolverAddress string, platform Platform) error {
 	access.Lock()
 	defer access.Unlock()
 	stopLocked()
@@ -83,7 +83,7 @@ func Start(content string, tunFd int32, mtu int32, stack string, gateway string,
 	if err != nil {
 		return err
 	}
-	options, err := tunOptions(fd, uint32(mtu), stack, gateway, dnsHijack)
+	options, err := tunOptions(fd, uint32(mtu), gateway, dnsHijack)
 	if err != nil {
 		syscall.Close(fd)
 		return err
@@ -165,11 +165,7 @@ func (s *session) close() {
 	}
 }
 
-func tunOptions(fd int, mtu uint32, stack string, gateway string, dnsHijack string) (LC.Tun, error) {
-	tunStack, ok := C.StackTypeMapping[strings.ToLower(stack)]
-	if !ok {
-		tunStack = C.TunSystem
-	}
+func tunOptions(fd int, mtu uint32, gateway string, dnsHijack string) (LC.Tun, error) {
 	var inet4, inet6 []netip.Prefix
 	for _, item := range strings.Split(gateway, ",") {
 		item = strings.TrimSpace(item)
@@ -196,7 +192,7 @@ func tunOptions(fd int, mtu uint32, stack string, gateway string, dnsHijack stri
 	return LC.Tun{
 		Enable:              true,
 		Device:              sing_tun.InterfaceName,
-		Stack:               tunStack,
+		Stack:               C.TunGvisor,
 		DNSHijack:           hijack,
 		AutoRoute:           false,
 		AutoDetectInterface: false,

@@ -4,7 +4,6 @@ import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
-import io.github.yulbax.erkin.vpn.core.TunStack
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
@@ -75,7 +74,6 @@ object BackupCodec {
     private fun isValidSettingsBackup(settings: BackupSettings): Boolean =
         settings.mtu in NetworkOptions.MTU_RANGE &&
             settings.byeDpiArgs.length <= MAX_BYEDPI_ARGS_LENGTH &&
-            TunStack.entries.any { it.wire == settings.tunStack } &&
             Ipv6Mode.entries.any { it.wire == settings.ipv6Mode } &&
             isValidDns(settings.dnsRemote) &&
             isValidDns(settings.dnsDirect) &&

@@ -96,7 +96,6 @@ class MihomoEngine(
             buildConfig(config),
             fd,
             config.network.mtu,
-            config.network.tunStack.wire,
             gateway,
             DNS_HIJACK,
             MihomoConfigBuilder.BYEDPI_PROXY,
