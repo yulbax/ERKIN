@@ -21,6 +21,7 @@ class UpdateTest {
         val release = GitHubReleases.parse(
             """
             {"tag_name":"v1.0.1","html_url":"https://github.com/yulbax/ERKIN/releases/tag/v1.0.1","draft":false,"prerelease":false,
+             "body":"## ERKIN 1.0.1\r\n- Fixes\r\n",
              "assets":[
                {"name":"ERKIN-1.0.1-android-arm64-v8a.apk","browser_download_url":"https://example.com/a.apk","size":42,"digest":"sha256:abc"},
                {"name":"ERKIN-1.0.1-windows-x86_64.msi","browser_download_url":"https://example.com/w.msi","size":7}
@@ -28,6 +29,7 @@ class UpdateTest {
             """.trimIndent()
         )!!
         assertEquals("1.0.1", release.version.toString())
+        assertEquals("## ERKIN 1.0.1\r\n- Fixes", release.notes)
         assertEquals("abc", release.asset("android-arm64-v8a.apk")!!.sha256)
         assertNull(release.asset("windows-x86_64.msi")!!.sha256)
         assertNull(release.asset("android-x86_64.apk"))

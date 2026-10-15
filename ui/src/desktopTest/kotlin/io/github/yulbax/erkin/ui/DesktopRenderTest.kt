@@ -147,7 +147,8 @@ class DesktopRenderTest {
         val release = AppRelease(
             version = AppVersion.parse("1.4.0")!!,
             pageUrl = "https://github.com/yulbax/ERKIN/releases/tag/v1.4.0",
-            assets = listOf(ReleaseAsset("ERKIN-1.4.0-windows-x86_64.msi", "https://example.com", 1, null))
+            assets = listOf(ReleaseAsset("ERKIN-1.4.0-windows-x86_64.msi", "https://example.com", 1, null)),
+            notes = "## ERKIN 1.4.0\n\n### Improvements\n- Faster **server test**\n- Smaller download"
         )
         render("update", width = 420, height = 600) {
             UpdatePrompt(UpdateViewModel(UpdateChecker(FakeVersionInfo) { release }, UpdateDownloader(), NoUpdatePlatform))

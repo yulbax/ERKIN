@@ -22,6 +22,7 @@ koin-plugin = "1.2.1"
 composeMultiplatform = "1.12.0"
 composeMaterial3Multiplatform = "1.12.0-alpha03"
 composeIconsMultiplatform = "1.7.3"
+markdownRenderer = "0.45.0"
 jetbrainsLifecycle = "2.11.0"
 jetbrainsNavigation = "2.9.2"
 kotlinxSerializationJson = "1.11.0"
@@ -50,6 +51,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koinAndroidxCompose" }
 koin-compose = { module = "io.insert-koin:koin-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
+markdown-renderer-m3 = { module = "com.mikepenz:multiplatform-markdown-renderer-m3", version.ref = "markdownRenderer" }
 jetbrains-compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMaterial3Multiplatform" }
 jetbrains-compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "composeIconsMultiplatform" }
 jetbrains-compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
