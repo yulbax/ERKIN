@@ -24,11 +24,11 @@ class MihomoConfigBuilderTest {
     )
 
     @Test
-    fun androidRoutesByeDpiAppsByPackageAndEverythingElseToTheServer() {
-        val config = build(platform = MihomoPlatform.Android)
+    fun androidRoutesOnlyKnownAppsAndRejectsEverythingElseInTheTun() {
+        val config = build(platform = MihomoPlatform.Android, vpn = listOf("org.vpn"))
         assertFalse(config.containsKey("tun"))
         assertEquals(
-            listOf("IN-NAME,probe-in,p1", "PROCESS-NAME,org.dpi,byedpi", "MATCH,p1"),
+            listOf("IN-NAME,probe-in,p1", "PROCESS-NAME,org.dpi,byedpi", "PROCESS-NAME,org.vpn,p1", "MATCH,REJECT"),
             config.rules()
         )
         assertEquals(listOf("p1", "byedpi"), config.getValue("proxies").jsonArray.map { it.jsonObject.getValue("name").jsonPrimitive.content })
@@ -36,11 +36,11 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
-    fun androidWithoutServersSendsUnmatchedTrafficToByeDpi() {
+    fun androidWithoutServersStillRejectsUnmatchedTraffic() {
         val config = Json.parseToJsonElement(
             MihomoConfigBuilder.build(emptyList(), "", listOf("org.dpi"), emptyList(), 1081, 2080, "u", "p")
         ).jsonObject
-        assertEquals(listOf("IN-NAME,probe-in,DIRECT", "PROCESS-NAME,org.dpi,byedpi", "MATCH,byedpi"), config.rules())
+        assertEquals(listOf("IN-NAME,probe-in,DIRECT", "PROCESS-NAME,org.dpi,byedpi", "MATCH,REJECT"), config.rules())
         assertEquals("tls://1.1.1.1", config.getValue("dns").jsonObject.getValue("nameserver").jsonArray.single().jsonPrimitive.content)
     }
 
