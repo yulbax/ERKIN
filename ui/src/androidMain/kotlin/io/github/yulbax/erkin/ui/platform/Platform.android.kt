@@ -29,6 +29,7 @@ import androidx.core.os.LocaleListCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.font.FontFamily
 
 @Composable
 actual fun rememberShowMessage(): (String) -> Unit {
@@ -172,6 +173,9 @@ actual val scrollbarAlwaysVisible: Boolean = false
 actual val drawerSwipeToOpen: Boolean = true
 
 actual val supportsAppIcons: Boolean = true
+
+@Composable
+actual fun flagFontFamily(): FontFamily? = null
 
 actual val platformTextStyle: PlatformTextStyle? = null
 

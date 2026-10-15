@@ -1,6 +1,12 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
@@ -37,6 +44,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.lerp
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.selected
@@ -48,12 +57,15 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.ui.theme.StatusAmber
 import io.github.yulbax.erkin.ui.theme.StatusGreen
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import kotlin.math.PI
+import kotlin.math.sin
 
 @Composable
 internal fun ServerRow(
     profile: ProfileEntity,
     isSelected: Boolean,
     delay: ProxyDelay? = null,
+    testing: Boolean = false,
     isBest: Boolean = false,
     onSelect: () -> Unit,
     onEdit: () -> Unit,
@@ -125,7 +137,14 @@ internal fun ServerRow(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (delay != null) {
+                    if (testing) {
+                        Text(
+                            " · ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        WaveDots(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    } else if (delay != null) {
                         Text(
                             " · ",
                             style = MaterialTheme.typography.bodySmall,
@@ -210,6 +229,40 @@ internal fun ServerRow(
 }
 
 private val PING_RED = Color(0xFFE53935)
+
+@Composable
+private fun WaveDots(color: Color, modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "pingWave")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(WAVE_PERIOD_MS, easing = LinearEasing)),
+        label = "pingWavePhase"
+    )
+    val lift = with(LocalDensity.current) { WAVE_LIFT.toPx() }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier.height(16.dp)
+    ) {
+        repeat(WAVE_DOTS) { index ->
+            Box(
+                modifier = Modifier
+                    .graphicsLayer {
+                        translationY = -lift * sin(2 * PI.toFloat() * (phase - index * WAVE_DOT_SHIFT)).coerceAtLeast(0f)
+                    }
+                    .size(4.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+        }
+    }
+}
+
+private const val WAVE_DOTS = 3
+private const val WAVE_PERIOD_MS = 1_000
+private const val WAVE_DOT_SHIFT = 0.15f
+private val WAVE_LIFT = 4.dp
 
 private fun pingColor(delay: ProxyDelay): Color = when (delay) {
     ProxyDelay.Failed -> PING_RED

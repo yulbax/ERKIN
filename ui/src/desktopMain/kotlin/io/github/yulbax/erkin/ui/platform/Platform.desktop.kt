@@ -40,6 +40,10 @@ import androidx.compose.ui.text.FontSmoothing
 import androidx.compose.ui.text.PlatformParagraphStyle
 import androidx.compose.ui.text.PlatformTextStyle
 import java.awt.RenderingHints
+import androidx.compose.ui.text.font.FontFamily
+import io.github.yulbax.erkin.ui.res.Res
+import io.github.yulbax.erkin.ui.res.noto_flags
+import org.jetbrains.compose.resources.Font
 
 @Composable
 actual fun rememberShowMessage(): (String) -> Unit = LocalMessages.current
@@ -164,6 +168,9 @@ actual val scrollbarAlwaysVisible: Boolean = true
 actual val drawerSwipeToOpen: Boolean = false
 
 actual val supportsAppIcons: Boolean = System.getProperty("os.name").startsWith("Windows")
+
+@Composable
+actual fun flagFontFamily(): FontFamily? = FontFamily(Font(Res.font.noto_flags))
 
 @OptIn(ExperimentalTextApi::class)
 actual val platformTextStyle: PlatformTextStyle? by lazy {

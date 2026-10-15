@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +20,9 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
+import io.github.yulbax.erkin.ui.platform.PickedFile
+import io.github.yulbax.erkin.ui.platform.rememberFilePicker
+import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 
 @Composable
 internal fun EditServerDialog(
@@ -67,14 +71,24 @@ internal fun EditServerDialog(
 @Composable
 internal fun AddServerDialog(
     onDismiss: () -> Unit,
+    onReadFile: (PickedFile, (String?) -> Unit) -> Unit,
     onAdd: (String) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
+    val showMessage = rememberShowMessage()
+    val invalidFileMessage = stringResource(Res.string.import_invalid_file)
+    val pickFile = rememberFilePicker(listOf("text/plain", "*/*")) { file ->
+        onReadFile(file) { content ->
+            if (content == null) showMessage(invalidFileMessage) else text = content.trim()
+        }
+    }
 
     AppDialog(
         title = stringResource(Res.string.add_server),
         onDismiss = onDismiss,
         buttons = {
+            TextButton(onClick = pickFile) { Text(stringResource(Res.string.from_file)) }
+            Spacer(Modifier.weight(1f))
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
             TextButton(
                 onClick = { if (text.isNotBlank()) onAdd(text) },

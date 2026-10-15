@@ -19,12 +19,17 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import io.github.yulbax.erkin.ui.platform.flagFontFamily
 import io.github.yulbax.erkin.ui.res.*
 
 @Composable
 fun License() {
     val gpl by produceState("") { value = readFile("files/gpl_3_0.txt") }
     val ofl by produceState("") { value = readFile("files/google_sans_ofl.txt") }
+    val bundlesFlagFont = flagFontFamily() != null
+    val flagsOfl by produceState("", bundlesFlagFont) {
+        if (bundlesFlagFont) value = readFile("files/noto_emoji_ofl.txt")
+    }
 
     Column(
         modifier = Modifier
@@ -49,6 +54,14 @@ fun License() {
             notice = stringResource(Res.string.license_font_notice),
             text = ofl
         )
+
+        if (bundlesFlagFont) {
+            LicenseSection(
+                title = stringResource(Res.string.license_flags_title),
+                notice = stringResource(Res.string.license_flags_notice),
+                text = flagsOfl
+            )
+        }
     }
 }
 

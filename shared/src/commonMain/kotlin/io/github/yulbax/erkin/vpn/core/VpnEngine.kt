@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.vpn.core
 
+const val VPN_DELAY_TIMEOUT_MS = 6_000
+
 interface VpnEngine {
     val probeSocksPort: Int
     val probeUsername: String
@@ -9,9 +11,7 @@ interface VpnEngine {
 
     fun reloadRouting(config: EngineConfig)
 
-    fun selectProxy(tag: String): Boolean
-
-    fun testProxies()
+    suspend fun measureVpnDelay(): Int?
 
     fun hasFingerprintError(): Boolean
 
@@ -20,7 +20,6 @@ interface VpnEngine {
 
 interface EngineListener {
     fun onThroughput(uplinkBytesPerSec: Long, downlinkBytesPerSec: Long)
-    fun onProxyDelays(delays: Map<String, ProxyDelay>)
     fun onStopRequested()
 }
 

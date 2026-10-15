@@ -11,28 +11,29 @@ import (
 	"time"
 
 	C "github.com/sagernet/sing-box/constant"
+	"github.com/sagernet/sing-box/testbox"
 )
 
 type request struct {
 	ID       int64  `json:"id"`
 	Op       string `json:"op"`
 	Config   string `json:"config,omitempty"`
-	Group    string `json:"group,omitempty"`
 	Outbound string `json:"outbound,omitempty"`
 	URL      string `json:"url,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
 }
 
 type response struct {
-	ID      int64  `json:"id"`
-	Error   string `json:"error,omitempty"`
-	OK      bool   `json:"ok,omitempty"`
-	Version string `json:"version,omitempty"`
-	Core    string `json:"core,omitempty"`
-	WorkDir string `json:"workDir,omitempty"`
-	Delay   int    `json:"delay,omitempty"`
-	Up      int64  `json:"up,omitempty"`
-	Down    int64  `json:"down,omitempty"`
+	ID      int64           `json:"id"`
+	Error   string          `json:"error,omitempty"`
+	OK      bool            `json:"ok,omitempty"`
+	Version string          `json:"version,omitempty"`
+	Core    string          `json:"core,omitempty"`
+	WorkDir string          `json:"workDir,omitempty"`
+	Delay   int             `json:"delay,omitempty"`
+	Delays  json.RawMessage `json:"delays,omitempty"`
+	Up      int64           `json:"up,omitempty"`
+	Down    int64           `json:"down,omitempty"`
 }
 
 const maxMessageSize = 16 << 20
@@ -164,11 +165,16 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 			err = nil
 		}
 		return fail(err)
-	case "select":
-		result.OK = s.engine.selectOutbound(message.Group, message.Outbound)
 	case "delay":
 		result.Delay = s.engine.delay(message.Outbound, message.URL, time.Duration(message.Timeout)*time.Millisecond)
 		result.OK = result.Delay > 0
+	case "urltest":
+		delays, err := testbox.URLTest(message.Config, message.URL, int32(message.Timeout), s.engine.defaultInterfaceName())
+		if err != nil {
+			return fail(err)
+		}
+		result.Delays = json.RawMessage(delays)
+		result.OK = true
 	case "traffic":
 		result.Up, result.Down, result.OK = s.engine.traffic()
 	default:

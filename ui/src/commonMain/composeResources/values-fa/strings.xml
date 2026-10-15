@@ -15,6 +15,8 @@
     <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
     <string name="license_font_title">Google Sans (فونت همراه)</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). Licensed under the SIL Open Font License, Version 1.1.</string>
+    <string name="license_flags_title">Noto Color Emoji (پرچم کشورها)</string>
+    <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). Licensed under the SIL Open Font License, Version 1.1.</string>
     <string name="about_font_row">فونت</string>
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">نسخه‌ها</string>
@@ -80,6 +82,7 @@
     <string name="toggle_connection_cd">تغییر وضعیت اتصال</string>
     <string name="channel_status_off">خاموش</string>
     <string name="channel_status_online">آنلاین · %1$d میلی‌ثانیه</string>
+    <string name="channel_status_online_plain">آنلاین</string>
     <string name="channel_status_ready">کانال محلی آماده است</string>
     <string name="channel_status_connecting">در حال اتصال…</string>
     <string name="channel_status_generating_fp">در حال ساخت اثر انگشت…</string>
@@ -101,7 +104,8 @@
     <string name="cancel">لغو</string>
     <string name="save">ذخیره</string>
     <string name="add_server">افزودن سرور</string>
-    <string name="add_server_instructions">یک لینک اشتراک (vmess/vless/ss/trojan/hysteria2) یا آدرس اشتراک را بچسبانید.</string>
+    <string name="add_server_instructions">یک لینک اشتراک (vmess/vless/ss/trojan/hysteria2) یا آدرس اشتراک را بچسبانید، یا یک فایل پیکربندی انتخاب کنید.</string>
+    <string name="from_file">از فایل</string>
     <string name="link_or_subscription_url">لینک یا آدرس اشتراک</string>
     <string name="add">افزودن</string>
     <string name="share_server_chooser">اشتراک‌گذاری سرور</string>

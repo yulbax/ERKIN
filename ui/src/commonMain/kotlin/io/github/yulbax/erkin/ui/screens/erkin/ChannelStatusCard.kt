@@ -50,7 +50,7 @@ internal fun ChannelStatusCard(
     active: Boolean,
     up: Boolean,
     hasApps: Boolean,
-    latencyMs: Int,
+    latencyMs: Int = 0,
     noServers: Boolean = false,
     country: String = "",
     shape: Shape,
@@ -76,6 +76,7 @@ internal fun ChannelStatusCard(
         !hasApps -> stringResource(Res.string.channel_status_no_apps)
         !active -> stringResource(Res.string.channel_status_off)
         byedpiBlocked -> stringResource(Res.string.channel_status_byedpi_blocked)
+        up && type == ConnectionType.BYEDPI -> stringResource(Res.string.channel_status_online_plain)
         up && latencyMs > 0 -> stringResource(Res.string.channel_status_online, latencyMs)
         up -> stringResource(Res.string.channel_status_ready)
         cycling -> stringResource(Res.string.channel_status_generating_fp)

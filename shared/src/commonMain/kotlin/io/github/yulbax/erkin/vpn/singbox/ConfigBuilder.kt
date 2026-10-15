@@ -33,7 +33,8 @@ object ConfigBuilder {
     private const val TUN_INET6 = "fdfe:dcba:9876::1/126"
     private const val TUN_INET4 = "172.18.0.1/30"
 
-    const val PROXY_GROUP_TAG = "proxy"
+    const val HEALTH_GROUP_TAG = "health"
+    private const val LIBBOX_MIN_REPORTED_GROUP_SIZE = 2
     const val DESKTOP_INTERFACE_NAME = "ERKIN"
     private const val PROBE_INBOUND_TAG = "probe-in"
     private const val REMOTE_DNS_TAG = "remote"
@@ -61,21 +62,9 @@ object ConfigBuilder {
         directPaths: List<String> = emptyList()
     ): String {
         val ipv6Enabled = options.ipv6Mode.ipv6Enabled
-        val proxyTarget = if (proxies.isEmpty()) "direct" else PROXY_GROUP_TAG
-
-        val proxyObjects = proxies.map { proxy ->
-            val outbound = JsonObject((Json.parseToJsonElement(proxy.outboundDescriptor) as JsonObject).toMutableMap().apply {
-                put("tag", JsonPrimitive(proxy.tag))
-            })
-            val decorated = if (EngineRequirement.TLS_FINGERPRINT in proxy.requirements) {
-                applyPreferredFingerprint(outbound, options.preferredFingerprint)
-            } else {
-                outbound
-            }
-            proxy to decorated
-        }
-        val (proxyEndpoints, proxyOutbounds) = proxyObjects.partition { it.first.placement == EnginePlacement.ENDPOINT }
+        val (proxyEndpoints, proxyOutbounds) = proxyObjects(proxies, options)
         val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
+        val proxyTarget = active?.tag ?: "direct"
         val sessionRequirements = active?.sessionRequirements.orEmpty()
         val dnsStrategy =
             if (EngineRequirement.IPV4_ONLY in sessionRequirements) IPV4_ONLY else options.ipv6Mode.dnsStrategy
@@ -93,7 +82,7 @@ object ConfigBuilder {
                         put("tag", REMOTE_DNS_TAG)
                         put("type", "tls")
                         put("server", options.dnsRemote)
-                        if (proxies.isNotEmpty()) put("detour", PROXY_GROUP_TAG)
+                        if (active != null) put("detour", active.tag)
                     })
                     add(buildJsonObject {
                         put("tag", "local")
@@ -160,14 +149,12 @@ object ConfigBuilder {
             }
 
             putJsonArray("outbounds") {
-                proxyOutbounds.forEach { add(it.second) }
+                proxyOutbounds.forEach { add(it) }
                 if (active != null) {
                     add(buildJsonObject {
                         put("type", "selector")
-                        put("tag", PROXY_GROUP_TAG)
-                        putJsonArray("outbounds") { proxies.forEach { add(it.tag) } }
-                        put("default", active.tag)
-                        put("interrupt_exist_connections", true)
+                        put("tag", HEALTH_GROUP_TAG)
+                        putJsonArray("outbounds") { repeat(LIBBOX_MIN_REPORTED_GROUP_SIZE) { add(active.tag) } }
                     })
                 }
                 add(buildJsonObject {
@@ -184,7 +171,7 @@ object ConfigBuilder {
             }
 
             if (proxyEndpoints.isNotEmpty()) {
-                putJsonArray("endpoints") { proxyEndpoints.forEach { add(it.second) } }
+                putJsonArray("endpoints") { proxyEndpoints.forEach { add(it) } }
             }
 
             putJsonObject("route") {
@@ -241,6 +228,46 @@ object ConfigBuilder {
             }
         }
         return json.encodeToString(JsonObject.serializer(), config)
+    }
+
+    fun buildLatencyTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions()): String {
+        val (proxyEndpoints, proxyOutbounds) = proxyObjects(proxies, options)
+        val config = buildJsonObject {
+            putJsonObject("dns") {
+                putJsonArray("servers") {
+                    add(buildJsonObject {
+                        put("tag", "local")
+                        put("type", "udp")
+                        put("server", options.dnsDirect)
+                    })
+                }
+                put("strategy", options.ipv6Mode.dnsStrategy)
+            }
+            putJsonArray("outbounds") { proxyOutbounds.forEach { add(it) } }
+            if (proxyEndpoints.isNotEmpty()) {
+                putJsonArray("endpoints") { proxyEndpoints.forEach { add(it) } }
+            }
+            putJsonObject("route") {
+                put("default_domain_resolver", "local")
+            }
+        }
+        return json.encodeToString(JsonObject.serializer(), config)
+    }
+
+    private fun proxyObjects(proxies: List<EngineProxy>, options: NetworkOptions): Pair<List<JsonObject>, List<JsonObject>> {
+        val (endpoints, outbounds) = proxies.partition { it.placement == EnginePlacement.ENDPOINT }
+        return endpoints.map { proxyObject(it, options) } to outbounds.map { proxyObject(it, options) }
+    }
+
+    private fun proxyObject(proxy: EngineProxy, options: NetworkOptions): JsonObject {
+        val outbound = JsonObject((Json.parseToJsonElement(proxy.outboundDescriptor) as JsonObject).toMutableMap().apply {
+            put("tag", JsonPrimitive(proxy.tag))
+        })
+        return if (EngineRequirement.TLS_FINGERPRINT in proxy.requirements) {
+            applyPreferredFingerprint(outbound, options.preferredFingerprint)
+        } else {
+            outbound
+        }
     }
 
     private fun applyPreferredFingerprint(outbound: JsonObject, preferred: TlsFingerprint?): JsonObject {

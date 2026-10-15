@@ -7,6 +7,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.ImageBitmap
 import java.io.InputStream
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.font.FontFamily
 
 interface Sharer {
     fun shareText(text: String, title: String)
@@ -57,6 +58,9 @@ expect val scrollbarAlwaysVisible: Boolean
 expect val drawerSwipeToOpen: Boolean
 
 expect val supportsAppIcons: Boolean
+
+@Composable
+expect fun flagFontFamily(): FontFamily?
 
 expect val platformNewAppsConnectionType: ConnectionType
 

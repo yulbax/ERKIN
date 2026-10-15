@@ -16,7 +16,7 @@ import (
 	"github.com/sagernet/sing-box/include"
 	"github.com/sagernet/sing-box/log"
 	"github.com/sagernet/sing-box/option"
-	"github.com/sagernet/sing-box/protocol/group"
+	"github.com/sagernet/sing/common/control"
 	E "github.com/sagernet/sing/common/exceptions"
 	"github.com/sagernet/sing/common/json"
 	"github.com/sagernet/sing/service"
@@ -161,19 +161,6 @@ func (e *engine) running() *instance {
 	return e.current
 }
 
-func (e *engine) selectOutbound(groupTag string, outboundTag string) bool {
-	active := e.running()
-	if active == nil {
-		return false
-	}
-	outbound, loaded := active.box.Outbound().Outbound(groupTag)
-	if !loaded {
-		return false
-	}
-	selector, isSelector := outbound.(*group.Selector)
-	return isSelector && selector.SelectOutbound(outboundTag)
-}
-
 func (e *engine) delay(outboundTag string, link string, timeout time.Duration) int {
 	active := e.running()
 	if active == nil {
@@ -206,17 +193,33 @@ func (e *engine) traffic() (up int64, down int64, ok bool) {
 }
 
 func (e *engine) defaultInterfaceIndex() (int, error) {
+	defaultInterface, err := e.defaultInterface()
+	if err != nil {
+		return 0, err
+	}
+	return defaultInterface.Index, nil
+}
+
+func (e *engine) defaultInterfaceName() string {
+	defaultInterface, err := e.defaultInterface()
+	if err != nil {
+		return ""
+	}
+	return defaultInterface.Name
+}
+
+func (e *engine) defaultInterface() (*control.Interface, error) {
 	active := e.running()
 	if active == nil {
-		return 0, errors.New("sing-box is not running")
+		return nil, errors.New("sing-box is not running")
 	}
 	monitor := service.FromContext[adapter.NetworkManager](active.ctx).InterfaceMonitor()
 	if monitor == nil {
-		return 0, errors.New("no interface monitor")
+		return nil, errors.New("no interface monitor")
 	}
 	defaultInterface := monitor.DefaultInterface()
 	if defaultInterface == nil {
-		return 0, errors.New("no default interface")
+		return nil, errors.New("no default interface")
 	}
-	return defaultInterface.Index, nil
+	return defaultInterface, nil
 }

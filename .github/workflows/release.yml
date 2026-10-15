@@ -69,7 +69,7 @@ jobs:
             app/libs/libbox.aar
             desktop/libs/windows
             desktop/libs/linux
-          key: libbox-${{ env.SING_BOX_TAG }}-${{ env.LIBBOX_CACHE_REV }}-${{ hashFiles('desktop/service/**', 'scripts/build-libbox.sh', 'scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch', 'gradle.properties') }}
+          key: libbox-${{ env.SING_BOX_TAG }}-${{ env.LIBBOX_CACHE_REV }}-${{ hashFiles('desktop/service/**', 'core/testbox/**', 'scripts/build-libbox.sh', 'scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch', 'gradle.properties') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:

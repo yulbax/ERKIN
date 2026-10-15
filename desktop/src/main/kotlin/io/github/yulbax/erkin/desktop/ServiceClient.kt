@@ -57,10 +57,14 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
 
     fun clearLog() = call("clearLog").throwIfFailed()
 
-    fun select(group: String, outbound: String): Boolean = call("select") {
-        put("group", group)
-        put("outbound", outbound)
-    }.ok
+    fun urlTest(config: String, url: String, timeoutMs: Int): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
+        put("config", config)
+        put("url", url)
+        put("timeout", timeoutMs)
+    }.let { reply ->
+        reply.throwIfFailed()
+        checkNotNull(reply["delays"]) { "ERKIN service returned no delays" }.toString()
+    }
 
     fun delay(outbound: String, url: String, timeoutMs: Int): Int? = call("delay", timeoutMs = timeoutMs + 2_000L) {
         put("outbound", outbound)
@@ -133,6 +137,7 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
         private const val CHECK_TIMEOUT_MS = 30_000L
         private const val START_TIMEOUT_MS = 120_000L
         private const val STOP_TIMEOUT_MS = 30_000L
+        private const val URL_TEST_TIMEOUT_MS = 120_000L
 
         fun connect(socket: File): ServiceClient {
             val channel = SocketChannel.open(StandardProtocolFamily.UNIX)

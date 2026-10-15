@@ -14,9 +14,6 @@ sealed interface Command {
     data object CheckByeDpi : Command {
         override val stopsSessionOnFailure: Boolean get() = false
     }
-    data object TestProxies : Command {
-        override val stopsSessionOnFailure: Boolean get() = false
-    }
     data object Stop : Command
 }
 
@@ -32,7 +29,6 @@ class VpnCommandBus {
     fun reload() { mutableCommands.tryEmit(Command.Reload) }
     fun recover() { mutableCommands.tryEmit(Command.Recover) }
     fun checkByeDpi() { mutableCommands.tryEmit(Command.CheckByeDpi) }
-    fun testProxies() { mutableCommands.tryEmit(Command.TestProxies) }
     fun stop() { mutableCommands.tryEmit(Command.Stop) }
 
     private companion object {

@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.flow
 import kotlin.time.Duration.Companion.milliseconds
 
 class SocksHealthProbe(
-    private val vpnProbeUrl: String,
     private val byeDpiProbeUrl: String
 ) : HealthProbe {
 
@@ -15,8 +14,8 @@ class SocksHealthProbe(
         val credentials = SocksCredentials(engine.probeUsername, engine.probePassword)
         var country = ""
         while (true) {
-            val vpnDelay = if (params.vpnActive) latencyMs(engine.probeSocksPort, vpnProbeUrl, credentials) else null
-            val byedpiDelay = params.byeDpiPort?.let { byeDpiLatencyMs(it) }
+            val vpnDelay = if (params.vpnActive) engine.measureVpnDelay() else null
+            val byedpiUp = params.byeDpiPort?.let { byeDpiReachable(it) } == true
             if (vpnDelay != null && country.isEmpty()) {
                 country = resolveCountry(engine.probeSocksPort, credentials) ?: country
             }
@@ -25,7 +24,7 @@ class SocksHealthProbe(
                 vpnDelayMs = vpnDelay,
                 vpnCountry = country,
                 byedpiActive = params.byeDpiPort != null,
-                byedpiDelayMs = byedpiDelay,
+                byedpiUp = byedpiUp,
                 fpError = params.isFingerprintError()
             )
             emit(snapshot)
@@ -36,28 +35,17 @@ class SocksHealthProbe(
     private val byeDpiCandidates = listOf(byeDpiProbeUrl) + ByeDpiSites.QUICK.sites.map { "https://$it" }
     private var lastGoodByeDpi = 0
 
-    private suspend fun byeDpiLatencyMs(socksPort: Int): Int? {
+    private suspend fun byeDpiReachable(socksPort: Int): Boolean {
         repeat(BYEDPI_ATTEMPTS) { attempt ->
             val index = (lastGoodByeDpi + attempt) % byeDpiCandidates.size
             val url = byeDpiCandidates[index]
-            val start = System.nanoTime()
-            val reached = SocksHttp.request(socksPort, url, "HEAD", BYEDPI_TIMEOUT_MS, null) { it.responseCode } != null
-            if (reached) {
+            if (SocksHttp.request(socksPort, url, "HEAD", BYEDPI_TIMEOUT_MS, null) { it.responseCode } != null) {
                 lastGoodByeDpi = index
-                return ((System.nanoTime() - start) / 1_000_000).toInt().coerceAtLeast(1)
+                return true
             }
         }
         lastGoodByeDpi = (lastGoodByeDpi + BYEDPI_ATTEMPTS) % byeDpiCandidates.size
-        return null
-    }
-
-    private suspend fun latencyMs(socksPort: Int, url: String, credentials: SocksCredentials?): Int? {
-        val start = System.nanoTime()
-        return SocksHttp.request(socksPort, url, "GET", PROBE_TIMEOUT_MS, credentials) { connection ->
-            val code = connection.responseCode
-            connection.drain()
-            if (code in 200..399) ((System.nanoTime() - start) / 1_000_000).toInt().coerceAtLeast(1) else null
-        }
+        return false
     }
 
     private suspend fun resolveCountry(socksPort: Int, credentials: SocksCredentials): String? =
@@ -65,10 +53,6 @@ class SocksHealthProbe(
             val body = connection.inputStream.use { it.readBytes().decodeToString() }
             COUNTRY_REGEX.find(body)?.groupValues?.get(1)?.uppercase()?.takeIf { it != UNKNOWN_COUNTRY }
         }
-
-    private fun java.net.HttpURLConnection.drain() {
-        runCatching { (if (responseCode >= 400) errorStream else inputStream)?.use { it.readBytes() } }
-    }
 
     private companion object {
         const val HEALTH_INTERVAL_MS = 15_000L

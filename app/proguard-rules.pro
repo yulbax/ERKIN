@@ -2,6 +2,7 @@
 # libbox.aar ships consumer rules for go.**/libbox.**, but be explicit anyway.
 -keep class go.** { *; }
 -keep class libbox.** { *; }
+-keep class testbox.** { *; }
 
 # Our libbox PlatformInterface / CommandServerHandler implementations are invoked
 # from native Go via JNI; their method names/signatures must survive. The vpn

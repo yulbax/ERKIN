@@ -31,7 +31,9 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,7 +50,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import kotlinx.coroutines.delay
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
@@ -65,7 +66,6 @@ import io.github.yulbax.erkin.vpn.ConnectionStats
 import io.github.yulbax.erkin.vpn.VpnState
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import org.koin.compose.viewmodel.koinViewModel
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun ErkinScreen(
@@ -84,18 +84,7 @@ fun ErkinScreen(
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<ProfileEntity?>(null) }
     var showByeDpiDialog by remember { mutableStateOf(false) }
-    var testingLatency by remember { mutableStateOf(false) }
     val byeDpiTest by viewModel.byeDpiTest.collectAsStateWithLifecycle()
-
-    LaunchedEffect(servers.delays) {
-        if (testingLatency) testingLatency = false
-    }
-    LaunchedEffect(testingLatency) {
-        if (testingLatency) {
-            delay(10000.milliseconds)
-            testingLatency = false
-        }
-    }
 
     val onConnectClick = rememberVpnStartRequest(onGranted = viewModel::startVpn)
 
@@ -112,12 +101,7 @@ fun ErkinScreen(
         onNavigateToApps = onNavigateToApps,
         onByedpiClick = { showByeDpiDialog = true },
         onAddServerClick = { showAddDialog = true },
-        onTestClick = {
-            if (!testingLatency) {
-                profileViewModel.testAll()
-                testingLatency = true
-            }
-        },
+        onTestClick = { profileViewModel.testAll() },
         onSelect = { profileViewModel.select(it) },
         onEdit = { editing = it },
         onShare = { profile ->
@@ -146,6 +130,7 @@ fun ErkinScreen(
     if (showAddDialog) {
         AddServerDialog(
             onDismiss = { showAddDialog = false },
+            onReadFile = { file, onRead -> profileViewModel.readConfigFile(file::open, onRead) },
             onAdd = { profileViewModel.add(it); showAddDialog = false }
         )
     }
@@ -352,7 +337,6 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
             active = c.stats.byedpiActive,
             up = c.stats.byedpiUp,
             hasApps = c.ui.hasByedpiApps,
-            latencyMs = c.stats.byedpiLatencyMs,
             shape = groupRowShape(1, 2),
             modifier = cardModifier,
             fillHeight = fillHeight,
@@ -421,7 +405,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = modifier
     ) {
-        val showTest = c.connected && c.servers.profiles.size > 1
+        val showTest = c.servers.profiles.isNotEmpty()
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -442,6 +426,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                         profile = profile,
                         isSelected = profile.id == c.servers.selected?.id,
                         delay = c.servers.delays[profile.id],
+                        testing = profile.id in c.servers.testingIds,
                         isBest = profile.id == fastestId,
                         onSelect = { c.onSelect(profile) },
                         onEdit = { c.onEdit(profile) },
@@ -451,7 +436,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                     )
                 }
             }
-            AnimatedSpeedometerButton(visible = showTest, onClick = c.onTestClick)
+            AnimatedSpeedometerButton(visible = showTest, testing = c.servers.testing, onClick = c.onTestClick)
             if (!showHeader) {
                 AddServerFab(
                     onClick = c.onAddServerClick,
@@ -496,7 +481,7 @@ private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun BoxScope.AnimatedSpeedometerButton(visible: Boolean, onClick: () -> Unit) {
+private fun BoxScope.AnimatedSpeedometerButton(visible: Boolean, testing: Boolean, onClick: () -> Unit) {
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically { it * 2 } + fadeIn(),
@@ -505,25 +490,34 @@ private fun BoxScope.AnimatedSpeedometerButton(visible: Boolean, onClick: () -> 
             .align(Alignment.BottomCenter)
             .padding(bottom = 12.dp)
     ) {
-        SpeedometerButton(onClick = onClick)
+        SpeedometerButton(testing = testing, onClick = onClick)
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SpeedometerButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun SpeedometerButton(testing: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = onClick,
+        enabled = !testing,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.secondaryContainer,
         modifier = modifier.size(48.dp)
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = Icons.Default.Speed,
-                contentDescription = stringResource(Res.string.server_test_latency),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
+            if (testing) {
+                LoadingIndicator(
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(40.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Speed,
+                    contentDescription = stringResource(Res.string.server_test_latency),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }

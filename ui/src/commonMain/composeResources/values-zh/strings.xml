@@ -15,6 +15,8 @@
     <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
     <string name="license_font_title">Google Sans（内置字体）</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). Licensed under the SIL Open Font License, Version 1.1.</string>
+    <string name="license_flags_title">Noto Color Emoji（国旗）</string>
+    <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). Licensed under the SIL Open Font License, Version 1.1.</string>
     <string name="about_font_row">字体</string>
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">版本</string>
@@ -80,6 +82,7 @@
     <string name="toggle_connection_cd">切换连接</string>
     <string name="channel_status_off">关闭</string>
     <string name="channel_status_online">在线 · %1$d 毫秒</string>
+    <string name="channel_status_online_plain">在线</string>
     <string name="channel_status_ready">本地通道已就绪</string>
     <string name="channel_status_connecting">连接中…</string>
     <string name="channel_status_generating_fp">正在生成指纹…</string>
@@ -101,7 +104,8 @@
     <string name="cancel">取消</string>
     <string name="save">保存</string>
     <string name="add_server">添加服务器</string>
-    <string name="add_server_instructions">粘贴分享链接（vmess/vless/ss/trojan/hysteria2）或订阅 URL。</string>
+    <string name="add_server_instructions">粘贴分享链接（vmess/vless/ss/trojan/hysteria2）或订阅 URL，或选择配置文件。</string>
+    <string name="from_file">从文件</string>
     <string name="link_or_subscription_url">链接或订阅 URL</string>
     <string name="add">添加</string>
     <string name="share_server_chooser">分享服务器</string>

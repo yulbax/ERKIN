@@ -34,11 +34,10 @@ data class HealthSnapshot(
     val vpnDelayMs: Int?,
     val vpnCountry: String,
     val byedpiActive: Boolean,
-    val byedpiDelayMs: Int?,
+    val byedpiUp: Boolean,
     val fpError: Boolean
 ) {
     val vpnUp get() = vpnDelayMs != null
-    val byedpiUp get() = byedpiDelayMs != null
     val anyUp get() = vpnUp || byedpiUp
     val allActiveUp get() = (!vpnActive || vpnUp) && (!byedpiActive || byedpiUp)
     val vpnHealthy get() = (!vpnActive || vpnUp) && !fpError
@@ -97,12 +96,11 @@ class HealthMonitor(
                 vpnCountry = s.vpnCountry,
                 vpnCycling = s.vpnActive && !s.vpnUp && s.fpError,
                 byedpiActive = s.byedpiActive,
-                byedpiUp = s.byedpiUp,
-                byedpiLatencyMs = s.byedpiDelayMs ?: 0
+                byedpiUp = s.byedpiUp
             )
         }
         stateRepository.update(
-            if (s.anyUp) VpnState.Connected(s.vpnDelayMs ?: s.byedpiDelayMs ?: 0)
+            if (s.anyUp) VpnState.Connected(s.vpnDelayMs ?: 0)
             else VpnState.Verifying
         )
     }
@@ -118,7 +116,7 @@ class HealthMonitor(
 
     private suspend fun onByedpiTransition(s: HealthSnapshot, params: HealthParams) {
         if (s.byedpiUp) {
-            log.i(TAG, "byedpi channel up (${s.byedpiDelayMs}ms)")
+            log.i(TAG, "byedpi channel up")
         } else {
             log.w(TAG, "byedpi channel down")
         }
