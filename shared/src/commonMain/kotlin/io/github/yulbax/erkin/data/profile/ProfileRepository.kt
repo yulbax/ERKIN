@@ -51,7 +51,7 @@ class ProfileRepository(
                 name = name.trim().ifBlank { parsed.name },
                 type = parsed.protocol.wire,
                 link = trimmedLink,
-                outboundJson = parsed.outboundJson()
+                outboundJson = parsed.proxyJson()
             )
         } else {
             profileDao.updateName(profile.id, name.trim().ifBlank { profile.name })
@@ -75,7 +75,7 @@ class ProfileRepository(
             name = profile.name,
             type = fresh.protocol.wire,
             link = fresh.link,
-            outboundJson = fresh.outboundJson()
+            outboundJson = fresh.proxyJson()
         )
         return ProfileOperationResult.Success()
     }
@@ -104,14 +104,14 @@ class ProfileRepository(
                     unparseable += profile.id
                     return@forEach
                 }
-                val outboundJson = parsed.outboundJson()
-                if (outboundJson == profile.outboundJson && parsed.protocol.wire == profile.type) return@forEach
+                val descriptor = parsed.proxyJson()
+                if (descriptor == profile.outboundJson && parsed.protocol.wire == profile.type) return@forEach
                 profileDao.updateConfig(
                     id = profile.id,
                     name = profile.name,
                     type = parsed.protocol.wire,
                     link = profile.link,
-                    outboundJson = outboundJson
+                    outboundJson = descriptor
                 )
                 rebuilt += profile.id
             }
@@ -129,7 +129,7 @@ class ProfileRepository(
             append(" type=").append(profile.type)
             if (profile.protocol == null) append(" (unknown to this build)")
             append(" parses=").append(parsed != null)
-            if (parsed != null) append(" fresh=").append(parsed.outboundJson() == profile.outboundJson)
+            if (parsed != null) append(" fresh=").append(parsed.proxyJson() == profile.outboundJson)
             append(" selected=").append(profile.selected)
             append(" subscription=").append(profile.subscriptionUrl.isNotEmpty())
         }
@@ -177,7 +177,7 @@ class ProfileRepository(
         name = name,
         type = protocol.wire,
         link = link,
-        outboundJson = outboundJson(),
+        outboundJson = proxyJson(),
         subscriptionUrl = subscriptionUrl
     )
 

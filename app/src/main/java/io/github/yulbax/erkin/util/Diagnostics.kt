@@ -3,7 +3,7 @@ package io.github.yulbax.erkin.util
 import android.content.Context
 import android.os.Build
 import io.github.yulbax.erkin.data.profile.ProfileRepository
-import java.io.File
+import io.github.yulbax.erkin.vpn.mihomo.MihomoRuntime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -22,7 +22,7 @@ object Diagnostics {
                 "abi" to Build.SUPPORTED_ABIS.joinToString(",")
             ),
             appLog = erkinLog.dump(),
-            boxLog = File(File(context.filesDir, "work"), "box.log"),
+            coreLog = MihomoRuntime.logFile(context),
             profiles = profiles.profileDiagnostics()
         )
     }

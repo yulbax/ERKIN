@@ -15,8 +15,6 @@ interface VpnEngine {
 
     fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiPort
 
-    fun hasFingerprintError(): Boolean
-
     fun stop()
 }
 

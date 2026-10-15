@@ -20,29 +20,30 @@ class AmneziaWgTest {
         assertEquals(ProxyProtocol.AMNEZIAWG, parsed.protocol)
         assertEquals("vpn.example.com", parsed.name)
 
-        val endpoint = parsed.outbound
-        assertEquals("awg", endpoint.getValue("type").jsonPrimitive.content)
-        assertEquals("aPrivateKey=", endpoint.getValue("private_key").jsonPrimitive.content)
-        assertEquals(listOf("10.8.1.2/32", "fd42::2/128"), endpoint.getValue("address").jsonArray.map { it.jsonPrimitive.content })
-        assertEquals(1280, endpoint.getValue("mtu").jsonPrimitive.content.toInt())
+        val proxy = parsed.proxy
+        assertEquals("wireguard", proxy.getValue("type").jsonPrimitive.content)
+        assertEquals("aPrivateKey=", proxy.getValue("private-key").jsonPrimitive.content)
+        assertEquals("10.8.1.2/32", proxy.getValue("ip").jsonPrimitive.content)
+        assertEquals("fd42::2/128", proxy.getValue("ipv6").jsonPrimitive.content)
+        assertEquals(1280, proxy.getValue("mtu").jsonPrimitive.content.toInt())
+        assertEquals("vpn.example.com", proxy.getValue("server").jsonPrimitive.content)
+        assertEquals(51820, proxy.getValue("port").jsonPrimitive.content.toInt())
+        assertEquals("aPublicKey=", proxy.getValue("public-key").jsonPrimitive.content)
+        assertEquals("aPresharedKey=", proxy.getValue("pre-shared-key").jsonPrimitive.content)
+        assertEquals(listOf("0.0.0.0/0", "::/0"), proxy.getValue("allowed-ips").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(25, proxy.getValue("persistent-keepalive").jsonPrimitive.content.toInt())
 
-        val peer = endpoint.getValue("peers").jsonArray.single().jsonObject
-        assertEquals("vpn.example.com", peer.getValue("address").jsonPrimitive.content)
-        assertEquals(51820, peer.getValue("port").jsonPrimitive.content.toInt())
-        assertEquals("aPublicKey=", peer.getValue("public_key").jsonPrimitive.content)
-        assertEquals("aPresharedKey=", peer.getValue("preshared_key").jsonPrimitive.content)
-        assertEquals(listOf("0.0.0.0/0", "::/0"), peer.getValue("allowed_ips").jsonArray.map { it.jsonPrimitive.content })
-        assertEquals(25, peer.getValue("persistent_keepalive_interval").jsonPrimitive.content.toInt())
-
-        assertFalse("obfuscation numbers must stay JSON numbers", endpoint.getValue("jc").jsonPrimitive.isString)
-        assertTrue("magic headers are strings in the Amnezia schema", endpoint.getValue("h1").jsonPrimitive.isString)
-        assertFalse(endpoint.getValue("mtu").jsonPrimitive.isString)
-        assertEquals(4, endpoint.getValue("jc").jsonPrimitive.content.toInt())
-        assertEquals(50, endpoint.getValue("jmin").jsonPrimitive.content.toInt())
-        assertEquals(1000, endpoint.getValue("jmax").jsonPrimitive.content.toInt())
-        assertEquals(15, endpoint.getValue("s1").jsonPrimitive.content.toInt())
-        assertEquals("1148364954", endpoint.getValue("h1").jsonPrimitive.content)
-        assertNull(endpoint["dns"])
+        val options = proxy.getValue("amnezia-wg-option").jsonObject
+        assertFalse("obfuscation numbers must stay JSON numbers", options.getValue("jc").jsonPrimitive.isString)
+        assertTrue("magic headers are strings in the Amnezia schema", options.getValue("h1").jsonPrimitive.isString)
+        assertFalse(proxy.getValue("mtu").jsonPrimitive.isString)
+        assertEquals(4, options.getValue("jc").jsonPrimitive.content.toInt())
+        assertEquals(50, options.getValue("jmin").jsonPrimitive.content.toInt())
+        assertEquals(1000, options.getValue("jmax").jsonPrimitive.content.toInt())
+        assertEquals(15, options.getValue("s1").jsonPrimitive.content.toInt())
+        assertEquals("1148364954", options.getValue("h1").jsonPrimitive.content)
+        assertNull(options["version"])
+        assertNull(proxy["dns"])
         assertEquals(CONFIG, parsed.link)
     }
 
@@ -52,7 +53,8 @@ class AmneziaWgTest {
         val parsed = requireNotNull(LinkParser.parse(plain))
 
         assertEquals(ProxyProtocol.WIREGUARD, parsed.protocol)
-        assertEquals("wireguard", parsed.outbound.getValue("type").jsonPrimitive.content)
+        assertEquals("wireguard", parsed.proxy.getValue("type").jsonPrimitive.content)
+        assertNull(parsed.proxy["amnezia-wg-option"])
         assertFalse(AmneziaWg.recognizes(plain))
     }
 

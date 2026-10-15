@@ -44,9 +44,9 @@ fun registerBundledBinaries(
     byeDpiArchive: ByeDpiArchive?
 ) = tasks.register("prepare${os.replaceFirstChar { it.uppercase() }}Binaries") {
     group = "distribution"
-    description = "Bundles erkin-service built by scripts/build-libbox.sh and byedpi for $os."
+    description = "Bundles erkin-service built by scripts/build-service.sh and byedpi for $os."
     val ciadpiName = "ciadpi$executableSuffix"
-    val coreNames = listOf("erkin-service$executableSuffix", "sing-box-LICENSE.txt") +
+    val coreNames = listOf("erkin-service$executableSuffix", "mihomo-LICENSE.txt") +
         if (byeDpiArchive == null) listOf(ciadpiName) else emptyList()
     val coreFiles = coreNames.map { layout.projectDirectory.dir("libs/$os").file(it).asFile }
     val outputDir = bundledResourcesDir.map { it.dir(os) }
@@ -76,7 +76,7 @@ fun registerBundledBinaries(
         val missing = coreFiles.filterNot { it.isFile }
         check(missing.isEmpty()) {
             "Missing ${missing.joinToString { it.name }} in desktop/libs/$os. " +
-                "Run CORE_TARGETS=$os scripts/build-libbox.sh" +
+                "Run TARGETS=$os scripts/build-service.sh" +
                 (if (archiveName == null) " and scripts/build-ciadpi.sh" else "") + " first."
         }
         val target = outputDir.get().asFile.apply { mkdirs() }

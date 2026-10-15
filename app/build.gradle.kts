@@ -133,20 +133,20 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
-val verifyLibbox = tasks.register("verifyLibbox") {
+val verifyMihomo = tasks.register("verifyMihomo") {
     group = "verification"
-    description = "Fails early when the generated libbox AAR is missing."
-    inputs.file(layout.projectDirectory.file("libs/libbox.aar"))
-        .withPropertyName("libboxAar")
+    description = "Fails early when the generated mihomo AAR is missing."
+    inputs.file(layout.projectDirectory.file("libs/mihomo.aar"))
+        .withPropertyName("mihomoAar")
 
     doLast {
         check(inputs.files.singleFile.isFile) {
-            "Missing app/libs/libbox.aar. Run scripts/build-libbox.sh before building the app."
+            "Missing app/libs/mihomo.aar. Run scripts/build-mihomo.sh before building the app."
         }
     }
 }
 
-tasks.named("preBuild").configure { dependsOn(verifyLibbox) }
+tasks.named("preBuild").configure { dependsOn(verifyMihomo) }
 
 val verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
     group = "verification"
@@ -183,7 +183,7 @@ androidComponents {
 dependencies {
     implementation(project(":shared"))
     implementation(project(":ui"))
-    implementation(files("libs/libbox.aar"))
+    implementation(files("libs/mihomo.aar"))
 
     implementation(platform(libs.androidx.compose.bom))
 

@@ -24,8 +24,7 @@ class SocksHealthProbe(
                 vpnDelayMs = vpnDelay,
                 vpnCountry = country,
                 byedpiActive = params.byeDpiPort != null,
-                byedpiUp = byedpiUp,
-                fpError = params.isFingerprintError()
+                byedpiUp = byedpiUp
             )
             emit(snapshot)
             delay((if (snapshot.vpnHealthy) HEALTH_INTERVAL_MS else HEALTH_RETRY_MS).milliseconds)

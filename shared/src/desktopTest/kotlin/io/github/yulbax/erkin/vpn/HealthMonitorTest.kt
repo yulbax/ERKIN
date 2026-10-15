@@ -40,7 +40,7 @@ class HealthMonitorTest {
         val probe = object : HealthProbe {
             override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
                 repeat(SNAPSHOTS) {
-                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiUp, fpError = false))
+                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiUp))
                     delay(5)
                 }
             }
@@ -50,7 +50,7 @@ class HealthMonitorTest {
         monitor.start(
             scope,
             HealthParams(
-                probe = ProbeParams(FakeEngine, byeDpiPort = 1, vpnActive = true) { false },
+                probe = ProbeParams(FakeEngine, byeDpiPort = 1, vpnActive = true),
                 onRefreshSubscription = {},
                 onRecoveryReload = { reloads.incrementAndGet() },
                 onByedpiChanged = { byedpiChecks.incrementAndGet() }
@@ -69,7 +69,6 @@ class HealthMonitorTest {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
         override suspend fun measureVpnDelay(): Int? = null
-        override fun hasFingerprintError(): Boolean = false
         override fun stop() = Unit
     }
 

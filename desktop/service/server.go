@@ -10,15 +10,17 @@ import (
 	"sync"
 	"time"
 
-	C "github.com/sagernet/sing-box/constant"
-	"github.com/sagernet/sing-box/testbox"
+	"github.com/yulbax/erkin/mihomocore"
 )
 
 type request struct {
 	ID       int64  `json:"id"`
 	Op       string `json:"op"`
 	Config   string `json:"config,omitempty"`
-	Outbound string `json:"outbound,omitempty"`
+	Proxy    string `json:"proxy,omitempty"`
+	Proxies  string `json:"proxies,omitempty"`
+	Resolved string `json:"resolved,omitempty"`
+	Resolver string `json:"resolver,omitempty"`
 	URL      string `json:"url,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
 }
@@ -84,6 +86,7 @@ func listen(socketPath string, workDir string) (*server, error) {
 		_ = protector.Close()
 		return nil, err
 	}
+	mihomocore.Init(workDir, filepath.Join(workDir, coreLogName), "")
 	return &server{workDir: workDir, listener: listener, protector: protector}, nil
 }
 
@@ -145,13 +148,13 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 	switch message.Op {
 	case "hello":
 		result.Version = version
-		result.Core = C.Version
+		result.Core = mihomocore.Version()
 		result.WorkDir = s.workDir
 		result.OK = true
 	case "check":
 		return fail(check(message.Config))
 	case "start":
-		err := s.engine.start(message.Config)
+		err := s.engine.start(message.Config, message.Resolved, message.Resolver)
 		if err == nil {
 			s.claim(conn)
 		}
@@ -160,16 +163,16 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 		s.claim(nil)
 		return fail(s.engine.stop())
 	case "clearLog":
-		err := os.Truncate(filepath.Join(s.workDir, "box.log"), 0)
+		err := os.Truncate(filepath.Join(s.workDir, coreLogName), 0)
 		if errors.Is(err, os.ErrNotExist) {
 			err = nil
 		}
 		return fail(err)
 	case "delay":
-		result.Delay = s.engine.delay(message.Outbound, message.URL, time.Duration(message.Timeout)*time.Millisecond)
+		result.Delay = s.engine.delay(message.Proxy, message.URL, time.Duration(message.Timeout)*time.Millisecond)
 		result.OK = result.Delay > 0
 	case "urltest":
-		delays, err := testbox.URLTest(message.Config, message.URL, int32(message.Timeout), s.engine.defaultInterfaceName())
+		delays, err := mihomocore.TestProxies(message.Proxies, message.URL, int32(message.Timeout))
 		if err != nil {
 			return fail(err)
 		}

@@ -10,7 +10,7 @@ import io.github.yulbax.erkin.BuildConfig
 import io.github.yulbax.erkin.util.ErkinLog
 import io.github.yulbax.erkin.vpn.core.TunConfig
 import io.github.yulbax.erkin.vpn.core.TunPlatform
-import io.github.yulbax.erkin.vpn.singbox.SingBoxEngine
+import io.github.yulbax.erkin.vpn.mihomo.MihomoEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -44,7 +44,7 @@ class ErkinVpnService :
         notification = VpnNotificationController(this, vpnStateRepository.stats)
         controller = VpnController(scope, commandBus, vpnStateRepository, host = this, log = erkinLog) { controller ->
             VpnSession(
-                engine = SingBoxEngine(applicationContext, this, networkMonitor, controller, erkinLog),
+                engine = MihomoEngine(applicationContext, this, controller, erkinLog),
                 byeDpi = ByeDpiRunner(packageName, erkinLog) { fd -> protect(fd) },
                 store = store,
                 stateRepository = vpnStateRepository,

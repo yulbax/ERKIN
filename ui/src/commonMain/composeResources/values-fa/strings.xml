@@ -21,7 +21,7 @@
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">نسخه‌ها</string>
     <string name="about_app">ERKIN</string>
-    <string name="about_singbox">sing-box (هسته)</string>
+    <string name="about_core">mihomo (هسته)</string>
     <string name="about_byedpi">byedpi (ciadpi)</string>
     <string name="about_legal">اطلاعات حقوقی</string>
     <string name="about_license_row">مجوز</string>
@@ -85,7 +85,6 @@
     <string name="channel_status_online_plain">آنلاین</string>
     <string name="channel_status_ready">کانال محلی آماده است</string>
     <string name="channel_status_connecting">در حال اتصال…</string>
-    <string name="channel_status_generating_fp">در حال ساخت اثر انگشت…</string>
     <string name="channel_status_no_apps">برنامه‌ای انتخاب نشده</string>
     <string name="byedpi_test_title">آزمایش دور زدن ByeDPI</string>
     <string name="byedpi_test_summary">%1$d قابل دسترس · %2$d از %3$d بررسی شد</string>

@@ -45,7 +45,7 @@ class DesktopDiagnostics(
                 "service" to (service.peek()?.version ?: "not running")
             ),
             appLog = log.dump(),
-            boxLog = File(service.peek()?.workDir ?: DesktopPaths.serviceSocket.parentFile, "box.log"),
+            coreLog = File(service.peek()?.workDir ?: DesktopPaths.serviceSocket.parentFile, "core.log"),
             profiles = profiles.profileDiagnostics()
         )
     }

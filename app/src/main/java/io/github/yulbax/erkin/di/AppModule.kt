@@ -19,7 +19,7 @@ import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
 import io.github.yulbax.erkin.vpn.SocksSiteProbe
 import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
-import io.github.yulbax.erkin.vpn.singbox.TestboxLatencyTester
+import io.github.yulbax.erkin.vpn.mihomo.MihomoLatencyTester
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnSessionStore
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -87,5 +87,5 @@ class AppModule {
 
     @Single
     fun serverLatencyProbe(context: Context, store: VpnSessionStore): ServerLatencyProbe =
-        ServerLatencyProbe(store, TestboxLatencyTester(context.applicationContext))
+        ServerLatencyProbe(store, MihomoLatencyTester(context.applicationContext))
 }

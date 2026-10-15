@@ -21,7 +21,7 @@
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">Versions</string>
     <string name="about_app">ERKIN</string>
-    <string name="about_singbox">sing-box (core)</string>
+    <string name="about_core">mihomo (core)</string>
     <string name="about_byedpi">byedpi (ciadpi)</string>
     <string name="about_legal">Legal</string>
     <string name="about_license_row">License</string>
@@ -85,7 +85,6 @@
     <string name="channel_status_online_plain">online</string>
     <string name="channel_status_ready">local endpoint ready</string>
     <string name="channel_status_connecting">connecting…</string>
-    <string name="channel_status_generating_fp">generating FP…</string>
     <string name="channel_status_no_apps">no apps selected</string>
     <string name="byedpi_test_title">ByeDPI bypass test</string>
     <string name="byedpi_test_summary">%1$d reachable · %2$d of %3$d tested</string>

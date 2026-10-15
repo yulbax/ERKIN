@@ -7,7 +7,7 @@ object LinkParser {
         val input = rawLink.trim()
         val protocol = ProxyProtocol.entries.firstOrNull { it.handler.recognizes(input) } ?: return null
         val parsed = runCatching { protocol.handler.parse(input) }.getOrNull() ?: return null
-        return ParsedProfile(parsed.name, protocol, parsed.outbound, input)
+        return ParsedProfile(parsed.name, protocol, parsed.proxy, input)
     }
 }
 

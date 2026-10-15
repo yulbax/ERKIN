@@ -325,7 +325,6 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
             up = c.stats.vpnUp,
             hasApps = c.ui.hasVpnApps,
             noServers = c.servers.profiles.isEmpty(),
-            cycling = c.stats.vpnCycling,
             latencyMs = c.stats.vpnLatencyMs,
             country = c.stats.vpnCountry,
             shape = groupRowShape(0, 2),

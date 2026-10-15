@@ -18,8 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  SING_BOX_TAG: "v1.260910.0"
-  LIBBOX_CACHE_REV: "10"    # bump to force a fresh libbox.aar rebuild (busts the cache)
+  CORE_CACHE_REV: "1"    # bump to force a fresh mihomo.aar and erkin-service rebuild (busts the cache)
   GO_VERSION: "1.25.0"
   NFPM_VERSION: "2.47.0"
   NFPM_SHA256: "0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783"
@@ -56,8 +55,8 @@ jobs:
             echo "should_release=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # ── Build sing-box's libbox.aar (3 ABIs). Cached by sing-box tag + rev. ──────────
-  libbox:
+  # ── Build mihomo.aar (3 ABIs) and erkin-service. Cached by the core sources + rev. ──
+  core:
     needs: check
     runs-on: ubuntu-latest
     steps:
@@ -66,10 +65,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            app/libs/libbox.aar
+            app/libs/mihomo.aar
             desktop/libs/windows
             desktop/libs/linux
-          key: libbox-${{ env.SING_BOX_TAG }}-${{ env.LIBBOX_CACHE_REV }}-${{ hashFiles('desktop/service/**', 'core/testbox/**', 'scripts/build-libbox.sh', 'scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch', 'gradle.properties') }}
+          key: core-${{ env.CORE_CACHE_REV }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-mihomo.sh', 'scripts/build-service.sh', 'scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch', 'gradle.properties') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
@@ -79,7 +78,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Provision NDK + gomobile and build libbox
+      - name: Provision NDK + gomobile and build mihomo.aar and erkin-service
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           set -e
@@ -87,10 +86,11 @@ jobs:
           # "android-37.0" platform name. --channel=3 (canary) is needed for android-37.0.
           sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "platforms;android-36" "ndk;${NDK_VERSION}"
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
-          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
-          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+          go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20250808145247-395d808d53cd
+          go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250808145247-395d808d53cd
           export PATH="$(go env GOPATH)/bin:$PATH"
-          bash scripts/build-libbox.sh
+          bash scripts/build-mihomo.sh
+          bash scripts/build-service.sh
       - name: Build patched ciadpi.exe
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
@@ -99,8 +99,8 @@ jobs:
           bash scripts/build-ciadpi.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: libbox
-          path: app/libs/libbox.aar
+          name: mihomo
+          path: app/libs/mihomo.aar
           retention-days: 1
       - uses: actions/upload-artifact@v4
         with:
@@ -114,13 +114,13 @@ jobs:
           retention-days: 1
 
   quality:
-    needs: libbox
+    needs: core
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
-          name: libbox
+          name: mihomo
           path: app/libs
       - uses: actions/setup-java@v4
         with:
@@ -136,14 +136,14 @@ jobs:
 
   # ── Build the release APKs (arm64 + x86_64 + armv7 + universal), signed. ─────────
   build:
-    needs: [check, libbox, quality]
+    needs: [check, core, quality]
     if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
         with:
-          name: libbox
+          name: mihomo
           path: app/libs
       - uses: actions/setup-java@v4
         with:
@@ -177,7 +177,7 @@ jobs:
           retention-days: 7
 
   windows:
-    needs: [check, libbox]
+    needs: [check, core]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -206,7 +206,7 @@ jobs:
           retention-days: 7
 
   linux:
-    needs: [check, libbox]
+    needs: [check, core]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

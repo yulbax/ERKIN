@@ -9,11 +9,11 @@ import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.util.AppLog
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -50,11 +50,11 @@ class ProfileRefreshTest {
         repository.refreshDescriptors()
 
         val stored = database.profileDao().getAll().single()
-        val endpoint = kotlinx.serialization.json.Json.parseToJsonElement(stored.outboundJson).jsonObject
-        assertEquals("awg", endpoint.getValue("type").jsonPrimitive.content)
-        val peer = endpoint.getValue("peers").jsonArray.single().jsonObject
-        assertEquals(25, peer.getValue("persistent_keepalive_interval").jsonPrimitive.content.toInt())
-        assertEquals("aPresharedKey=", peer.getValue("preshared_key").jsonPrimitive.content)
+        val proxy = kotlinx.serialization.json.Json.parseToJsonElement(stored.outboundJson).jsonObject
+        assertEquals("wireguard", proxy.getValue("type").jsonPrimitive.content)
+        assertEquals(25, proxy.getValue("persistent-keepalive").jsonPrimitive.content.toInt())
+        assertEquals("aPresharedKey=", proxy.getValue("pre-shared-key").jsonPrimitive.content)
+        assertEquals(4, proxy.getValue("amnezia-wg-option").jsonObject.getValue("jc").jsonPrimitive.content.toInt())
     }
 
     @Test
@@ -72,8 +72,9 @@ class ProfileRefreshTest {
 
         val stored = database.profileDao().getAll().single()
         assertEquals(ProxyProtocol.WIREGUARD.wire, stored.type)
-        val endpoint = kotlinx.serialization.json.Json.parseToJsonElement(stored.outboundJson).jsonObject
-        assertEquals("wireguard", endpoint.getValue("type").jsonPrimitive.content)
+        val proxy = kotlinx.serialization.json.Json.parseToJsonElement(stored.outboundJson).jsonObject
+        assertEquals("wireguard", proxy.getValue("type").jsonPrimitive.content)
+        assertFalse(proxy.containsKey("amnezia-wg-option"))
         assertEquals("Home", stored.name)
     }
 
@@ -144,7 +145,7 @@ class ProfileRefreshTest {
                 name = parsed.name,
                 type = parsed.protocol.wire,
                 link = parsed.link,
-                outboundJson = parsed.outboundJson(),
+                outboundJson = parsed.proxyJson(),
                 subscriptionUrl = SUBSCRIPTION_URL
             )
         )

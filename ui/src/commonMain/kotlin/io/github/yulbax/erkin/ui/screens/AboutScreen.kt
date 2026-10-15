@@ -24,7 +24,7 @@ fun About() {
     val unknown = stringResource(Res.string.about_unknown)
 
     val appVersion = versions.appVersion ?: unknown
-    val singboxVersion by produceState(initialValue = "…") {
+    val coreVersion by produceState(initialValue = "…") {
         value = versions.coreVersion() ?: unknown
     }
 
@@ -39,7 +39,7 @@ fun About() {
             title = stringResource(Res.string.about_versions),
             items = listOf(
                 { GroupInfoRow(stringResource(Res.string.about_app), appVersion) },
-                { GroupInfoRow(stringResource(Res.string.about_singbox), singboxVersion) },
+                { GroupInfoRow(stringResource(Res.string.about_core), coreVersion) },
                 { GroupInfoRow(stringResource(Res.string.about_byedpi), versions.byeDpiVersion) }
             )
         )

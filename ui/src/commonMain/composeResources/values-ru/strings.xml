@@ -21,7 +21,7 @@
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">Версии</string>
     <string name="about_app">ERKIN</string>
-    <string name="about_singbox">sing-box (ядро)</string>
+    <string name="about_core">mihomo (ядро)</string>
     <string name="about_byedpi">byedpi (ciadpi)</string>
     <string name="about_legal">Правовая информация</string>
     <string name="about_license_row">Лицензия</string>
@@ -85,7 +85,6 @@
     <string name="channel_status_online_plain">онлайн</string>
     <string name="channel_status_ready">локальный канал готов</string>
     <string name="channel_status_connecting">подключение…</string>
-    <string name="channel_status_generating_fp">подбор отпечатка…</string>
     <string name="channel_status_no_apps">нет приложений</string>
     <string name="byedpi_test_title">Тест обхода ByeDPI</string>
     <string name="byedpi_test_summary">%1$d доступно · проверено %2$d из %3$d</string>

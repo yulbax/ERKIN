@@ -13,7 +13,7 @@ NFPM="${NFPM:-$(command -v nfpm || echo "$(go env GOPATH 2>/dev/null)/bin/nfpm")
 [ -x "$NFPM" ] || { echo "nfpm not found: install it from https://github.com/goreleaser/nfpm/releases/tag/v2.47.0" >&2; exit 1; }
 
 if [ "${SKIP_CORE:-0}" != "1" ]; then
-  CORE_TARGETS=linux bash "$REPO_ROOT/scripts/build-libbox.sh"
+  TARGETS=linux bash "$REPO_ROOT/scripts/build-service.sh"
 fi
 (cd "$REPO_ROOT" && ./gradlew -Perkin.desktopOnly :desktop:prepareLinuxBinaries :desktop:createReleaseDistributable)
 

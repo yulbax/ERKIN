@@ -13,18 +13,14 @@ data class EngineConfig(
 
 data class EngineProxy(
     val tag: String,
-    val outboundDescriptor: String,
-    val placement: EnginePlacement = EnginePlacement.OUTBOUND,
+    val descriptor: String,
     val requirements: Set<EngineRequirement> = emptySet()
 ) {
     val sessionRequirements: Set<EngineRequirement>
         get() = requirements.filterTo(mutableSetOf()) { it.sessionWide }
 }
 
-enum class EnginePlacement { OUTBOUND, ENDPOINT }
-
 enum class EngineRequirement(val sessionWide: Boolean) {
     TLS_FINGERPRINT(sessionWide = false),
-    RESOLVE_BEFORE_DIAL(sessionWide = true),
     IPV4_ONLY(sessionWide = true)
 }

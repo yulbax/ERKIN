@@ -1,13 +1,9 @@
-# ───────────────────────── sing-box / libbox (Go Mobile) ─────────────────────────
-# libbox.aar ships consumer rules for go.**/libbox.**, but be explicit anyway.
+# ───────────────────────── mihomo (Go Mobile) ─────────────────────────
 -keep class go.** { *; }
--keep class libbox.** { *; }
--keep class testbox.** { *; }
+-keep class mihomocore.** { *; }
 
-# Our libbox PlatformInterface / CommandServerHandler implementations are invoked
-# from native Go via JNI; their method names/signatures must survive. The vpn
-# package is small, so keep it wholesale (covers ErkinVpnService, ErkinPlatformInterface,
-# DefaultNetworkMonitor, SocketProtector, StringArray, ConfigBuilder, …).
+# Our mihomocore.Platform implementation is invoked from native Go via JNI; its method
+# names/signatures must survive. The vpn package is small, so keep it wholesale.
 -keep class io.github.yulbax.erkin.vpn.** { *; }
 
 # ───────────────────────── byedpi (JNI, name-based lookup) ─────────────────────────

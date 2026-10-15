@@ -4,12 +4,12 @@ import java.io.File
 import java.util.Date
 
 object DiagnosticsReport {
-    private const val MAX_BOX_LOG_BYTES = 1024 * 1024L
+    private const val MAX_CORE_LOG_BYTES = 1024 * 1024L
 
     fun build(
         environment: List<Pair<String, String>>,
         appLog: String,
-        boxLog: File,
+        coreLog: File,
         profiles: List<String> = emptyList()
     ): String = buildString {
         append("=== ERKIN diagnostics ===\n")
@@ -19,8 +19,8 @@ object DiagnosticsReport {
         if (profiles.isEmpty()) append("(none)\n") else profiles.forEach { append(it).append('\n') }
         append("\n=== app log (erkin.log) ===\n")
         append(redactSensitiveData(appLog))
-        append("\n=== sing-box (box.log) ===\n")
-        append(if (boxLog.exists()) redactSensitiveData(tail(boxLog, MAX_BOX_LOG_BYTES)) else "(no box.log)")
+        append("\n=== mihomo (${coreLog.name}) ===\n")
+        append(if (coreLog.exists()) redactSensitiveData(tail(coreLog, MAX_CORE_LOG_BYTES)) else "(no ${coreLog.name})")
     }
 
     private fun tail(file: File, maxBytes: Long): String {

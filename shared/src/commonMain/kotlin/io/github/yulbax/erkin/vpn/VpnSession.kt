@@ -255,8 +255,7 @@ class VpnSession(
                 probe = ProbeParams(
                     engine = engine,
                     byeDpiPort = byeDpiProbePort.takeIf { byeDpi.isRunning },
-                    vpnActive = config.vpnActive,
-                    isFingerprintError = { engine.hasFingerprintError() }
+                    vpnActive = config.vpnActive
                 ),
                 onRefreshSubscription = { refreshSubscription() },
                 onRecoveryReload = { requestWork(Command.Recover) },
@@ -273,7 +272,7 @@ class VpnSession(
                 if (result.affected == 0) {
                     log.w(TAG, "subscription no longer lists this server; keeping it unchanged")
                 } else {
-                    log.i(TAG, "subscription refreshed; engine will reload with new outbound")
+                    log.i(TAG, "subscription refreshed; engine will reload with the new server")
                 }
             ProfileOperationResult.EmptySubscription ->
                 log.i(TAG, "subscription refresh returned no servers")

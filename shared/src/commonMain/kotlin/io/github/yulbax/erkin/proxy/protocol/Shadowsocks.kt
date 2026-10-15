@@ -2,7 +2,6 @@ package io.github.yulbax.erkin.proxy.protocol
 
 import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.ProtocolHandler
-import io.github.yulbax.erkin.proxy.ServerAddress
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -37,17 +36,13 @@ object Shadowsocks : ProtocolHandler {
             port = server.substringAfterLast(':').toIntOrNull() ?: 8388
         }
 
-        val outbound = buildJsonObject {
-            put("type", "shadowsocks")
-            put("server", host)
-            put("server_port", port)
-            put("method", method)
+        val descriptor = buildJsonObject {
+            proxy("ss", host, port)
+            put("cipher", method)
             put("password", password)
         }
-        return ParsedLink(name.ifEmpty { host }, outbound)
+        return ParsedLink(name.ifEmpty { host }, descriptor)
     }
 
-    override fun server(descriptor: JsonObject): ServerAddress? = outboundServer(descriptor)
-
-    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(descriptor)
+    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
 }

@@ -7,8 +7,6 @@ variables:
   NDK_VERSION: "28.0.13004108"
   CMAKE_VERSION: "3.22.1"
   CMDLINE_TOOLS_VERSION: "11076708"
-  SING_BOX_TAG: "v1.260910.0"
-  LIBBOX_CACHE_REV: "8"
   GO_VERSION: "1.25.0"
   GOPATH: "${CI_PROJECT_DIR}/.go"
   GOCACHE: "${CI_PROJECT_DIR}/.gocache"
@@ -17,7 +15,7 @@ variables:
 
 stages:
   - autotag
-  - libbox
+  - core
   - quality
   - build
   - upload
@@ -86,9 +84,9 @@ autotag:
       "cmake;${CMAKE_VERSION}"
     - chmod +x ./gradlew
 
-libbox:
+core:
   extends: .android_base
-  stage: libbox
+  stage: core
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH
@@ -97,35 +95,27 @@ libbox:
     - key: "android-${CI_COMMIT_REF_SLUG}"
       paths:
         - .android-sdk/
-    - key: "libbox-${SING_BOX_TAG}-${LIBBOX_CACHE_REV}"
-      paths:
-        - app/libs/libbox.aar
     - key: "gomobile-${GO_VERSION}"
       paths:
         - .go/pkg/mod/
         - .gocache/
   script:
-    - |
-      if [ -f app/libs/libbox.aar ]; then
-        echo "Cached libbox.aar present for ${SING_BOX_TAG} — skipping build."
-        exit 0
-      fi
     - wget -q "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -O /tmp/go.tgz
     - rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tgz
     - export PATH="/usr/local/go/bin:${GOPATH}/bin:${PATH}"
-    - go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
-    - go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+    - go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20250808145247-395d808d53cd
+    - go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250808145247-395d808d53cd
     - export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
-    - CORE_TARGETS=android bash scripts/build-libbox.sh
+    - bash scripts/build-mihomo.sh
   artifacts:
     paths:
-      - app/libs/libbox.aar
+      - app/libs/mihomo.aar
     expire_in: 30 days
 
 quality:
   extends: .android_base
   stage: quality
-  needs: ["libbox"]
+  needs: ["core"]
   rules:
     - if: $CI_COMMIT_TAG
     - if: $CI_COMMIT_BRANCH
@@ -140,7 +130,7 @@ build:release:
   stage: build
   rules:
     - if: $CI_COMMIT_TAG
-  needs: ["libbox", "quality"]
+  needs: ["core", "quality"]
   script:
     - export ANDROID_NDK_HOME="${ANDROID_SDK_ROOT}/ndk/${NDK_VERSION}"
     - export PATH="${ANDROID_SDK_ROOT}/cmake/${CMAKE_VERSION}/bin:${PATH}"

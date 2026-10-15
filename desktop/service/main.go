@@ -17,6 +17,7 @@ var version = "dev"
 const (
 	serviceName    = "ERKIN"
 	appDirFileName = "app-dir"
+	coreLogName    = "core.log"
 	appCheckPeriod = 10 * time.Minute
 )
 
