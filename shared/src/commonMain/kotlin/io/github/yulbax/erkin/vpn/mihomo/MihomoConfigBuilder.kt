@@ -71,12 +71,7 @@ object MihomoConfigBuilder {
         val vpnTarget = active?.tag ?: DIRECT
         val desktop = platform as? MihomoPlatform.Desktop
         val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { byeDpiPackages.isNotEmpty() }
-        val defaultTarget = when {
-            desktop != null -> DIRECT
-            active != null -> active.tag
-            byeDpiPackages.isNotEmpty() -> BYEDPI_PROXY
-            else -> REJECT
-        }
+        val defaultTarget = if (desktop != null) DIRECT else REJECT
         val directNameserver = when (val systemDns = desktop?.systemDns) {
             SystemDns.Local -> SYSTEM_NAMESERVER
             is SystemDns.Server -> systemDns.address
@@ -164,6 +159,7 @@ object MihomoConfigBuilder {
                     channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), target) }
                 } else {
                     processRules(PROCESS_NAME, byeDpiPackages, BYEDPI_PROXY)
+                    processRules(PROCESS_NAME, vpnPackages, vpnTarget)
                 }
                 add("MATCH,$defaultTarget")
             }
