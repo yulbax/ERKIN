@@ -6,6 +6,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -67,7 +69,10 @@ internal fun ServerRow(
     delay: ProxyDelay? = null,
     testing: Boolean = false,
     isBest: Boolean = false,
+    selecting: Boolean = false,
+    checked: Boolean = false,
     onSelect: () -> Unit,
+    onLongClick: () -> Unit,
     onEdit: () -> Unit,
     onShare: () -> Unit,
     onRefresh: () -> Unit,
@@ -84,17 +89,20 @@ internal fun ServerRow(
 
     val pingColor = delay?.let { pingColor(it) }
     val rowColor = when {
+        checked -> MaterialTheme.colorScheme.secondaryContainer
         isBest && pingColor != null -> pingColor.copy(alpha = 0.14f)
         isSelected -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
         else -> Color.Transparent
     }
 
+    val shape = RoundedCornerShape(18.dp)
     Surface(
-        onClick = onSelect,
-        shape = RoundedCornerShape(18.dp),
+        shape = shape,
         color = rowColor,
         modifier = modifier
             .fillMaxWidth()
+            .clip(shape)
+            .combinedClickable(onClick = onSelect, onLongClick = onLongClick)
             .semantics { selected = isSelected }
     ) {
         Row(
@@ -163,68 +171,72 @@ internal fun ServerRow(
                 }
             }
 
-            SplitButtonLayout(
-                leadingButton = {
-                    SplitButtonDefaults.LeadingButton(
-                        onClick = onEdit,
-                        colors = splitColors
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Edit,
-                            modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize),
-                            contentDescription = stringResource(Res.string.edit),
-                        )
-                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                        Text(stringResource(Res.string.edit))
-                    }
-                },
-                trailingButton = {
-                    Box {
-                        SplitButtonDefaults.TrailingButton(
-                            checked = menuExpanded,
-                            onCheckedChange = { menuExpanded = it },
+            if (selecting) {
+                Checkbox(checked = checked, onCheckedChange = null)
+            } else {
+                SplitButtonLayout(
+                    leadingButton = {
+                        SplitButtonDefaults.LeadingButton(
+                            onClick = onEdit,
                             colors = splitColors
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.KeyboardArrowDown,
-                                contentDescription = stringResource(Res.string.more_options_cd)
+                                imageVector = Icons.Filled.Edit,
+                                modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize),
+                                contentDescription = stringResource(Res.string.edit),
                             )
+                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                            Text(stringResource(Res.string.edit))
                         }
+                    },
+                    trailingButton = {
+                        Box {
+                            SplitButtonDefaults.TrailingButton(
+                                checked = menuExpanded,
+                                onCheckedChange = { menuExpanded = it },
+                                colors = splitColors
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = stringResource(Res.string.more_options_cd)
+                                )
+                            }
 
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.share)) },
-                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                                onClick = {
-                                    onShare()
-                                    menuExpanded = false
-                                }
-                            )
-                            if (profile.subscriptionUrl.isNotEmpty()) {
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false }
+                            ) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.refresh_subscription)) },
-                                    leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                    text = { Text(stringResource(Res.string.share)) },
+                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                                     onClick = {
-                                        onRefresh()
+                                        onShare()
+                                        menuExpanded = false
+                                    }
+                                )
+                                if (profile.subscriptionUrl.isNotEmpty()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.refresh_subscription)) },
+                                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                        onClick = {
+                                            onRefresh()
+                                            menuExpanded = false
+                                        }
+                                    )
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(Res.string.delete)) },
+                                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                                    onClick = {
+                                        onDelete()
                                         menuExpanded = false
                                     }
                                 )
                             }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.delete)) },
-                                leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                                onClick = {
-                                    onDelete()
-                                    menuExpanded = false
-                                }
-                            )
                         }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }

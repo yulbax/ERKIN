@@ -89,9 +89,9 @@ class ProfileRepository(
         profileDao.selectExclusive(profile.id)
     }
 
-    suspend fun delete(profile: ProfileEntity) {
+    suspend fun delete(profiles: List<ProfileEntity>) {
         database.transaction {
-            profileDao.delete(profile)
+            profileDao.deleteMany(profiles)
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {
                 database.appDao().reassignConnectionType(ConnectionType.VPN, ConnectionType.DIRECT)

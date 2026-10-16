@@ -133,6 +133,11 @@
     <string name="tray_open">打开 ERKIN</string>
     <string name="channel_status_no_servers">没有服务器</string>
     <string name="delete_last_server_message">确定删除“%1$s”吗？这是最后一个服务器：VPN 通道中的应用将改为直连。</string>
+    <string name="delete_servers_title">删除服务器？</string>
+    <string name="delete_servers_message">确定删除 %1$d 个服务器吗？此操作无法撤销。</string>
+    <string name="delete_all_servers_message">确定删除全部 %1$d 个服务器吗？VPN 通道中的应用将改为直连。</string>
+    <string name="servers_selected">已选择：%1$d</string>
+    <string name="select_all">全选</string>
     <string name="error_process_lookup">无法按应用分流：内核模块 inet_diag、tcp_diag 和 udp_diag 未加载。这通常发生在内核更新之后——请重启电脑。</string>
     <string name="channel_status_byedpi_blocked">网站无法打开——请更换策略</string>
     <string name="new_apps_channel">新应用的默认通道</string>

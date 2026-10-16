@@ -43,6 +43,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,11 +51,16 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.HintBanner
+import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.platform.rememberSharer
 import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
@@ -85,7 +91,15 @@ fun ErkinScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
-    var deleting by remember { mutableStateOf<ProfileEntity?>(null) }
+    var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
+    var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
+    val checked = checkedIds.filterTo(HashSet()) { id -> servers.profiles.any { it.id == id } }
+
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = checked.isNotEmpty(),
+        onBackCompleted = { checkedIds = emptyList() }
+    )
     var showByeDpiDialog by remember { mutableStateOf(false) }
     val byeDpiTest by viewModel.byeDpiTest.collectAsStateWithLifecycle()
 
@@ -118,7 +132,14 @@ fun ErkinScreen(
             sharer.shareText(profile.subscriptionUrl.ifEmpty { profile.link }, shareChooserTitle)
         },
         onRefresh = { profileViewModel.refreshSubscription(it) },
-        onDelete = { deleting = it }
+        onDelete = { deleting = listOf(it) },
+        checked = checked,
+        onToggleCheck = { profile ->
+            checkedIds = if (profile.id in checked) checked.minus(profile.id).toList() else checked.plus(profile.id).toList()
+        },
+        onCheckAll = { checkedIds = servers.profiles.map { it.id } },
+        onClearChecks = { checkedIds = emptyList() },
+        onDeleteChecked = { deleting = servers.profiles.filter { it.id in checked } }
     )
 
     val windowSize = LocalWindowInfo.current.containerSize
@@ -156,14 +177,14 @@ fun ErkinScreen(
         )
     }
 
-    deleting?.let { profile ->
-        val displayName = profile.name.ifEmpty { stringResource(Res.string.unnamed_profile) }
+    deleting?.let { profiles ->
         AlertDialog(
             onDismissRequest = { deleting = null },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        profileViewModel.delete(profile)
+                        profileViewModel.delete(profiles)
+                        checkedIds = checkedIds - profiles.mapTo(HashSet()) { it.id }
                         deleting = null
                     },
                     colors = ButtonDefaults.textButtonColors(
@@ -176,11 +197,21 @@ fun ErkinScreen(
             dismissButton = {
                 TextButton(onClick = { deleting = null }) { Text(stringResource(Res.string.cancel)) }
             },
-            title = { Text(stringResource(Res.string.delete_server_title)) },
+            title = {
+                val title = if (profiles.size == 1) Res.string.delete_server_title else Res.string.delete_servers_title
+                Text(stringResource(title))
+            },
             text = {
-                val last = servers.profiles.size == 1 && ui.hasVpnApps
-                val message = if (last) Res.string.delete_last_server_message else Res.string.delete_server_message
-                Text(stringResource(message, displayName))
+                val last = profiles.size >= servers.profiles.size && ui.hasVpnApps
+                val single = profiles.singleOrNull()
+                if (single != null) {
+                    val displayName = single.name.ifEmpty { stringResource(Res.string.unnamed_profile) }
+                    val message = if (last) Res.string.delete_last_server_message else Res.string.delete_server_message
+                    Text(stringResource(message, displayName))
+                } else {
+                    val message = if (last) Res.string.delete_all_servers_message else Res.string.delete_servers_message
+                    Text(stringResource(message, profiles.size))
+                }
             }
         )
     }
@@ -218,8 +249,15 @@ private class ErkinScreenContent(
     val onEdit: (ProfileEntity) -> Unit,
     val onShare: (ProfileEntity) -> Unit,
     val onRefresh: (ProfileEntity) -> Unit,
-    val onDelete: (ProfileEntity) -> Unit
-)
+    val onDelete: (ProfileEntity) -> Unit,
+    val checked: Set<Long>,
+    val onToggleCheck: (ProfileEntity) -> Unit,
+    val onCheckAll: () -> Unit,
+    val onClearChecks: () -> Unit,
+    val onDeleteChecked: () -> Unit
+) {
+    val selecting: Boolean get() = checked.isNotEmpty()
+}
 
 @Composable
 private fun ErkinScreenPortrait(c: ErkinScreenContent) {
@@ -400,8 +438,9 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                AddServerFab(
+                AddFab(
                     onClick = c.onAddServerClick,
+                    contentDescription = stringResource(Res.string.add_server),
                     modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
                 )
             }
@@ -437,7 +476,10 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                         delay = c.servers.delays[profile.id],
                         testing = profile.id in c.servers.testingIds,
                         isBest = profile.id == fastestId,
-                        onSelect = { c.onSelect(profile) },
+                        selecting = c.selecting,
+                        checked = profile.id in c.checked,
+                        onSelect = { if (c.selecting) c.onToggleCheck(profile) else c.onSelect(profile) },
+                        onLongClick = { c.onToggleCheck(profile) },
                         onEdit = { c.onEdit(profile) },
                         onShare = { c.onShare(profile) },
                         onRefresh = { c.onRefresh(profile) },
@@ -446,10 +488,12 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                     )
                 }
             }
-            AnimatedSpeedometerButton(visible = showTest, testing = c.servers.testing, onClick = c.onTestClick)
-            if (!showHeader) {
-                AddServerFab(
+            AnimatedSpeedometerButton(visible = showTest && !c.selecting, testing = c.servers.testing, onClick = c.onTestClick)
+            SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked)
+            if (!showHeader && !c.selecting) {
+                AddFab(
                     onClick = c.onAddServerClick,
+                    contentDescription = stringResource(Res.string.add_server),
                     modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
                 )
             }
@@ -528,25 +572,6 @@ private fun SpeedometerButton(testing: Boolean, onClick: () -> Unit, modifier: M
                     modifier = Modifier.size(24.dp)
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun AddServerFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = modifier.size(48.dp)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = stringResource(Res.string.add_server),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
         }
     }
 }

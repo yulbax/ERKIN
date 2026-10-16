@@ -136,6 +136,11 @@
     <string name="tray_open">Открыть ERKIN</string>
     <string name="channel_status_no_servers">нет серверов</string>
     <string name="delete_last_server_message">Удалить «%1$s»? Это последний сервер: приложения из канала VPN будут переведены в прямой канал.</string>
+    <string name="delete_servers_title">Удалить серверы?</string>
+    <string name="delete_servers_message">Удалить выбранные серверы (%1$d)? Это нельзя отменить.</string>
+    <string name="delete_all_servers_message">Удалить все серверы (%1$d)? Приложения из канала VPN будут переведены в прямой канал.</string>
+    <string name="servers_selected">Выбрано: %1$d</string>
+    <string name="select_all">Выбрать все</string>
     <string name="error_process_lookup">Маршрутизация по приложениям недоступна: не загружены модули ядра inet_diag, tcp_diag и udp_diag. Обычно так бывает после обновления ядра — перезагрузите компьютер.</string>
     <string name="channel_status_byedpi_blocked">сайты не открываются — смените стратегию</string>
     <string name="new_apps_channel">Канал для новых приложений</string>

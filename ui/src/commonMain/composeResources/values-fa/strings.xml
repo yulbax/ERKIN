@@ -134,6 +134,11 @@
     <string name="tray_open">باز کردن ERKIN</string>
     <string name="channel_status_no_servers">سروری نیست</string>
     <string name="delete_last_server_message">«%1$s» حذف شود؟ این آخرین سرور است: برنامه‌های کانال VPN به کانال مستقیم منتقل می‌شوند.</string>
+    <string name="delete_servers_title">سرورها حذف شوند؟</string>
+    <string name="delete_servers_message">%1$d سرور حذف شوند؟ این کار قابل بازگشت نیست.</string>
+    <string name="delete_all_servers_message">همه %1$d سرور حذف شوند؟ برنامه‌های کانال VPN به کانال مستقیم منتقل می‌شوند.</string>
+    <string name="servers_selected">انتخاب‌شده: %1$d</string>
+    <string name="select_all">انتخاب همه</string>
     <string name="error_process_lookup">مسیریابی برای هر برنامه در دسترس نیست: ماژول‌های هسته inet_diag، tcp_diag و udp_diag بارگذاری نشده‌اند. معمولاً این پس از به‌روزرسانی هسته رخ می‌دهد — رایانه را دوباره راه‌اندازی کنید.</string>
     <string name="channel_status_byedpi_blocked">سایت‌ها باز نمی‌شوند — راهبرد دیگری را امتحان کنید</string>
     <string name="new_apps_channel">کانال برنامه‌های جدید</string>

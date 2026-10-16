@@ -110,8 +110,8 @@ class ProfileViewModel(
         viewModelScope.launch(Dispatchers.IO) { profileRepository.select(profile) }
     }
 
-    fun delete(profile: ProfileEntity) {
-        viewModelScope.launch(Dispatchers.IO) { profileRepository.delete(profile) }
+    fun delete(profiles: List<ProfileEntity>) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.delete(profiles) }
     }
 
     private fun handleResult(operation: String, result: ProfileOperationResult) {
