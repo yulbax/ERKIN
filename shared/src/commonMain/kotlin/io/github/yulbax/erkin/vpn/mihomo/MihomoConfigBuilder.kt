@@ -1,11 +1,11 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
 import io.github.yulbax.erkin.data.isExecutablePath
+import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RemoteDns
-import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -23,6 +23,8 @@ sealed interface SystemDns {
     data class Tls(val host: String) : SystemDns
     data object Unknown : SystemDns
 }
+
+data class ProbeInbound(val port: Int, val username: String, val password: String)
 
 sealed interface MihomoPlatform {
     data class Android(val systemDns: SystemDns = SystemDns.Local) : MihomoPlatform
@@ -58,20 +60,18 @@ object MihomoConfigBuilder {
 
     private val json = Json { prettyPrint = false }
 
-    fun build(
-        proxies: List<EngineProxy>,
-        activeProxyTag: String,
-        byeDpiPackages: List<String>,
-        vpnPackages: List<String>,
-        byeDpiPort: Int,
-        probePort: Int,
-        probeUser: String,
-        probePass: String,
-        options: NetworkOptions = NetworkOptions(),
-        platform: MihomoPlatform = MihomoPlatform.Android(),
-        directPaths: List<String> = emptyList(),
-        rules: List<RoutingRule> = emptyList()
-    ): String {
+    fun build(engine: EngineConfig, probe: ProbeInbound, platform: MihomoPlatform = MihomoPlatform.Android()): String {
+        val proxies = engine.proxies
+        val activeProxyTag = engine.activeProxyTag
+        val byeDpiPackages = engine.byeDpiPackages
+        val vpnPackages = engine.vpnPackages
+        val byeDpiPort = engine.byeDpiSocksPort
+        val options = engine.network
+        val directPaths = engine.directPaths
+        val rules = engine.rules
+        val probePort = probe.port
+        val probeUser = probe.username
+        val probePass = probe.password
         val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
         val activeProxy = active?.let { MihomoProxy.of(it, options.preferredFingerprint) }
         val ipv6 = options.ipv6Mode.ipv6Enabled && EngineRequirement.IPV4_ONLY !in active?.sessionRequirements.orEmpty()

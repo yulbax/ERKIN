@@ -17,6 +17,7 @@ import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
+import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
@@ -63,30 +64,17 @@ class DesktopEngineIntegrationTest {
 
     @Test
     fun windowsStyleConfigPassesServiceCheck() {
+        val probe = ProbeInbound(2080, "user", "pass")
+        val vless = EngineProxy("p1", """{"type":"vless","server":"a.example","port":443,"udp":true,"uuid":"b5e6f6c2-6f5e-4c57-9a1c-1a9a2e2c3d4e","tls":true,"servername":"a.example"}""")
         val config = MihomoConfigBuilder.build(
-            proxies = listOf(EngineProxy("p1", """{"type":"vless","server":"a.example","port":443,"udp":true,"uuid":"b5e6f6c2-6f5e-4c57-9a1c-1a9a2e2c3d4e","tls":true,"servername":"a.example"}""")),
-            activeProxyTag = "p1",
-            byeDpiPackages = listOf("Discord.exe"),
-            vpnPackages = listOf("Telegram.exe"),
-            byeDpiPort = 1081,
-            probePort = 2080,
-            probeUser = "user",
-            probePass = "pass",
-            options = NetworkOptions(),
-            platform = MihomoPlatform.Desktop(listOf("ciadpi.exe"), byeDpiProbePort = 3080)
+            EngineConfig(listOf(vless), "p1", listOf("Discord.exe"), listOf("Telegram.exe"), listOf("Discord.exe", "Telegram.exe"), 1081, NetworkOptions()),
+            probe,
+            MihomoPlatform.Desktop(listOf("ciadpi.exe"), byeDpiProbePort = 3080)
         )
         val noServers = MihomoConfigBuilder.build(
-            proxies = emptyList(),
-            activeProxyTag = "",
-            byeDpiPackages = listOf("Discord.exe"),
-            vpnPackages = emptyList(),
-            byeDpiPort = 1081,
-            probePort = 2080,
-            probeUser = "user",
-            probePass = "pass",
-            options = NetworkOptions(),
-            platform = MihomoPlatform.Desktop(listOf("ciadpi.exe")),
-            directPaths = listOf("C:\\venv\\python.exe")
+            EngineConfig(emptyList(), "", listOf("Discord.exe"), emptyList(), listOf("Discord.exe"), 1081, NetworkOptions(), listOf("C:\\venv\\python.exe")),
+            probe,
+            MihomoPlatform.Desktop(listOf("ciadpi.exe"))
         )
         ServiceClient.connect(startService()).use { client ->
             client.check(config)

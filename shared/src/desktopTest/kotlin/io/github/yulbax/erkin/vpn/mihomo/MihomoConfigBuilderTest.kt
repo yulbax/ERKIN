@@ -2,6 +2,8 @@ package io.github.yulbax.erkin.vpn.mihomo
 
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
+import io.github.yulbax.erkin.vpn.core.EngineConfig
+import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RoutingRule
@@ -42,7 +44,7 @@ class MihomoConfigBuilderTest {
     @Test
     fun androidWithoutServersStillRejectsUnmatchedTraffic() {
         val config = Json.parseToJsonElement(
-            MihomoConfigBuilder.build(emptyList(), "", listOf("org.dpi"), emptyList(), 1081, 2080, "u", "p")
+            MihomoConfigBuilder.build(engine(emptyList(), "", listOf("org.dpi"), emptyList()), PROBE)
         ).jsonObject
         assertEquals(listOf("IN-NAME,probe-in,DIRECT", "PROCESS-NAME,org.dpi,byedpi", "MATCH,REJECT"), config.rules())
         assertEquals("tls://1.1.1.1", config.getValue("dns").jsonObject.getValue("nameserver").jsonArray.single().jsonPrimitive.content)
@@ -102,7 +104,7 @@ class MihomoConfigBuilderTest {
         assertTrue(all.indexOf(userRules.first()) > all.indexOfLast { it.startsWith("IP-CIDR") && it.endsWith("no-resolve") })
         assertTrue(all.indexOf(userRules.last()) < all.indexOf("PROCESS-NAME,org.dpi,byedpi"))
         val noServer = Json.parseToJsonElement(
-            MihomoConfigBuilder.build(emptyList(), "", listOf("org.dpi"), emptyList(), 1081, 2080, "u", "p", rules = rules)
+            MihomoConfigBuilder.build(engine(emptyList(), "", listOf("org.dpi"), emptyList(), rules = rules), PROBE)
         ).jsonObject
         assertTrue("DOMAIN,a.example,REJECT" in noServer.rules())
     }
@@ -153,8 +155,8 @@ class MihomoConfigBuilderTest {
         val awg = requireNotNull(LinkParser.parse(AWG_IPV4_ONLY))
         val config = Json.parseToJsonElement(
             MihomoConfigBuilder.build(
-                listOf(ProxyProtocol.AMNEZIAWG.engineProxy("p2", awg.proxyJson())), "p2",
-                emptyList(), emptyList(), 1081, 2080, "u", "p", enabled
+                engine(listOf(ProxyProtocol.AMNEZIAWG.engineProxy("p2", awg.proxyJson())), "p2", emptyList(), emptyList(), enabled),
+                PROBE
             )
         ).jsonObject
         assertFalse(config.getValue("ipv6").jsonPrimitive.boolean)
@@ -202,12 +204,23 @@ class MihomoConfigBuilderTest {
         options: NetworkOptions = NetworkOptions(),
         rules: List<RoutingRule> = emptyList()
     ): JsonObject = Json.parseToJsonElement(
-        MihomoConfigBuilder.build(listOf(vless), "p1", byeDpi, vpn, 1081, 2080, "u", "p", options, platform, directPaths, rules)
+        MihomoConfigBuilder.build(engine(listOf(vless), "p1", byeDpi, vpn, options, directPaths, rules), PROBE, platform)
     ).jsonObject
+
+    private fun engine(
+        proxies: List<EngineProxy>,
+        activeTag: String,
+        byeDpi: List<String>,
+        vpn: List<String>,
+        options: NetworkOptions = NetworkOptions(),
+        directPaths: List<String> = emptyList(),
+        rules: List<RoutingRule> = emptyList()
+    ) = EngineConfig(proxies, activeTag, byeDpi, vpn, byeDpi + vpn, 1081, options, directPaths, rules)
 
     private fun JsonObject.rules(): List<String> = getValue("rules").jsonArray.map { it.jsonPrimitive.content }
 
     private companion object {
+        val PROBE = ProbeInbound(2080, "u", "p")
         val AWG_IPV4_ONLY = """
             [Interface]
             Address = 10.8.1.2/32

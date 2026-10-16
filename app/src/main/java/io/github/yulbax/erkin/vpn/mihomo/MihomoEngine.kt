@@ -106,17 +106,9 @@ class MihomoEngine(
     }
 
     private fun buildConfig(config: EngineConfig): String = MihomoConfigBuilder.build(
-        proxies = config.proxies,
-        activeProxyTag = config.activeProxyTag,
-        byeDpiPackages = config.byeDpiPackages,
-        vpnPackages = config.vpnPackages,
-        byeDpiPort = config.byeDpiSocksPort,
-        probePort = probeSocksPort,
-        probeUser = probeUsername,
-        probePass = probePassword,
-        options = config.network,
-        platform = MihomoPlatform.Android(MihomoRuntime.systemDns()),
-        rules = config.rules
+        engine = config,
+        probe = ProbeInbound(probeSocksPort, probeUsername, probePassword),
+        platform = MihomoPlatform.Android(MihomoRuntime.systemDns())
     )
 
     private fun sampleTraffic(): ScheduledExecutorService =
