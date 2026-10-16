@@ -24,6 +24,7 @@ import (
 const (
 	testConcurrency  = 10
 	invalidInterface = "<invalid>"
+	logFileMode      = 0o644
 )
 
 type Traffic struct {
@@ -243,10 +244,11 @@ func writeLog(path string) {
 	if path == "" {
 		return
 	}
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, logFileMode)
 	if err != nil {
 		return
 	}
+	_ = file.Chmod(logFileMode)
 	for event := range log.Subscribe() {
 		if event.LogLevel < log.Level() {
 			continue

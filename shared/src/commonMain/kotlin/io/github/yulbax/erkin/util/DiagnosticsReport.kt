@@ -20,7 +20,13 @@ object DiagnosticsReport {
         append("\n=== app log (erkin.log) ===\n")
         append(redactSensitiveData(appLog))
         append("\n=== mihomo (${coreLog.name}) ===\n")
-        append(if (coreLog.exists()) redactSensitiveData(tail(coreLog, MAX_CORE_LOG_BYTES)) else "(no ${coreLog.name})")
+        append(
+            when {
+                !coreLog.exists() -> "(no ${coreLog.name})"
+                else -> runCatching { redactSensitiveData(tail(coreLog, MAX_CORE_LOG_BYTES)) }
+                    .getOrElse { "(cannot read ${coreLog.name}: ${it.message})" }
+            }
+        )
     }
 
     private fun tail(file: File, maxBytes: Long): String {
