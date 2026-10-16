@@ -3,6 +3,7 @@ package mihomocore
 import (
 	"context"
 	"encoding/json"
+	"net/netip"
 	"os"
 	"sync"
 	"time"
@@ -21,7 +22,8 @@ import (
 )
 
 const (
-	testConcurrency = 10
+	testConcurrency  = 10
+	invalidInterface = "<invalid>"
 )
 
 type Traffic struct {
@@ -125,7 +127,17 @@ func TotalTraffic() *Traffic {
 }
 
 func DefaultInterface() string {
-	return dialer.DefaultInterface.Load()
+	if name := dialer.DefaultInterface.Load(); name != "" {
+		return name
+	}
+	finder := dialer.DefaultInterfaceFinder.Load()
+	if finder == nil {
+		return ""
+	}
+	if name := finder.FindInterfaceName(netip.IPv4Unspecified()); name != invalidInterface {
+		return name
+	}
+	return ""
 }
 
 type resolvingProxy struct {
