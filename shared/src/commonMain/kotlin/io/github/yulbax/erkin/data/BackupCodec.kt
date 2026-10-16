@@ -1,5 +1,12 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.data.profile.ChainEntry
+import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ProxyChain
+import io.github.yulbax.erkin.data.profile.ServerKind
+import io.github.yulbax.erkin.data.profile.isLink
+import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
@@ -49,7 +56,7 @@ object BackupCodec {
         if ((backup.profiles?.count { it.selected } ?: 0) > 1) return false
         if (backup.apps?.any(::isInvalidAppBackup) == true) return false
         if (backup.settings?.let(::isValidSettingsBackup) == false) return false
-        if (backup.profiles?.any { !isValidProfileBackup(it) } == true) return false
+        if (backup.profiles?.let(::isValidProfilesBackup) == false) return false
         if (backup.rules?.any { !isValidRuleBackup(it) } == true) return false
         return true
     }
@@ -62,7 +69,7 @@ object BackupCodec {
             ConnectionType.fromWire(entry.value) == null
     }
 
-    private fun isValidSettingsBackup(settings: BackupSettings): Boolean =
+    private fun isValidSettingsBackup(settings: SettingsEntity): Boolean =
         settings.mtu in NetworkOptions.MTU_RANGE &&
             settings.byeDpiArgs.length <= MAX_BYEDPI_ARGS_LENGTH &&
             Ipv6Mode.isKnownWire(settings.ipv6Mode) &&
@@ -72,7 +79,7 @@ object BackupCodec {
             (settings.preferredFingerprint.isBlank() ||
                 TlsFingerprint.fromWire(settings.preferredFingerprint) != null)
 
-    private fun isValidRuleBackup(rule: BackupRule): Boolean {
+    private fun isValidRuleBackup(rule: RoutingRuleEntity): Boolean {
         val match = RuleMatch.fromWire(rule.type) ?: return false
         if (RuleTarget.fromWire(rule.target) == null) return false
         return match.normalize(rule.value) == rule.value
@@ -81,7 +88,23 @@ object BackupCodec {
     private fun isValidDns(value: String): Boolean =
         value.isNotBlank() && value.length <= MAX_DNS_LENGTH && value.none(Char::isWhitespace)
 
-    private fun isValidProfileBackup(profile: BackupProfile): Boolean {
+    private fun isValidProfilesBackup(profiles: List<ProfileEntity>): Boolean {
+        val linkIds = profiles.filter { it.isLink && it.id != 0L }.map { it.id }
+        if (linkIds.size != linkIds.toSet().size) return false
+        return profiles.all { profile ->
+            when (val kind = profile.kind) {
+                is ServerKind.Link -> isValidProfileBackup(profile)
+                is ServerKind.Chain -> isValidChainBackup(profile, kind.chain, linkIds.toSet())
+            }
+        }
+    }
+
+    private fun isValidChainBackup(profile: ProfileEntity, chain: ProxyChain?, linkIds: Set<Long>): Boolean {
+        if (chain == null || profile.name.isBlank() || profile.name.length > MAX_PROFILE_NAME_LENGTH) return false
+        return chain.isValid && chain.serverIds.all { it in linkIds }
+    }
+
+    private fun isValidProfileBackup(profile: ProfileEntity): Boolean {
         if (profile.name.isBlank() || profile.name.length > MAX_PROFILE_NAME_LENGTH) return false
         if (profile.link.isBlank() || profile.link.length > MAX_LINK_LENGTH) return false
         if (profile.outboundJson.isBlank() || profile.outboundJson.length > MAX_OUTBOUND_LENGTH) return false

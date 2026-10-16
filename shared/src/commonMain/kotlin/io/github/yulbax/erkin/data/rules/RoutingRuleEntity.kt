@@ -5,14 +5,17 @@ import androidx.room.PrimaryKey
 import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
+@Serializable
 @Entity(tableName = "routing_rules")
 data class RoutingRuleEntity(
-    @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val type: String,
-    val value: String,
-    val target: String,
-    val position: Int = 0
+    @Transient @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val type: String = "",
+    val value: String = "",
+    val target: String = "",
+    @Transient val position: Int = 0
 ) {
     fun toRule(): RoutingRule? {
         val match = RuleMatch.fromWire(type) ?: return null

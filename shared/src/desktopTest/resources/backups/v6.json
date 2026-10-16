@@ -1,0 +1,11 @@
+{
+  "version": 6,
+  "apps": {"org.telegram.messenger": "VPN"},
+  "settings": {"mtu": 1340, "blockQuic": true},
+  "profiles": [
+    {"id": 3, "name": "Example", "type": "vless", "link": "vless://00000000-0000-0000-0000-000000000000@example.com:443?security=tls#Example", "outboundJson": "{\"type\":\"vless\"}"},
+    {"id": 4, "name": "Exit", "type": "vless", "link": "vless://00000000-0000-0000-0000-000000000000@exit.example.com:443?security=tls#Exit", "outboundJson": "{\"type\":\"vless\"}"},
+    {"id": 8, "name": "Example → Exit", "type": "chain", "outboundJson": "{\"entry\":3,\"exit\":4}", "selected": true}
+  ],
+  "rules": [{"type": "country", "value": "RU", "target": "DIRECT"}]
+}

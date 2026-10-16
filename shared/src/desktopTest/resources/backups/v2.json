@@ -1,0 +1,5 @@
+{
+  "version": 2,
+  "apps": {"org.telegram.messenger": "VPN"},
+  "settings": {"id": 1, "showSystemApps": true, "tunStack": "system", "mtu": 1500, "ipv6Mode": "prefer", "dnsRemote": "8.8.8.8"}
+}
