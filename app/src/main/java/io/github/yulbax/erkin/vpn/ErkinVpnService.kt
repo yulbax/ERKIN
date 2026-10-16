@@ -128,7 +128,7 @@ class ErkinVpnService :
 
     override fun onDestroy() {
         networkMonitor.onUnderlyingNetworkChanged = null
-        controller.shutdown()
+        controller.shutdownInBackground()
         super.onDestroy()
     }
 
