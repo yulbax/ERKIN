@@ -25,6 +25,7 @@ composeIconsMultiplatform = "1.7.3"
 markdownRenderer = "0.45.0"
 jetbrainsLifecycle = "2.11.0"
 jetbrainsNavigation = "2.9.2"
+jetbrainsNavigationEvent = "1.1.0"
 kotlinxSerializationJson = "1.11.0"
 kotlinxCoroutines = "1.11.0"
 
@@ -61,6 +62,7 @@ jetbrains-compose-components-resources = { module = "org.jetbrains.compose.compo
 jetbrains-lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "jetbrainsLifecycle" }
 jetbrains-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "jetbrainsLifecycle" }
 jetbrains-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "jetbrainsNavigation" }
+jetbrains-navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "jetbrainsNavigationEvent" }
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "koin" }
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutines" }

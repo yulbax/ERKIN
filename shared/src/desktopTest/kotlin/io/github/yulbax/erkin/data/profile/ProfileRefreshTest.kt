@@ -247,7 +247,7 @@ class ProfileRefreshTest {
             )
         )
 
-        repository.delete(database.profileDao().getAll().single { it.id == id })
+        repository.delete(listOf(database.profileDao().getAll().single { it.id == id }))
 
         assertEquals(ConnectionType.DIRECT, database.appDao().getApp("org.vpn")?.connectionType)
         assertEquals(ConnectionType.BYEDPI, database.appDao().getApp("org.dpi")?.connectionType)

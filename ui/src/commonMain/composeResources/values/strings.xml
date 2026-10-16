@@ -137,6 +137,11 @@
     <string name="tray_open">Open ERKIN</string>
     <string name="channel_status_no_servers">no servers</string>
     <string name="delete_last_server_message">Delete &quot;%1$s&quot;? It is your last server: apps in the VPN channel will be moved to the direct channel.</string>
+    <string name="delete_servers_title">Delete servers?</string>
+    <string name="delete_servers_message">Delete %1$d servers? This cannot be undone.</string>
+    <string name="delete_all_servers_message">Delete all %1$d servers? Apps in the VPN channel will be moved to the direct channel.</string>
+    <string name="servers_selected">Selected: %1$d</string>
+    <string name="select_all">Select all</string>
     <string name="error_process_lookup">Per-app routing is unavailable: the kernel modules inet_diag, tcp_diag and udp_diag are not loaded. This usually happens after a kernel update — reboot the computer.</string>
     <string name="channel_status_byedpi_blocked">sites don’t open — try another strategy</string>
     <string name="new_apps_channel">Channel for new apps</string>
