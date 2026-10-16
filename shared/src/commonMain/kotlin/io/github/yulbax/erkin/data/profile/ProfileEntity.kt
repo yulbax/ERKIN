@@ -12,7 +12,8 @@ data class ProfileEntity(
     val link: String,
     val outboundJson: String,
     val selected: Boolean = false,
-    val subscriptionUrl: String = ""
+    val subscriptionUrl: String = "",
+    val position: Int = 0
 ) {
     val protocol: ProxyProtocol? get() = ProxyProtocol.fromWire(type)
 }

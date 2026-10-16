@@ -71,7 +71,8 @@ internal fun ServerRow(
     onEdit: () -> Unit,
     onShare: () -> Unit,
     onRefresh: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val splitColors = ButtonColors(
@@ -92,7 +93,7 @@ internal fun ServerRow(
         onClick = onSelect,
         shape = RoundedCornerShape(18.dp),
         color = rowColor,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .semantics { selected = isSelected }
     ) {

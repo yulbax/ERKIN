@@ -441,7 +441,8 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                         onEdit = { c.onEdit(profile) },
                         onShare = { c.onShare(profile) },
                         onRefresh = { c.onRefresh(profile) },
-                        onDelete = { c.onDelete(profile) }
+                        onDelete = { c.onDelete(profile) },
+                        modifier = Modifier.animateItem()
                     )
                 }
             }

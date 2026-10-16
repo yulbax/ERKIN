@@ -71,6 +71,7 @@ class AppDatabaseUpgradeTest {
         assertEquals(ProxyProtocol.VLESS.wire, profile.type)
         assertEquals(ProxyProtocol.VLESS, profile.protocol)
         assertEquals("Example", profile.name)
+        assertEquals(profile.id.toInt(), profile.position)
     }
 
     private fun open(): AppDatabase = AppDatabase.build(Room.databaseBuilder<AppDatabase>(name = dbFile.absolutePath))
