@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import java.io.ByteArrayInputStream
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -56,6 +57,18 @@ class BackupCodecTest {
 
         assertNotNull(backup)
         assertEquals(1500, backup?.settings?.mtu)
+    }
+
+    @Test
+    fun removedIpv6ModesStillImportAsEnabled() {
+        val backup = requireNotNull(
+            BackupCodec.decode("""{"version":4,"settings":{"ipv6Mode":"prefer"}}""")
+        )
+
+        val settings = requireNotNull(backup.settings).toEntity()
+        assertEquals(Ipv6Mode.ENABLE, settings.networkOptions().ipv6Mode)
+        assertEquals(Ipv6Mode.ENABLE, SettingsEntity(ipv6Mode = "only").networkOptions().ipv6Mode)
+        assertFalse(BackupCodec.isValid(backup.copy(settings = BackupSettings(ipv6Mode = "sometimes"))))
     }
 
     @Test

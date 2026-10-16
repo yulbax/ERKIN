@@ -74,7 +74,7 @@ object BackupCodec {
     private fun isValidSettingsBackup(settings: BackupSettings): Boolean =
         settings.mtu in NetworkOptions.MTU_RANGE &&
             settings.byeDpiArgs.length <= MAX_BYEDPI_ARGS_LENGTH &&
-            Ipv6Mode.entries.any { it.wire == settings.ipv6Mode } &&
+            Ipv6Mode.isKnownWire(settings.ipv6Mode) &&
             isValidDns(settings.dnsRemote) &&
             isValidDns(settings.dnsDirect) &&
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
