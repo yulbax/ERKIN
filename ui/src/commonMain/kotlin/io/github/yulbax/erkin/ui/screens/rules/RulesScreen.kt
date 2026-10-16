@@ -41,12 +41,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.ui.components.AddFab
+import io.github.yulbax.erkin.ui.components.CountryFlag
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
@@ -63,6 +65,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun Rules(viewModel: RulesViewModel = koinViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
+    val countryAvailable by viewModel.countryAvailable.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.refreshGeoIp() }
     var editing by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<List<RoutingRuleEntity>?>(null) }
@@ -204,7 +208,8 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                     editing = null
                     deleting = listOf(it)
                 }
-            }
+            },
+            countryAvailable = countryAvailable
         )
     }
 
@@ -260,13 +265,16 @@ private fun RuleRow(
         handle()
         Spacer(Modifier.width(4.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = rule.displayValue(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (match?.ui?.input == RuleInput.Country) CountryFlag(rule.value, 16.sp)
+                Text(
+                    text = rule.displayValue(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
             if (match != null) {
                 Text(
                     text = match.label(),
@@ -290,8 +298,13 @@ private fun RuleRow(
     }
 }
 
-private fun RoutingRuleEntity.displayValue(): String =
-    RuleMatch.fromWire(type)?.display(value) ?: value
+private fun RoutingRuleEntity.displayValue(): String {
+    val match = RuleMatch.fromWire(type) ?: return value
+    return when (match.ui.input) {
+        RuleInput.Country -> "${countryName(value)} ($value)"
+        RuleInput.Text -> match.display(value)
+    }
+}
 
 private const val HINT_KEY = "hint"
 private const val EMPTY_KEY = "empty"

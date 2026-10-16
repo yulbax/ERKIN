@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
+import io.github.yulbax.erkin.geoip.GeoIpDatabase
+import io.github.yulbax.erkin.geoip.GeoIpState
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import kotlinx.coroutines.Dispatchers
@@ -16,8 +18,17 @@ import kotlinx.coroutines.launch
 
 class RulesViewModel(
     private val repository: RoutingRuleRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val geoIpDatabase: GeoIpDatabase
 ) : ViewModel() {
+
+    val countryAvailable: StateFlow<Boolean> = geoIpDatabase.state
+        .map { it is GeoIpState.Ready }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), geoIpDatabase.state.value is GeoIpState.Ready)
+
+    fun refreshGeoIp() {
+        viewModelScope.launch(Dispatchers.IO) { geoIpDatabase.refresh() }
+    }
 
     val rules: StateFlow<List<RoutingRuleEntity>> =
         repository.rules.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

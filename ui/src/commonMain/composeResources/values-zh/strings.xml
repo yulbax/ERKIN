@@ -178,4 +178,18 @@
     <string name="delete_rules_message">删除选中的 %1$d 条规则吗？</string>
     <string name="invalid_remote_dns">DNS 地址无效。请填写 IP 或 tls://、https://、quic://、udp://、tcp:// 地址</string>
     <string name="block_quic">阻止 QUIC（UDP 443）</string>
+    <string name="geoip_title">GeoIP</string>
+    <string name="geoip_description">用于“国家”规则的国家 IP 段数据库。约 8 MB，从 GitHub（MetaCubeX meta-rules-dat）下载。</string>
+    <string name="geoip_database">国家数据库</string>
+    <string name="geoip_missing">未下载</string>
+    <string name="geoip_updated">更新于 %1$s</string>
+    <string name="geoip_downloading">正在下载…</string>
+    <string name="geoip_downloading_percent">正在下载… %1$s</string>
+    <string name="geoip_download">下载</string>
+    <string name="geoip_update">更新</string>
+    <string name="geoip_failed">GeoIP 下载失败：%1$s</string>
+    <string name="rule_type_country">国家 (GeoIP)</string>
+    <string name="rule_type_country_short">国家</string>
+    <string name="rule_country">国家</string>
+    <string name="rule_country_search">输入国家名称</string>
 </resources>

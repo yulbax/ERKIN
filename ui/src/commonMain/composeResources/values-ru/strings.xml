@@ -181,4 +181,18 @@
     <string name="delete_rules_message">Удалить выбранные правила (%1$d)?</string>
     <string name="invalid_remote_dns">Неверный адрес DNS. Укажите IP или адрес вида tls://, https://, quic://, udp://, tcp://</string>
     <string name="block_quic">Блокировать QUIC (UDP 443)</string>
+    <string name="geoip_title">GeoIP</string>
+    <string name="geoip_description">База IP-адресов стран для правил «Страна». Около 8 МБ, скачивается с GitHub (MetaCubeX meta-rules-dat).</string>
+    <string name="geoip_database">База стран</string>
+    <string name="geoip_missing">Не скачана</string>
+    <string name="geoip_updated">Обновлена %1$s</string>
+    <string name="geoip_downloading">Скачивается…</string>
+    <string name="geoip_downloading_percent">Скачивается… %1$s</string>
+    <string name="geoip_download">Скачать</string>
+    <string name="geoip_update">Обновить</string>
+    <string name="geoip_failed">Не удалось скачать GeoIP: %1$s</string>
+    <string name="rule_type_country">Страна (GeoIP)</string>
+    <string name="rule_type_country_short">Страна</string>
+    <string name="rule_country">Страна</string>
+    <string name="rule_country_search">Начните вводить страну</string>
 </resources>
