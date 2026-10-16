@@ -20,14 +20,12 @@ import io.github.yulbax.erkin.util.FileAppLog
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
-import io.github.yulbax.erkin.vpn.HealthMonitor
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
-import io.github.yulbax.erkin.vpn.SocksHealthProbe
 import io.github.yulbax.erkin.vpn.SocksSiteProbe
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnController
-import io.github.yulbax.erkin.vpn.VpnSession
+import io.github.yulbax.erkin.vpn.VpnSessionFactory
 import io.github.yulbax.erkin.vpn.VpnSessionStore
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import kotlinx.coroutines.CoroutineScope
@@ -73,29 +71,26 @@ val desktopModule = module {
         }
     }
 
+    single { VpnSessionFactory(get(), get(), get()) }
     single {
         val log = get<AppLog>()
-        val stateRepository = get<VpnStateRepository>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        VpnController(scope, get(), stateRepository, DesktopHost, log) { controller ->
-            VpnSession(
+        val sessions = get<VpnSessionFactory>()
+        val service = get<DesktopService>()
+        VpnController(scope, get(), get(), DesktopHost, log) { controller ->
+            sessions.create(
+                controller = controller,
+                scope = scope,
                 engine = ServiceEngine(
-                    service = get(),
+                    service = service,
                     directProcesses = listOf(DesktopPaths.ciadpi.name),
                     delayProbeUrl = ProbeUrls.VPN,
                     listener = controller,
                     log = log
                 ),
                 byeDpi = CiadpiProcess(DesktopPaths.ciadpi, DesktopPaths.protectSocket, log),
-                store = get(),
-                stateRepository = stateRepository,
-                health = HealthMonitor(stateRepository, log, SocksHealthProbe(ProbeUrls.BYEDPI)),
-                quality = SocksSiteProbe,
-                log = log,
-                ownPackage = DesktopPaths.ownExecutable.orEmpty(),
-                scope = scope,
-                requestWork = controller::requestWork,
-                onByeDpiExit = controller::onByeDpiExit
+                byeDpiHealthProbeUrl = ProbeUrls.BYEDPI,
+                ownPackage = DesktopPaths.ownExecutable.orEmpty()
             )
         }
     }

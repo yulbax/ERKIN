@@ -22,6 +22,7 @@ import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.mihomo.MihomoLatencyTester
 import io.github.yulbax.erkin.vpn.VpnCommandBus
+import io.github.yulbax.erkin.vpn.VpnSessionFactory
 import io.github.yulbax.erkin.vpn.VpnSessionStore
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import org.koin.core.annotation.ComponentScan
@@ -62,6 +63,13 @@ class AppModule {
 
     @Single
     fun routingRuleRepository(database: AppDatabase): RoutingRuleRepository = RoutingRuleRepository(database)
+
+    @Single
+    fun vpnSessionFactory(
+        store: VpnSessionStore,
+        stateRepository: VpnStateRepository,
+        log: AppLog
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, log)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =
