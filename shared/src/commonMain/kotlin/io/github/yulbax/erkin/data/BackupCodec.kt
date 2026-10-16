@@ -1,10 +1,10 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.proxy.LinkParser
+import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
-import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
 import kotlinx.serialization.json.Json
@@ -47,20 +47,6 @@ object BackupCodec {
         if (backup.settings?.let(::isValidSettingsBackup) == false) return false
         if (backup.profiles?.any { !isValidProfileBackup(it) } == true) return false
         return true
-    }
-
-    internal fun InputStream.readBounded(maxBytes: Long): ByteArray {
-        val output = ByteArrayOutputStream()
-        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-        var total = 0L
-        while (true) {
-            val read = read(buffer)
-            if (read == -1) break
-            total += read
-            require(total <= maxBytes) { "Backup exceeds ${maxBytes / 1024 / 1024} MB" }
-            output.write(buffer, 0, read)
-        }
-        return output.toByteArray()
     }
 
     private fun isInvalidAppBackup(entry: Map.Entry<String, String>): Boolean {

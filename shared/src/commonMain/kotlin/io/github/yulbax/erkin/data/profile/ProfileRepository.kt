@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.proxy.SubscriptionParser
 import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.util.readBounded
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import java.io.InputStream
@@ -35,7 +36,7 @@ class ProfileRepository(
     }
 
     fun readConfigFile(open: () -> InputStream?): String? = runCatching {
-        open()?.use { with(BackupCodec) { it.readBounded(MAX_CONFIG_FILE_BYTES) } }?.decodeToString()
+        open()?.use { it.readBounded(MAX_CONFIG_FILE_BYTES) }?.decodeToString()
     }.getOrNull()?.takeIf { it.isNotBlank() }
 
     suspend fun update(

@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import java.io.ByteArrayInputStream
 import kotlinx.serialization.json.Json
@@ -113,7 +114,7 @@ class BackupCodecTest {
         val input = ByteArrayInputStream(ByteArray(6))
 
         val error = runCatching {
-            with(BackupCodec) { input.readBounded(maxBytes = 5) }
+            input.readBounded(maxBytes = 5)
         }.exceptionOrNull()
 
         assertTrue(error is IllegalArgumentException)

@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.update
 
+import io.github.yulbax.erkin.util.readBounded
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URI
@@ -12,6 +13,7 @@ import kotlinx.serialization.json.Json
 object GitHubReleases {
     private const val LATEST_URL = "https://api.github.com/repos/yulbax/ERKIN/releases/latest"
     private const val TIMEOUT_MS = 15_000
+    private const val MAX_BYTES = 1L shl 20
     private const val SHA256_PREFIX = "sha256:"
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -44,7 +46,7 @@ object GitHubReleases {
         try {
             val code = connection.responseCode
             if (code !in 200..299) throw IOException("HTTP $code")
-            return connection.inputStream.use { it.readBytes().decodeToString() }
+            return connection.inputStream.use { it.readBounded(MAX_BYTES).decodeToString() }
         } finally {
             connection.disconnect()
         }
