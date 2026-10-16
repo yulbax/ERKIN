@@ -79,7 +79,7 @@ internal fun AddServerDialog(
     val invalidFileMessage = stringResource(Res.string.import_invalid_file)
     val pickFile = rememberFilePicker(listOf("text/plain", "*/*")) { file ->
         onReadFile(file) { content ->
-            if (content == null) showMessage(invalidFileMessage) else text = content.trim()
+            if (content == null) showMessage(invalidFileMessage) else onAdd(content.trim())
         }
     }
 
