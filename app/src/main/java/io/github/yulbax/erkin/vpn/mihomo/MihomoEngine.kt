@@ -113,7 +113,8 @@ class MihomoEngine(
         probePort = probeSocksPort,
         probeUser = probeUsername,
         probePass = probePassword,
-        options = config.network
+        options = config.network,
+        rules = config.rules
     )
 
     private fun sampleTraffic(): ScheduledExecutorService =

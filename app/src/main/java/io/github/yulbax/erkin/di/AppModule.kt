@@ -9,6 +9,7 @@ import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsDao
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileDao
+import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.update.UpdateChecker
 import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.util.AppLog
@@ -58,6 +59,9 @@ class AppModule {
         subscriptionSource: SubscriptionProfileSource,
         log: AppLog
     ): ProfileRepository = ProfileRepository(database, profileDao, subscriptionSource, log)
+
+    @Single
+    fun routingRuleRepository(database: AppDatabase): RoutingRuleRepository = RoutingRuleRepository(database)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =

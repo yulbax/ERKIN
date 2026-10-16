@@ -56,6 +56,8 @@ expect object AppLocale {
 
 expect val supportsSystemAppsFilter: Boolean
 
+expect val rulesCoverAllApps: Boolean
+
 expect val scrollbarAlwaysVisible: Boolean
 
 expect val drawerSwipeToOpen: Boolean

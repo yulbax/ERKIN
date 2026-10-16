@@ -23,7 +23,8 @@ class RoomVpnSessionStore(
             selected = profileDao.getSelected(),
             profiles = profileDao.getAll(),
             settings = database.settingsDao().getSettings() ?: SettingsEntity(),
-            apps = database.appDao().getAllAppsSnapshot()
+            apps = database.appDao().getAllAppsSnapshot(),
+            rules = database.routingRuleDao().getAll().mapNotNull { it.toRule() }
         )
     }
 
@@ -31,8 +32,9 @@ class RoomVpnSessionStore(
         combine(
             database.profileDao().observeAll(),
             database.profileDao().observeSelected(),
-            database.appDao().getAllApps()
-        ) { profiles, selected, apps -> Triple(profiles, selected, apps) }
+            database.appDao().getAllApps(),
+            database.routingRuleDao().observeAll()
+        ) { profiles, selected, apps, rules -> listOf(profiles, selected, apps, rules) }
             .distinctUntilChanged()
             .map { }
 

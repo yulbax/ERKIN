@@ -4,6 +4,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.AltRoute
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Gavel
@@ -22,6 +23,7 @@ import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.screens.apps.Apps
 import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
+import io.github.yulbax.erkin.ui.screens.rules.Rules
 import io.github.yulbax.erkin.ui.screens.settings.Settings
 
 sealed class Screen(
@@ -42,6 +44,13 @@ sealed class Screen(
         title = Res.string.applications,
         selectedIcon = Icons.AutoMirrored.Filled.List,
         unselectedIcon = Icons.AutoMirrored.Filled.List
+    )
+
+    object Rules : Screen(
+        route = "rules",
+        title = Res.string.rules_title,
+        selectedIcon = Icons.AutoMirrored.Filled.AltRoute,
+        unselectedIcon = Icons.AutoMirrored.Filled.AltRoute
     )
 
     object Settings : Screen(
@@ -76,6 +85,7 @@ sealed class Screen(
 val primaryNavPages = listOf(
     Screen.Main,
     Screen.Apps,
+    Screen.Rules,
     Screen.Settings,
     Screen.Logs
 )
@@ -113,6 +123,7 @@ fun ErkinNavHost(
             ErkinScreen(onNavigateToApps = { navController.navigateToScreen(Screen.Apps) })
         }
         composable(Screen.Apps.route) { Apps(query = appsQuery) }
+        composable(Screen.Rules.route) { Rules() }
         composable(Screen.Settings.route) { Settings() }
         composable(Screen.Logs.route) { Logs() }
         composable(Screen.License.route) { License() }

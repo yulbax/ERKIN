@@ -8,7 +8,8 @@ data class EngineConfig(
     val tunneledPackages: List<String>,
     val byeDpiSocksPort: Int,
     val network: NetworkOptions,
-    val directPaths: List<String> = emptyList()
+    val directPaths: List<String> = emptyList(),
+    val rules: List<RoutingRule> = emptyList()
 )
 
 data class EngineProxy(

@@ -4,6 +4,9 @@ import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.RoutingRule
+import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -78,6 +81,32 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun userRulesOverrideAppChannelsButNotTheServiceRules() {
+        val rules = listOf(
+            RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT),
+            RoutingRule(RuleMatch.DOMAIN_KEYWORD, "ads", RuleTarget.BLOCK),
+            RoutingRule(RuleMatch.IP_CIDR, "1.1.1.1/32", RuleTarget.BYEDPI),
+            RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN)
+        )
+        val config = build(vpn = listOf("org.vpn"), options = NetworkOptions(bypassLan = true), rules = rules)
+        val userRules = listOf(
+            "DOMAIN-SUFFIX,ru,DIRECT",
+            "DOMAIN-KEYWORD,ads,REJECT",
+            "IP-CIDR,1.1.1.1/32,byedpi",
+            "DOMAIN,a.example,p1"
+        )
+        val all = config.rules()
+        assertEquals("IN-NAME,probe-in,p1", all.first())
+        assertEquals(userRules, all.dropWhile { !it.startsWith("DOMAIN-SUFFIX") }.take(userRules.size))
+        assertTrue(all.indexOf(userRules.first()) > all.indexOfLast { it.startsWith("IP-CIDR") && it.endsWith("no-resolve") })
+        assertTrue(all.indexOf(userRules.last()) < all.indexOf("PROCESS-NAME,org.dpi,byedpi"))
+        val noServer = Json.parseToJsonElement(
+            MihomoConfigBuilder.build(emptyList(), "", listOf("org.dpi"), emptyList(), 1081, 2080, "u", "p", rules = rules)
+        ).jsonObject
+        assertTrue("DOMAIN,a.example,REJECT" in noServer.rules())
+    }
+
+    @Test
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
         val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
@@ -136,9 +165,10 @@ class MihomoConfigBuilderTest {
         byeDpi: List<String> = listOf("org.dpi"),
         vpn: List<String> = emptyList(),
         directPaths: List<String> = emptyList(),
-        options: NetworkOptions = NetworkOptions()
+        options: NetworkOptions = NetworkOptions(),
+        rules: List<RoutingRule> = emptyList()
     ): JsonObject = Json.parseToJsonElement(
-        MihomoConfigBuilder.build(listOf(vless), "p1", byeDpi, vpn, 1081, 2080, "u", "p", options, platform, directPaths)
+        MihomoConfigBuilder.build(listOf(vless), "p1", byeDpi, vpn, 1081, 2080, "u", "p", options, platform, directPaths, rules)
     ).jsonObject
 
     private fun JsonObject.rules(): List<String> = getValue("rules").jsonArray.map { it.jsonPrimitive.content }
