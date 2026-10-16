@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialogDefaults
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +29,11 @@ fun AppDialog(
     buttons: @Composable RowScope.() -> Unit,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    BasicAlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.widthIn(max = MAX_WIDTH).fillMaxWidth().padding(horizontal = 16.dp),
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
             shape = AlertDialogDefaults.shape,
             color = MaterialTheme.colorScheme.surfaceContainer,
@@ -56,3 +62,5 @@ fun AppDialog(
         }
     }
 }
+
+private val MAX_WIDTH = 560.dp
