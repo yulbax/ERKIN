@@ -168,6 +168,9 @@ actual val supportsSystemAppsFilter: Boolean = false
 
 actual val rulesCoverAllApps: Boolean = true
 
+actual val revealInFolder: ((path: String) -> Unit)? =
+    if (WindowsShell.isWindows) { path -> if (File(path).isFile) WindowsShell.revealInExplorer(path) } else null
+
 actual val scrollbarAlwaysVisible: Boolean = true
 
 actual val drawerSwipeToOpen: Boolean = false

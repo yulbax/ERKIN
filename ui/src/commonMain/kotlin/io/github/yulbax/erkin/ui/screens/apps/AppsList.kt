@@ -1,6 +1,9 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,12 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.HoverHint
 import io.github.yulbax.erkin.ui.platform.rememberAppIcon
+import io.github.yulbax.erkin.ui.platform.revealInFolder
 import io.github.yulbax.erkin.ui.platform.supportsAppIcons
 import io.github.yulbax.erkin.ui.viewmodel.AppInfo
 
@@ -124,14 +129,23 @@ private fun AppRow(
             )
             val location = app.path ?: app.packageName
             var truncated by remember(location) { mutableStateOf(false) }
+            val reveal = revealInFolder?.takeIf { app.path != null }
+            val interaction = remember { MutableInteractionSource() }
+            val hovered by interaction.collectIsHoveredAsState()
             HoverHint(text = location, enabled = truncated) {
                 Text(
                     text = location,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textDecoration = if (reveal != null && hovered) TextDecoration.Underline else null,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    onTextLayout = { truncated = it.hasVisualOverflow }
+                    onTextLayout = { truncated = it.hasVisualOverflow },
+                    modifier = if (reveal != null) {
+                        Modifier.clickable(interactionSource = interaction, indication = null) { reveal(location) }
+                    } else {
+                        Modifier
+                    }
                 )
             }
         }

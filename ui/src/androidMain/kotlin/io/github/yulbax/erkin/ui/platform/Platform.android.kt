@@ -185,6 +185,8 @@ actual val supportsSystemAppsFilter: Boolean = true
 
 actual val rulesCoverAllApps: Boolean = false
 
+actual val revealInFolder: ((path: String) -> Unit)? = null
+
 actual val scrollbarAlwaysVisible: Boolean = false
 
 actual val drawerSwipeToOpen: Boolean = true
