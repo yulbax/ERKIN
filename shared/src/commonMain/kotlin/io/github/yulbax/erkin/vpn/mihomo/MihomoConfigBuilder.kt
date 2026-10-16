@@ -120,9 +120,7 @@ object MihomoConfigBuilder {
                     add(if (active != null) "tls://${options.dnsRemote}#${active.tag}" else "tls://${options.dnsRemote}")
                 }
                 putJsonArray("direct-nameserver") { add(directNameserver) }
-                if (desktop != null) {
-                    putJsonObject("nameserver-policy") { put(LOCAL_DOMAINS.joinToString(","), directNameserver) }
-                }
+                putJsonObject("nameserver-policy") { put(LOCAL_DOMAINS.joinToString(","), directNameserver) }
             }
             if (options.sniff) {
                 putJsonObject("sniffer") {

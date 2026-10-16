@@ -36,6 +36,7 @@ class MihomoConfigBuilderTest {
         )
         assertEquals(listOf("p1", "byedpi"), config.getValue("proxies").jsonArray.map { it.jsonObject.getValue("name").jsonPrimitive.content })
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
+        assertEquals("system://", config.getValue("dns").jsonObject.getValue("nameserver-policy").jsonObject.values.single().jsonPrimitive.content)
     }
 
     @Test
@@ -126,6 +127,7 @@ class MihomoConfigBuilderTest {
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
         val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
+        assertEquals("system://", config.getValue("dns").jsonObject.getValue("nameserver-policy").jsonObject.values.single().jsonPrimitive.content)
     }
 
     @Test
