@@ -3,7 +3,9 @@ package io.github.yulbax.erkin.vpn
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.SettingsEntity
+import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleMatch
@@ -71,6 +73,51 @@ class EngineConfigComposerTest {
         assertEquals(listOf(domain), missing.engineConfig.rules)
         assertEquals(listOf(country, domain), ready.engineConfig.rules)
         assertTrue(ready.isStructuralChangeFrom(missing))
+    }
+
+    @Test
+    fun aChainDialsItsExitThroughTheEntry() {
+        val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
+        val base = inputs(apps)
+        val exit = base.selected!!
+        val entry = exit.copy(id = 2, name = "Entry", selected = false)
+        fun chainOf(hop: ChainEntry) = ProfileEntity(id = 9, name = "Chain", type = ProxyChain.TYPE, link = "", outboundJson = ProxyChain(hop, exit.id).encode(), selected = true)
+
+        val viaServer = EngineConfigComposer.compose(base.copy(selected = chainOf(ChainEntry.Server(entry.id)), profiles = listOf(exit, entry, chainOf(ChainEntry.Server(entry.id)))), OWN, BYEDPI_PORT)
+        assertEquals(listOf("p2", "p9"), viaServer.engineConfig.proxies.map { it.tag })
+        assertEquals("p2", viaServer.engineConfig.proxies.last().dialerProxy)
+        assertEquals("p9", viaServer.selectedTag)
+        assertFalse(viaServer.needsByeDpi)
+
+        val viaByeDpi = EngineConfigComposer.compose(base.copy(selected = chainOf(ChainEntry.ByeDpi), profiles = listOf(exit, chainOf(ChainEntry.ByeDpi))), OWN, BYEDPI_PORT)
+        assertEquals("byedpi", viaByeDpi.engineConfig.proxies.single().dialerProxy)
+        assertTrue(viaByeDpi.needsByeDpi)
+        assertTrue(viaByeDpi.isStructuralChangeFrom(viaServer))
+    }
+
+    @Test
+    fun everyHopDialsThroughTheOneBeforeIt() {
+        val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
+        val base = inputs(apps)
+        val exit = base.selected!!.copy(selected = false)
+        val first = exit.copy(id = 2, name = "First")
+        val second = exit.copy(id = 3, name = "Second")
+        val chain = ProfileEntity(
+            id = 9, name = "Chain", type = ProxyChain.TYPE, link = "", selected = true,
+            outboundJson = ProxyChain(listOf(ChainEntry.ByeDpi, ChainEntry.Server(2), ChainEntry.Server(3)), exit.id).encode()
+        )
+
+        val applied = EngineConfigComposer.compose(base.copy(selected = chain, profiles = listOf(exit, first, second, chain)), OWN, BYEDPI_PORT)
+
+        assertEquals(listOf("p2" to "byedpi", "p3" to "p2", "p9" to "p3"), applied.engineConfig.proxies.map { it.tag to it.dialerProxy })
+        assertTrue(applied.needsByeDpi)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun aChainWithoutItsExitCannotStart() {
+        val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
+        val chain = ProfileEntity(id = 9, name = "Chain", type = ProxyChain.TYPE, link = "", outboundJson = ProxyChain(ChainEntry.ByeDpi, 42).encode(), selected = true)
+        EngineConfigComposer.compose(inputs(apps).copy(selected = chain, profiles = listOf(chain)), OWN, BYEDPI_PORT)
     }
 
     @Test(expected = IllegalStateException::class)

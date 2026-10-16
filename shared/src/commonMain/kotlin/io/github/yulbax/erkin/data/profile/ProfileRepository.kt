@@ -89,9 +89,36 @@ class ProfileRepository(
         profileDao.selectExclusive(profile.id)
     }
 
+    suspend fun saveChain(existing: ProfileEntity?, name: String, chain: ProxyChain): Boolean {
+        val servers = profileDao.getAll().filter { it.isLink }.associateBy { it.id }
+        if (!chain.isValid || chain.serverIds.any { it !in servers }) return false
+        val hopNames = chain.hops.map { hop ->
+            when (hop) {
+                ChainEntry.ByeDpi -> CHAIN_BYEDPI_NAME
+                is ChainEntry.Server -> servers.getValue(hop.profileId).name
+            }
+        }
+        val title = name.trim().ifBlank { (hopNames + servers.getValue(chain.exitId).name).joinToString(" → ") }
+        database.transaction {
+            if (existing == null) {
+                val id = profileDao.append(
+                    ProfileEntity(name = title, type = ProxyChain.TYPE, link = "", outboundJson = chain.encode())
+                )
+                ensureSelection(preferredId = id)
+            } else {
+                profileDao.updateConfig(existing.id, title, ProxyChain.TYPE, "", chain.encode())
+            }
+        }
+        return true
+    }
+
     suspend fun delete(profiles: List<ProfileEntity>) {
         database.transaction {
-            profileDao.deleteMany(profiles)
+            val ids = profiles.mapTo(HashSet()) { it.id }
+            val orphanedChains = profileDao.getAll().filter { profile ->
+                profile.id !in ids && (profile.kind as? ServerKind.Chain)?.chain?.let { chain -> ids.any(chain::uses) } == true
+            }
+            profileDao.deleteMany(profiles + orphanedChains)
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {
                 database.appDao().reassignConnectionType(ConnectionType.VPN, ConnectionType.DIRECT)
@@ -103,7 +130,7 @@ class ProfileRepository(
         val rebuilt = mutableListOf<Long>()
         val unparseable = mutableListOf<Long>()
         database.transaction {
-            profileDao.getAll().forEach { profile ->
+            profileDao.getAll().filter { it.isLink }.forEach { profile ->
                 val parsed = LinkParser.parse(profile.link)
                 if (parsed == null) {
                     unparseable += profile.id
@@ -128,6 +155,10 @@ class ProfileRepository(
     }
 
     suspend fun profileDiagnostics(): List<String> = profileDao.getAll().map { profile ->
+        when (profile.kind) {
+            is ServerKind.Chain -> return@map "id=${profile.id} type=chain chain=${profile.outboundJson} selected=${profile.selected}"
+            is ServerKind.Link -> Unit
+        }
         val parsed = LinkParser.parse(profile.link)
         buildString {
             append("id=").append(profile.id)
@@ -188,6 +219,7 @@ class ProfileRepository(
 
     private companion object {
         const val TAG = "ProfileRepository"
+        const val CHAIN_BYEDPI_NAME = "ByeDPI"
         const val MAX_CONFIG_FILE_BYTES = 1L shl 20
     }
 

@@ -144,6 +144,20 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun everyHopOfAChainIsEmittedWithItsDialerProxy() {
+        val entry = vless.copy(tag = "p2")
+        val exit = vless.copy(tag = "p9", dialerProxy = "p2")
+        val config = Json.parseToJsonElement(
+            MihomoConfigBuilder.build(engine(listOf(entry, exit), "p9", listOf("org.dpi"), listOf("org.vpn")), PROBE)
+        ).jsonObject
+        val proxies = config.getValue("proxies").jsonArray.map { it.jsonObject }
+        assertEquals(listOf("p2", "p9", "byedpi"), proxies.map { it.getValue("name").jsonPrimitive.content })
+        assertEquals("p2", proxies[1].getValue("dialer-proxy").jsonPrimitive.content)
+        assertFalse(proxies[0].containsKey("dialer-proxy"))
+        assertTrue("PROCESS-NAME,org.vpn,p9" in config.rules())
+    }
+
+    @Test
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
         val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)

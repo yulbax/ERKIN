@@ -193,4 +193,19 @@
     <string name="rule_type_country_short">کشور</string>
     <string name="rule_country">کشور</string>
     <string name="rule_country_search">نام کشور را وارد کنید</string>
+    <string name="chain">زنجیره</string>
+    <string name="chains_title">زنجیره‌ها</string>
+    <string name="chains_description">زنجیره از طریق ورودی (ByeDPI یا سرور دیگر) به سرور خروجی وصل می‌شود. سایت‌ها سرور خروجی را می‌بینند و ارائه‌دهنده فقط ورودی را. زنجیره‌ها در فهرست سرورهای صفحه اصلی نمایش داده می‌شوند.</string>
+    <string name="chains_empty">هنوز زنجیره‌ای وجود ندارد.</string>
+    <string name="add_chain">افزودن زنجیره</string>
+    <string name="new_chain">زنجیره جدید</string>
+    <string name="edit_chain">ویرایش زنجیره</string>
+    <string name="chain_entry">اتصال از طریق</string>
+    <string name="chain_exit">سرور خروجی</string>
+    <string name="chain_byedpi">ByeDPI</string>
+    <string name="chain_name_hint">ورودی ← خروجی</string>
+    <string name="chain_invalid">زنجیره به سرور خروجی متفاوت از ورودی نیاز دارد</string>
+    <string name="chain_via">سپس از طریق</string>
+    <string name="chain_add_hop">افزودن حلقه</string>
+    <string name="chain_remove_hop">حذف حلقه</string>
 </resources>

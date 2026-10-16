@@ -124,6 +124,38 @@ class ProfileRefreshTest {
         assertTrue(report.none { it.contains("aPrivateKey") || it.contains("vpn.example.com") })
     }
 
+
+    @Test
+    fun chainsAreServersThatFollowTheirHopsAndDisappearWithThem() = runBlocking {
+        repository.add("vless://id@entry.example:443?security=tls#Entry")
+        repository.add("vless://id@exit.example:443?security=tls#Exit")
+        val (entry, exit) = database.profileDao().getAll()
+
+        assertFalse(repository.saveChain(null, "", ProxyChain(ChainEntry.Server(exit.id), exit.id)))
+        assertTrue(repository.saveChain(null, "", ProxyChain(ChainEntry.Server(entry.id), exit.id)))
+        assertTrue(repository.saveChain(null, "Through ByeDPI", ProxyChain(ChainEntry.ByeDpi, exit.id)))
+        val chains = database.profileDao().getAll().filter { it.kind is ServerKind.Chain }
+        assertEquals(listOf("Entry → Exit", "Through ByeDPI"), chains.map { it.name })
+        assertEquals(ProxyChain(ChainEntry.Server(entry.id), exit.id), (chains.first().kind as ServerKind.Chain).chain)
+
+        repository.refreshDescriptors()
+        assertEquals(chains, database.profileDao().getAll().filter { it.kind is ServerKind.Chain })
+
+        val middle = repository.run {
+            add("vless://id@middle.example:443?security=tls#Middle")
+            database.profileDao().getAll().single { it.name == "Middle" }
+        }
+        assertTrue(repository.saveChain(null, "", ProxyChain(listOf(ChainEntry.ByeDpi, ChainEntry.Server(entry.id), ChainEntry.Server(middle.id)), exit.id)))
+        assertEquals("ByeDPI → Entry → Middle → Exit", database.profileDao().getAll().last().name)
+        repository.delete(listOf(middle))
+        assertEquals(chains.map { it.name }, database.profileDao().getAll().filter { it.kind is ServerKind.Chain }.map { it.name })
+
+        repository.delete(listOf(entry))
+        assertEquals(listOf("Exit", "Through ByeDPI"), database.profileDao().getAll().map { it.name })
+        repository.delete(listOf(exit))
+        assertTrue(database.profileDao().getAll().isEmpty())
+    }
+
     private class RecordingLog : AppLog {
         val warnings = mutableListOf<String>()
         override fun i(tag: String, message: String) = Unit
