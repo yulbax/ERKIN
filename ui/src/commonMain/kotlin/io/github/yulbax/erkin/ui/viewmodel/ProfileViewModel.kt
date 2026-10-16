@@ -64,7 +64,9 @@ class ProfileViewModel(
         _testingIds.value = ids
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                _delays.value = latencyProbe.measureAll()
+                val delays = latencyProbe.measureAll()
+                _delays.value = delays
+                profileRepository.reorder(uiState.value.profiles.sortedBy { delays[it.id].rank() }.map { it.id })
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
@@ -134,5 +136,11 @@ class ProfileViewModel(
 
     private companion object {
         const val TAG = "Servers"
+
+        fun ProxyDelay?.rank(): Int = when (this) {
+            is ProxyDelay.Measured -> ms
+            null -> Int.MAX_VALUE - 1
+            ProxyDelay.Failed -> Int.MAX_VALUE
+        }
     }
 }

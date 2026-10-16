@@ -128,7 +128,7 @@ class ConfigBackupRepository(
                 continue
             }
             val parsed = checkNotNull(LinkParser.parse(profile.link))
-            val id = profileDao.insert(profile.toEntity(parsed))
+            val id = profileDao.append(profile.toEntity(parsed))
             existingByLink[profile.link] = id
             if (profile.selected) importedSelectedId = id
             added++

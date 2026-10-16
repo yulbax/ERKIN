@@ -81,6 +81,10 @@ class ProfileRepository(
         return ProfileOperationResult.Success()
     }
 
+    suspend fun reorder(ids: List<Long>) {
+        profileDao.reorder(ids)
+    }
+
     suspend fun select(profile: ProfileEntity) {
         profileDao.selectExclusive(profile.id)
     }
@@ -144,7 +148,7 @@ class ProfileRepository(
 
     private suspend fun insertSingle(profile: ParsedProfile): ProfileOperationResult {
         database.transaction {
-            val id = profileDao.insert(profile.toEntity())
+            val id = profileDao.append(profile.toEntity())
             ensureSelection(preferredId = id)
         }
         return ProfileOperationResult.Success()
@@ -160,7 +164,7 @@ class ProfileRepository(
     private suspend fun insertAll(profiles: List<ParsedProfile>, subscriptionUrl: String = ""): ProfileOperationResult {
         if (profiles.isEmpty()) return ProfileOperationResult.InvalidLink
         database.transaction {
-            val ids = profileDao.insertAll(profiles.map { it.toEntity(subscriptionUrl) })
+            val ids = profileDao.appendAll(profiles.map { it.toEntity(subscriptionUrl) })
             ensureSelection(preferredId = ids.firstOrNull())
         }
         return ProfileOperationResult.Success(affected = profiles.size)
