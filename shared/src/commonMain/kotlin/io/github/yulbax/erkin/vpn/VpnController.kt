@@ -6,13 +6,18 @@ import io.github.yulbax.erkin.vpn.core.EngineListener
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 interface VpnHost {
     fun onSessionStarting()
@@ -81,14 +86,36 @@ class VpnController(
     override fun onStopRequested() = stop(token = null, force = true)
 
     fun shutdown() {
+        val finalState = prepareShutdown()
+        runBlocking { teardown(finalState) }
+    }
+
+    fun shutdownInBackground() {
+        val finalState = prepareShutdown()
+        teardownScope.launch {
+            try {
+                teardown(finalState)
+            } catch (t: Throwable) {
+                log.e(TAG, "shutdown cleanup failed", t)
+            }
+        }
+    }
+
+    private fun prepareShutdown(): VpnState? {
         val needsCleanup = !session.isIdle
         val finalState = stateRepository.state.value.takeIf { it is VpnState.Error } ?: VpnState.Disconnected
         session.markStopping()
         controlCommands.close()
         workCommands.close()
         scope.cancel()
-        runBlocking { actorJob?.join() }
-        if (needsCleanup) stopSession(finalState, stopToken = null, stopHost = false)
+        return finalState.takeIf { needsCleanup }
+    }
+
+    private suspend fun teardown(finalState: VpnState?) {
+        lifecycleLock.withLock {
+            actorJob?.join()
+            if (finalState != null) stopSession(finalState, stopToken = null, stopHost = false)
+        }
     }
 
     private fun enqueueControl(command: ActorCommand) {
@@ -130,8 +157,10 @@ class VpnController(
 
     private suspend fun startSession(systemInitiated: Boolean) {
         if (!session.isIdle) return
-        host.onSessionStarting()
-        session.start(systemInitiated)
+        lifecycleLock.withLock {
+            host.onSessionStarting()
+            session.start(systemInitiated)
+        }
         host.onSessionStarted()
     }
 
@@ -184,5 +213,8 @@ class VpnController(
 
     private companion object {
         const val TAG = "VpnController"
+
+        val lifecycleLock = Mutex()
+        val teardownScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 }
