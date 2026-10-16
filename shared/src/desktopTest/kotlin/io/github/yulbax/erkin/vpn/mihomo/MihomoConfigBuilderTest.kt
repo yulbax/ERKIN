@@ -28,14 +28,14 @@ class MihomoConfigBuilderTest {
 
     @Test
     fun androidRoutesOnlyKnownAppsAndRejectsEverythingElseInTheTun() {
-        val config = build(platform = MihomoPlatform.Android, vpn = listOf("org.vpn"))
+        val config = build(platform = MihomoPlatform.Android(), vpn = listOf("org.vpn"))
         assertFalse(config.containsKey("tun"))
         assertEquals(
             listOf("IN-NAME,probe-in,p1", "PROCESS-NAME,org.dpi,byedpi", "PROCESS-NAME,org.vpn,p1", "MATCH,REJECT"),
             config.rules()
         )
         assertEquals(listOf("p1", "byedpi"), config.getValue("proxies").jsonArray.map { it.jsonObject.getValue("name").jsonPrimitive.content })
-        assertNull(config.getValue("dns").jsonObject["direct-nameserver"])
+        assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
     }
 
     @Test
@@ -107,6 +107,22 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun androidResolvesDirectTrafficWithThePhonesPrivateDns() {
+        val config = build(platform = MihomoPlatform.Android(SystemDns.Tls("dns.google")))
+        assertEquals("tls://dns.google", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
+    }
+
+    @Test
+    fun snifferOnlyFeedsRuleMatchingAndFollowsTheSetting() {
+        val sniffer = build().getValue("sniffer").jsonObject
+        assertTrue(sniffer.getValue("enable").jsonPrimitive.boolean)
+        assertFalse(sniffer.getValue("override-destination").jsonPrimitive.boolean)
+        assertTrue(sniffer.getValue("parse-pure-ip").jsonPrimitive.boolean)
+        assertEquals(setOf("TLS", "HTTP", "QUIC"), sniffer.getValue("sniff").jsonObject.keys)
+        assertFalse(build(options = NetworkOptions(sniff = false)).containsKey("sniffer"))
+    }
+
+    @Test
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
         val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
@@ -161,7 +177,7 @@ class MihomoConfigBuilderTest {
     }
 
     private fun build(
-        platform: MihomoPlatform = MihomoPlatform.Android,
+        platform: MihomoPlatform = MihomoPlatform.Android(),
         byeDpi: List<String> = listOf("org.dpi"),
         vpn: List<String> = emptyList(),
         directPaths: List<String> = emptyList(),
