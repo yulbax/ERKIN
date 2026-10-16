@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.platform.scrollbarAlwaysVisible
+import io.github.yulbax.erkin.ui.platform.scrollbarEdgeInset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -188,7 +189,7 @@ private fun Scrollbar(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset { IntOffset(-with(density) { EDGE_PADDING.roundToPx() }, offset.roundToInt()) }
+                    .offset { IntOffset(-with(density) { (EDGE_PADDING + scrollbarEdgeInset).roundToPx() }, offset.roundToInt()) }
                     .width(thickness)
                     .height(with(density) { thumb.toDp() })
                     .clip(CircleShape)

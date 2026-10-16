@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.platform
 
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import io.github.yulbax.erkin.data.ConnectionType
 import android.Manifest
 import android.app.Activity
@@ -184,6 +186,8 @@ actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.VPN
 actual val supportsSystemAppsFilter: Boolean = true
 
 actual val rulesCoverAllApps: Boolean = false
+
+actual val scrollbarEdgeInset: Dp = 0.dp
 
 actual val revealInFolder: ((path: String) -> Unit)? = null
 
