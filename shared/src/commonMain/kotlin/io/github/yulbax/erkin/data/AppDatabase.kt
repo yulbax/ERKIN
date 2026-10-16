@@ -19,7 +19,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -82,6 +82,11 @@ abstract class AppDatabase : RoomDatabase() {
             object : Migration(8, 9) {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE settings ADD COLUMN rulesHintSeen INTEGER NOT NULL DEFAULT 0")
+                }
+            },
+            object : Migration(9, 10) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE settings ADD COLUMN blockQuic INTEGER NOT NULL DEFAULT 0")
                 }
             }
         )

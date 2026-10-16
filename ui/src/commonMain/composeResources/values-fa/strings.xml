@@ -178,4 +178,5 @@
     <string name="delete_rule_message">قانون «%1$s» حذف شود؟</string>
     <string name="delete_rules_message">%1$d قانون انتخاب‌شده حذف شوند؟</string>
     <string name="invalid_remote_dns">آدرس DNS نامعتبر است. یک IP یا آدرس tls://، https://، quic://، udp:// یا tcp:// وارد کنید</string>
+    <string name="block_quic">مسدود کردن QUIC (UDP 443)</string>
 </resources>

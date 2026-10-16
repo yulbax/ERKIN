@@ -177,4 +177,5 @@
     <string name="delete_rule_message">删除“%1$s”的规则吗？</string>
     <string name="delete_rules_message">删除选中的 %1$d 条规则吗？</string>
     <string name="invalid_remote_dns">DNS 地址无效。请填写 IP 或 tls://、https://、quic://、udp://、tcp:// 地址</string>
+    <string name="block_quic">阻止 QUIC（UDP 443）</string>
 </resources>

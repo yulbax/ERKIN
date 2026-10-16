@@ -49,6 +49,7 @@ object MihomoConfigBuilder {
     private const val DESKTOP_TUN_INET4 = "172.19.0.1/30"
     private const val DESKTOP_TUN_INET6 = "fdfe:dcba:9876::1/126"
     private const val SYSTEM_NAMESERVER = "system://"
+    private const val BLOCK_QUIC_RULE = "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT"
     private val LOCAL_DOMAINS = listOf("+.lan", "+.local", "+.localdomain", "+.home.arpa", "+.internal", "localhost")
     private val PRIVATE_NETWORKS = listOf(
         "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "100.64.0.0/10",
@@ -176,6 +177,7 @@ object MihomoConfigBuilder {
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
                 desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
                 if (options.bypassLan) PRIVATE_NETWORKS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
+                if (options.blockQuic) add(BLOCK_QUIC_RULE)
                 rules.forEach { rule ->
                     val target = when (rule.target) {
                         RuleTarget.VPN -> active?.tag ?: REJECT

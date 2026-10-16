@@ -23,7 +23,8 @@ data class SettingsEntity(
     val homeHintSeen: Boolean = false,
     val appsHintSeen: Boolean = false,
     val newAppsConnectionType: String = "",
-    val rulesHintSeen: Boolean = false
+    val rulesHintSeen: Boolean = false,
+    val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic
 ) {
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
         ConnectionType.fromWire(newAppsConnectionType) ?: platformDefault
@@ -35,6 +36,7 @@ data class SettingsEntity(
         dnsDirect = dnsDirect,
         sniff = sniff,
         bypassLan = bypassLan,
+        blockQuic = blockQuic,
         preferredFingerprint = TlsFingerprint.fromWire(preferredFingerprint)
     )
 
@@ -45,6 +47,7 @@ data class SettingsEntity(
         dnsDirect = options.dnsDirect,
         sniff = options.sniff,
         bypassLan = options.bypassLan,
+        blockQuic = options.blockQuic,
         preferredFingerprint = options.preferredFingerprint?.wire ?: ""
     )
 }
