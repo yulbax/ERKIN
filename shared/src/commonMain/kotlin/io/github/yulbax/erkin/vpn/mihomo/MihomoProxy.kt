@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 object MihomoProxy {
+    private const val DIALER_PROXY = "dialer-proxy"
 
     fun of(proxy: EngineProxy, preferredFingerprint: TlsFingerprint?): JsonObject? {
         val descriptor = runCatching { Json.parseToJsonElement(proxy.descriptor) as? JsonObject }.getOrNull() ?: return null
@@ -18,6 +19,7 @@ object MihomoProxy {
             put("name", JsonPrimitive(proxy.tag))
             putAll(descriptor - "name")
             fingerprint?.let { put(CLIENT_FINGERPRINT, JsonPrimitive(it)) }
+            proxy.dialerProxy?.let { put(DIALER_PROXY, JsonPrimitive(it)) }
         })
     }
 }

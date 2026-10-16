@@ -58,15 +58,20 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ServerKind
+import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.platform.rememberSharer
+import io.github.yulbax.erkin.ui.screens.chains.ChainDialog
+import io.github.yulbax.erkin.ui.screens.chains.chainLabel
 import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rememberVpnStartRequest
 import io.github.yulbax.erkin.ui.viewmodel.ServerError
+import io.github.yulbax.erkin.ui.viewmodel.ChainsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ErkinUiState
 import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
@@ -80,7 +85,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ErkinScreen(
     onNavigateToApps: () -> Unit = {},
     viewModel: ConnectionViewModel = koinViewModel(),
-    profileViewModel: ProfileViewModel = koinViewModel()
+    profileViewModel: ProfileViewModel = koinViewModel(),
+    chainsViewModel: ChainsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
@@ -91,6 +97,7 @@ fun ErkinScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
+    var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
     var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
     val checked = checkedIds.filterTo(HashSet()) { id -> servers.profiles.any { it.id == id } }
@@ -127,7 +134,12 @@ fun ErkinScreen(
         onAddServerClick = { showAddDialog = true },
         onTestClick = { profileViewModel.testAll() },
         onSelect = { profileViewModel.select(it) },
-        onEdit = { editing = it },
+        onEdit = { profile ->
+            when (profile.kind) {
+                is ServerKind.Link -> editing = profile
+                is ServerKind.Chain -> editingChain = profile
+            }
+        },
         onShare = { profile ->
             sharer.shareText(profile.subscriptionUrl.ifEmpty { profile.link }, shareChooserTitle)
         },
@@ -163,6 +175,22 @@ fun ErkinScreen(
             onDismiss = { showAddDialog = false },
             onReadFile = { file, onRead -> profileViewModel.readConfigFile(file::open, onRead) },
             onAdd = { profileViewModel.add(it); showAddDialog = false }
+        )
+    }
+
+    editingChain?.let { chain ->
+        val chainInvalid = stringResource(Res.string.chain_invalid)
+        ChainDialog(
+            initial = chain,
+            profiles = servers.profiles,
+            onDismiss = { editingChain = null },
+            onSave = { name, spec ->
+                chainsViewModel.save(chain, name, spec) { saved -> if (saved) editingChain = null else showMessage(chainInvalid) }
+            },
+            onDelete = {
+                editingChain = null
+                deleting = listOf(chain)
+            }
         )
     }
 
@@ -476,6 +504,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                         delay = c.servers.delays[profile.id],
                         testing = profile.id in c.servers.testingIds,
                         isBest = profile.id == fastestId,
+                        chainLabel = chainLabel(profile, c.servers.profiles),
                         selecting = c.selecting,
                         checked = profile.id in c.checked,
                         onSelect = { if (c.selecting) c.onToggleCheck(profile) else c.onSelect(profile) },

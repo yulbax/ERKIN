@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
@@ -18,8 +19,8 @@ class ServerLatencyProbe(
 ) {
     suspend fun measureAll(): Map<Long, ProxyDelay> {
         val inputs = store.load()
-        if (inputs.profiles.isEmpty()) return emptyMap()
-        val proxies = with(EngineConfigComposer) { inputs.profiles.map { it.engineProxy() } }
+        if (inputs.profiles.none { it.isLink }) return emptyMap()
+        val proxies = with(EngineConfigComposer) { inputs.profiles.filter { it.isLink }.map { it.engineProxy() } }
         return parse(tester.measure(proxies, inputs.settings.networkOptions(), ProbeUrls.VPN, TIMEOUT_MS))
     }
 

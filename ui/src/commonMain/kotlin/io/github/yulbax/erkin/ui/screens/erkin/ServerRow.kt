@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ButtonColors
@@ -69,6 +70,7 @@ internal fun ServerRow(
     delay: ProxyDelay? = null,
     testing: Boolean = false,
     isBest: Boolean = false,
+    chainLabel: String? = null,
     selecting: Boolean = false,
     checked: Boolean = false,
     onSelect: () -> Unit,
@@ -123,7 +125,15 @@ internal fun ServerRow(
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (profile.subscriptionUrl.isNotEmpty()) {
+                    if (chainLabel != null) {
+                        Icon(
+                            imageVector = Icons.Default.Link,
+                            contentDescription = stringResource(Res.string.chain),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    } else if (profile.subscriptionUrl.isNotEmpty()) {
                         Icon(
                             imageVector = Icons.Default.Cloud,
                             contentDescription = stringResource(Res.string.subscription),
@@ -142,9 +152,12 @@ internal fun ServerRow(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        profile.type,
+                        chainLabel ?: profile.type,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (testing) {
                         Text(
@@ -206,14 +219,16 @@ internal fun ServerRow(
                                 expanded = menuExpanded,
                                 onDismissRequest = { menuExpanded = false }
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.share)) },
-                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                                    onClick = {
-                                        onShare()
-                                        menuExpanded = false
-                                    }
-                                )
+                                if (chainLabel == null) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(Res.string.share)) },
+                                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                        onClick = {
+                                            onShare()
+                                            menuExpanded = false
+                                        }
+                                    )
+                                }
                                 if (profile.subscriptionUrl.isNotEmpty()) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(Res.string.refresh_subscription)) },

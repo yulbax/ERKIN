@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.ui.di
 
 import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
+import io.github.yulbax.erkin.ui.viewmodel.ChainsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
@@ -11,6 +12,7 @@ import org.koin.dsl.module
 
 val uiModule = module {
     viewModelOf(::AppsViewModel)
+    viewModelOf(::ChainsViewModel)
     viewModelOf(::ConnectionViewModel)
     viewModelOf(::ProfileViewModel)
     viewModelOf(::RulesViewModel)

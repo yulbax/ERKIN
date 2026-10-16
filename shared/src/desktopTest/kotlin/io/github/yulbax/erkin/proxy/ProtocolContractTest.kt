@@ -62,7 +62,7 @@ class ProtocolContractTest {
             val converted = MihomoProxy.of(proxy, null)
             assertTrue("${proxy.tag} converts", converted != null)
             assertEquals(proxy.tag, converted?.getValue("name")?.jsonPrimitive?.content)
-            assertEquals(proxy.tag, build(proxies, activeTag = proxy.tag).names("proxies").first())
+            assertEquals(proxy.tag, build(listOf(proxy), activeTag = proxy.tag).names("proxies").first())
         }
         val tested = Json.parseToJsonElement(MihomoConfigBuilder.proxiesForTest(proxies)) as JsonArray
         assertEquals(proxies.map { it.tag }, tested.map { it.jsonObject.getValue("name").jsonPrimitive.content })

@@ -192,4 +192,19 @@
     <string name="rule_type_country_short">国家</string>
     <string name="rule_country">国家</string>
     <string name="rule_country_search">输入国家名称</string>
+    <string name="chain">代理链</string>
+    <string name="chains_title">代理链</string>
+    <string name="chains_description">代理链通过入口（ByeDPI 或其他服务器）连接到出口服务器。网站看到的是出口服务器，运营商只看到入口。代理链会显示在主界面的服务器列表中。</string>
+    <string name="chains_empty">还没有代理链。</string>
+    <string name="add_chain">添加代理链</string>
+    <string name="new_chain">新建代理链</string>
+    <string name="edit_chain">编辑代理链</string>
+    <string name="chain_entry">经由</string>
+    <string name="chain_exit">出口服务器</string>
+    <string name="chain_byedpi">ByeDPI</string>
+    <string name="chain_name_hint">入口 → 出口</string>
+    <string name="chain_invalid">出口服务器必须不同于入口</string>
+    <string name="chain_via">再经由</string>
+    <string name="chain_add_hop">添加节点</string>
+    <string name="chain_remove_hop">移除节点</string>
 </resources>

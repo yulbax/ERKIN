@@ -15,11 +15,14 @@ data class EngineConfig(
 data class EngineProxy(
     val tag: String,
     val descriptor: String,
-    val requirements: Set<EngineRequirement> = emptySet()
+    val requirements: Set<EngineRequirement> = emptySet(),
+    val dialerProxy: String? = null
 ) {
     val sessionRequirements: Set<EngineRequirement>
         get() = requirements.filterTo(mutableSetOf()) { it.sessionWide }
 }
+
+const val BYEDPI_PROXY_TAG = "byedpi"
 
 enum class EngineRequirement(val sessionWide: Boolean) {
     TLS_FINGERPRINT(sessionWide = false),

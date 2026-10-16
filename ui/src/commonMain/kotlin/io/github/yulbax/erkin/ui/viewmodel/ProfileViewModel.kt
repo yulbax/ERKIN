@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
@@ -58,7 +59,7 @@ class ProfileViewModel(
 
     fun testAll() {
         if (_testingIds.value.isNotEmpty()) return
-        val ids = uiState.value.profiles.map { it.id }.toSet()
+        val ids = uiState.value.profiles.filter { it.isLink }.map { it.id }.toSet()
         if (ids.isEmpty()) return
         _delays.value -= ids
         _testingIds.value = ids

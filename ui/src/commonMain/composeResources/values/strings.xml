@@ -200,4 +200,19 @@
     <string name="rule_type_country_short">Country</string>
     <string name="rule_country">Country</string>
     <string name="rule_country_search">Start typing a country</string>
+    <string name="chain">Proxy chain</string>
+    <string name="chains_title">Chains</string>
+    <string name="chains_description">A chain connects to its exit server through an entry: ByeDPI or another server. Sites see the exit server, your provider only sees the entry. Chains show up in the server list on the main screen.</string>
+    <string name="chains_empty">No chains yet.</string>
+    <string name="add_chain">Add chain</string>
+    <string name="new_chain">New chain</string>
+    <string name="edit_chain">Edit chain</string>
+    <string name="chain_entry">Connect through</string>
+    <string name="chain_exit">Exit server</string>
+    <string name="chain_byedpi">ByeDPI</string>
+    <string name="chain_name_hint">Entry → exit</string>
+    <string name="chain_invalid">The chain needs an exit server different from the entry</string>
+    <string name="chain_via">Then through</string>
+    <string name="chain_add_hop">Add hop</string>
+    <string name="chain_remove_hop">Remove hop</string>
 </resources>

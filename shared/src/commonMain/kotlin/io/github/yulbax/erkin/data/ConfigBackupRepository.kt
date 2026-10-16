@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.proxy.LinkParser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +50,7 @@ class ConfigBackupRepository(
                     null
                 },
                 profiles = if (selection.profiles) {
-                    database.profileDao().getAll().map { it.toBackupProfile() }
+                    database.profileDao().getAll().filter { it.isLink }.map { it.toBackupProfile() }
                 } else {
                     null
                 },
@@ -143,7 +144,7 @@ class ConfigBackupRepository(
 
     private suspend fun applyProfiles(profiles: List<BackupProfile>): SectionResult {
         val profileDao = database.profileDao()
-        val existingByLink = profileDao.getAll().associateTo(HashMap()) { it.link to it.id }
+        val existingByLink = profileDao.getAll().filter { it.isLink }.associateTo(HashMap()) { it.link to it.id }
         var importedSelectedId: Long? = null
         var added = 0
         var skipped = 0

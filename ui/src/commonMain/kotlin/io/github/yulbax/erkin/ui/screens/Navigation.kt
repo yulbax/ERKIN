@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import androidx.navigation.compose.composable
 import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.screens.apps.Apps
+import io.github.yulbax.erkin.ui.screens.chains.Chains
 import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
 import io.github.yulbax.erkin.ui.screens.rules.Rules
 import io.github.yulbax.erkin.ui.screens.settings.Settings
@@ -51,6 +53,13 @@ sealed class Screen(
         title = Res.string.rules_title,
         selectedIcon = Icons.AutoMirrored.Filled.AltRoute,
         unselectedIcon = Icons.AutoMirrored.Filled.AltRoute
+    )
+
+    object Chains : Screen(
+        route = "chains",
+        title = Res.string.chains_title,
+        selectedIcon = Icons.Filled.Link,
+        unselectedIcon = Icons.Filled.Link
     )
 
     object Settings : Screen(
@@ -86,6 +95,7 @@ val primaryNavPages = listOf(
     Screen.Main,
     Screen.Apps,
     Screen.Rules,
+    Screen.Chains,
     Screen.Settings,
     Screen.Logs
 )
@@ -124,6 +134,7 @@ fun ErkinNavHost(
         }
         composable(Screen.Apps.route) { Apps(query = appsQuery) }
         composable(Screen.Rules.route) { Rules() }
+        composable(Screen.Chains.route) { Chains() }
         composable(Screen.Settings.route) { Settings() }
         composable(Screen.Logs.route) { Logs() }
         composable(Screen.License.route) { License() }

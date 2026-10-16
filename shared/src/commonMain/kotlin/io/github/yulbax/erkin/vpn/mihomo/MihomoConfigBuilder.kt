@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
 import io.github.yulbax.erkin.data.isExecutablePath
+import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
@@ -38,7 +39,7 @@ sealed interface MihomoPlatform {
 
 object MihomoConfigBuilder {
 
-    const val BYEDPI_PROXY = "byedpi"
+    const val BYEDPI_PROXY = BYEDPI_PROXY_TAG
     const val DESKTOP_INTERFACE_NAME = "ERKIN"
     private const val TUN_STACK = "gvisor"
     private const val DIRECT = "DIRECT"
@@ -73,7 +74,6 @@ object MihomoConfigBuilder {
         val probeUser = probe.username
         val probePass = probe.password
         val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
-        val activeProxy = active?.let { MihomoProxy.of(it, options.preferredFingerprint) }
         val ipv6 = options.ipv6Mode.ipv6Enabled && EngineRequirement.IPV4_ONLY !in active?.sessionRequirements.orEmpty()
         val vpnTarget = active?.tag ?: DIRECT
         val desktop = platform as? MihomoPlatform.Desktop
@@ -163,7 +163,7 @@ object MihomoConfigBuilder {
                 }
             }
             putJsonArray("proxies") {
-                activeProxy?.let { add(it) }
+                proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) }.forEach { add(it) }
                 add(buildJsonObject {
                     put("name", BYEDPI_PROXY)
                     put("type", "socks5")
