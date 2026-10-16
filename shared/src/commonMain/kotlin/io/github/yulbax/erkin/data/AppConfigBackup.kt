@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.proxy.ParsedProfile
 import kotlinx.serialization.Serializable
 
@@ -10,11 +11,12 @@ data class AppConfigBackup(
     val version: Int = MIN_SUPPORTED_VERSION,
     val apps: Map<String, String>? = null,
     val settings: BackupSettings? = null,
-    val profiles: List<BackupProfile>? = null
+    val profiles: List<BackupProfile>? = null,
+    val rules: List<BackupRule>? = null
 ) {
     companion object {
         const val MIN_SUPPORTED_VERSION = 1
-        const val CURRENT_VERSION = 4
+        const val CURRENT_VERSION = 5
         const val MAX_IMPORT_BYTES = 5L * 1024 * 1024
         const val MAX_ENTRIES_PER_SECTION = 10_000
     }
@@ -48,6 +50,13 @@ data class BackupProfile(
     val outboundJson: String = "",
     val selected: Boolean = false,
     val subscriptionUrl: String = ""
+)
+
+@Serializable
+data class BackupRule(
+    val type: String = "",
+    val value: String = "",
+    val target: String = ""
 )
 
 fun SettingsEntity.toBackupSettings() = BackupSettings(
@@ -100,3 +109,7 @@ fun BackupProfile.toEntity(parsed: ParsedProfile) = ProfileEntity(
     outboundJson = parsed.proxyJson(),
     subscriptionUrl = subscriptionUrl
 )
+
+fun RoutingRuleEntity.toBackupRule() = BackupRule(type = type, value = value, target = target)
+
+fun BackupRule.toEntity() = RoutingRuleEntity(type = type, value = value, target = target)

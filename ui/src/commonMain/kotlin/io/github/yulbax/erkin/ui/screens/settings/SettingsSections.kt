@@ -225,6 +225,7 @@ internal fun BackupSection(viewModel: SettingsViewModel) {
             settingsAvailable = true,
             appsAvailable = true,
             profilesAvailable = true,
+            rulesAvailable = true,
             onConfirm = { selection ->
                 showExportDialog = false
                 viewModel.exportConfig(selection) { content ->
@@ -244,13 +245,14 @@ internal fun BackupSection(viewModel: SettingsViewModel) {
             settingsAvailable = backup.settings != null,
             appsAvailable = backup.apps != null,
             profilesAvailable = backup.profiles != null,
+            rulesAvailable = backup.rules != null,
             onConfirm = { selection ->
                 importPreview = null
                 viewModel.applyImport(backup, selection) { result ->
                     val message = if (result.error != null) {
                         importFailedFormat.format(result.error)
                     } else {
-                        importDoneFormat.format(result.applied, result.skipped, result.profilesAdded)
+                        importDoneFormat.format(result.applied, result.skipped, result.profilesAdded, result.rulesAdded)
                     }
                     showMessage(message)
                 }
@@ -267,12 +269,14 @@ private fun BackupSelectionDialog(
     settingsAvailable: Boolean,
     appsAvailable: Boolean,
     profilesAvailable: Boolean,
+    rulesAvailable: Boolean,
     onConfirm: (BackupSelection) -> Unit,
     onDismiss: () -> Unit
 ) {
     var settings by remember { mutableStateOf(settingsAvailable) }
     var apps by remember { mutableStateOf(appsAvailable) }
     var profiles by remember { mutableStateOf(profilesAvailable) }
+    var rules by remember { mutableStateOf(rulesAvailable) }
 
     AppDialog(
         title = title,
@@ -280,8 +284,8 @@ private fun BackupSelectionDialog(
         buttons = {
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
             TextButton(
-                enabled = settings || apps || profiles,
-                onClick = { onConfirm(BackupSelection(settings, apps, profiles)) }
+                enabled = settings || apps || profiles || rules,
+                onClick = { onConfirm(BackupSelection(settings, apps, profiles, rules)) }
             ) { Text(confirmLabel) }
         }
     ) {
@@ -296,6 +300,9 @@ private fun BackupSelectionDialog(
                 }
                 if (profilesAvailable) {
                     add { CheckRow(stringResource(Res.string.servers_title), profiles) { profiles = it } }
+                }
+                if (rulesAvailable) {
+                    add { CheckRow(stringResource(Res.string.rules_title), rules) { rules = it } }
                 }
             }
         )

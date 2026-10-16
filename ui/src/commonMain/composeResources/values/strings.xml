@@ -46,7 +46,7 @@
     <string name="export_logs">Export logs</string>
     <string name="export_app_config">Export app config</string>
     <string name="import_app_config">Import app config</string>
-    <string name="import_done">Apps: %1$d applied, %2$d skipped · Servers: %3$d added</string>
+    <string name="import_done">Apps: %1$d applied, %2$d skipped · Servers: %3$d added · Rules: %4$d added</string>
     <string name="import_failed">Import failed: %1$s</string>
     <string name="import_invalid_file">Invalid or unreadable file</string>
     <string name="backup_export_title">What to export</string>
