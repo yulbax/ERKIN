@@ -76,6 +76,7 @@ class MihomoEngine(
 
     private fun launch(config: EngineConfig) {
         activeProxyTag = config.activeProxyTag
+        log.i(TAG, "system dns: ${MihomoRuntime.describeSystemDns()}")
         val ipv6 = config.network.ipv6Mode.ipv6Enabled
         val fd = tunPlatform.openTun(
             TunConfig(
@@ -114,6 +115,7 @@ class MihomoEngine(
         probeUser = probeUsername,
         probePass = probePassword,
         options = config.network,
+        platform = MihomoPlatform.Android(MihomoRuntime.systemDns()),
         rules = config.rules
     )
 

@@ -19,11 +19,12 @@ import kotlinx.serialization.json.putJsonObject
 sealed interface SystemDns {
     data object Local : SystemDns
     data class Server(val address: String) : SystemDns
+    data class Tls(val host: String) : SystemDns
     data object Unknown : SystemDns
 }
 
 sealed interface MihomoPlatform {
-    data object Android : MihomoPlatform
+    data class Android(val systemDns: SystemDns = SystemDns.Local) : MihomoPlatform
 
     data class Desktop(
         val directProcesses: List<String>,
@@ -65,7 +66,7 @@ object MihomoConfigBuilder {
         probeUser: String,
         probePass: String,
         options: NetworkOptions = NetworkOptions(),
-        platform: MihomoPlatform = MihomoPlatform.Android,
+        platform: MihomoPlatform = MihomoPlatform.Android(),
         directPaths: List<String> = emptyList(),
         rules: List<RoutingRule> = emptyList()
     ): String {
@@ -76,10 +77,15 @@ object MihomoConfigBuilder {
         val desktop = platform as? MihomoPlatform.Desktop
         val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { byeDpiPackages.isNotEmpty() }
         val defaultTarget = if (desktop != null) DIRECT else REJECT
-        val directNameserver = when (val systemDns = desktop?.systemDns) {
+        val systemDns = when (platform) {
+            is MihomoPlatform.Android -> platform.systemDns
+            is MihomoPlatform.Desktop -> platform.systemDns
+        }
+        val directNameserver = when (systemDns) {
             SystemDns.Local -> SYSTEM_NAMESERVER
             is SystemDns.Server -> systemDns.address
-            SystemDns.Unknown, null -> options.dnsDirect
+            is SystemDns.Tls -> "tls://${systemDns.host}"
+            SystemDns.Unknown -> options.dnsDirect
         }
 
         val config = buildJsonObject {
@@ -113,9 +119,21 @@ object MihomoConfigBuilder {
                 putJsonArray("nameserver") {
                     add(if (active != null) "tls://${options.dnsRemote}#${active.tag}" else "tls://${options.dnsRemote}")
                 }
+                putJsonArray("direct-nameserver") { add(directNameserver) }
                 if (desktop != null) {
-                    putJsonArray("direct-nameserver") { add(directNameserver) }
                     putJsonObject("nameserver-policy") { put(LOCAL_DOMAINS.joinToString(","), directNameserver) }
+                }
+            }
+            if (options.sniff) {
+                putJsonObject("sniffer") {
+                    put("enable", true)
+                    put("override-destination", false)
+                    put("parse-pure-ip", true)
+                    putJsonObject("sniff") {
+                        putJsonObject("TLS") { putJsonArray("ports") { add("443"); add("8443") } }
+                        putJsonObject("HTTP") { putJsonArray("ports") { add("80"); add("8080-8880") } }
+                        putJsonObject("QUIC") { putJsonArray("ports") { add("443"); add("8443") } }
+                    }
                 }
             }
             putJsonArray("listeners") {
