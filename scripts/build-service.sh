@@ -14,6 +14,7 @@ TARGETS="${TARGETS:-windows linux}"
 say() { printf '\033[1;36m>>> %s\033[0m\n' "$*"; }
 
 cd "${REPO_ROOT}/desktop/service"
+go mod download github.com/metacubex/mihomo
 MIHOMO_VERSION="$(go list -m -f '{{.Version}}' github.com/metacubex/mihomo)"
 MIHOMO_DIR="$(go list -m -f '{{.Dir}}' github.com/metacubex/mihomo)"
 for os in $TARGETS; do
