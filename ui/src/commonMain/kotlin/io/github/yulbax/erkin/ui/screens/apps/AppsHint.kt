@@ -27,6 +27,7 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.label
+import io.github.yulbax.erkin.ui.components.ui
 
 @Composable
 internal fun AppsHint(onDismiss: () -> Unit) {
@@ -58,9 +59,7 @@ internal fun AppsHint(onDismiss: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(8.dp))
-            TypeLine(ConnectionType.DIRECT, stringResource(Res.string.apps_hint_direct))
-            TypeLine(ConnectionType.BYEDPI, stringResource(Res.string.apps_hint_byedpi))
-            TypeLine(ConnectionType.VPN, stringResource(Res.string.apps_hint_vpn))
+            ConnectionType.entries.forEach { TypeLine(it, stringResource(it.ui.hint)) }
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(Res.string.apps_hint_change),

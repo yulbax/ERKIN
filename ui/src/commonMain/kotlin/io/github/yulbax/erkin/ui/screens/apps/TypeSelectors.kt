@@ -24,7 +24,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.label
 
-private val TYPE_ORDER = listOf(ConnectionType.DIRECT, ConnectionType.BYEDPI, ConnectionType.VPN)
+private val TYPE_ORDER = ConnectionType.entries
 private val SELECTOR_HEIGHT = 48.dp
 private val APP_SELECTOR_HEIGHT = 48.dp
 private val APP_SELECTOR_WIDTH = 150.dp
@@ -45,7 +45,7 @@ internal fun GlobalTypeConnectedGroup(
             ElevatedToggleButton(
                 checked = false,
                 onCheckedChange = { onSelect(type) },
-                enabled = vpnEnabled || type != ConnectionType.VPN,
+                enabled = vpnEnabled || !type.needsServer,
                 shapes = shapes(index),
                 colors = ToggleButtonDefaults.toggleButtonColors(
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -88,7 +88,7 @@ internal fun AppRowConnectedGroup(
             ToggleButton(
                 checked = isSelected,
                 onCheckedChange = { if (it) onSelect(type) },
-                enabled = vpnEnabled || type != ConnectionType.VPN,
+                enabled = vpnEnabled || !type.needsServer,
                 shapes = shapes(index),
                 modifier = Modifier
                     .then(if (isSelected) Modifier.weight(1f) else Modifier.width(SELECTOR_ICON_WIDTH))

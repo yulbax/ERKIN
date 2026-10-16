@@ -52,7 +52,6 @@ import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
-import io.github.yulbax.erkin.vpn.core.RoutingRules
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import org.jetbrains.compose.resources.stringResource
@@ -292,7 +291,7 @@ private fun RuleRow(
 }
 
 private fun RoutingRuleEntity.displayValue(): String =
-    RuleMatch.fromWire(type)?.let { RoutingRules.display(it, value) } ?: value
+    RuleMatch.fromWire(type)?.display(value) ?: value
 
 private const val HINT_KEY = "hint"
 private const val EMPTY_KEY = "empty"

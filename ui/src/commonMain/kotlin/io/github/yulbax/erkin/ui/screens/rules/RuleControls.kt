@@ -39,7 +39,6 @@ import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.vpn.core.RoutingRules
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import org.jetbrains.compose.resources.stringResource
@@ -128,9 +127,9 @@ internal fun RuleDialog(
 ) {
     val initialMatch = initial?.let { RuleMatch.fromWire(it.type) } ?: RuleMatch.DOMAIN_SUFFIX
     var match by remember { mutableStateOf(initialMatch) }
-    var text by remember { mutableStateOf(initial?.let { RoutingRules.display(initialMatch, it.value) }.orEmpty()) }
+    var text by remember { mutableStateOf(initial?.let { initialMatch.display(it.value) }.orEmpty()) }
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
-    val normalized = RoutingRules.normalize(match, text)
+    val normalized = match.normalize(text)
     val invalid = text.isNotBlank() && normalized == null
     val groupColors = ToggleButtonDefaults.toggleButtonColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
@@ -220,48 +219,28 @@ private fun connectedShapes(index: Int, count: Int): ToggleButtonShapes = when (
 
 @Composable
 internal fun RuleTargetIcon(target: RuleTarget, modifier: Modifier = Modifier) {
-    when (target) {
-        RuleTarget.VPN -> ConnectionTypeIcon(ConnectionType.VPN, modifier)
-        RuleTarget.BYEDPI -> ConnectionTypeIcon(ConnectionType.BYEDPI, modifier)
-        RuleTarget.DIRECT -> ConnectionTypeIcon(ConnectionType.DIRECT, modifier)
-        RuleTarget.BLOCK -> Icon(Icons.Default.Block, contentDescription = target.label(), modifier = modifier)
+    when (val channel = target.channel) {
+        null -> Icon(Icons.Default.Block, contentDescription = target.label(), modifier = modifier)
+        else -> ConnectionTypeIcon(channel, modifier)
     }
 }
 
 @Composable
-internal fun RuleMatch.label(): String = stringResource(
-    when (this) {
-        RuleMatch.DOMAIN_SUFFIX -> Res.string.rule_type_suffix
-        RuleMatch.DOMAIN -> Res.string.rule_type_domain
-        RuleMatch.DOMAIN_KEYWORD -> Res.string.rule_type_keyword
-        RuleMatch.IP_CIDR -> Res.string.rule_type_ip
-    }
-)
+internal fun RuleMatch.label(): String = stringResource(ui.label)
 
 @Composable
-private fun RuleMatch.shortLabel(): String = stringResource(
-    when (this) {
-        RuleMatch.DOMAIN_SUFFIX -> Res.string.rule_type_suffix_short
-        RuleMatch.DOMAIN -> Res.string.rule_type_domain_short
-        RuleMatch.DOMAIN_KEYWORD -> Res.string.rule_type_keyword_short
-        RuleMatch.IP_CIDR -> Res.string.rule_type_ip_short
-    }
-)
+private fun RuleMatch.shortLabel(): String = stringResource(ui.shortLabel)
 
 @Composable
-private fun RuleMatch.example(): String = stringResource(
-    when (this) {
-        RuleMatch.DOMAIN_SUFFIX -> Res.string.rule_example_suffix
-        RuleMatch.DOMAIN -> Res.string.rule_example_domain
-        RuleMatch.DOMAIN_KEYWORD -> Res.string.rule_example_keyword
-        RuleMatch.IP_CIDR -> Res.string.rule_example_ip
-    }
-)
+private fun RuleMatch.example(): String = stringResource(ui.example)
 
 @Composable
-private fun RuleTarget.label(): String = when (this) {
-    RuleTarget.VPN -> ConnectionType.VPN.label()
-    RuleTarget.BYEDPI -> ConnectionType.BYEDPI.label()
-    RuleTarget.DIRECT -> ConnectionType.DIRECT.label()
-    RuleTarget.BLOCK -> stringResource(Res.string.rule_target_block)
-}
+private fun RuleTarget.label(): String = channel?.label() ?: stringResource(Res.string.rule_target_block)
+
+private val RuleTarget.channel: ConnectionType?
+    get() = when (this) {
+        RuleTarget.VPN -> ConnectionType.VPN
+        RuleTarget.BYEDPI -> ConnectionType.BYEDPI
+        RuleTarget.DIRECT -> ConnectionType.DIRECT
+        RuleTarget.BLOCK -> null
+    }
