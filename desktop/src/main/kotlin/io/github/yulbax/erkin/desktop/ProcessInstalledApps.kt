@@ -63,8 +63,10 @@ class ProcessInstalledApps(
             running.filter { it.path != null && savedById[it.packageName]?.let { app -> app.path != it.path } == true }
                 .forEach { appDao.updatePath(it.packageName, it.path) }
             val runningIds = running.mapTo(HashSet()) { it.packageName }
+            val removed = removedApps(saved, runningIds)
+            if (removed.isNotEmpty()) appDao.deleteApps(removed)
             val remembered = saved
-                .filter { it.packageName !in runningIds && File(it.packageName).name != ownExecutable }
+                .filter { it.packageName !in runningIds && it.packageName !in removed && File(it.packageName).name != ownExecutable }
                 .map { InstalledApp(it.packageName, it.name, it.isSystemApp, isLaunchable = true, path = it.path) }
             _installedApps.value = (running + remembered).sortedBy { it.name.lowercase() }
             _error.value = null
@@ -82,10 +84,27 @@ class ProcessInstalledApps(
             .map { it.info().command().orElse(null) }
             .toList()
             .filterNotNull()
-            .map(::File)
+            .map(::executableOf)
 
     companion object {
         private val REFRESH_INTERVAL = 15.seconds
+        private const val DELETED_SUFFIX = " (deleted)"
+
+        fun executableOf(command: String): File = File(command.removeSuffix(DELETED_SUFFIX))
+
+        fun removedApps(saved: List<App>, runningIds: Set<String>): List<String> =
+            saved.filter { app ->
+                app.packageName !in runningIds && when (val path = app.path) {
+                    null -> app.packageName.endsWith(DELETED_SUFFIX)
+                    else -> isRemoved(File(path))
+                }
+            }.map { it.packageName }
+
+        private fun isRemoved(file: File): Boolean {
+            if (file.exists()) return false
+            val existing = generateSequence(file.parentFile) { it.parentFile }.firstOrNull { it.exists() } ?: return false
+            return existing.parentFile == null || !existing.list().isNullOrEmpty()
+        }
 
         fun discover(executables: List<File>, ownExecutable: String?, systemRoots: List<String>): List<InstalledApp> =
             executables
