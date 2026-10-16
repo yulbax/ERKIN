@@ -22,7 +22,7 @@ object Trojan : ProtocolHandler {
             proxy("trojan", uri.host, uri.port)
             put("password", uri.userInfo ?: "")
             tls(TlsStyle.SNI, sni, q["fp"] ?: "", q["allowInsecure"] == "1", q["alpn"] ?: "")
-            transport(net, q["path"]?.let { decodeComponent(it) } ?: "/", host, q["serviceName"], XhttpParams(q["mode"], q["extra"]))
+            transport(net, q["path"] ?: "/", host, q["serviceName"], XhttpParams(q["mode"], q["extra"]))
         }
         return ParsedLink(uri.fragmentName(uri.host), descriptor)
     }
