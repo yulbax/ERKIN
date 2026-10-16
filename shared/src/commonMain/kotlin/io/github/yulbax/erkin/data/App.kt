@@ -14,8 +14,8 @@ data class App(
 
 fun isExecutablePath(id: String): Boolean = '/' in id || '\\' in id
 
-enum class ConnectionType(val wire: String) {
-    DIRECT("DIRECT"), BYEDPI("BYEDPI"), VPN("VPN");
+enum class ConnectionType(val wire: String, val needsServer: Boolean = false) {
+    DIRECT("DIRECT"), BYEDPI("BYEDPI"), VPN("VPN", needsServer = true);
 
     companion object {
         fun fromWire(value: String): ConnectionType? = entries.firstOrNull { it.wire == value }

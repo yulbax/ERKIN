@@ -7,29 +7,29 @@ import org.junit.Test
 class RoutingRulesTest {
     @Test
     fun domainZonesAreNormalizedToTheFormTheCoreMatches() {
-        assertEquals("ru", RoutingRules.normalize(RuleMatch.DOMAIN_SUFFIX, " .RU "))
-        assertEquals("xn--p1ai", RoutingRules.normalize(RuleMatch.DOMAIN_SUFFIX, "рф"))
-        assertEquals("youtube.com", RoutingRules.normalize(RuleMatch.DOMAIN_SUFFIX, "*.youtube.com"))
-        assertEquals("www.youtube.com", RoutingRules.normalize(RuleMatch.DOMAIN, "https://www.youtube.com/watch?v=1"))
-        assertEquals("рф", RoutingRules.display(RuleMatch.DOMAIN_SUFFIX, "xn--p1ai"))
+        assertEquals("ru", RuleMatch.DOMAIN_SUFFIX.normalize(" .RU "))
+        assertEquals("xn--p1ai", RuleMatch.DOMAIN_SUFFIX.normalize("рф"))
+        assertEquals("youtube.com", RuleMatch.DOMAIN_SUFFIX.normalize("*.youtube.com"))
+        assertEquals("www.youtube.com", RuleMatch.DOMAIN.normalize("https://www.youtube.com/watch?v=1"))
+        assertEquals("рф", RuleMatch.DOMAIN_SUFFIX.display("xn--p1ai"))
     }
 
     @Test
     fun valuesThatWouldBreakTheConfigAreRejected() {
-        assertNull(RoutingRules.normalize(RuleMatch.DOMAIN_SUFFIX, ""))
-        assertNull(RoutingRules.normalize(RuleMatch.DOMAIN_SUFFIX, "a,b"))
-        assertNull(RoutingRules.normalize(RuleMatch.DOMAIN, "two words"))
-        assertNull(RoutingRules.normalize(RuleMatch.DOMAIN_KEYWORD, "go,ogle"))
-        assertNull(RoutingRules.normalize(RuleMatch.IP_CIDR, "example.com"))
-        assertNull(RoutingRules.normalize(RuleMatch.IP_CIDR, "300.1.1.1"))
-        assertNull(RoutingRules.normalize(RuleMatch.IP_CIDR, "10.0.0.0/33"))
+        assertNull(RuleMatch.DOMAIN_SUFFIX.normalize(""))
+        assertNull(RuleMatch.DOMAIN_SUFFIX.normalize("a,b"))
+        assertNull(RuleMatch.DOMAIN.normalize("two words"))
+        assertNull(RuleMatch.DOMAIN_KEYWORD.normalize("go,ogle"))
+        assertNull(RuleMatch.IP_CIDR.normalize("example.com"))
+        assertNull(RuleMatch.IP_CIDR.normalize("300.1.1.1"))
+        assertNull(RuleMatch.IP_CIDR.normalize("10.0.0.0/33"))
     }
 
     @Test
     fun addressesGetAPrefix() {
-        assertEquals("1.1.1.1/32", RoutingRules.normalize(RuleMatch.IP_CIDR, "1.1.1.1"))
-        assertEquals("10.0.0.0/8", RoutingRules.normalize(RuleMatch.IP_CIDR, "10.0.0.0/8"))
-        assertEquals("2001:db8:0:0:0:0:0:0/32", RoutingRules.normalize(RuleMatch.IP_CIDR, "2001:DB8::/32"))
-        assertEquals("google", RoutingRules.normalize(RuleMatch.DOMAIN_KEYWORD, "Google"))
+        assertEquals("1.1.1.1/32", RuleMatch.IP_CIDR.normalize("1.1.1.1"))
+        assertEquals("10.0.0.0/8", RuleMatch.IP_CIDR.normalize("10.0.0.0/8"))
+        assertEquals("2001:db8:0:0:0:0:0:0/32", RuleMatch.IP_CIDR.normalize("2001:DB8::/32"))
+        assertEquals("google", RuleMatch.DOMAIN_KEYWORD.normalize("Google"))
     }
 }

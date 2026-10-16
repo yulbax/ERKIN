@@ -5,7 +5,6 @@ import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RemoteDns
-import io.github.yulbax.erkin.vpn.core.RoutingRules
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
@@ -76,7 +75,7 @@ object BackupCodec {
     private fun isValidRuleBackup(rule: BackupRule): Boolean {
         val match = RuleMatch.fromWire(rule.type) ?: return false
         if (RuleTarget.fromWire(rule.target) == null) return false
-        return RoutingRules.normalize(match, rule.value) == rule.value
+        return match.normalize(rule.value) == rule.value
     }
 
     private fun isValidDns(value: String): Boolean =
