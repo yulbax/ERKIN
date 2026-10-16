@@ -26,11 +26,11 @@ class ErkinVpnService :
     VpnHost,
     KoinComponent {
 
-    private val store: VpnSessionStore by inject()
     private val vpnStateRepository: VpnStateRepository by inject()
     private val commandBus: VpnCommandBus by inject()
     private val networkMonitor: DefaultNetworkMonitor by inject()
     private val erkinLog: ErkinLog by inject()
+    private val sessions: VpnSessionFactory by inject()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var controller: VpnController
@@ -43,22 +43,13 @@ class ErkinVpnService :
         tunSession = TunSession(this, networkMonitor, erkinLog)
         notification = VpnNotificationController(this, vpnStateRepository.stats)
         controller = VpnController(scope, commandBus, vpnStateRepository, host = this, log = erkinLog) { controller ->
-            VpnSession(
+            sessions.create(
+                controller = controller,
+                scope = scope,
                 engine = MihomoEngine(applicationContext, this, controller, erkinLog),
                 byeDpi = ByeDpiRunner(packageName, erkinLog) { fd -> protect(fd) },
-                store = store,
-                stateRepository = vpnStateRepository,
-                health = HealthMonitor(
-                    vpnStateRepository,
-                    erkinLog,
-                    SocksHealthProbe(BuildConfig.BYEDPI_HEALTH_PROBE_URL)
-                ),
-                quality = SocksSiteProbe,
-                log = erkinLog,
-                ownPackage = packageName,
-                scope = scope,
-                requestWork = controller::requestWork,
-                onByeDpiExit = controller::onByeDpiExit
+                byeDpiHealthProbeUrl = BuildConfig.BYEDPI_HEALTH_PROBE_URL,
+                ownPackage = packageName
             )
         }
         networkMonitor.onUnderlyingNetworkChanged = { network ->
