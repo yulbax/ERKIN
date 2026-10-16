@@ -132,6 +132,14 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun blockingQuicRejectsUdp443BeforeAppChannels() {
+        val rule = "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT"
+        assertFalse(rule in build().rules())
+        val rules = build(vpn = listOf("org.vpn"), options = NetworkOptions(blockQuic = true)).rules()
+        assertTrue(rules.indexOf(rule) in 1 until rules.indexOf("PROCESS-NAME,org.vpn,p1"))
+    }
+
+    @Test
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
         val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)

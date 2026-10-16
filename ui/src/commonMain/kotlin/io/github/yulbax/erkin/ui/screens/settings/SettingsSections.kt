@@ -170,6 +170,9 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
                 SwitchRow(stringResource(Res.string.sniff_destination), network.sniff) { viewModel.setSniff(it) }
             },
             {
+                SwitchRow(stringResource(Res.string.block_quic), network.blockQuic) { viewModel.setBlockQuic(it) }
+            },
+            {
                 SwitchRow(stringResource(Res.string.bypass_lan), network.bypassLan) { enabled ->
                     if (enabled) requestLocalNetwork() else viewModel.setBypassLan(false)
                 }

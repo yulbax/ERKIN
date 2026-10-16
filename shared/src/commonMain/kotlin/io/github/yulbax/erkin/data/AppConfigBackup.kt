@@ -37,7 +37,8 @@ data class BackupSettings(
     val homeHintSeen: Boolean = SETTINGS_DEFAULTS.homeHintSeen,
     val appsHintSeen: Boolean = SETTINGS_DEFAULTS.appsHintSeen,
     val newAppsConnectionType: String = SETTINGS_DEFAULTS.newAppsConnectionType,
-    val rulesHintSeen: Boolean = SETTINGS_DEFAULTS.rulesHintSeen
+    val rulesHintSeen: Boolean = SETTINGS_DEFAULTS.rulesHintSeen,
+    val blockQuic: Boolean = SETTINGS_DEFAULTS.blockQuic
 )
 
 private val SETTINGS_DEFAULTS = SettingsEntity()
@@ -73,7 +74,8 @@ fun SettingsEntity.toBackupSettings() = BackupSettings(
     homeHintSeen = homeHintSeen,
     appsHintSeen = appsHintSeen,
     newAppsConnectionType = newAppsConnectionType,
-    rulesHintSeen = rulesHintSeen
+    rulesHintSeen = rulesHintSeen,
+    blockQuic = blockQuic
 )
 
 fun BackupSettings.toEntity() = SettingsEntity(
@@ -90,7 +92,8 @@ fun BackupSettings.toEntity() = SettingsEntity(
     homeHintSeen = homeHintSeen,
     appsHintSeen = appsHintSeen,
     newAppsConnectionType = newAppsConnectionType,
-    rulesHintSeen = rulesHintSeen
+    rulesHintSeen = rulesHintSeen,
+    blockQuic = blockQuic
 )
 
 fun ProfileEntity.toBackupProfile() = BackupProfile(
