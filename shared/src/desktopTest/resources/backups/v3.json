@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "apps": {"org.telegram.messenger": "VPN"},
+  "settings": {"id": 1, "tunStack": "gvisor", "mtu": 1400, "preferredFingerprint": "firefox", "homeHintSeen": true},
+  "profiles": [{"id": 42, "name": "Example", "type": "vless", "link": "vless://00000000-0000-0000-0000-000000000000@example.com:443?security=tls#Example", "outboundJson": "{\"type\":\"vless\"}", "selected": true, "subscriptionUrl": ""}]
+}

@@ -5,13 +5,16 @@ import androidx.room.PrimaryKey
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
+@Serializable
 @Entity(tableName = "settings")
 data class SettingsEntity(
-    @PrimaryKey val id: Int = 1,
+    @Transient @PrimaryKey val id: Int = 1,
     val showSystemApps: Boolean = false,
     val byeDpiArgs: String = "",
-    val tunStack: String = "gvisor",
+    @Transient val tunStack: String = "gvisor",
     val mtu: Int = NetworkOptions.DEFAULT.mtu,
     val ipv6Mode: String = NetworkOptions.DEFAULT.ipv6Mode.wire,
     val dnsRemote: String = NetworkOptions.DEFAULT.dnsRemote,

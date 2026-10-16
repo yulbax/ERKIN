@@ -103,7 +103,7 @@ class EngineConfigComposerTest {
         val first = exit.copy(id = 2, name = "First")
         val second = exit.copy(id = 3, name = "Second")
         val chain = ProfileEntity(
-            id = 9, name = "Chain", type = ProxyChain.TYPE, link = "", selected = true,
+            id = 9, name = "Chain", type = ProxyChain.TYPE, selected = true,
             outboundJson = ProxyChain(listOf(ChainEntry.ByeDpi, ChainEntry.Server(2), ChainEntry.Server(3)), exit.id).encode()
         )
 

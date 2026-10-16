@@ -1,7 +1,11 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
+import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -45,17 +49,17 @@ class ConfigBackupRepository(
                     null
                 },
                 settings = if (selection.settings) {
-                    (database.settingsDao().getSettings() ?: SettingsEntity()).toBackupSettings()
+                    database.settingsDao().getSettings() ?: SettingsEntity()
                 } else {
                     null
                 },
                 profiles = if (selection.profiles) {
-                    database.profileDao().getAll().filter { it.isLink }.map { it.toBackupProfile() }
+                    database.profileDao().getAll()
                 } else {
                     null
                 },
                 rules = if (selection.rules) {
-                    database.routingRuleDao().getAll().map { it.toBackupRule() }
+                    database.routingRuleDao().getAll()
                 } else {
                     null
                 }
@@ -92,7 +96,7 @@ class ConfigBackupRepository(
     ): ImportResult {
         val apps = backup.apps?.takeIf { selection.apps }?.let { applyApps(it) }
         val settings = backup.settings?.takeIf { selection.settings }
-        settings?.let { database.settingsDao().upsertSettings(it.toEntity()) }
+        settings?.let { database.settingsDao().upsertSettings(it) }
         val profiles = backup.profiles?.takeIf { selection.profiles }?.let { applyProfiles(it) }
         val rules = backup.rules?.takeIf { selection.rules }?.let { applyRules(it) }
         return ImportResult(
@@ -126,42 +130,60 @@ class ConfigBackupRepository(
         return SectionResult(applied, skipped)
     }
 
-    private suspend fun applyRules(rules: List<BackupRule>): SectionResult {
+    private suspend fun applyRules(rules: List<RoutingRuleEntity>): SectionResult {
         val dao = database.routingRuleDao()
-        val existing = dao.getAll().mapTo(HashSet()) { it.toBackupRule() }
+        val existing = dao.getAll().mapTo(HashSet()) { it.identity() }
         var added = 0
         var skipped = 0
         for (rule in rules) {
-            if (!existing.add(rule)) {
+            if (!existing.add(rule.identity())) {
                 skipped++
                 continue
             }
-            dao.append(rule.toEntity())
+            dao.append(rule.copy(id = 0))
             added++
         }
         return SectionResult(added, skipped)
     }
 
-    private suspend fun applyProfiles(profiles: List<BackupProfile>): SectionResult {
+    private suspend fun applyProfiles(profiles: List<ProfileEntity>): SectionResult {
         val profileDao = database.profileDao()
-        val existingByLink = profileDao.getAll().filter { it.isLink }.associateTo(HashMap()) { it.link to it.id }
+        val stored = profileDao.getAll()
+        val existingByLink = stored.filter { it.isLink }.associateTo(HashMap()) { it.link to it.id }
+        val existingChains = stored.mapNotNullTo(HashSet()) { (it.kind as? ServerKind.Chain)?.chain }
+        val newIds = HashMap<Long, Long>()
         var importedSelectedId: Long? = null
         var added = 0
         var skipped = 0
-        for (profile in profiles) {
+        for (profile in profiles.filter { it.isLink }) {
             val existingId = existingByLink[profile.link]
-            if (existingId != null) {
-                if (profile.selected) importedSelectedId = existingId
+            val id = if (existingId != null) {
+                skipped++
+                existingId
+            } else {
+                val parsed = checkNotNull(LinkParser.parse(profile.link))
+                added++
+                profileDao.append(
+                    profile.copy(id = 0, type = parsed.protocol.wire, outboundJson = parsed.proxyJson(), selected = false)
+                ).also { existingByLink[profile.link] = it }
+            }
+            newIds[profile.id] = id
+            if (profile.selected) importedSelectedId = id
+        }
+        for (profile in profiles) {
+            val chain = (profile.kind as? ServerKind.Chain)?.chain ?: continue
+            val remapped = chain.remap(newIds)
+            if (remapped == null || !existingChains.add(remapped)) {
                 skipped++
                 continue
             }
-            val parsed = checkNotNull(LinkParser.parse(profile.link))
-            val id = profileDao.append(profile.toEntity(parsed))
-            existingByLink[profile.link] = id
+            val id = profileDao.append(profile.copy(id = 0, outboundJson = remapped.encode(), selected = false))
             if (profile.selected) importedSelectedId = id
             added++
         }
         profileRepository.ensureSelection(preferredId = importedSelectedId)
         return SectionResult(added, skipped)
     }
+
+    private fun RoutingRuleEntity.identity() = Triple(type, value, target)
 }
