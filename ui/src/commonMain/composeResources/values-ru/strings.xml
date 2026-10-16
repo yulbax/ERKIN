@@ -33,7 +33,7 @@
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
     <string name="remote_dns">Удалённый DNS (через прокси, DoT)</string>
-    <string name="direct_dns">Прямой DNS (основная сеть)</string>
+    <string name="direct_dns">Служебный DNS</string>
     <string name="sniff_destination">Определять назначение (sniff)</string>
     <string name="bypass_lan">Обход LAN (приватные IP напрямую)</string>
     <string name="local_network_denied">Разрешите доступ к локальной сети в настройках системы, иначе обход LAN не будет работать</string>

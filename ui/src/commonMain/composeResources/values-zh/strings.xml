@@ -33,7 +33,7 @@
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
     <string name="remote_dns">远程 DNS（通过代理，DoT）</string>
-    <string name="direct_dns">直连 DNS（底层网络）</string>
+    <string name="direct_dns">服务 DNS</string>
     <string name="sniff_destination">嗅探目标</string>
     <string name="bypass_lan">绕过局域网（私有 IP 直连）</string>
     <string name="local_network_denied">请在系统设置中允许访问本地网络，否则绕过局域网将无法生效</string>
