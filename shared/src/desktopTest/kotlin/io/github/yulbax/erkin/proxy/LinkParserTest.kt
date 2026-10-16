@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.proxy
 
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
@@ -26,6 +27,15 @@ class LinkParserTest {
             "edge.example.com",
             parsed.proxy["servername"]?.jsonPrimitive?.content
         )
+    }
+
+    @Test
+    fun transportPathIsDecodedOnce() {
+        for (scheme in listOf("vless://id", "trojan://secret")) {
+            val parsed = requireNotNull(LinkParser.parse("$scheme@example.com:443?security=tls&type=ws&path=%2Fa%252Fb%2Bc#P"))
+            val wsOpts = Json.parseToJsonElement(parsed.proxyJson()).jsonObject.getValue("ws-opts").jsonObject
+            assertEquals("/a%2Fb+c", wsOpts.getValue("path").jsonPrimitive.content)
+        }
     }
 
     @Test

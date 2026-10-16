@@ -17,7 +17,7 @@ object Vless : ProtocolHandler {
         val security = q["security"] ?: "none"
         val net = q["type"] ?: "tcp"
         val host = q["host"] ?: ""
-        val path = q["path"]?.let { decodeComponent(it) } ?: "/"
+        val path = q["path"] ?: "/"
         val sni = q["sni"] ?: host.ifEmpty { uri.host }
 
         val descriptor = buildJsonObject {
