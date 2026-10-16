@@ -32,7 +32,7 @@
     <string name="fingerprint_from_config">از کانفیگ</string>
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
-    <string name="remote_dns">DNS راه‌دور (از طریق پروکسی، DoT)</string>
+    <string name="remote_dns">DNS راه دور (از طریق VPN)</string>
     <string name="direct_dns">DNS سرویس</string>
     <string name="sniff_destination">شناسایی مقصد (sniff)</string>
     <string name="bypass_lan">دور زدن LAN (IPهای خصوصی مستقیم)</string>
@@ -177,4 +177,5 @@
     <string name="delete_rules_title">قوانین حذف شوند؟</string>
     <string name="delete_rule_message">قانون «%1$s» حذف شود؟</string>
     <string name="delete_rules_message">%1$d قانون انتخاب‌شده حذف شوند؟</string>
+    <string name="invalid_remote_dns">آدرس DNS نامعتبر است. یک IP یا آدرس tls://، https://، quic://، udp:// یا tcp:// وارد کنید</string>
 </resources>

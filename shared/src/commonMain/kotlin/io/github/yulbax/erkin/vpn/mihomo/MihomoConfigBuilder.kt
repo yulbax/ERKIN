@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.data.isExecutablePath
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.RemoteDns
 import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import kotlinx.serialization.json.Json
@@ -117,7 +118,9 @@ object MihomoConfigBuilder {
                 putJsonArray("default-nameserver") { add(options.dnsDirect) }
                 putJsonArray("proxy-server-nameserver") { add(options.dnsDirect) }
                 putJsonArray("nameserver") {
-                    add(if (active != null) "tls://${options.dnsRemote}#${active.tag}" else "tls://${options.dnsRemote}")
+                    val remote = RemoteDns.nameserver(options.dnsRemote)
+                        ?: requireNotNull(RemoteDns.nameserver(NetworkOptions.DEFAULT.dnsRemote))
+                    add(active?.let { "$remote#${it.tag}" } ?: remote)
                 }
                 putJsonArray("direct-nameserver") { add(directNameserver) }
                 putJsonObject("nameserver-policy") { put(LOCAL_DOMAINS.joinToString(","), directNameserver) }

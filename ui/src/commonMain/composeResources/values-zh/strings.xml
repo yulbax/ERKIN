@@ -32,7 +32,7 @@
     <string name="fingerprint_from_config">使用配置值</string>
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
-    <string name="remote_dns">远程 DNS（通过代理，DoT）</string>
+    <string name="remote_dns">远程 DNS（经 VPN）</string>
     <string name="direct_dns">服务 DNS</string>
     <string name="sniff_destination">嗅探目标</string>
     <string name="bypass_lan">绕过局域网（私有 IP 直连）</string>
@@ -176,4 +176,5 @@
     <string name="delete_rules_title">删除规则？</string>
     <string name="delete_rule_message">删除“%1$s”的规则吗？</string>
     <string name="delete_rules_message">删除选中的 %1$d 条规则吗？</string>
+    <string name="invalid_remote_dns">DNS 地址无效。请填写 IP 或 tls://、https://、quic://、udp://、tcp:// 地址</string>
 </resources>

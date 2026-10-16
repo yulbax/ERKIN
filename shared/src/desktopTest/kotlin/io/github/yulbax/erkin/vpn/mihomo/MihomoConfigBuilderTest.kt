@@ -124,6 +124,14 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun remoteDnsKeepsItsProtocolAndGoesThroughTheServer() {
+        val doh = build(options = NetworkOptions(dnsRemote = "https://dns.google/dns-query"))
+        assertEquals("https://dns.google/dns-query#p1", doh.getValue("dns").jsonObject.getValue("nameserver").jsonArray.single().jsonPrimitive.content)
+        val broken = build(options = NetworkOptions(dnsRemote = "system://"))
+        assertEquals("tls://1.1.1.1#p1", broken.getValue("dns").jsonObject.getValue("nameserver").jsonArray.single().jsonPrimitive.content)
+    }
+
+    @Test
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
         val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)

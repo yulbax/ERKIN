@@ -3,7 +3,6 @@ package mihomocore
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"os"
 	"sync"
 	"time"
@@ -23,7 +22,6 @@ import (
 
 const (
 	testConcurrency = 10
-	dotPort         = "853"
 )
 
 type Traffic struct {
@@ -55,7 +53,9 @@ func Apply(content string, keepTun bool, resolvedProxy string, resolverAddress s
 		return err
 	}
 	executor.ApplyConfig(parsed, true)
-	resolveBeforeDial(resolvedProxy, resolverAddress, parsed.General.IPv6)
+	if resolverAddress != "" {
+		resolveBeforeDial(resolvedProxy, parsed.DNS, parsed.General.IPv6)
+	}
 	return nil
 }
 
@@ -168,8 +168,8 @@ func (p *resolvingProxy) resolve(ctx context.Context, metadata *C.Metadata) (*C.
 	return resolved, nil
 }
 
-func resolveBeforeDial(name string, address string, ipv6 bool) {
-	if name == "" || address == "" {
+func resolveBeforeDial(name string, servers *config.DNS, ipv6 bool) {
+	if name == "" || servers == nil || len(servers.NameServer) == 0 {
 		return
 	}
 	current := tunnel.Proxies()
@@ -177,9 +177,16 @@ func resolveBeforeDial(name string, address string, ipv6 bool) {
 	if !loaded {
 		return
 	}
+	main := make([]dns.NameServer, 0, len(servers.NameServer))
+	for _, server := range servers.NameServer {
+		server.ProxyAdapter = nil
+		server.ProxyName = name
+		main = append(main, server)
+	}
 	resolvers := dns.NewResolver(dns.Config{
-		Main: []dns.NameServer{{Net: "tls", Addr: net.JoinHostPort(address, dotPort), ProxyName: name}},
-		IPv6: ipv6,
+		Main:    main,
+		Default: servers.DefaultNameserver,
+		IPv6:    ipv6,
 	})
 	updated := make(map[string]C.Proxy, len(current))
 	for key, value := range current {

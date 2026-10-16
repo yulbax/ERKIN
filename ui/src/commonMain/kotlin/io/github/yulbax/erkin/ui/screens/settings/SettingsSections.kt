@@ -118,6 +118,7 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
     val fromConfigLabel = stringResource(Res.string.fingerprint_from_config)
     val showMessage = rememberShowMessage()
     val localNetworkDenied = stringResource(Res.string.local_network_denied)
+    val invalidRemoteDns = stringResource(Res.string.invalid_remote_dns)
     val requestLocalNetwork = rememberLocalNetworkRequest { granted ->
         if (granted) viewModel.setBypassLan(true) else showMessage(localNetworkDenied)
     }
@@ -155,7 +156,7 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
                 CommittedTextField(
                     label = stringResource(Res.string.remote_dns),
                     saved = network.dnsRemote,
-                    onCommit = { if (it.isNotBlank()) viewModel.setDnsRemote(it) }
+                    onCommit = { if (it.isNotBlank() && !viewModel.setDnsRemote(it)) showMessage(invalidRemoteDns) }
                 )
             },
             {
