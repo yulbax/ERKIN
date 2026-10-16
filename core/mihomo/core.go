@@ -88,7 +88,9 @@ func TestProxies(proxies string, url string, timeoutMs int32) (string, error) {
 		name, _ := mapping["name"].(string)
 		proxy, err := adapter.ParseProxy(mapping)
 		if err != nil {
+			resultsAccess.Lock()
 			results[name] = -1
+			resultsAccess.Unlock()
 			continue
 		}
 		group.Add(1)
