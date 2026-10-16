@@ -114,9 +114,17 @@ Java_io_github_yulbax_erkin_engine_ByeDpi_nativeStart(
     for (jsize i = 0; i < argc; i++) {
         jstring s = (jstring) (*env)->GetObjectArrayElement(env, jargs, i);
         const char *c = (*env)->GetStringUTFChars(env, s, NULL);
-        argv[i] = strdup(c);
-        (*env)->ReleaseStringUTFChars(env, s, c);
+        argv[i] = c ? strdup(c) : NULL;
+        if (c) (*env)->ReleaseStringUTFChars(env, s, c);
         (*env)->DeleteLocalRef(env, s);
+        if (!argv[i]) {
+            for (jsize j = 0; j < i; j++) free(argv[j]);
+            free(argv);
+            pthread_mutex_lock(&state_mutex);
+            native_running = 0;
+            pthread_mutex_unlock(&state_mutex);
+            return -1;
+        }
     }
 
     jint result = 0;
