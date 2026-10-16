@@ -43,6 +43,7 @@ kotlin {
         }
         getByName("desktopMain").dependencies {
             implementation(libs.kotlinx.coroutines.swing)
+            implementation(libs.jna)
         }
         getByName("desktopTest").dependencies {
             implementation(compose.desktop.currentOs)

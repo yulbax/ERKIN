@@ -58,6 +58,8 @@ expect val supportsSystemAppsFilter: Boolean
 
 expect val rulesCoverAllApps: Boolean
 
+expect val revealInFolder: ((path: String) -> Unit)?
+
 expect val scrollbarAlwaysVisible: Boolean
 
 expect val drawerSwipeToOpen: Boolean
