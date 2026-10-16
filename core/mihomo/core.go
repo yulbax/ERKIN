@@ -17,6 +17,8 @@ import (
 	C "github.com/metacubex/mihomo/constant"
 	"github.com/metacubex/mihomo/dns"
 	"github.com/metacubex/mihomo/hub/executor"
+	"github.com/metacubex/mihomo/listener"
+	LC "github.com/metacubex/mihomo/listener/config"
 	"github.com/metacubex/mihomo/log"
 	"github.com/metacubex/mihomo/tunnel"
 	"github.com/metacubex/mihomo/tunnel/statistic"
@@ -69,6 +71,7 @@ func Shutdown() {
 		return true
 	})
 	executor.Shutdown()
+	listener.ReCreateTun(LC.Tun{}, tunnel.Tunnel)
 }
 
 func URLTest(proxyName string, url string, timeoutMs int32) int32 {
