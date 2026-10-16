@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.platform
 
+import androidx.compose.ui.unit.Dp
 import io.github.yulbax.erkin.data.ConnectionType
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
@@ -61,6 +62,8 @@ expect val rulesCoverAllApps: Boolean
 expect val revealInFolder: ((path: String) -> Unit)?
 
 expect val scrollbarAlwaysVisible: Boolean
+
+expect val scrollbarEdgeInset: Dp
 
 expect val drawerSwipeToOpen: Boolean
 

@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
@@ -167,6 +168,8 @@ actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.DIRECT
 actual val supportsSystemAppsFilter: Boolean = false
 
 actual val rulesCoverAllApps: Boolean = true
+
+actual val scrollbarEdgeInset: Dp = 6.dp
 
 actual val revealInFolder: ((path: String) -> Unit)? =
     if (WindowsShell.isWindows) { path -> if (File(path).isFile) WindowsShell.revealInExplorer(path) } else null
