@@ -179,4 +179,18 @@
     <string name="delete_rules_message">%1$d قانون انتخاب‌شده حذف شوند؟</string>
     <string name="invalid_remote_dns">آدرس DNS نامعتبر است. یک IP یا آدرس tls://، https://، quic://، udp:// یا tcp:// وارد کنید</string>
     <string name="block_quic">مسدود کردن QUIC (UDP 443)</string>
+    <string name="geoip_title">GeoIP</string>
+    <string name="geoip_description">پایگاه داده محدوده IP کشورها برای قوانین «کشور». حدود ۸ مگابایت، از GitHub (MetaCubeX meta-rules-dat) دانلود می‌شود.</string>
+    <string name="geoip_database">پایگاه داده کشورها</string>
+    <string name="geoip_missing">دانلود نشده</string>
+    <string name="geoip_updated">به‌روزرسانی %1$s</string>
+    <string name="geoip_downloading">در حال دانلود…</string>
+    <string name="geoip_downloading_percent">در حال دانلود… %1$s</string>
+    <string name="geoip_download">دانلود</string>
+    <string name="geoip_update">به‌روزرسانی</string>
+    <string name="geoip_failed">دانلود GeoIP ناموفق بود: %1$s</string>
+    <string name="rule_type_country">کشور (GeoIP)</string>
+    <string name="rule_type_country_short">کشور</string>
+    <string name="rule_country">کشور</string>
+    <string name="rule_country_search">نام کشور را وارد کنید</string>
 </resources>

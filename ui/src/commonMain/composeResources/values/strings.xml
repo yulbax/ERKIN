@@ -186,4 +186,18 @@
     <string name="delete_rules_message">Delete %1$d selected rules?</string>
     <string name="invalid_remote_dns">Invalid DNS address. Use an IP or a tls://, https://, quic://, udp:// or tcp:// address</string>
     <string name="block_quic">Block QUIC (UDP 443)</string>
+    <string name="geoip_title">GeoIP</string>
+    <string name="geoip_description">A database of country IP ranges for "Country" rules. About 8 MB, downloaded from GitHub (MetaCubeX meta-rules-dat).</string>
+    <string name="geoip_database">Country database</string>
+    <string name="geoip_missing">Not downloaded</string>
+    <string name="geoip_updated">Updated %1$s</string>
+    <string name="geoip_downloading">Downloading…</string>
+    <string name="geoip_downloading_percent">Downloading… %1$s</string>
+    <string name="geoip_download">Download</string>
+    <string name="geoip_update">Update</string>
+    <string name="geoip_failed">GeoIP download failed: %1$s</string>
+    <string name="rule_type_country">Country (GeoIP)</string>
+    <string name="rule_type_country_short">Country</string>
+    <string name="rule_country">Country</string>
+    <string name="rule_country_search">Start typing a country</string>
 </resources>

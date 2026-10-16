@@ -32,4 +32,11 @@ class RoutingRulesTest {
         assertEquals("2001:db8:0:0:0:0:0:0/32", RuleMatch.IP_CIDR.normalize("2001:DB8::/32"))
         assertEquals("google", RuleMatch.DOMAIN_KEYWORD.normalize("Google"))
     }
+
+    @Test
+    fun countriesAreIsoCodes() {
+        assertEquals("RU", RuleMatch.COUNTRY.normalize(" ru "))
+        assertNull(RuleMatch.COUNTRY.normalize("Russia"))
+        assertNull(RuleMatch.COUNTRY.normalize("XX"))
+    }
 }

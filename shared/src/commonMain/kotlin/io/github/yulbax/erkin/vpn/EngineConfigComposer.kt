@@ -36,7 +36,7 @@ data class AppliedConfig(
 
 object EngineConfigComposer {
 
-    fun compose(inputs: SessionInputs, ownPackage: String, byeDpiPort: Int): AppliedConfig {
+    fun compose(inputs: SessionInputs, ownPackage: String, byeDpiPort: Int, geoIpReady: Boolean = false): AppliedConfig {
         val selected = inputs.selected
         check(selected != null || inputs.profiles.isEmpty()) { "No server selected" }
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
@@ -44,6 +44,7 @@ object EngineConfigComposer {
         check(!routed.isEmpty) {
             if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN or ByeDPI"
         }
+        val rules = inputs.rules.filter { geoIpReady || !it.match.requiresGeoIp }
 
         return AppliedConfig(
             engineConfig = EngineConfig(
@@ -55,14 +56,14 @@ object EngineConfigComposer {
                 byeDpiSocksPort = byeDpiPort,
                 network = inputs.settings.networkOptions(),
                 directPaths = routed.directPaths,
-                rules = inputs.rules
+                rules = rules
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
             membershipKey = selected?.let { "${it.id}:${it.outboundJson}" }.orEmpty(),
             sessionRequirements = selected?.engineProxy()?.sessionRequirements.orEmpty(),
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}" } +
-                inputs.rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" },
+                rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" },
             vpnActive = routed.hasVpn
         )
     }

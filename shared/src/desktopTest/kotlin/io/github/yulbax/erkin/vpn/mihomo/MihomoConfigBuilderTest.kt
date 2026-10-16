@@ -89,14 +89,16 @@ class MihomoConfigBuilderTest {
             RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT),
             RoutingRule(RuleMatch.DOMAIN_KEYWORD, "ads", RuleTarget.BLOCK),
             RoutingRule(RuleMatch.IP_CIDR, "1.1.1.1/32", RuleTarget.BYEDPI),
-            RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN)
+            RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN),
+            RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
         )
         val config = build(vpn = listOf("org.vpn"), options = NetworkOptions(bypassLan = true), rules = rules)
         val userRules = listOf(
             "DOMAIN-SUFFIX,ru,DIRECT",
             "DOMAIN-KEYWORD,ads,REJECT",
             "IP-CIDR,1.1.1.1/32,byedpi",
-            "DOMAIN,a.example,p1"
+            "DOMAIN,a.example,p1",
+            "GEOIP,RU,DIRECT"
         )
         val all = config.rules()
         assertEquals("IN-NAME,probe-in,p1", all.first())

@@ -3,16 +3,19 @@ package io.github.yulbax.erkin.vpn.core
 import java.net.IDN
 import java.net.InetAddress
 import java.net.URI
+import java.util.Locale
 
 enum class RuleMatch(
     val wire: String,
     val mihomo: String,
-    val format: RuleValueFormat
+    val format: RuleValueFormat,
+    val requiresGeoIp: Boolean = false
 ) {
     DOMAIN_SUFFIX("suffix", "DOMAIN-SUFFIX", RuleValues.Domain),
     DOMAIN("domain", "DOMAIN", RuleValues.Domain),
     DOMAIN_KEYWORD("keyword", "DOMAIN-KEYWORD", RuleValues.Keyword),
-    IP_CIDR("ip_cidr", "IP-CIDR", RuleValues.Cidr);
+    IP_CIDR("ip_cidr", "IP-CIDR", RuleValues.Cidr),
+    COUNTRY("country", "GEOIP", RuleValues.Country, requiresGeoIp = true);
 
     fun normalize(raw: String): String? = format.normalize(raw)
 
@@ -80,5 +83,11 @@ object RuleValues {
             val canonical = runCatching { InetAddress.getByName(address).hostAddress }.getOrNull() ?: return null
             return "$canonical/$prefix"
         }
+    }
+
+    object Country : RuleValueFormat {
+        val CODES: Set<String> = Locale.getISOCountries().toSet()
+
+        override fun normalize(raw: String): String? = raw.trim().uppercase().takeIf { it in CODES }
     }
 }

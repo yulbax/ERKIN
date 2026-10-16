@@ -61,6 +61,8 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
 
     fun clearLog() = call("clearLog").throwIfFailed()
 
+    fun importGeoIp(path: String) = call("geoip", timeoutMs = GEOIP_TIMEOUT_MS) { put("path", path) }.throwIfFailed()
+
     fun urlTest(proxies: String, url: String, timeoutMs: Int): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
         put("proxies", proxies)
         put("url", url)
@@ -142,6 +144,7 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
         private const val START_TIMEOUT_MS = 120_000L
         private const val STOP_TIMEOUT_MS = 30_000L
         private const val URL_TEST_TIMEOUT_MS = 120_000L
+        private const val GEOIP_TIMEOUT_MS = 60_000L
 
         fun connect(socket: File): ServiceClient {
             val channel = SocketChannel.open(StandardProtocolFamily.UNIX)

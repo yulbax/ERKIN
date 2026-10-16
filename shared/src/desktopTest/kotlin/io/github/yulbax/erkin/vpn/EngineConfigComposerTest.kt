@@ -58,6 +58,21 @@ class EngineConfigComposerTest {
         assertTrue(withRule.isStructuralChangeFrom(plain))
     }
 
+    @Test
+    fun countryRulesWaitForTheGeoIpDatabase() {
+        val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
+        val country = RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
+        val domain = RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT)
+        val inputs = inputs(apps).copy(rules = listOf(country, domain))
+
+        val missing = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT, geoIpReady = false)
+        val ready = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT, geoIpReady = true)
+
+        assertEquals(listOf(domain), missing.engineConfig.rules)
+        assertEquals(listOf(country, domain), ready.engineConfig.rules)
+        assertTrue(ready.isStructuralChangeFrom(missing))
+    }
+
     @Test(expected = IllegalStateException::class)
     fun withoutServersVpnAppsAloneCannotStart() {
         val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))

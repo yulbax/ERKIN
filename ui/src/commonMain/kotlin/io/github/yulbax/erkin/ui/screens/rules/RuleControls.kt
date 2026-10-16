@@ -89,6 +89,7 @@ internal fun RuleTargetGroup(
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RuleMatchGroup(
+    options: List<RuleMatch>,
     selected: RuleMatch,
     onSelect: (RuleMatch) -> Unit,
     colors: ToggleButtonColors,
@@ -98,11 +99,11 @@ private fun RuleMatchGroup(
         modifier = modifier.height(GROUP_HEIGHT),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        RuleMatch.entries.forEachIndexed { index, match ->
+        options.forEachIndexed { index, match ->
             ToggleButton(
                 checked = match == selected,
                 onCheckedChange = { if (it) onSelect(match) },
-                shapes = connectedShapes(index, RuleMatch.entries.size),
+                shapes = connectedShapes(index, options.size),
                 colors = colors,
                 contentPadding = PaddingValues(horizontal = 4.dp),
                 modifier = Modifier.weight(1f)
@@ -123,9 +124,11 @@ internal fun RuleDialog(
     initial: RoutingRuleEntity?,
     onDismiss: () -> Unit,
     onSave: (RuleMatch, String, RuleTarget) -> Unit,
-    onDelete: (() -> Unit)?
+    onDelete: (() -> Unit)?,
+    countryAvailable: Boolean
 ) {
     val initialMatch = initial?.let { RuleMatch.fromWire(it.type) } ?: RuleMatch.DOMAIN_SUFFIX
+    val options = RuleMatch.entries.filter { !it.requiresGeoIp || countryAvailable || it == initialMatch }
     var match by remember { mutableStateOf(initialMatch) }
     var text by remember { mutableStateOf(initial?.let { initialMatch.display(it.value) }.orEmpty()) }
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
@@ -153,7 +156,16 @@ internal fun RuleDialog(
         }
     ) {
         SectionLabel(stringResource(Res.string.rule_type))
-        RuleMatchGroup(selected = match, onSelect = { match = it }, colors = groupColors, modifier = Modifier.fillMaxWidth())
+        RuleMatchGroup(
+            options = options,
+            selected = match,
+            onSelect = {
+                if (it.ui.input != match.ui.input) text = ""
+                match = it
+            },
+            colors = groupColors,
+            modifier = Modifier.fillMaxWidth()
+        )
         Text(
             text = match.label(),
             style = MaterialTheme.typography.bodySmall,
@@ -163,19 +175,24 @@ internal fun RuleDialog(
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             items = listOf {
-                TextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text(stringResource(Res.string.rule_value)) },
-                    placeholder = { Text(match.example()) },
-                    singleLine = true,
-                    isError = invalid,
-                    colors = transparentFieldColors(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                if (match.ui.input == RuleInput.Country) {
+                    CountryPicker(code = text, onSelect = { text = it }, modifier = Modifier.fillMaxWidth())
+                } else {
+                    TextField(
+                        value = text,
+                        onValueChange = { text = it },
+                        label = { Text(stringResource(Res.string.rule_value)) },
+                        placeholder = { Text(match.example()) },
+                        singleLine = true,
+                        isError = invalid,
+                        colors = transparentFieldColors(),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         )
         val hint = when {
+            match.ui.input == RuleInput.Country -> null
             invalid -> stringResource(Res.string.rule_invalid)
             normalized != null && normalized != text.trim() -> stringResource(Res.string.rule_saved_as, normalized)
             else -> null
