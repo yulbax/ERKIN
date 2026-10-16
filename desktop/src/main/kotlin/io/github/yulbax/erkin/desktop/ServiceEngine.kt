@@ -9,6 +9,7 @@ import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
+import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -88,18 +89,9 @@ class ServiceEngine(
     }
 
     private fun buildConfig(config: EngineConfig): String = MihomoConfigBuilder.build(
-        proxies = config.proxies,
-        activeProxyTag = config.activeProxyTag,
-        byeDpiPackages = config.byeDpiPackages,
-        vpnPackages = config.vpnPackages,
-        byeDpiPort = config.byeDpiSocksPort,
-        probePort = probeSocksPort,
-        probeUser = probeUsername,
-        probePass = probePassword,
-        options = config.network,
-        platform = MihomoPlatform.Desktop(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort),
-        directPaths = config.directPaths,
-        rules = config.rules
+        engine = config,
+        probe = ProbeInbound(probeSocksPort, probeUsername, probePassword),
+        platform = MihomoPlatform.Desktop(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort)
     )
 
     private companion object {

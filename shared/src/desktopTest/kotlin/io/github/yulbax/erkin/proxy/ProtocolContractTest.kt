@@ -3,11 +3,13 @@ package io.github.yulbax.erkin.proxy
 import io.github.yulbax.erkin.data.AppConfigBackup
 import io.github.yulbax.erkin.data.BackupCodec
 import io.github.yulbax.erkin.data.BackupProfile
+import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
+import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
 import io.github.yulbax.erkin.vpn.mihomo.MihomoProxy
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.boolean
@@ -97,15 +99,8 @@ class ProtocolContractTest {
     private fun build(proxies: List<EngineProxy>, activeTag: String, options: NetworkOptions = NetworkOptions()): JsonObject =
         Json.parseToJsonElement(
             MihomoConfigBuilder.build(
-                proxies = proxies,
-                activeProxyTag = activeTag,
-                byeDpiPackages = emptyList(),
-                vpnPackages = listOf("org.telegram"),
-                byeDpiPort = 1081,
-                probePort = 2080,
-                probeUser = "user",
-                probePass = "pass",
-                options = options
+                EngineConfig(proxies, activeTag, emptyList(), listOf("org.telegram"), listOf("org.telegram"), 1081, options),
+                ProbeInbound(2080, "user", "pass")
             )
         ).jsonObject
 
