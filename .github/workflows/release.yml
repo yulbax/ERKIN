@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CORE_CACHE_REV: "1"    # bump to force a fresh mihomo.aar and erkin-service rebuild (busts the cache)
+  CORE_CACHE_REV: "1"    # bump to force a fresh mihomo.aar, erkin-service and ciadpi.exe rebuild (busts the caches)
   GO_VERSION: "1.25.0"
   NFPM_VERSION: "2.47.0"
   NFPM_SHA256: "0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783"
@@ -55,8 +55,8 @@ jobs:
             echo "should_release=true" >> "$GITHUB_OUTPUT"
           fi
 
-  # ── Build mihomo.aar (3 ABIs) and erkin-service. Cached by the core sources + rev. ──
-  core:
+  # ── Build mihomo.aar (3 ABIs). Cached by the wrapper sources, so a version bump reuses it. ──
+  aar:
     needs: check
     runs-on: ubuntu-latest
     steps:
@@ -64,11 +64,8 @@ jobs:
       - id: cache
         uses: actions/cache@v4
         with:
-          path: |
-            app/libs/mihomo.aar
-            desktop/libs/windows
-            desktop/libs/linux
-          key: core-${{ env.CORE_CACHE_REV }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-mihomo.sh', 'scripts/build-service.sh', 'scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch', 'gradle.properties') }}
+          path: app/libs/mihomo.aar
+          key: aar-${{ env.CORE_CACHE_REV }}-${{ hashFiles('core/mihomo/**', 'scripts/build-mihomo.sh') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
@@ -78,7 +75,7 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Provision NDK + gomobile and build mihomo.aar and erkin-service
+      - name: Provision NDK + gomobile and build mihomo.aar
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           set -e
@@ -90,18 +87,46 @@ jobs:
           go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250808145247-395d808d53cd
           export PATH="$(go env GOPATH)/bin:$PATH"
           bash scripts/build-mihomo.sh
-          bash scripts/build-service.sh
-      - name: Build patched ciadpi.exe
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q gcc-mingw-w64-x86-64
-          bash scripts/build-ciadpi.sh
       - uses: actions/upload-artifact@v4
         with:
           name: mihomo
           path: app/libs/mihomo.aar
           retention-days: 1
+
+  # ── Build erkin-service (Windows + Linux) and the patched ciadpi.exe, cached separately. ──
+  desktop-core:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - id: service-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            desktop/libs/windows/erkin-service.exe
+            desktop/libs/windows/mihomo-LICENSE.txt
+            desktop/libs/linux/erkin-service
+            desktop/libs/linux/mihomo-LICENSE.txt
+          key: service-${{ env.CORE_CACHE_REV }}-${{ needs.check.outputs.version }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-service.sh') }}
+      - id: ciadpi-cache
+        uses: actions/cache@v4
+        with:
+          path: desktop/libs/windows/ciadpi.exe
+          key: ciadpi-${{ env.CORE_CACHE_REV }}-${{ hashFiles('scripts/build-ciadpi.sh', 'scripts/byedpi-windows-protect.patch') }}
+      - if: steps.service-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - name: Build erkin-service
+        if: steps.service-cache.outputs.cache-hit != 'true'
+        run: bash scripts/build-service.sh
+      - name: Build patched ciadpi.exe
+        if: steps.ciadpi-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q gcc-mingw-w64-x86-64
+          bash scripts/build-ciadpi.sh
       - uses: actions/upload-artifact@v4
         with:
           name: windows-core
@@ -114,7 +139,7 @@ jobs:
           retention-days: 1
 
   quality:
-    needs: core
+    needs: aar
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -135,8 +160,8 @@ jobs:
         run: ./gradlew testDebugUnitTest :shared:desktopTest :ui:desktopTest lintDebug assembleDebug --no-daemon
 
   # ── Build the release APKs (arm64 + x86_64 + armv7 + universal), signed. ─────────
-  build:
-    needs: [check, core, quality]
+  android:
+    needs: [check, aar]
     if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -177,7 +202,7 @@ jobs:
           retention-days: 7
 
   windows:
-    needs: [check, core]
+    needs: [check, desktop-core]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
@@ -196,9 +221,9 @@ jobs:
         shell: pwsh
         run: sdkmanager --channel=3 "platforms;android-$env:ANDROID_COMPILE_SDK"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Desktop tests and MSI
+      - name: MSI
         shell: bash
-        run: ./gradlew -Perkin.desktopOnly :shared:desktopTest :ui:desktopTest :desktop:packageServiceMsi --no-daemon
+        run: ./gradlew -Perkin.desktopOnly :desktop:packageServiceMsi --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: msi
@@ -206,7 +231,7 @@ jobs:
           retention-days: 7
 
   linux:
-    needs: [check, core]
+    needs: [check, desktop-core]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -242,7 +267,7 @@ jobs:
 
   # ── Create the tag + GitHub Release with the four APKs and the MSI attached. ─────────────────
   release:
-    needs: [check, build, windows, linux]
+    needs: [check, quality, android, windows, linux]
     if: needs.check.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
