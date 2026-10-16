@@ -98,7 +98,8 @@ class ServiceEngine(
         probePass = probePassword,
         options = config.network,
         platform = MihomoPlatform.Desktop(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort),
-        directPaths = config.directPaths
+        directPaths = config.directPaths,
+        rules = config.rules
     )
 
     private companion object {

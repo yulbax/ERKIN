@@ -36,6 +36,7 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.jetbrains.navigation.compose)
             implementation(libs.jetbrains.navigationevent.compose)
+            implementation(libs.reorderable)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.markdown.renderer.m3)

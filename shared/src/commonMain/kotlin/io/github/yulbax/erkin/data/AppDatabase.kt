@@ -12,12 +12,14 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.rules.RoutingRuleDao
+import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class],
-    version = 7,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class],
+    version = 9,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -26,6 +28,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun appDao(): AppDao
     abstract fun settingsDao(): SettingsDao
     abstract fun profileDao(): ProfileDao
+    abstract fun routingRuleDao(): RoutingRuleDao
 
     suspend fun <R> transaction(block: suspend () -> R): R =
         useWriterConnection { connection -> connection.immediateTransaction { block() } }
@@ -66,6 +69,19 @@ abstract class AppDatabase : RoomDatabase() {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE profiles ADD COLUMN position INTEGER NOT NULL DEFAULT 0")
                     connection.execSQL("UPDATE profiles SET position = id")
+                }
+            },
+            object : Migration(7, 8) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `routing_rules` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "`type` TEXT NOT NULL, `value` TEXT NOT NULL, `target` TEXT NOT NULL, `position` INTEGER NOT NULL)"
+                    )
+                }
+            },
+            object : Migration(8, 9) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE settings ADD COLUMN rulesHintSeen INTEGER NOT NULL DEFAULT 0")
                 }
             }
         )

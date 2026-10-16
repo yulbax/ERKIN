@@ -22,7 +22,8 @@ data class SettingsEntity(
     val preferredFingerprint: String = NetworkOptions.DEFAULT.preferredFingerprint?.wire ?: "",
     val homeHintSeen: Boolean = false,
     val appsHintSeen: Boolean = false,
-    val newAppsConnectionType: String = ""
+    val newAppsConnectionType: String = "",
+    val rulesHintSeen: Boolean = false
 ) {
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
         ConnectionType.fromWire(newAppsConnectionType) ?: platformDefault

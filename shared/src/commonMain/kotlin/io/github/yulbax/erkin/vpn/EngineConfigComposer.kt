@@ -5,6 +5,7 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
+import io.github.yulbax.erkin.vpn.core.RuleTarget
 
 object ProxyTag {
     private const val PREFIX = "p"
@@ -24,7 +25,8 @@ data class AppliedConfig(
     val vpnActive: Boolean
 ) {
     val selectedTag: String get() = engineConfig.activeProxyTag
-    val needsByeDpi: Boolean get() = engineConfig.byeDpiPackages.isNotEmpty()
+    val needsByeDpi: Boolean
+        get() = engineConfig.byeDpiPackages.isNotEmpty() || engineConfig.rules.any { it.target == RuleTarget.BYEDPI }
 
     fun isStructuralChangeFrom(other: AppliedConfig): Boolean =
         membershipKey != other.membershipKey ||
@@ -52,13 +54,15 @@ object EngineConfigComposer {
                 tunneledPackages = routed.tunneledPackages,
                 byeDpiSocksPort = byeDpiPort,
                 network = inputs.settings.networkOptions(),
-                directPaths = routed.directPaths
+                directPaths = routed.directPaths,
+                rules = inputs.rules
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
             membershipKey = selected?.let { "${it.id}:${it.outboundJson}" }.orEmpty(),
             sessionRequirements = selected?.engineProxy()?.sessionRequirements.orEmpty(),
             routingKey = foreignApps.sortedBy { it.packageName }
-                .joinToString("|") { "${it.packageName}=${it.connectionType}" },
+                .joinToString("|") { "${it.packageName}=${it.connectionType}" } +
+                inputs.rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" },
             vpnActive = routed.hasVpn
         )
     }

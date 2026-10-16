@@ -34,7 +34,8 @@ data class BackupSettings(
     val preferredFingerprint: String = SETTINGS_DEFAULTS.preferredFingerprint,
     val homeHintSeen: Boolean = SETTINGS_DEFAULTS.homeHintSeen,
     val appsHintSeen: Boolean = SETTINGS_DEFAULTS.appsHintSeen,
-    val newAppsConnectionType: String = SETTINGS_DEFAULTS.newAppsConnectionType
+    val newAppsConnectionType: String = SETTINGS_DEFAULTS.newAppsConnectionType,
+    val rulesHintSeen: Boolean = SETTINGS_DEFAULTS.rulesHintSeen
 )
 
 private val SETTINGS_DEFAULTS = SettingsEntity()
@@ -62,7 +63,8 @@ fun SettingsEntity.toBackupSettings() = BackupSettings(
     preferredFingerprint = preferredFingerprint,
     homeHintSeen = homeHintSeen,
     appsHintSeen = appsHintSeen,
-    newAppsConnectionType = newAppsConnectionType
+    newAppsConnectionType = newAppsConnectionType,
+    rulesHintSeen = rulesHintSeen
 )
 
 fun BackupSettings.toEntity() = SettingsEntity(
@@ -78,7 +80,8 @@ fun BackupSettings.toEntity() = SettingsEntity(
     preferredFingerprint = preferredFingerprint,
     homeHintSeen = homeHintSeen,
     appsHintSeen = appsHintSeen,
-    newAppsConnectionType = newAppsConnectionType
+    newAppsConnectionType = newAppsConnectionType,
+    rulesHintSeen = rulesHintSeen
 )
 
 fun ProfileEntity.toBackupProfile() = BackupProfile(

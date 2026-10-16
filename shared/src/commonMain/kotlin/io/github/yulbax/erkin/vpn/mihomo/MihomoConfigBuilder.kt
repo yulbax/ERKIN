@@ -4,6 +4,8 @@ import io.github.yulbax.erkin.data.isExecutablePath
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.RoutingRule
+import io.github.yulbax.erkin.vpn.core.RuleTarget
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonArrayBuilder
@@ -64,7 +66,8 @@ object MihomoConfigBuilder {
         probePass: String,
         options: NetworkOptions = NetworkOptions(),
         platform: MihomoPlatform = MihomoPlatform.Android,
-        directPaths: List<String> = emptyList()
+        directPaths: List<String> = emptyList(),
+        rules: List<RoutingRule> = emptyList()
     ): String {
         val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
         val activeProxy = active?.let { MihomoProxy.of(it, options.preferredFingerprint) }
@@ -154,6 +157,15 @@ object MihomoConfigBuilder {
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
                 desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
                 if (options.bypassLan) PRIVATE_NETWORKS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
+                rules.forEach { rule ->
+                    val target = when (rule.target) {
+                        RuleTarget.VPN -> active?.tag ?: REJECT
+                        RuleTarget.BYEDPI -> BYEDPI_PROXY
+                        RuleTarget.DIRECT -> DIRECT
+                        RuleTarget.BLOCK -> REJECT
+                    }
+                    add("${rule.match.mihomo},${rule.value},$target")
+                }
                 if (desktop != null) {
                     val channels = listOf(byeDpiPackages to BYEDPI_PROXY, vpnPackages to vpnTarget, directPaths to DIRECT)
                     channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), target) }

@@ -5,6 +5,9 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.proxy.LinkParser
+import io.github.yulbax.erkin.vpn.core.RoutingRule
+import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleTarget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -40,6 +43,19 @@ class EngineConfigComposerTest {
         assertTrue(applied.engineConfig.vpnPackages.isEmpty())
         assertEquals(listOf("C:\\venv\\python.exe"), applied.engineConfig.directPaths)
         assertFalse(applied.vpnActive)
+    }
+
+    @Test
+    fun rulesToByeDpiStartItAndChangeTheRouting() {
+        val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
+        val plain = EngineConfigComposer.compose(inputs(apps), OWN, BYEDPI_PORT)
+        val rule = RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.BYEDPI)
+        val withRule = EngineConfigComposer.compose(inputs(apps).copy(rules = listOf(rule)), OWN, BYEDPI_PORT)
+
+        assertFalse(plain.needsByeDpi)
+        assertTrue(withRule.needsByeDpi)
+        assertEquals(listOf(rule), withRule.engineConfig.rules)
+        assertTrue(withRule.isStructuralChangeFrom(plain))
     }
 
     @Test(expected = IllegalStateException::class)

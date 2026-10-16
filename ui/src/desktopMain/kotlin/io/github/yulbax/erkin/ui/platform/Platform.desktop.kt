@@ -166,6 +166,8 @@ actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.DIRECT
 
 actual val supportsSystemAppsFilter: Boolean = false
 
+actual val rulesCoverAllApps: Boolean = true
+
 actual val scrollbarAlwaysVisible: Boolean = true
 
 actual val drawerSwipeToOpen: Boolean = false

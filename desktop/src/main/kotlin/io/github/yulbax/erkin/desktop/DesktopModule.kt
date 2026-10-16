@@ -10,6 +10,7 @@ import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
+import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.update.UpdateChecker
 import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.update.UpdatePlatform
@@ -47,6 +48,7 @@ val desktopModule = module {
     single<SubscriptionProfileSource> { HttpSubscriptionProfileSource() }
     single { ProfileRepository(get(), get(), get(), get()) }
     single { ConfigBackupRepository(get(), get()) }
+    single { RoutingRuleRepository(get()) }
     single<VpnSessionStore> { RoomVpnSessionStore(get(), get()) }
 
     single { VpnStateRepository() }
