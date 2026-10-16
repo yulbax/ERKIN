@@ -1,16 +1,18 @@
 package io.github.yulbax.erkin.vpn.core
 
-enum class Ipv6Mode(val wire: String, val dnsStrategy: String) {
-    DISABLE("disable", "ipv4_only"),
-    ENABLE("enable", "prefer_ipv4"),
-    PREFER("prefer", "prefer_ipv6"),
-    ONLY("only", "ipv6_only");
+enum class Ipv6Mode(val wire: String) {
+    DISABLE("disable"),
+    ENABLE("enable");
 
     val ipv6Enabled: Boolean get() = this != DISABLE
 
     companion object {
+        private val LEGACY_ENABLED = setOf("prefer", "only")
+
         fun fromWire(value: String?): Ipv6Mode =
-            entries.firstOrNull { it.wire == value } ?: DISABLE
+            entries.firstOrNull { it.wire == value } ?: if (value in LEGACY_ENABLED) ENABLE else DISABLE
+
+        fun isKnownWire(value: String): Boolean = entries.any { it.wire == value } || value in LEGACY_ENABLED
     }
 }
 
