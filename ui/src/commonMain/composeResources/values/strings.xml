@@ -32,7 +32,7 @@
     <string name="fingerprint_from_config">From config</string>
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
-    <string name="remote_dns">Remote DNS (via proxy, DoT)</string>
+    <string name="remote_dns">Remote DNS (through VPN)</string>
     <string name="direct_dns">Service DNS</string>
     <string name="sniff_destination">Sniff destination</string>
     <string name="bypass_lan">Bypass LAN (private IPs direct)</string>
@@ -184,4 +184,5 @@
     <string name="delete_rules_title">Delete rules?</string>
     <string name="delete_rule_message">Delete the rule for &quot;%1$s&quot;?</string>
     <string name="delete_rules_message">Delete %1$d selected rules?</string>
+    <string name="invalid_remote_dns">Invalid DNS address. Use an IP or a tls://, https://, quic://, udp:// or tcp:// address</string>
 </resources>

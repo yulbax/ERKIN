@@ -13,6 +13,7 @@ import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.RemoteDns
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 import java.io.InputStream
 import kotlinx.coroutines.CancellationException
@@ -40,7 +41,11 @@ class SettingsViewModel(
 
     fun setMtu(value: Int) = updateNetwork { it.copy(mtu = value.coerceIn(NetworkOptions.MTU_RANGE)) }
     fun setIpv6Mode(value: Ipv6Mode) = updateNetwork { it.copy(ipv6Mode = value) }
-    fun setDnsRemote(value: String) = updateNetwork { it.copy(dnsRemote = value.trim()) }
+    fun setDnsRemote(value: String): Boolean {
+        if (!RemoteDns.isValid(value)) return false
+        updateNetwork { it.copy(dnsRemote = value.trim()) }
+        return true
+    }
     fun setDnsDirect(value: String) = updateNetwork { it.copy(dnsDirect = value.trim()) }
     fun setSniff(value: Boolean) = updateNetwork { it.copy(sniff = value) }
     fun setBypassLan(value: Boolean) = updateNetwork { it.copy(bypassLan = value) }

@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.RemoteDns
 import io.github.yulbax.erkin.vpn.core.RoutingRules
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -66,7 +67,7 @@ object BackupCodec {
         settings.mtu in NetworkOptions.MTU_RANGE &&
             settings.byeDpiArgs.length <= MAX_BYEDPI_ARGS_LENGTH &&
             Ipv6Mode.isKnownWire(settings.ipv6Mode) &&
-            isValidDns(settings.dnsRemote) &&
+            isValidDns(settings.dnsRemote) && RemoteDns.isValid(settings.dnsRemote) &&
             isValidDns(settings.dnsDirect) &&
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
             (settings.preferredFingerprint.isBlank() ||
