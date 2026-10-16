@@ -10,7 +10,8 @@ import java.io.InputStream
 data class BackupSelection(
     val settings: Boolean,
     val apps: Boolean,
-    val profiles: Boolean
+    val profiles: Boolean,
+    val rules: Boolean
 )
 
 data class ImportResult(
@@ -19,6 +20,8 @@ data class ImportResult(
     val settingsApplied: Boolean = false,
     val profilesAdded: Int = 0,
     val profilesSkipped: Int = 0,
+    val rulesAdded: Int = 0,
+    val rulesSkipped: Int = 0,
     val error: String? = null
 )
 
@@ -47,6 +50,11 @@ class ConfigBackupRepository(
                 },
                 profiles = if (selection.profiles) {
                     database.profileDao().getAll().map { it.toBackupProfile() }
+                } else {
+                    null
+                },
+                rules = if (selection.rules) {
+                    database.routingRuleDao().getAll().map { it.toBackupRule() }
                 } else {
                     null
                 }
@@ -85,12 +93,15 @@ class ConfigBackupRepository(
         val settings = backup.settings?.takeIf { selection.settings }
         settings?.let { database.settingsDao().upsertSettings(it.toEntity()) }
         val profiles = backup.profiles?.takeIf { selection.profiles }?.let { applyProfiles(it) }
+        val rules = backup.rules?.takeIf { selection.rules }?.let { applyRules(it) }
         return ImportResult(
             applied = apps?.applied ?: 0,
             skipped = apps?.skipped ?: 0,
             settingsApplied = settings != null,
             profilesAdded = profiles?.applied ?: 0,
-            profilesSkipped = profiles?.skipped ?: 0
+            profilesSkipped = profiles?.skipped ?: 0,
+            rulesAdded = rules?.applied ?: 0,
+            rulesSkipped = rules?.skipped ?: 0
         )
     }
 
@@ -112,6 +123,22 @@ class ConfigBackupRepository(
         }
         if (updates.isNotEmpty()) appDao.upsertApps(updates)
         return SectionResult(applied, skipped)
+    }
+
+    private suspend fun applyRules(rules: List<BackupRule>): SectionResult {
+        val dao = database.routingRuleDao()
+        val existing = dao.getAll().mapTo(HashSet()) { it.toBackupRule() }
+        var added = 0
+        var skipped = 0
+        for (rule in rules) {
+            if (!existing.add(rule)) {
+                skipped++
+                continue
+            }
+            dao.append(rule.toEntity())
+            added++
+        }
+        return SectionResult(added, skipped)
     }
 
     private suspend fun applyProfiles(profiles: List<BackupProfile>): SectionResult {

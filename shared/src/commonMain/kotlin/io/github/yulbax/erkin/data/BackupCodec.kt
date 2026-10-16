@@ -4,6 +4,9 @@ import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.RoutingRules
+import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 import java.io.InputStream
 import java.net.URI
@@ -39,13 +42,15 @@ object BackupCodec {
         if (backup.version !in AppConfigBackup.MIN_SUPPORTED_VERSION..AppConfigBackup.CURRENT_VERSION) {
             return false
         }
-        if (backup.apps == null && backup.settings == null && backup.profiles == null) return false
+        if (backup.apps == null && backup.settings == null && backup.profiles == null && backup.rules == null) return false
         if ((backup.apps?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
         if ((backup.profiles?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
+        if ((backup.rules?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
         if ((backup.profiles?.count { it.selected } ?: 0) > 1) return false
         if (backup.apps?.any(::isInvalidAppBackup) == true) return false
         if (backup.settings?.let(::isValidSettingsBackup) == false) return false
         if (backup.profiles?.any { !isValidProfileBackup(it) } == true) return false
+        if (backup.rules?.any { !isValidRuleBackup(it) } == true) return false
         return true
     }
 
@@ -66,6 +71,12 @@ object BackupCodec {
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
             (settings.preferredFingerprint.isBlank() ||
                 TlsFingerprint.fromWire(settings.preferredFingerprint) != null)
+
+    private fun isValidRuleBackup(rule: BackupRule): Boolean {
+        val match = RuleMatch.fromWire(rule.type) ?: return false
+        if (RuleTarget.fromWire(rule.target) == null) return false
+        return RoutingRules.normalize(match, rule.value) == rule.value
+    }
 
     private fun isValidDns(value: String): Boolean =
         value.isNotBlank() && value.length <= MAX_DNS_LENGTH && value.none(Char::isWhitespace)
