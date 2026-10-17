@@ -102,7 +102,7 @@
     <string name="cancel">取消</string>
     <string name="save">保存</string>
     <string name="add_server">添加服务器</string>
-    <string name="add_server_instructions">粘贴分享链接（vmess/vless/ss/trojan/hysteria2）或订阅 URL，或选择配置文件。</string>
+    <string name="add_server_instructions">粘贴分享链接（vmess、vless、ss、trojan、hysteria2、tuic、anytls、socks5、https）或订阅 URL，或选择配置文件（WireGuard、AmneziaWG、OpenVPN）。</string>
     <string name="from_file">从文件</string>
     <string name="link_or_subscription_url">链接或订阅 URL</string>
     <string name="add">添加</string>

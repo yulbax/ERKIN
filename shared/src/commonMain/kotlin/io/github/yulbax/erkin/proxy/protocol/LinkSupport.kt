@@ -138,6 +138,13 @@ internal fun URI.queryMap(): Map<String, String> {
     }.toMap()
 }
 
+private val TRUE_VALUES = setOf("1", "true")
+private val INSECURE_KEYS = listOf("insecure", "allowInsecure", "allow_insecure", "skip-cert-verify")
+
+internal fun Map<String, String>.enabled(key: String): Boolean = this[key]?.lowercase() in TRUE_VALUES
+
+internal fun Map<String, String>.insecure(): Boolean = INSECURE_KEYS.any(::enabled)
+
 internal fun URI.fragmentName(fallback: String): String =
     fragment?.takeIf { it.isNotEmpty() }?.let { decodeComponent(it) } ?: fallback
 

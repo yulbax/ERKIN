@@ -1,8 +1,13 @@
 package io.github.yulbax.erkin.proxy
 
+import io.github.yulbax.erkin.proxy.protocol.AnyTls
+import io.github.yulbax.erkin.proxy.protocol.Https
 import io.github.yulbax.erkin.proxy.protocol.Hysteria2
+import io.github.yulbax.erkin.proxy.protocol.OpenVpn
 import io.github.yulbax.erkin.proxy.protocol.Shadowsocks
+import io.github.yulbax.erkin.proxy.protocol.Socks
 import io.github.yulbax.erkin.proxy.protocol.Trojan
+import io.github.yulbax.erkin.proxy.protocol.Tuic
 import io.github.yulbax.erkin.proxy.protocol.Vless
 import io.github.yulbax.erkin.proxy.protocol.Vmess
 import io.github.yulbax.erkin.proxy.protocol.wireguard.AmneziaWg
@@ -22,7 +27,12 @@ enum class ProxyProtocol(val wire: String, val handler: ProtocolHandler) {
     SHADOWSOCKS("shadowsocks", Shadowsocks),
     HYSTERIA2("hysteria2", Hysteria2),
     AMNEZIAWG("amneziawg", AmneziaWg),
-    WIREGUARD("wireguard", WireGuard);
+    WIREGUARD("wireguard", WireGuard),
+    TUIC("tuic", Tuic),
+    ANYTLS("anytls", AnyTls),
+    SOCKS5("socks5", Socks),
+    HTTPS("https", Https),
+    OPENVPN("openvpn", OpenVpn);
 
     fun engineProxy(tag: String, descriptor: String): EngineProxy {
         val parsed = descriptorJson.parseToJsonElement(descriptor) as JsonObject
