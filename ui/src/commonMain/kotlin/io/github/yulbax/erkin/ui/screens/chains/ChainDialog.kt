@@ -61,9 +61,29 @@ internal fun ChainDialog(
     val unused = servers.firstOrNull { server -> chain?.uses(server.id) != true }
     fun hopServers(except: Int? = null): Set<Long> =
         hops.filterIndexed { i, _ -> i != except }.mapNotNullTo(HashSet()) { (it as? ChainEntry.Server)?.profileId }
+    val swappable = hops.size == 1
     fun hopOptions(index: Int): List<ChainEntry> {
-        val taken = hopServers(except = index) + listOfNotNull(exitId)
+        val noOtherExit = hops[index] is ChainEntry.ByeDpi && servers.size == 1
+        val taken = when {
+            swappable && !noOtherExit -> emptySet()
+            swappable -> setOfNotNull(exitId)
+            else -> hopServers(except = index) + listOfNotNull(exitId)
+        }
         return servers.filter { it.id !in taken }.map { ChainEntry.Server(it.id) }
+    }
+    fun selectHop(index: Int, selected: ChainEntry) {
+        val previous = hops[index]
+        if (swappable && selected is ChainEntry.Server && selected.profileId == exitId) {
+            exitId = (previous as? ChainEntry.Server)?.profileId ?: servers.firstOrNull { it.id != selected.profileId }?.id
+        }
+        hops = hops.toMutableList().also { it[index] = selected }
+    }
+    fun selectExit(id: Long) {
+        val entry = hops[0]
+        if (swappable && entry is ChainEntry.Server && entry.profileId == id) {
+            exitId?.let { hops = listOf(ChainEntry.Server(it)) }
+        }
+        exitId = id
     }
 
     AppDialog(
@@ -106,7 +126,7 @@ internal fun ChainDialog(
                                     options = if (index == 0) listOf<ChainEntry>(ChainEntry.ByeDpi) + hopOptions(index) else hopOptions(index),
                                     selected = hop,
                                     optionLabel = ::hopLabel,
-                                    onSelect = { selected -> hops = hops.toMutableList().also { it[index] = selected } }
+                                    onSelect = { selected -> selectHop(index, selected) }
                                 )
                             }
                             if (index > 0) {
@@ -120,10 +140,10 @@ internal fun ChainDialog(
                 add {
                     DropdownSetting(
                         label = stringResource(Res.string.chain_exit),
-                        options = servers.map { it.id }.filterNot { it in hopServers() },
+                        options = servers.map { it.id }.filterNot { !swappable && it in hopServers() },
                         selected = exitId ?: -1L,
                         optionLabel = ::serverName,
-                        onSelect = { exitId = it }
+                        onSelect = ::selectExit
                     )
                 }
             }
