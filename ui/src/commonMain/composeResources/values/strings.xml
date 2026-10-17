@@ -102,7 +102,7 @@
     <string name="cancel">Cancel</string>
     <string name="save">Save</string>
     <string name="add_server">Add server</string>
-    <string name="add_server_instructions">Paste a share link (vmess/vless/ss/trojan/hysteria2) or a subscription URL, or pick a config file.</string>
+    <string name="add_server_instructions">Paste a share link (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https) or a subscription URL, or pick a config file (WireGuard, AmneziaWG, OpenVPN).</string>
     <string name="from_file">From file</string>
     <string name="link_or_subscription_url">Link or subscription URL</string>
     <string name="add">Add</string>

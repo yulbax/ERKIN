@@ -102,7 +102,7 @@
     <string name="cancel">لغو</string>
     <string name="save">ذخیره</string>
     <string name="add_server">افزودن سرور</string>
-    <string name="add_server_instructions">یک لینک اشتراک (vmess/vless/ss/trojan/hysteria2) یا آدرس اشتراک را بچسبانید، یا یک فایل پیکربندی انتخاب کنید.</string>
+    <string name="add_server_instructions">یک لینک اشتراک (vmess، vless، ss، trojan، hysteria2، tuic، anytls، socks5، https) یا آدرس اشتراک را بچسبانید، یا یک فایل پیکربندی (WireGuard، AmneziaWG، OpenVPN) انتخاب کنید.</string>
     <string name="from_file">از فایل</string>
     <string name="link_or_subscription_url">لینک یا آدرس اشتراک</string>
     <string name="add">افزودن</string>

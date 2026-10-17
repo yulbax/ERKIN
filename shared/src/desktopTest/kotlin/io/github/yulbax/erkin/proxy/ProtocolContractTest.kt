@@ -137,6 +137,31 @@ class ProtocolContractTest {
             Endpoint = wg.example.com:51820
         """.trimIndent()
 
+        val OPENVPN = """
+            client
+            dev tun
+            proto udp
+            remote ovpn.example.com 1194
+            cipher AES-256-GCM
+            data-ciphers AES-256-GCM:AES-128-GCM
+            auth SHA256
+            key-direction 1
+            <ca>
+            -----BEGIN CERTIFICATE-----
+            MIIB
+            -----END CERTIFICATE-----
+            </ca>
+            <tls-auth>
+            -----BEGIN OpenVPN Static key V1-----
+            00
+            -----END OpenVPN Static key V1-----
+            </tls-auth>
+            <auth-user-pass>
+            alice
+            secret
+            </auth-user-pass>
+        """.trimIndent()
+
         val FORMS: Map<ProxyProtocol, List<String>> = mapOf(
             ProxyProtocol.VMESS to listOf(VMESS),
             ProxyProtocol.VLESS to listOf(
@@ -150,7 +175,18 @@ class ProtocolContractTest {
                 "wireguard://qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec%3D@wg.example.com:51820" +
                     "?publickey=7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ%3D&address=10.9.0.2%2F32&mtu=1280#Warsaw",
                 PLAIN_WIREGUARD_CONF
-            )
+            ),
+            ProxyProtocol.TUIC to listOf(
+                "tuic://0b3f1a2c-1111-4222-8333-444455556666:secret@tu.example.net:443" +
+                    "?congestion_control=bbr&udp_relay_mode=native&alpn=h3&sni=tu.example.net#Tallinn"
+            ),
+            ProxyProtocol.ANYTLS to listOf("anytls://secret@at.example.org:443/?sni=at.example.org&insecure=1#Riga"),
+            ProxyProtocol.SOCKS5 to listOf(
+                "socks5://alice:secret@203.0.113.7:1080#Vilnius",
+                "socks://" + Base64.getEncoder().encodeToString("alice:secret".toByteArray()) + "@203.0.113.8:1080#Minsk"
+            ),
+            ProxyProtocol.HTTPS to listOf("https://alice:secret@proxy.example.com:8443#Prague"),
+            ProxyProtocol.OPENVPN to listOf(OPENVPN)
         )
 
         val SAMPLES: Map<ProxyProtocol, String> = FORMS.mapValues { it.value.first() }
