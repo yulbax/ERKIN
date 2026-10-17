@@ -196,7 +196,6 @@
     <string name="rule_sets_group_ads">تبلیغات</string>
     <string name="rule_sets_group_telemetry">تله‌متری</string>
     <string name="rule_sets_group_russia">روسیه</string>
-    <string name="rule_sets_group_services">سرویس‌ها</string>
     <string name="rule_sets_countries">کشورها</string>
     <string name="rule_sets_countries_description">آدرس‌های IP یک کشور، از MetaCubeX.</string>
     <string name="rule_sets_pick_country">انتخاب کشور</string>
@@ -205,7 +204,6 @@
     <string name="rule_set_russian_government">سایت‌های دولتی روسیه</string>
     <string name="rule_set_blocked_in_russia">مسدودشده در روسیه</string>
     <string name="rule_set_blocked_ips_in_russia">آدرس‌های IP مسدودشده در روسیه</string>
-    <string name="rule_set_telegram_ips">آدرس‌های IP تلگرام</string>
     <string name="rule_set_download">دانلود</string>
     <string name="rule_set_link">پیوند</string>
     <string name="rule_set_name">نام</string>
