@@ -194,15 +194,10 @@
     <string name="rule_sets_formats">支持域名列表、hosts 文件、AdGuard 过滤器和 mihomo 规则集（文本、YAML、mrs）。</string>
     <string name="rule_sets_group_ads">广告</string>
     <string name="rule_sets_group_telemetry">遥测</string>
-    <string name="rule_sets_group_russia">俄罗斯</string>
     <string name="rule_sets_countries">国家</string>
     <string name="rule_sets_countries_description">国家的 IP 地址，数据来自 MetaCubeX。</string>
     <string name="rule_sets_pick_country">选择国家</string>
     <string name="rule_set_country">%1$s（IP 地址）</string>
-    <string name="rule_set_russian_sites">俄罗斯网站</string>
-    <string name="rule_set_russian_government">俄罗斯政府网站</string>
-    <string name="rule_set_blocked_in_russia">在俄罗斯被封锁的网站</string>
-    <string name="rule_set_blocked_ips_in_russia">在俄罗斯被封锁的 IP 地址</string>
     <string name="rule_set_download">下载</string>
     <string name="rule_set_link">链接</string>
     <string name="rule_set_name">名称</string>

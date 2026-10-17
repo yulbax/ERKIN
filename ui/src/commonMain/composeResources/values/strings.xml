@@ -202,15 +202,10 @@
     <string name="rule_sets_formats">Domain lists, hosts files, AdGuard filters and mihomo rule sets (text, YAML, mrs) are supported.</string>
     <string name="rule_sets_group_ads">Ads</string>
     <string name="rule_sets_group_telemetry">Telemetry</string>
-    <string name="rule_sets_group_russia">Russia</string>
     <string name="rule_sets_countries">Countries</string>
     <string name="rule_sets_countries_description">IP addresses of a country, from MetaCubeX.</string>
     <string name="rule_sets_pick_country">Choose a country</string>
     <string name="rule_set_country">%1$s (IP addresses)</string>
-    <string name="rule_set_russian_sites">Russian websites</string>
-    <string name="rule_set_russian_government">Russian government websites</string>
-    <string name="rule_set_blocked_in_russia">Blocked in Russia</string>
-    <string name="rule_set_blocked_ips_in_russia">IP addresses blocked in Russia</string>
     <string name="rule_set_download">Download</string>
     <string name="rule_set_link">Link</string>
     <string name="rule_set_name">Name</string>
