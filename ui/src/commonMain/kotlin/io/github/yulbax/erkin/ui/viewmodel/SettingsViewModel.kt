@@ -10,9 +10,6 @@ import io.github.yulbax.erkin.data.ConfigBackupRepository
 import io.github.yulbax.erkin.data.ImportResult
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.SettingsRepository
-import io.github.yulbax.erkin.geoip.GeoIpDatabase
-import io.github.yulbax.erkin.geoip.GeoIpState
-import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
@@ -29,24 +26,8 @@ import kotlinx.coroutines.launch
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
-    private val backupRepository: ConfigBackupRepository,
-    private val geoIpDatabase: GeoIpDatabase,
-    private val commandBus: VpnCommandBus
+    private val backupRepository: ConfigBackupRepository
 ) : ViewModel() {
-
-    val geoIp: StateFlow<GeoIpState> = geoIpDatabase.state
-
-    fun refreshGeoIp() {
-        viewModelScope.launch(Dispatchers.IO) { geoIpDatabase.refresh() }
-    }
-
-    fun downloadGeoIp(onResult: (Throwable?) -> Unit) {
-        viewModelScope.launch {
-            val result = geoIpDatabase.download()
-            if (result.isSuccess) commandBus.reload()
-            onResult(result.exceptionOrNull())
-        }
-    }
 
     val byeDpiArgsDefault: String = ByeDpiArgs.DEFAULT.joinToString(" ")
 

@@ -8,7 +8,6 @@ import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RemoteDns
 import io.github.yulbax.erkin.vpn.core.RuleLists
-import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -54,7 +53,7 @@ object MihomoConfigBuilder {
     private const val DESKTOP_TUN_INET4 = "172.19.0.1/30"
     private const val DESKTOP_TUN_INET6 = "fdfe:dcba:9876::1/126"
     private const val SYSTEM_NAMESERVER = "system://"
-    private const val RULE_LIST_FORMAT = "text"
+    private const val RULE_LIST_FORMAT = "mrs"
     private const val BLOCK_QUIC_RULE = "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT"
     private val LOCAL_DOMAINS = listOf("+.lan", "+.local", "+.localdomain", "+.home.arpa", "+.internal", "localhost")
     private val PRIVATE_NETWORKS = listOf(
@@ -175,7 +174,7 @@ object MihomoConfigBuilder {
                     put("udp", true)
                 })
             }
-            val lists = rules.filter { it.match == RuleMatch.LIST }.map { it.value }.distinct()
+            val lists = rules.mapNotNull { RuleLists.source(it)?.url }.distinct()
                 .flatMap { url -> engine.ruleLists[url].orEmpty().map { url to it } }
             if (lists.isNotEmpty()) {
                 putJsonObject("rule-providers") {
@@ -202,11 +201,11 @@ object MihomoConfigBuilder {
                         RuleTarget.DIRECT -> DIRECT
                         RuleTarget.BLOCK -> REJECT
                     }
-                    when (rule.match) {
-                        RuleMatch.LIST -> engine.ruleLists[rule.value].orEmpty().forEach { kind ->
-                            add("${rule.match.mihomo},${RuleLists.providerName(rule.value, kind)},$target")
+                    when (val source = RuleLists.source(rule)) {
+                        null -> add("${rule.match.mihomo},${rule.value},$target")
+                        else -> engine.ruleLists[source.url].orEmpty().forEach { kind ->
+                            add("${rule.match.mihomo},${RuleLists.providerName(source.url, kind)},$target")
                         }
-                        else -> add("${rule.match.mihomo},${rule.value},$target")
                     }
                 }
                 if (desktop != null) {

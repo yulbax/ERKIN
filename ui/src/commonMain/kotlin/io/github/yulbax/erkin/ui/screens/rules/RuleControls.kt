@@ -32,18 +32,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
+import io.github.yulbax.erkin.rulelist.RuleListError
+import io.github.yulbax.erkin.rulelist.RuleListFailure
+import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.ui.viewmodel.RuleListStatus
+import io.github.yulbax.erkin.vpn.core.RuleListSource
+import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import java.text.DateFormat
@@ -133,18 +139,17 @@ internal fun RuleDialog(
     onDismiss: () -> Unit,
     onSave: (RuleMatch, String, RuleTarget) -> Unit,
     onDelete: (() -> Unit)?,
-    countryAvailable: Boolean,
-    listStatus: (String) -> RuleListStatus?,
-    onUpdateList: (String) -> Unit
+    listState: (String) -> RuleListState?,
+    onUpdateList: (RuleListSource) -> Unit
 ) {
     val initialMatch = initial?.let { RuleMatch.fromWire(it.type) } ?: RuleMatch.DOMAIN_SUFFIX
-    val options = RuleMatch.entries.filter { !it.requiresGeoIp || countryAvailable || it == initialMatch }
     var match by remember { mutableStateOf(initialMatch) }
     var text by remember { mutableStateOf(initial?.let { initialMatch.display(it.value) }.orEmpty()) }
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
     val normalized = match.normalize(text)
     val invalid = text.isNotBlank() && normalized == null
-    val status = normalized?.takeIf { match.ui.input == RuleInput.Link }?.let(listStatus)
+    val source = normalized?.let { RuleLists.source(match, it) }
+    val state = source?.let { listState(it.url) }
     val groupColors = ToggleButtonDefaults.toggleButtonColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
     )
@@ -168,7 +173,7 @@ internal fun RuleDialog(
     ) {
         SectionLabel(stringResource(Res.string.rule_type))
         RuleMatchGroup(
-            options = options,
+            options = RuleMatch.entries,
             selected = match,
             onSelect = {
                 if (it.ui.input != match.ui.input) text = ""
@@ -194,17 +199,6 @@ internal fun RuleDialog(
                         onValueChange = { text = it },
                         label = { Text(stringResource(Res.string.rule_value)) },
                         placeholder = { Text(match.example()) },
-                        trailingIcon = status?.let {
-                            {
-                                if (it == RuleListStatus.Downloading) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                                } else {
-                                    IconButton(onClick = { onUpdateList(normalized) }) {
-                                        Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.rule_list_update))
-                                    }
-                                }
-                            }
-                        },
                         singleLine = true,
                         isError = invalid,
                         colors = transparentFieldColors(),
@@ -216,8 +210,7 @@ internal fun RuleDialog(
         val hint = when {
             match.ui.input == RuleInput.Country -> null
             invalid -> stringResource(Res.string.rule_invalid)
-            status != null -> status.text()
-            normalized != null && normalized != text.trim() -> stringResource(Res.string.rule_saved_as, normalized)
+            source == null && normalized != null && normalized != text.trim() -> stringResource(Res.string.rule_saved_as, normalized)
             else -> null
         }
         if (hint != null) {
@@ -227,6 +220,9 @@ internal fun RuleDialog(
                 color = if (invalid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, top = 6.dp)
             )
+        }
+        if (source != null && state != null) {
+            RuleListStateRow(state = state, onUpdate = { onUpdateList(source) })
         }
         if (match.ui.input == RuleInput.Link && text.isBlank()) {
             SectionLabel(stringResource(Res.string.rule_list_presets))
@@ -272,15 +268,60 @@ internal fun RuleTargetIcon(target: RuleTarget, modifier: Modifier = Modifier) {
 }
 
 @Composable
-internal fun RuleListStatus.text(): String = when (this) {
-    RuleListStatus.Missing -> stringResource(Res.string.rule_list_missing)
-    RuleListStatus.Downloading -> stringResource(Res.string.rule_list_downloading)
-    is RuleListStatus.Ready -> stringResource(
-        Res.string.rule_list_entries,
-        NumberFormat.getIntegerInstance().format(list.entries),
-        DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(list.updatedAt))
-    )
+private fun RuleListStateRow(state: RuleListState, onUpdate: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = state.text(),
+            style = MaterialTheme.typography.bodySmall,
+            color = state.textColor(),
+            modifier = Modifier.weight(1f)
+        )
+        if (state.downloading) {
+            CircularProgressIndicator(modifier = Modifier.padding(12.dp).size(20.dp), strokeWidth = 2.dp)
+        } else {
+            IconButton(onClick = onUpdate) {
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.rule_list_update))
+            }
+        }
+    }
 }
+
+@Composable
+internal fun RuleListState.text(): String {
+    val error = error
+    val installed = installed
+    return when {
+        downloading -> stringResource(Res.string.rule_list_downloading)
+        error != null && installed != null -> stringResource(Res.string.rule_list_stale, error.text(), installed.updatedAt.date())
+        error != null -> error.text()
+        installed != null -> stringResource(
+            Res.string.rule_list_entries,
+            NumberFormat.getIntegerInstance().format(entries),
+            installed.updatedAt.date()
+        )
+        else -> stringResource(Res.string.rule_list_missing)
+    }
+}
+
+@Composable
+internal fun RuleListState.textColor(): Color =
+    if (!downloading && error != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+
+@Composable
+internal fun RuleListError.text(): String = when (failure) {
+    RuleListFailure.DOWNLOAD -> stringResource(Res.string.rule_list_failed_download, detail.orEmpty())
+    RuleListFailure.NOT_A_LIST -> stringResource(Res.string.rule_list_failed_not_a_list)
+    RuleListFailure.EMPTY -> stringResource(Res.string.rule_list_failed_empty)
+    RuleListFailure.CORRUPT -> stringResource(Res.string.rule_list_failed_corrupt)
+    RuleListFailure.WRONG_KIND -> stringResource(Res.string.rule_list_failed_wrong_kind)
+    RuleListFailure.TOO_LARGE -> stringResource(Res.string.rule_list_failed_too_large)
+    RuleListFailure.SAVE -> stringResource(Res.string.rule_list_failed_save, detail.orEmpty())
+}
+
+private fun Long.date(): String = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(this))
 
 @Composable
 internal fun RuleMatch.label(): String = stringResource(ui.label)

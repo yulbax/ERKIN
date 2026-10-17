@@ -5,6 +5,7 @@ go 1.24
 replace google.golang.org/protobuf => github.com/metacubex/protobuf-go v0.0.0-20260306035419-7ceee0674686
 
 require (
+	github.com/klauspost/compress v1.17.9
 	github.com/metacubex/mihomo v1.19.32
 	golang.org/x/mobile v0.0.0-20250808145247-395d808d53cd
 	golang.org/x/sync v0.16.0
@@ -45,7 +46,6 @@ require (
 	github.com/insomniacslk/dhcp v0.0.0-20250109001534-8abf58130905 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/jsimonetti/rtnetlink v1.4.0 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/klauspost/reedsolomon v1.12.3 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect

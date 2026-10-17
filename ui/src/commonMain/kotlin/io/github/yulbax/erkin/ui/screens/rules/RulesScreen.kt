@@ -43,6 +43,9 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
+import io.github.yulbax.erkin.rulelist.RuleListError
+import io.github.yulbax.erkin.rulelist.RuleListException
+import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.GroupPlaceholder
 import io.github.yulbax.erkin.ui.components.groupItemShape
@@ -51,8 +54,8 @@ import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.ui.viewmodel.RuleListStatus
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
+import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import java.net.URI
@@ -65,14 +68,22 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun Rules(viewModel: RulesViewModel = koinViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
-    val countryAvailable by viewModel.countryAvailable.collectAsStateWithLifecycle()
-    val listStatus by viewModel.listStatus.collectAsStateWithLifecycle()
+    val listStates by viewModel.listStates.collectAsStateWithLifecycle()
     val showMessage = rememberShowMessage()
-    val listFailed = stringResource(Res.string.rule_list_failed)
+    var listError by remember { mutableStateOf<RuleListError?>(null) }
     val onListResult = { error: Throwable? ->
-        if (error != null) showMessage(listFailed.format(error.message ?: error::class.simpleName))
+        listError = (error as? RuleListException)?.let { RuleListError(it.failure, it.detail) }
     }
-    LaunchedEffect(Unit) { viewModel.refreshGeoIp() }
+    listError?.let { error ->
+        val message = error.text()
+        LaunchedEffect(error) {
+            showMessage(message)
+            listError = null
+        }
+    }
+    val stateOf = { rule: RoutingRuleEntity ->
+        rule.toRule()?.let(RuleLists::source)?.let { listStates[it.url] ?: RuleListState() }
+    }
     var editing by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<List<RoutingRuleEntity>?>(null) }
@@ -142,7 +153,7 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                     ) {
                         RuleRow(
                             rule = rule,
-                            listStatus = listStatus[rule.value].takeIf { rule.type == RuleMatch.LIST.wire },
+                            listState = stateOf(rule),
                             selecting = selecting,
                             checked = isChecked,
                             onClick = { if (selecting) toggle(rule) else editing = rule },
@@ -205,9 +216,8 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                     deleting = listOf(it)
                 }
             },
-            countryAvailable = countryAvailable,
-            listStatus = { listStatus[it] },
-            onUpdateList = { viewModel.downloadList(it, onListResult) }
+            listState = { listStates[it] },
+            onUpdateList = { viewModel.download(it, onListResult) }
         )
     }
 
@@ -231,7 +241,7 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
             text = {
                 val single = targets.singleOrNull()
                 if (single != null) {
-                    Text(stringResource(Res.string.delete_rule_message, single.displayValue(listStatus[single.value])))
+                    Text(stringResource(Res.string.delete_rule_message, single.displayValue(stateOf(single))))
                 } else {
                     Text(stringResource(Res.string.delete_rules_message, targets.size))
                 }
@@ -244,7 +254,7 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
 @Composable
 private fun RuleRow(
     rule: RoutingRuleEntity,
-    listStatus: RuleListStatus?,
+    listState: RuleListState?,
     selecting: Boolean,
     checked: Boolean,
     onClick: () -> Unit,
@@ -265,7 +275,7 @@ private fun RuleRow(
         Spacer(Modifier.width(4.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = rule.displayValue(listStatus),
+                text = rule.displayValue(listState),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -273,10 +283,10 @@ private fun RuleRow(
             )
             if (match != null) {
                 Text(
-                    text = listStatus?.text() ?: match.label(),
+                    text = listState?.text() ?: match.label(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    color = listState?.textColor() ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
@@ -294,12 +304,12 @@ private fun RuleRow(
     }
 }
 
-private fun RoutingRuleEntity.displayValue(listStatus: RuleListStatus?): String {
+private fun RoutingRuleEntity.displayValue(listState: RuleListState?): String {
     val match = RuleMatch.fromWire(type) ?: return value
     return when (match.ui.input) {
         RuleInput.Country -> countryName(value)
         RuleInput.Text -> match.display(value)
-        RuleInput.Link -> (listStatus as? RuleListStatus.Ready)?.list?.title ?: linkName(value)
+        RuleInput.Link -> listState?.title ?: linkName(value)
     }
 }
 

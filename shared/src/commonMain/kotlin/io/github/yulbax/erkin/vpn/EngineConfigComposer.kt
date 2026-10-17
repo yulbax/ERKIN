@@ -12,7 +12,7 @@ import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
-import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 
 object ProxyTag {
@@ -50,7 +50,6 @@ object EngineConfigComposer {
         inputs: SessionInputs,
         ownPackage: String,
         byeDpiPort: Int,
-        geoIpReady: Boolean = false,
         ruleLists: (String) -> InstalledRuleList? = { null }
     ): AppliedConfig {
         val selected = inputs.selected
@@ -60,11 +59,9 @@ object EngineConfigComposer {
         check(!routed.isEmpty) {
             if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN or ByeDPI"
         }
-        val lists = inputs.rules.filter { it.match == RuleMatch.LIST }.map { it.value }.distinct()
+        val lists = inputs.rules.mapNotNull { RuleLists.source(it)?.url }.distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
-        val rules = inputs.rules.filter { rule ->
-            (geoIpReady || !rule.match.requiresGeoIp) && (rule.match != RuleMatch.LIST || rule.value in lists)
-        }
+        val rules = inputs.rules.filter { rule -> RuleLists.source(rule)?.let { it.url in lists } ?: true }
         val proxies = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
 
         return AppliedConfig(

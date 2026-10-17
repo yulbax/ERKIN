@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.vpn
 
-import io.github.yulbax.erkin.geoip.GeoIpDatabase
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
@@ -10,7 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 class VpnSessionFactory(
     private val store: VpnSessionStore,
     private val stateRepository: VpnStateRepository,
-    private val geoIp: GeoIpDatabase,
     private val ruleLists: RuleListDatabase,
     private val log: AppLog
 ) {
@@ -33,7 +31,6 @@ class VpnSessionFactory(
         scope = scope,
         requestWork = controller::requestWork,
         onByeDpiExit = controller::onByeDpiExit,
-        geoIpReady = { geoIp.isReady },
         ruleLists = ruleLists::installed
     )
 }

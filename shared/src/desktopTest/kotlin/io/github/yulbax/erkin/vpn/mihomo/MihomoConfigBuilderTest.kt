@@ -91,16 +91,14 @@ class MihomoConfigBuilderTest {
             RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT),
             RoutingRule(RuleMatch.DOMAIN_KEYWORD, "ads", RuleTarget.BLOCK),
             RoutingRule(RuleMatch.IP_CIDR, "1.1.1.1/32", RuleTarget.BYEDPI),
-            RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN),
-            RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
+            RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN)
         )
         val config = build(vpn = listOf("org.vpn"), options = NetworkOptions(bypassLan = true), rules = rules)
         val userRules = listOf(
             "DOMAIN-SUFFIX,ru,DIRECT",
             "DOMAIN-KEYWORD,ads,REJECT",
             "IP-CIDR,1.1.1.1/32,byedpi",
-            "DOMAIN,a.example,p1",
-            "GEOIP,RU,DIRECT"
+            "DOMAIN,a.example,p1"
         )
         val all = config.rules()
         assertEquals("IN-NAME,probe-in,p1", all.first())
@@ -114,25 +112,34 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
-    fun aRuleListBecomesLocalProvidersInTheRulesPosition() {
+    fun ruleListsAndCountriesBecomeLocalProvidersInTheRulesPosition() {
         val url = "https://example.com/ads.txt"
+        val country = RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
+        val countryUrl = RuleLists.source(country)!!.url
         val rules = listOf(
             RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN),
-            RoutingRule(RuleMatch.LIST, url, RuleTarget.BLOCK)
+            RoutingRule(RuleMatch.LIST, url, RuleTarget.BLOCK),
+            country
         )
-        val engine = engine(listOf(vless), "p1", listOf("org.dpi"), emptyList(), rules = rules)
-            .copy(ruleLists = mapOf(url to setOf(RuleSetKind.DOMAIN, RuleSetKind.IPCIDR)))
+        val engine = engine(listOf(vless), "p1", listOf("org.dpi"), emptyList(), rules = rules).copy(
+            ruleLists = mapOf(url to setOf(RuleSetKind.DOMAIN, RuleSetKind.IPCIDR), countryUrl to setOf(RuleSetKind.IPCIDR))
+        )
         val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE)).jsonObject
         val domains = RuleLists.providerName(url, RuleSetKind.DOMAIN)
         val cidrs = RuleLists.providerName(url, RuleSetKind.IPCIDR)
+        val countryCidrs = RuleLists.providerName(countryUrl, RuleSetKind.IPCIDR)
 
         val all = config.rules()
         val first = all.indexOf("DOMAIN,a.example,p1")
-        assertEquals(listOf("RULE-SET,$domains,REJECT", "RULE-SET,$cidrs,REJECT"), all.subList(first + 1, first + 3))
+        assertEquals(
+            listOf("RULE-SET,$domains,REJECT", "RULE-SET,$cidrs,REJECT", "RULE-SET,$countryCidrs,DIRECT"),
+            all.subList(first + 1, first + 4)
+        )
+        assertFalse(all.any { it.startsWith("GEOIP") })
         val provider = config.getValue("rule-providers").jsonObject.getValue(domains).jsonObject
         assertEquals("file", provider.getValue("type").jsonPrimitive.content)
         assertEquals("domain", provider.getValue("behavior").jsonPrimitive.content)
-        assertEquals("text", provider.getValue("format").jsonPrimitive.content)
+        assertEquals("mrs", provider.getValue("format").jsonPrimitive.content)
         assertEquals(RuleLists.path(url, RuleSetKind.DOMAIN), provider.getValue("path").jsonPrimitive.content)
         assertFalse("rule-providers" in build(rules = rules.take(1)))
     }
