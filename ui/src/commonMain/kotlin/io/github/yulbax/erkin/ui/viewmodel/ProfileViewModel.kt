@@ -83,9 +83,9 @@ class ProfileViewModel(
         _error.value = null
     }
 
-    fun add(raw: String) {
+    fun add(raw: String, fileName: String? = null) {
         viewModelScope.launch(Dispatchers.IO) {
-            handleResult("add server", profileRepository.add(raw))
+            handleResult("add server", profileRepository.add(raw, fileName))
         }
     }
 

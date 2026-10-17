@@ -32,6 +32,7 @@ import javax.swing.ImageIcon
 import javax.swing.filechooser.FileSystemView
 import java.awt.datatransfer.StringSelection
 import java.io.File
+import java.io.InputStream
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,7 +73,11 @@ private class DesktopSharer : Sharer {
 @Composable
 actual fun rememberFilePicker(mimeTypes: List<String>, onPicked: (PickedFile) -> Unit): () -> Unit = {
     chooseFile(title = "", mode = FileDialog.LOAD, suggestedName = null)?.let { file ->
-        onPicked { file.inputStream() }
+        onPicked(object : PickedFile {
+            override val name: String = file.name
+
+            override fun open(): InputStream = file.inputStream()
+        })
     }
 }
 
