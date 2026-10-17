@@ -123,9 +123,9 @@ class DesktopRenderTest {
                         object : DiagnosticsSource {
                             override val feed = object : LogFeed {
                                 override val entries = MutableStateFlow(
-                                    List(40) { "10-17 16:01:47.924 [app] I/VpnSession: line $it" } +
-                                        "10-17 16:01:53.105 [core] W: [TCP] dial DIRECT 172.19.0.1:54990 --> 172.19.0.2:853 error: i/o timeout" +
-                                        "10-17 16:01:48.607 [byedpi] I/ByeDpiRunner: byedpi started on port 34487"
+                                    List(40) { "[app] 10-17 16:01:47.924 I/VpnSession: line $it" } +
+                                        "[core] 10-17 16:01:53.105 W: [TCP] dial DIRECT 172.19.0.1:54990 --> 172.19.0.2:853 error: i/o timeout" +
+                                        "[byedpi] 10-17 16:01:48.607 I/ByeDpiRunner: byedpi started on port 34487"
                                 )
                             }
                             override suspend fun collect() = "=== ERKIN diagnostics ===\n" + "line\n".repeat(400)

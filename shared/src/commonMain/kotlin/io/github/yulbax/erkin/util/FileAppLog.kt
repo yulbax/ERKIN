@@ -63,8 +63,9 @@ class FileAppLog(
         }
         echo(level, tag.ifEmpty { source.label }, text)
         val label = if (tag.isEmpty()) level.symbol else "${level.symbol}/$tag"
-        val entry = "${timeFormat.format(Instant.now())} [${source.label}] $label: $text"
+        val entry = "[${source.label}] ${timeFormat.format(Instant.now())} $label: $text"
         synchronized(lock) {
+            val loaded = recent.value
             runCatching {
                 logFile.parentFile?.mkdirs()
                 if (logFile.length() > MAX_BYTES) {
@@ -74,7 +75,7 @@ class FileAppLog(
                 }
                 logFile.appendText(entry + "\n")
             }
-            recent.value = (recent.value + entry).takeLast(MAX_ENTRIES)
+            recent.value = (loaded + entry).takeLast(MAX_ENTRIES)
         }
     }
 
@@ -100,6 +101,6 @@ class FileAppLog(
     private companion object {
         const val MAX_BYTES = 1024 * 1024L
         const val MAX_ENTRIES = 2000
-        val ENTRY_START = Regex("^\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} ")
+        val ENTRY_START = Regex("^(\\[[a-z]+] )?\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} ")
     }
 }
