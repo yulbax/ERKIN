@@ -25,11 +25,11 @@ class ProfileRepository(
     val profiles: Flow<List<ProfileEntity>> = profileDao.observeAll()
     val selected: Flow<ProfileEntity?> = profileDao.observeSelected()
 
-    suspend fun add(raw: String): ProfileOperationResult {
+    suspend fun add(raw: String, fileName: String? = null): ProfileOperationResult {
         val input = raw.trim()
         val parsed = LinkParser.parse(input)
         return when {
-            parsed != null -> insertSingle(parsed)
+            parsed != null -> insertSingle(fileName?.let(::nameOfFile)?.let { parsed.copy(name = it) } ?: parsed)
             input.isHttpUrl() -> importSubscription(input)
             else -> insertAll(SubscriptionParser.parseBody(input))
         }
@@ -221,6 +221,12 @@ class ProfileRepository(
         const val TAG = "ProfileRepository"
         const val CHAIN_BYEDPI_NAME = "ByeDPI"
         const val MAX_CONFIG_FILE_BYTES = 1L shl 20
+    }
+
+    private fun nameOfFile(fileName: String): String? {
+        val name = fileName.trim()
+        val dot = name.lastIndexOf('.')
+        return (if (dot > 0) name.substring(0, dot) else name).trim().takeIf { it.isNotEmpty() }
     }
 
     private fun String.isHttpUrl(): Boolean =

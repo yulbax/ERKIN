@@ -79,6 +79,13 @@ class ProfileRefreshTest {
     }
 
     @Test
+    fun aConfigFromAFileIsNamedAfterTheFile() = runBlocking {
+        repository.add(AWG_CONFIG, fileName = "Home server.conf")
+
+        assertEquals("Home server", database.profileDao().getAll().single().name)
+    }
+
+    @Test
     fun keepsUpToDateDescriptorsUntouched() = runBlocking {
         repository.add(AWG_CONFIG)
         val before = database.profileDao().getAll().single()

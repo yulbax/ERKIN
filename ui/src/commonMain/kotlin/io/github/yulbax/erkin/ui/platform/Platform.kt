@@ -16,7 +16,9 @@ interface Sharer {
     suspend fun shareFile(prefix: String, extension: String, mimeType: String, content: String, title: String)
 }
 
-fun interface PickedFile {
+interface PickedFile {
+    val name: String?
+
     fun open(): InputStream?
 }
 

@@ -72,14 +72,14 @@ internal fun EditServerDialog(
 internal fun AddServerDialog(
     onDismiss: () -> Unit,
     onReadFile: (PickedFile, (String?) -> Unit) -> Unit,
-    onAdd: (String) -> Unit
+    onAdd: (raw: String, fileName: String?) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
     val showMessage = rememberShowMessage()
     val invalidFileMessage = stringResource(Res.string.import_invalid_file)
     val pickFile = rememberFilePicker(listOf("text/plain", "*/*")) { file ->
         onReadFile(file) { content ->
-            if (content == null) showMessage(invalidFileMessage) else onAdd(content.trim())
+            if (content == null) showMessage(invalidFileMessage) else onAdd(content.trim(), file.name)
         }
     }
 
@@ -91,7 +91,7 @@ internal fun AddServerDialog(
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
             TextButton(
-                onClick = { if (text.isNotBlank()) onAdd(text) },
+                onClick = { if (text.isNotBlank()) onAdd(text, null) },
                 enabled = text.isNotBlank()
             ) { Text(stringResource(Res.string.add)) }
         }

@@ -174,7 +174,7 @@ fun ErkinScreen(
         AddServerDialog(
             onDismiss = { showAddDialog = false },
             onReadFile = { file, onRead -> profileViewModel.readConfigFile(file::open, onRead) },
-            onAdd = { profileViewModel.add(it); showAddDialog = false }
+            onAdd = { raw, fileName -> profileViewModel.add(raw, fileName); showAddDialog = false }
         )
     }
 

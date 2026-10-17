@@ -9,9 +9,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Canvas
+import android.net.Uri
 import android.net.VpnService
+import android.provider.OpenableColumns
 import android.os.Build
 import android.provider.Settings
+import java.io.InputStream
 import android.util.LruCache
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -112,7 +115,13 @@ private class AndroidSharer(private val context: Context) : Sharer {
 actual fun rememberFilePicker(mimeTypes: List<String>, onPicked: (PickedFile) -> Unit): () -> Unit {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null) onPicked { context.contentResolver.openInputStream(uri) }
+        if (uri != null) {
+            onPicked(object : PickedFile {
+                override val name: String? = context.displayName(uri)
+
+                override fun open(): InputStream? = context.contentResolver.openInputStream(uri)
+            })
+        }
     }
     return { launcher.launch(mimeTypes.toTypedArray()) }
 }
@@ -204,3 +213,9 @@ actual val platformTextStyle: PlatformTextStyle? = null
 
 @Composable
 actual fun HoverHint(text: String, enabled: Boolean, content: @Composable () -> Unit) = content()
+
+private fun Context.displayName(uri: Uri): String? = runCatching {
+    contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
+}.getOrNull()
