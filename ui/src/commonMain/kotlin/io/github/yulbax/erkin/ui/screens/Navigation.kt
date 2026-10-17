@@ -119,6 +119,7 @@ val subPages = listOf(Screen.RuleSets)
 val navPages = primaryNavPages + secondaryNavPages
 
 fun NavController.navigateToScreen(screen: Screen) {
+    if (subPages.any { it.route == currentDestination?.route }) popBackStack()
     if (currentDestination?.route == screen.route) return
     navigate(screen.route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
