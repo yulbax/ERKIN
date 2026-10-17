@@ -65,10 +65,7 @@ func Apply(content string, keepTun bool, resolvedProxy string, resolverAddress s
 }
 
 func Shutdown() {
-	statistic.DefaultManager.Range(func(c statistic.Tracker) bool {
-		_ = c.Close()
-		return true
-	})
+	closeConnections()
 	executor.Shutdown()
 	listener.ReCreateTun(LC.Tun{}, tunnel.Tunnel)
 }
@@ -258,4 +255,11 @@ func writeLog(path string) {
 		}
 		_, _ = file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " " + event.LogLevel.String() + " " + event.Payload + "\n")
 	}
+}
+
+func closeConnections() {
+	statistic.DefaultManager.Range(func(c statistic.Tracker) bool {
+		_ = c.Close()
+		return true
+	})
 }
