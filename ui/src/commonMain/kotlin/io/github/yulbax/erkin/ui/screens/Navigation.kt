@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.AltRoute
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -25,6 +26,7 @@ import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.screens.apps.Apps
 import io.github.yulbax.erkin.ui.screens.chains.Chains
 import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
+import io.github.yulbax.erkin.ui.screens.rules.RuleSets
 import io.github.yulbax.erkin.ui.screens.rules.Rules
 import io.github.yulbax.erkin.ui.screens.settings.Settings
 
@@ -53,6 +55,13 @@ sealed class Screen(
         title = Res.string.rules_title,
         selectedIcon = Icons.AutoMirrored.Filled.AltRoute,
         unselectedIcon = Icons.AutoMirrored.Filled.AltRoute
+    )
+
+    object RuleSets : Screen(
+        route = "rulesets",
+        title = Res.string.rule_sets_title,
+        selectedIcon = Icons.Filled.Download,
+        unselectedIcon = Icons.Filled.Download
     )
 
     object Chains : Screen(
@@ -105,6 +114,8 @@ val secondaryNavPages = listOf(
     Screen.About
 )
 
+val subPages = listOf(Screen.RuleSets)
+
 val navPages = primaryNavPages + secondaryNavPages
 
 fun NavController.navigateToScreen(screen: Screen) {
@@ -133,7 +144,8 @@ fun ErkinNavHost(
             ErkinScreen(onNavigateToApps = { navController.navigateToScreen(Screen.Apps) })
         }
         composable(Screen.Apps.route) { Apps(query = appsQuery) }
-        composable(Screen.Rules.route) { Rules() }
+        composable(Screen.Rules.route) { Rules(onOpenRuleSets = { navController.navigate(Screen.RuleSets.route) }) }
+        composable(Screen.RuleSets.route) { RuleSets() }
         composable(Screen.Chains.route) { Chains() }
         composable(Screen.Settings.route) { Settings() }
         composable(Screen.Logs.route) { Logs() }

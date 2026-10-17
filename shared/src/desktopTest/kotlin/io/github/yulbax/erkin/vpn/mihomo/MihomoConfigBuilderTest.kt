@@ -114,11 +114,11 @@ class MihomoConfigBuilderTest {
     @Test
     fun ruleListsAndCountriesBecomeLocalProvidersInTheRulesPosition() {
         val url = "https://example.com/ads.txt"
-        val country = RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
-        val countryUrl = RuleLists.source(country)!!.url
+        val countryUrl = RuleLists.country("RU").url
+        val country = RoutingRule(RuleMatch.RULE_SET, countryUrl, RuleTarget.DIRECT)
         val rules = listOf(
             RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN),
-            RoutingRule(RuleMatch.LIST, url, RuleTarget.BLOCK),
+            RoutingRule(RuleMatch.RULE_SET, url, RuleTarget.BLOCK),
             country
         )
         val engine = engine(listOf(vless), "p1", listOf("org.dpi"), emptyList(), rules = rules).copy(

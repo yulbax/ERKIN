@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn.core
 
+import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -34,9 +35,20 @@ class RoutingRulesTest {
     }
 
     @Test
-    fun countriesAreIsoCodes() {
-        assertEquals("RU", RuleMatch.COUNTRY.normalize(" ru "))
-        assertNull(RuleMatch.COUNTRY.normalize("Russia"))
-        assertNull(RuleMatch.COUNTRY.normalize("XX"))
+    fun countriesAreIpSetsNamedByIsoCode() {
+        val russia = RuleLists.country("RU")
+        assertEquals(RuleSetKind.IPCIDR, russia.kind)
+        assertEquals("RU", RuleLists.countryOf(russia.url))
+        assertNull(RuleLists.countryOf(RuleLists.COUNTRY_URL_PREFIX + "xx" + RuleLists.COUNTRY_URL_SUFFIX))
+        assertNull(RuleLists.countryOf("https://example.com/ru.mrs"))
+    }
+
+    @Test
+    fun legacyCountryAndListRulesBecomeRuleSets() {
+        val country = RoutingRuleEntity(type = "country", value = "RU", target = "DIRECT").upgraded()
+        val list = RoutingRuleEntity(type = "list", value = "https://example.com/ads.txt", target = "BLOCK").upgraded()
+
+        assertEquals(RoutingRule(RuleMatch.RULE_SET, RuleLists.country("RU").url, RuleTarget.DIRECT), country.toRule())
+        assertEquals(RoutingRule(RuleMatch.RULE_SET, "https://example.com/ads.txt", RuleTarget.BLOCK), list.toRule())
     }
 }

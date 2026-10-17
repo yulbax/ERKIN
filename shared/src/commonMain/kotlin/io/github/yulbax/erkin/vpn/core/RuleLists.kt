@@ -8,7 +8,7 @@ enum class RuleSetKind(val behavior: String) {
     IPCIDR("ipcidr");
 
     companion object {
-        fun fromBehavior(value: String): RuleSetKind? = entries.firstOrNull { it.behavior == value }
+        fun fromBehavior(value: String?): RuleSetKind? = entries.firstOrNull { it.behavior == value }
     }
 }
 
@@ -21,17 +21,23 @@ data class RuleListSource(val url: String, val kind: RuleSetKind?)
 
 object RuleLists {
     const val DIRECTORY = "lists"
+    const val COUNTRY_URL_PREFIX = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/"
+    const val COUNTRY_URL_SUFFIX = ".mrs"
     private const val KEY_BYTES = 8
     private const val EXTENSION = "mrs"
-    private const val COUNTRY_URL = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/%s.mrs"
 
-    fun source(rule: RoutingRule): RuleListSource? = source(rule.match, rule.value)
-
-    fun source(match: RuleMatch, value: String): RuleListSource? = when (match) {
-        RuleMatch.LIST -> RuleListSource(value, null)
-        RuleMatch.COUNTRY -> RuleListSource(COUNTRY_URL.format(value.lowercase(Locale.ROOT)), RuleSetKind.IPCIDR)
+    fun url(rule: RoutingRule): String? = when (rule.match) {
+        RuleMatch.RULE_SET -> rule.value
         RuleMatch.DOMAIN_SUFFIX, RuleMatch.DOMAIN, RuleMatch.DOMAIN_KEYWORD, RuleMatch.IP_CIDR -> null
     }
+
+    fun country(code: String): RuleListSource =
+        RuleListSource(COUNTRY_URL_PREFIX + code.lowercase(Locale.ROOT) + COUNTRY_URL_SUFFIX, RuleSetKind.IPCIDR)
+
+    fun countryOf(url: String): String? =
+        url.takeIf { it.startsWith(COUNTRY_URL_PREFIX) && it.endsWith(COUNTRY_URL_SUFFIX) }
+            ?.removePrefix(COUNTRY_URL_PREFIX)?.removeSuffix(COUNTRY_URL_SUFFIX)
+            ?.let(RuleValues.Country::normalize)
 
     fun key(url: String): String =
         MessageDigest.getInstance("SHA-256").digest(url.toByteArray()).take(KEY_BYTES).joinToString("") { "%02x".format(it) }

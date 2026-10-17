@@ -38,6 +38,7 @@ object BackupCodec {
     fun decode(text: String): AppConfigBackup? =
         runCatching { json.decodeFromString(AppConfigBackup.serializer(), text) }
             .getOrNull()
+            ?.let { it.copy(rules = it.rules?.map(RoutingRuleEntity::upgraded)) }
             ?.takeIf(::isValid)
 
     fun read(input: InputStream): AppConfigBackup? =

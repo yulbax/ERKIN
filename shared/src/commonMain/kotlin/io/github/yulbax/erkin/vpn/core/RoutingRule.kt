@@ -10,8 +10,7 @@ enum class RuleMatch(val wire: String, val mihomo: String, val format: RuleValue
     DOMAIN("domain", "DOMAIN", RuleValues.Domain),
     DOMAIN_KEYWORD("keyword", "DOMAIN-KEYWORD", RuleValues.Keyword),
     IP_CIDR("ip_cidr", "IP-CIDR", RuleValues.Cidr),
-    COUNTRY("country", "RULE-SET", RuleValues.Country),
-    LIST("list", "RULE-SET", RuleValues.Link);
+    RULE_SET("ruleset", "RULE-SET", RuleValues.Link);
 
     fun normalize(raw: String): String? = format.normalize(raw)
 

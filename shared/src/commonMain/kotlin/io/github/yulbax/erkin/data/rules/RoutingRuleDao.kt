@@ -29,6 +29,9 @@ interface RoutingRuleDao {
     @Delete
     suspend fun deleteMany(rules: List<RoutingRuleEntity>)
 
+    @Query("DELETE FROM routing_rules WHERE type = :type AND value = :value")
+    suspend fun deleteMatching(type: String, value: String)
+
     @Query("SELECT COALESCE(MAX(position), 0) FROM routing_rules")
     suspend fun lastPosition(): Int
 

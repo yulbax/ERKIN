@@ -174,7 +174,7 @@ object MihomoConfigBuilder {
                     put("udp", true)
                 })
             }
-            val lists = rules.mapNotNull { RuleLists.source(it)?.url }.distinct()
+            val lists = rules.mapNotNull(RuleLists::url).distinct()
                 .flatMap { url -> engine.ruleLists[url].orEmpty().map { url to it } }
             if (lists.isNotEmpty()) {
                 putJsonObject("rule-providers") {
@@ -201,10 +201,10 @@ object MihomoConfigBuilder {
                         RuleTarget.DIRECT -> DIRECT
                         RuleTarget.BLOCK -> REJECT
                     }
-                    when (val source = RuleLists.source(rule)) {
+                    when (val url = RuleLists.url(rule)) {
                         null -> add("${rule.match.mihomo},${rule.value},$target")
-                        else -> engine.ruleLists[source.url].orEmpty().forEach { kind ->
-                            add("${rule.match.mihomo},${RuleLists.providerName(source.url, kind)},$target")
+                        else -> engine.ruleLists[url].orEmpty().forEach { kind ->
+                            add("${rule.match.mihomo},${RuleLists.providerName(url, kind)},$target")
                         }
                     }
                 }

@@ -46,7 +46,7 @@ class RuleListDatabaseTest {
     fun aTextListIsSplitByKindAndRecordedWithItsTitle() = runBlocking {
         val source = serve("/ads.txt", "# Title: Ads\nads.example.com\n10.0.0.0/8\n")
 
-        assertTrue(lists.download(source).isSuccess)
+        assertTrue(lists.add(source).isSuccess)
 
         assertEquals(setOf(RuleSetKind.DOMAIN, RuleSetKind.IPCIDR), lists.installed(source.url)?.kinds)
         assertEquals(listOf("+.ads.example.com"), store.installedText(source.url, RuleSetKind.DOMAIN))
@@ -73,6 +73,18 @@ class RuleListDatabaseTest {
     }
 
     @Test
+    fun aRenamedSetKeepsItsNameAcrossUpdates() = runBlocking {
+        val source = serve("/ads.txt", "# Title: Ads\nads.example.com\n")
+        lists.add(source, name = "Mine")
+        lists.rename(source.url, "  Renamed ")
+        lists.download(source.url)
+
+        val state = lists.states.first().getValue(source.url)
+        assertEquals("Renamed", state.name)
+        assertEquals("Ads", state.title)
+    }
+
+    @Test
     fun aCountryListMustHoldAddresses() = runBlocking {
         val source = RuleListSource(serve("/ru.txt", "example.ru\n").url, RuleSetKind.IPCIDR)
 
@@ -83,7 +95,7 @@ class RuleListDatabaseTest {
     @Test
     fun aFailedUpdateKeepsTheWorkingVersion() = runBlocking {
         val source = serve("/ads.txt", "ads.example.com\n")
-        assertTrue(lists.download(source).isSuccess)
+        assertTrue(lists.add(source).isSuccess)
         store.failure = "corrupt"
 
         assertEquals(RuleListFailure.CORRUPT, failureOf(source))
@@ -93,7 +105,7 @@ class RuleListDatabaseTest {
         assertEquals(1L, state.entries)
         assertEquals(RuleListError(RuleListFailure.CORRUPT, null), state.error)
         store.failure = null
-        assertTrue(lists.download(source).isSuccess)
+        assertTrue(lists.add(source).isSuccess)
         assertNull(lists.states.first().getValue(source.url).error)
     }
 
@@ -101,19 +113,19 @@ class RuleListDatabaseTest {
     fun anMrsDownloadIsHandedOverUnparsed() = runBlocking {
         val source = serve("/ru.mrs", byteArrayOf(0x28, 0xB5.toByte(), 0x2F, 0xFD.toByte(), 0x01))
 
-        assertTrue(lists.download(RuleListSource(source.url, RuleSetKind.IPCIDR)).isSuccess)
+        assertTrue(lists.add(RuleListSource(source.url, RuleSetKind.IPCIDR)).isSuccess)
 
         assertEquals(listOf(RuleSetFormat.MRS), store.formats)
     }
 
     @Test
-    fun pruningForgetsListsNoRuleUses() = runBlocking {
+    fun aDeletedSetLeavesTheLibrary() = runBlocking {
         val kept = serve("/kept.txt", "kept.example.com\n")
         val dropped = serve("/dropped.txt", "dropped.example.com\n")
-        lists.download(kept)
-        lists.download(dropped)
+        lists.add(kept)
+        lists.add(dropped)
 
-        lists.prune(setOf(kept.url))
+        lists.delete(dropped.url)
 
         assertNotNull(lists.installed(kept.url))
         assertNull(lists.installed(dropped.url))
@@ -121,7 +133,7 @@ class RuleListDatabaseTest {
     }
 
     private suspend fun failureOf(source: RuleListSource): RuleListFailure? =
-        (lists.download(source).exceptionOrNull() as? RuleListException)?.failure
+        (lists.add(source).exceptionOrNull() as? RuleListException)?.failure
 
     private fun serve(path: String, body: String, type: String = "text/plain") = serve(path, body.toByteArray(), type)
 

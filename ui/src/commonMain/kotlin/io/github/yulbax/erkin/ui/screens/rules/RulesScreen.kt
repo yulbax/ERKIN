@@ -43,46 +43,30 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
-import io.github.yulbax.erkin.rulelist.RuleListError
-import io.github.yulbax.erkin.rulelist.RuleListException
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.GroupPlaceholder
 import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
-import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
-import java.net.URI
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
-fun Rules(viewModel: RulesViewModel = koinViewModel()) {
+fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
     val listStates by viewModel.listStates.collectAsStateWithLifecycle()
-    val showMessage = rememberShowMessage()
-    var listError by remember { mutableStateOf<RuleListError?>(null) }
-    val onListResult = { error: Throwable? ->
-        listError = (error as? RuleListException)?.let { RuleListError(it.failure, it.detail) }
-    }
-    listError?.let { error ->
-        val message = error.text()
-        LaunchedEffect(error) {
-            showMessage(message)
-            listError = null
-        }
-    }
     val stateOf = { rule: RoutingRuleEntity ->
-        rule.toRule()?.let(RuleLists::source)?.let { listStates[it.url] ?: RuleListState() }
+        rule.toRule()?.let(RuleLists::url)?.let { listStates[it] ?: RuleListState() }
     }
     var editing by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
@@ -206,7 +190,7 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                 editing = null
             },
             onSave = { match, raw, target ->
-                viewModel.save(existing, match, raw, target, onListResult)
+                viewModel.save(existing, match, raw, target)
                 adding = false
                 editing = null
             },
@@ -216,8 +200,12 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                     deleting = listOf(it)
                 }
             },
-            listState = { listStates[it] },
-            onUpdateList = { viewModel.download(it, onListResult) }
+            ruleSets = listStates,
+            onOpenRuleSets = {
+                adding = false
+                editing = null
+                onOpenRuleSets()
+            }
         )
     }
 
@@ -304,18 +292,13 @@ private fun RuleRow(
     }
 }
 
+@Composable
 private fun RoutingRuleEntity.displayValue(listState: RuleListState?): String {
     val match = RuleMatch.fromWire(type) ?: return value
     return when (match.ui.input) {
-        RuleInput.Country -> countryName(value)
         RuleInput.Text -> match.display(value)
-        RuleInput.Link -> listState?.title ?: linkName(value)
+        RuleInput.RuleSet -> ruleSetName(value, listState)
     }
-}
-
-private fun linkName(url: String): String {
-    val uri = runCatching { URI(url) }.getOrNull() ?: return url
-    return uri.path.orEmpty().substringAfterLast('/').ifEmpty { uri.host ?: url }
 }
 
 private const val HINT_KEY = "hint"
