@@ -9,6 +9,8 @@ import android.net.NetworkRequest
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.util.core
 import mihomocore.Mihomocore
 import java.io.File
 import java.net.Inet4Address
@@ -19,6 +21,7 @@ import java.util.TimeZone
 object MihomoRuntime {
     private const val DNS_PORT = 53
     private const val LEGACY_GEOIP = "geoip.metadb"
+    private const val LEGACY_CORE_LOG = "core.log"
 
     @Volatile private var ready = false
     @Volatile private var privateDnsHost: String? = null
@@ -26,20 +29,19 @@ object MihomoRuntime {
 
     fun workDir(context: Context): File = File(context.filesDir, "work")
 
-    fun logFile(context: Context): File = File(workDir(context), "core.log")
-
     fun systemDns(): SystemDns = privateDnsHost?.let { SystemDns.Tls(it) } ?: SystemDns.Local
 
     fun describeSystemDns(): String = "servers=[$systemDnsServers] privateDns=${privateDnsHost ?: "-"}"
 
     @Synchronized
-    fun ensureSetup(context: Context) {
+    fun ensureSetup(context: Context, log: AppLog) {
         if (ready) return
         val appContext = context.applicationContext
         runCatching { go.Seq.setContext(appContext) }
         val workDir = workDir(appContext).apply { mkdirs() }
         File(workDir, LEGACY_GEOIP).delete()
-        Mihomocore.setup(workDir.absolutePath, logFile(appContext).absolutePath, TimeZone.getDefault().id)
+        File(workDir, LEGACY_CORE_LOG).delete()
+        Mihomocore.setup(workDir.absolutePath, TimeZone.getDefault().id) { level, message -> log.core(level, message) }
         observeSystemDns(appContext)
         ready = true
     }

@@ -4,9 +4,10 @@ import android.content.Context
 import android.util.Log
 import org.koin.core.annotation.Single
 import java.io.File
+import kotlinx.coroutines.flow.StateFlow
 
 @Single(binds = [AppLog::class])
-class ErkinLog(context: Context) : AppLog {
+class ErkinLog(context: Context) : AppLog, LogFeed {
     private val file = FileAppLog(File(context.applicationContext.filesDir, "erkin.log")) { level, tag, text ->
         when (level) {
             LogLevel.INFO -> Log.i(tag, text)
@@ -20,6 +21,10 @@ class ErkinLog(context: Context) : AppLog {
     override fun w(tag: String, message: String, t: Throwable?) = file.w(tag, message, t)
 
     override fun e(tag: String, message: String, t: Throwable?) = file.e(tag, message, t)
+
+    override fun of(source: LogSource): AppLog = file.of(source)
+
+    override val entries: StateFlow<List<String>> get() = file.entries
 
     fun dump(): String = file.dump()
 

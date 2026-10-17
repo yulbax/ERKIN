@@ -43,6 +43,12 @@ type response struct {
 	Down    int64           `json:"down,omitempty"`
 	Kind    string          `json:"kind,omitempty"`
 	Count   int64           `json:"count,omitempty"`
+	Log     *logEvent       `json:"log,omitempty"`
+}
+
+type logEvent struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
 }
 
 const maxMessageSize = 16 << 20
@@ -55,6 +61,9 @@ type server struct {
 
 	ownerMutex sync.Mutex
 	owner      net.Conn
+
+	logMutex       sync.Mutex
+	logSubscribers map[net.Conn]func(response)
 }
 
 func listen(socketPath string, workDir string) (*server, error) {
@@ -94,8 +103,10 @@ func listen(socketPath string, workDir string) (*server, error) {
 		_ = protector.Close()
 		return nil, err
 	}
+	s := &server{workDir: workDir, listener: listener, protector: protector, logSubscribers: map[net.Conn]func(response){}}
+	mihomocore.SetLogSink(s)
 	mihomocore.Init(workDir, filepath.Join(workDir, coreLogName), "")
-	return &server{workDir: workDir, listener: listener, protector: protector}, nil
+	return s, nil
 }
 
 func (s *server) serve() error {
@@ -120,6 +131,7 @@ func (s *server) shutdown() {
 
 func (s *server) handle(conn net.Conn) {
 	defer s.release(conn)
+	defer s.unsubscribeLog(conn)
 	defer conn.Close()
 	var writeMutex sync.Mutex
 	reply := func(message response) {
@@ -137,6 +149,11 @@ func (s *server) handle(conn net.Conn) {
 		var message request
 		if err := json.Unmarshal(scanner.Bytes(), &message); err != nil {
 			reply(response{Error: "bad request: " + err.Error()})
+			continue
+		}
+		if message.Op == "logs" {
+			s.subscribeLog(conn, reply)
+			reply(response{ID: message.ID, OK: true})
 			continue
 		}
 		go func() { reply(s.dispatch(conn, message)) }()
@@ -200,6 +217,26 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 		result.Error = "unknown op: " + message.Op
 	}
 	return result
+}
+
+func (s *server) Write(level string, message string) {
+	s.logMutex.Lock()
+	defer s.logMutex.Unlock()
+	for _, reply := range s.logSubscribers {
+		reply(response{Log: &logEvent{Level: level, Message: message}})
+	}
+}
+
+func (s *server) subscribeLog(conn net.Conn, reply func(response)) {
+	s.logMutex.Lock()
+	defer s.logMutex.Unlock()
+	s.logSubscribers[conn] = reply
+}
+
+func (s *server) unsubscribeLog(conn net.Conn) {
+	s.logMutex.Lock()
+	defer s.logMutex.Unlock()
+	delete(s.logSubscribers, conn)
 }
 
 func (s *server) claim(conn net.Conn) {

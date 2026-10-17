@@ -34,7 +34,21 @@ type Traffic struct {
 	Down int64
 }
 
-var logOnce sync.Once
+type LogSink interface {
+	Write(level string, message string)
+}
+
+var (
+	logOnce   sync.Once
+	sinkMutex sync.RWMutex
+	logSink   LogSink
+)
+
+func SetLogSink(sink LogSink) {
+	sinkMutex.Lock()
+	defer sinkMutex.Unlock()
+	logSink = sink
+}
 
 func Init(homeDir string, logPath string, timezone string) {
 	if timezone != "" {
@@ -241,20 +255,33 @@ func measure(proxy C.Proxy, url string, timeoutMs int32) int32 {
 }
 
 func writeLog(path string) {
-	if path == "" {
-		return
-	}
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, logFileMode)
-	if err != nil {
-		return
-	}
-	_ = file.Chmod(logFileMode)
+	file := openLogFile(path)
 	for event := range log.Subscribe() {
 		if event.LogLevel < log.Level() {
 			continue
 		}
-		_, _ = file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " " + event.LogLevel.String() + " " + event.Payload + "\n")
+		if file != nil {
+			_, _ = file.WriteString(time.Now().Format("2006-01-02 15:04:05.000") + " " + event.LogLevel.String() + " " + event.Payload + "\n")
+		}
+		sinkMutex.RLock()
+		sink := logSink
+		sinkMutex.RUnlock()
+		if sink != nil {
+			sink.Write(event.LogLevel.String(), event.Payload)
+		}
 	}
+}
+
+func openLogFile(path string) *os.File {
+	if path == "" {
+		return nil
+	}
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, logFileMode)
+	if err != nil {
+		return nil
+	}
+	_ = file.Chmod(logFileMode)
+	return file
 }
 
 func closeConnections() {

@@ -105,6 +105,6 @@ class AppModule {
     fun updateDownloader(): UpdateDownloader = UpdateDownloader()
 
     @Single
-    fun serverLatencyProbe(context: Context, store: VpnSessionStore): ServerLatencyProbe =
-        ServerLatencyProbe(store, MihomoLatencyTester(context.applicationContext))
+    fun serverLatencyProbe(context: Context, store: VpnSessionStore, log: AppLog): ServerLatencyProbe =
+        ServerLatencyProbe(store, MihomoLatencyTester(context.applicationContext, log))
 }

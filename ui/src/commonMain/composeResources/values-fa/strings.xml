@@ -9,7 +9,6 @@
     <string name="logs_title">گزارش‌ها</string>
     <string name="license_title">مجوز</string>
     <string name="about_title">درباره</string>
-    <string name="logs_refresh">بازخوانی</string>
     <string name="logs_empty">هنوز گزارشی نیست.</string>
     <string name="license_intro">ERKIN نرم‌افزار آزاد است و تحت مجوز GNU General Public License v3.0 منتشر می‌شود. متن کامل مجوز در ادامه آمده است.</string>
     <string name="license_app_title">ERKIN — GNU GPL-3.0</string>

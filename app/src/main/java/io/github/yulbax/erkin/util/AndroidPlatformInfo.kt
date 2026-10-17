@@ -4,8 +4,6 @@ import android.content.Context
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.engine.BYEDPI_VERSION
 import io.github.yulbax.erkin.vpn.ErkinVpnService
-import io.github.yulbax.erkin.vpn.mihomo.MihomoRuntime
-import java.io.RandomAccessFile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mihomocore.Mihomocore
@@ -23,12 +21,12 @@ class AndroidDiagnosticsSource(
     private val versionInfo: VersionInfo,
     private val profiles: ProfileRepository
 ) : DiagnosticsSource {
+    override val feed: LogFeed get() = erkinLog
+
     override suspend fun collect(): String = Diagnostics.collect(context, erkinLog, versionInfo, profiles)
 
     override suspend fun clear() = withContext(Dispatchers.IO) {
         erkinLog.clear()
-        runCatching { RandomAccessFile(MihomoRuntime.logFile(context), "rw").use { it.setLength(0) } }
-        Unit
     }
 }
 

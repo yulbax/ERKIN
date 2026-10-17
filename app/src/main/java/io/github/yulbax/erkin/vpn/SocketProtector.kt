@@ -5,13 +5,13 @@ import android.net.LocalSocket
 import android.net.LocalSocketAddress
 import android.os.Process
 import android.os.ParcelFileDescriptor
-import io.github.yulbax.erkin.util.ErkinLog
+import io.github.yulbax.erkin.util.AppLog
 import java.io.FileDescriptor
 import kotlin.concurrent.thread
 
 class SocketProtector(
     val name: String,
-    private val log: ErkinLog,
+    private val log: AppLog,
     private val protect: (Int) -> Boolean
 ) {
     private var serverSocket: LocalServerSocket? = null

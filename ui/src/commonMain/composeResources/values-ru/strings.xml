@@ -9,7 +9,6 @@
     <string name="logs_title">Логи</string>
     <string name="license_title">Лицензия</string>
     <string name="about_title">О приложении</string>
-    <string name="logs_refresh">Обновить</string>
     <string name="logs_empty">Логов пока нет.</string>
     <string name="license_intro">ERKIN — свободное программное обеспечение под лицензией GNU General Public License v3.0. Полный текст лицензии приведён ниже.</string>
     <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
