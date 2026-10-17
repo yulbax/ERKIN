@@ -105,6 +105,24 @@ func Start(content string, tunFd int32, mtu int32, gateway string, dnsHijack str
 	return nil
 }
 
+var errNotStarted = errors.New("mihomo is not started")
+
+func Reload(content string, resolvedProxy string, resolverAddress string) error {
+	access.Lock()
+	defer access.Unlock()
+	if current.Load() == nil {
+		return errNotStarted
+	}
+	if err := Validate(content, false); err != nil {
+		return err
+	}
+	if err := Apply(content, false, resolvedProxy, resolverAddress); err != nil {
+		return err
+	}
+	closeConnections()
+	return nil
+}
+
 func Stop() {
 	access.Lock()
 	defer access.Unlock()

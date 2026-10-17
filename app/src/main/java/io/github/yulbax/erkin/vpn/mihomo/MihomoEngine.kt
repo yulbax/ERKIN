@@ -32,6 +32,7 @@ class MihomoEngine(
     override val probePassword: String = randomToken()
 
     @Volatile private var activeProxyTag: String = ""
+    private var tunConfig: TunConfig? = null
     private var traffic: ScheduledExecutorService? = null
     private val logFile = MihomoRuntime.logFile(appContext)
 
@@ -57,13 +58,28 @@ class MihomoEngine(
 
     @Synchronized
     override fun reloadRouting(config: EngineConfig) {
-        launch(config)
+        val tun = tunConfigOf(config)
+        val current = tunConfig
+        if (tun == current) {
+            reload(config)
+            return
+        }
+        val fd = try {
+            tunPlatform.openTun(tun)
+        } catch (error: Exception) {
+            if (current == null) throw error
+            log.w(TAG, "could not recreate the tun; keeping the current one", error)
+            reload(config)
+            return
+        }
+        startCore(config, tun, fd)
     }
 
     @Synchronized
     override fun stop() {
         traffic?.shutdownNow()
         traffic = null
+        tunConfig = null
         runCatching { Mihomocore.stop() }.onFailure { log.w(TAG, "mihomo stop failed", it) }
     }
 
@@ -75,20 +91,33 @@ class MihomoEngine(
     }
 
     private fun launch(config: EngineConfig) {
+        val tun = tunConfigOf(config)
+        startCore(config, tun, tunPlatform.openTun(tun))
+    }
+
+    private fun reload(config: EngineConfig) {
+        activeProxyTag = config.activeProxyTag
+        log.i(TAG, "reloading the core on the current tun")
+        Mihomocore.reload(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.dnsRemote)
+    }
+
+    private fun tunConfigOf(config: EngineConfig): TunConfig {
+        val ipv6 = config.network.ipv6Mode.ipv6Enabled
+        return TunConfig(
+            mtu = config.network.mtu,
+            inet4 = listOf(TunAddress(TUN_INET4, TUN_INET4_PREFIX)),
+            inet6 = if (ipv6) listOf(TunAddress(TUN_INET6, TUN_INET6_PREFIX)) else emptyList(),
+            autoRoute = true,
+            dnsServers = listOf(TUN_DNS),
+            includePackages = config.tunneledPackages.sorted(),
+            excludePackages = emptyList()
+        )
+    }
+
+    private fun startCore(config: EngineConfig, tun: TunConfig, fd: Int) {
         activeProxyTag = config.activeProxyTag
         log.i(TAG, "system dns: ${MihomoRuntime.describeSystemDns()}")
-        val ipv6 = config.network.ipv6Mode.ipv6Enabled
-        val fd = tunPlatform.openTun(
-            TunConfig(
-                mtu = config.network.mtu,
-                inet4 = listOf(TunAddress(TUN_INET4, TUN_INET4_PREFIX)),
-                inet6 = if (ipv6) listOf(TunAddress(TUN_INET6, TUN_INET6_PREFIX)) else emptyList(),
-                autoRoute = true,
-                dnsServers = listOf(TUN_DNS),
-                includePackages = config.tunneledPackages,
-                excludePackages = emptyList()
-            )
-        )
+        val ipv6 = tun.inet6.isNotEmpty()
         val gateway = buildList {
             add("$TUN_INET4/$TUN_INET4_PREFIX")
             if (ipv6) add("$TUN_INET6/$TUN_INET6_PREFIX")
@@ -103,6 +132,7 @@ class MihomoEngine(
             config.network.dnsRemote,
             platform
         )
+        tunConfig = tun
     }
 
     private fun buildConfig(config: EngineConfig): String = MihomoConfigBuilder.build(
