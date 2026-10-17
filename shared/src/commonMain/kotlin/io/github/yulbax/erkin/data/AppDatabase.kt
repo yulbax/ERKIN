@@ -16,12 +16,15 @@ import io.github.yulbax.erkin.data.rules.RoutingRuleDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RuleListDao
 import io.github.yulbax.erkin.data.rules.RuleListEntity
+import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -103,6 +106,27 @@ abstract class AppDatabase : RoomDatabase() {
                         "CREATE TABLE IF NOT EXISTS `rule_lists` (`source` TEXT NOT NULL, `title` TEXT, " +
                             "`entries` INTEGER NOT NULL, `failure` TEXT, `failureDetail` TEXT, PRIMARY KEY(`source`))"
                     )
+                }
+            },
+            object : Migration(12, 13) {
+                override fun migrate(connection: SQLiteConnection) {
+                    val ruleSet = RuleMatch.RULE_SET.wire
+                    val countryUrl = "'${RuleLists.COUNTRY_URL_PREFIX}' || lower(value) || '${RuleLists.COUNTRY_URL_SUFFIX}'"
+                    val country = RoutingRuleEntity.LEGACY_COUNTRY
+                    val list = RoutingRuleEntity.LEGACY_LIST
+                    connection.execSQL("ALTER TABLE rule_lists ADD COLUMN name TEXT")
+                    connection.execSQL("ALTER TABLE rule_lists ADD COLUMN kind TEXT")
+                    connection.execSQL(
+                        "INSERT OR IGNORE INTO rule_lists (source, entries) " +
+                            "SELECT $countryUrl, 0 FROM routing_rules WHERE type = '$country'"
+                    )
+                    connection.execSQL("INSERT OR IGNORE INTO rule_lists (source, entries) SELECT value, 0 FROM routing_rules WHERE type = '$list'")
+                    connection.execSQL(
+                        "UPDATE rule_lists SET kind = '${RuleSetKind.IPCIDR.behavior}' " +
+                            "WHERE source LIKE '${RuleLists.COUNTRY_URL_PREFIX}%'"
+                    )
+                    connection.execSQL("UPDATE routing_rules SET type = '$ruleSet', value = $countryUrl WHERE type = '$country'")
+                    connection.execSQL("UPDATE routing_rules SET type = '$ruleSet' WHERE type = '$list'")
                 }
             }
         )

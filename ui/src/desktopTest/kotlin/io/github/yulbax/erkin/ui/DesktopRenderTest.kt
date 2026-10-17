@@ -1,5 +1,19 @@
 package io.github.yulbax.erkin.ui
 
+import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
+import io.github.yulbax.erkin.data.rules.RuleListEntity
+import io.github.yulbax.erkin.rulelist.InstalledSet
+import io.github.yulbax.erkin.rulelist.RuleListDatabase
+import io.github.yulbax.erkin.rulelist.RuleListFailure
+import io.github.yulbax.erkin.rulelist.RuleListStore
+import io.github.yulbax.erkin.ui.screens.rules.RuleSets
+import io.github.yulbax.erkin.ui.screens.rules.Rules
+import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleSetFormat
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
+import io.github.yulbax.erkin.vpn.core.RuleTarget
+import java.nio.file.Files
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
@@ -115,6 +129,8 @@ class DesktopRenderTest {
                     single { UpdateChecker(get()) { null } }
                     single { UpdateDownloader() }
                     single<UpdatePlatform> { NoUpdatePlatform }
+                    single { RoutingRuleRepository(get()) }
+                    single { RuleListDatabase(ruleLists, database.ruleListDao()) }
                 },
                 uiModule
             )
@@ -122,6 +138,18 @@ class DesktopRenderTest {
         runBlocking {
             get<ProfileRepository>().add("vless://id@example.com:443?security=tls#Amsterdam")
             get<ProfileRepository>().add("trojan://pass@example.org:443#Frankfurt")
+            val ads = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/multi-onlydomains.txt"
+            val custom = "https://example.com/lists/blocked.txt"
+            database.ruleListDao().upsert(RuleListEntity(ads, title = "HaGeZi's Multi NORMAL", entries = 164947))
+            database.ruleListDao().upsert(RuleListEntity(custom, failure = RuleListFailure.NOT_A_LIST.wire))
+            database.ruleListDao().upsert(RuleListEntity(RuleLists.country("RU").url, entries = 25194, kind = RuleSetKind.IPCIDR.behavior))
+            File(ruleLists.dir, RuleLists.fileName(ads, RuleSetKind.DOMAIN)).writeText("")
+            File(ruleLists.dir, RuleLists.fileName(RuleLists.country("RU").url, RuleSetKind.IPCIDR)).writeText("")
+            val rules = get<RoutingRuleRepository>()
+            rules.add(RuleMatch.RULE_SET, ads, RuleTarget.BLOCK)
+            rules.add(RuleMatch.RULE_SET, RuleLists.country("RU").url, RuleTarget.DIRECT)
+            rules.add(RuleMatch.RULE_SET, custom, RuleTarget.VPN)
+            rules.add(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.BYEDPI)
         }
     }
 
@@ -129,6 +157,7 @@ class DesktopRenderTest {
     fun tearDown() {
         stopKoin()
         database.close()
+        ruleLists.dir.deleteRecursively()
     }
 
     @Test
@@ -138,6 +167,8 @@ class DesktopRenderTest {
         render("apps", width = 420, height = 860) { Apps(query = "") }
         render("settings", width = 420, height = 1400) { Settings() }
         render("logs", width = 420, height = 600) { Logs() }
+        render("rules", width = 420, height = 860) { Rules(onOpenRuleSets = {}) }
+        render("rule-sets", width = 420, height = 1900) { RuleSets() }
         render("about", width = 420, height = 600) { About() }
         render("license", width = 420, height = 600) { License() }
     }
@@ -189,6 +220,17 @@ class DesktopRenderTest {
         private val registry = LifecycleRegistry.createUnsafe(this).apply { currentState = Lifecycle.State.RESUMED }
         override val lifecycle: Lifecycle get() = registry
         override val viewModelStore = ViewModelStore()
+    }
+
+    private val ruleLists = TestRuleLists()
+
+    private class TestRuleLists : RuleListStore {
+        val dir: File = Files.createTempDirectory("rule-lists").toFile()
+        override fun installed(fileName: String): File = File(dir, fileName)
+        override fun stagingDir(): File = dir
+        override suspend fun install(key: String, source: File, format: RuleSetFormat, kind: RuleSetKind?) =
+            InstalledSet(kind ?: RuleSetKind.DOMAIN, 0)
+        override suspend fun remove(fileName: String) = Unit
     }
 
     private object SilentLog : AppLog {

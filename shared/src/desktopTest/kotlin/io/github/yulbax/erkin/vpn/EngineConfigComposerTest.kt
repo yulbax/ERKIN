@@ -64,13 +64,13 @@ class EngineConfigComposerTest {
     }
 
     @Test
-    fun countryRulesWaitForTheirCountryList() {
+    fun ruleSetRulesWaitForTheirFiles() {
         val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
-        val country = RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
+        val country = RoutingRule(RuleMatch.RULE_SET, RuleLists.country("RU").url, RuleTarget.DIRECT)
         val domain = RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT)
         val inputs = inputs(apps).copy(rules = listOf(country, domain))
 
-        val countryUrl = RuleLists.source(country)!!.url
+        val countryUrl = country.value
         val missing = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT)
         val ready = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT) { url ->
             InstalledRuleList(setOf(RuleSetKind.IPCIDR), 1).takeIf { url == countryUrl }
@@ -85,7 +85,7 @@ class EngineConfigComposerTest {
     @Test
     fun listRulesWaitForTheirFilesAndReloadWhenUpdated() {
         val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
-        val list = RoutingRule(RuleMatch.LIST, "https://example.com/ads.txt", RuleTarget.BLOCK)
+        val list = RoutingRule(RuleMatch.RULE_SET, "https://example.com/ads.txt", RuleTarget.BLOCK)
         val inputs = inputs(apps).copy(rules = listOf(list))
         fun installed(at: Long) = InstalledRuleList(setOf(RuleSetKind.DOMAIN), at)
 

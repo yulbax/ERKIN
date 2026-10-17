@@ -6,6 +6,9 @@ import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
+import io.github.yulbax.erkin.data.rules.RuleListEntity
+import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.proxy.LinkParser
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -141,6 +144,10 @@ class ConfigBackupRepository(
                 continue
             }
             dao.append(rule.copy(id = 0))
+            rule.toRule()?.let(RuleLists::url)?.let { url ->
+                val kind = RuleLists.countryOf(url)?.let { RuleSetKind.IPCIDR.behavior }
+                database.ruleListDao().insertIfAbsent(RuleListEntity(source = url, kind = kind))
+            }
             added++
         }
         return SectionResult(added, skipped)

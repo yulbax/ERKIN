@@ -30,6 +30,10 @@ class RoutingRuleRepository(database: AppDatabase) {
         dao.deleteMany(rules)
     }
 
+    suspend fun deleteUsing(url: String) {
+        dao.deleteMatching(RuleMatch.RULE_SET.wire, url)
+    }
+
     suspend fun reorder(ids: List<Long>) {
         dao.reorder(ids)
     }

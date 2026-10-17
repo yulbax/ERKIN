@@ -9,5 +9,7 @@ data class RuleListEntity(
     val title: String? = null,
     val entries: Long = 0,
     val failure: String? = null,
-    val failureDetail: String? = null
+    val failureDetail: String? = null,
+    val name: String? = null,
+    val kind: String? = null
 )

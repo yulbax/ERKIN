@@ -38,6 +38,7 @@ data class InstalledSet(val kind: RuleSetKind, val count: Long)
 data class InstalledRuleList(val kinds: Set<RuleSetKind>, val updatedAt: Long)
 
 data class RuleListState(
+    val name: String? = null,
     val installed: InstalledRuleList? = null,
     val title: String? = null,
     val entries: Long = 0,
@@ -56,6 +57,7 @@ class RuleListDatabase(private val store: RuleListStore, private val dao: RuleLi
             (byUrl.keys + active).associateWith { url ->
                 val record = byUrl[url]
                 RuleListState(
+                    name = record?.name,
                     installed = installed(url),
                     title = record?.title,
                     entries = record?.entries ?: 0,
@@ -73,11 +75,22 @@ class RuleListDatabase(private val store: RuleListStore, private val dao: RuleLi
         return InstalledRuleList(kinds = files.mapTo(HashSet()) { it.first }, updatedAt = files.maxOf { it.second.lastModified() })
     }
 
-    suspend fun download(source: RuleListSource): Result<Unit> {
-        val url = source.url
+    suspend fun add(source: RuleListSource, name: String? = null): Result<Unit> {
+        withContext(Dispatchers.IO) {
+            dao.insertIfAbsent(RuleListEntity(source = source.url, name = name, kind = source.kind?.behavior))
+        }
+        return download(source.url)
+    }
+
+    suspend fun download(url: String): Result<Unit> {
         downloading.update { it + url }
         return try {
-            mutex.withLock { withContext(Dispatchers.IO) { install(source) } }
+            mutex.withLock {
+                withContext(Dispatchers.IO) {
+                    val kind = RuleSetKind.fromBehavior(dao.get(url)?.kind)
+                    install(RuleListSource(url, kind))
+                }
+            }
             Result.success(Unit)
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -94,12 +107,14 @@ class RuleListDatabase(private val store: RuleListStore, private val dao: RuleLi
         }
     }
 
-    suspend fun prune(keep: Set<String>) = mutex.withLock {
+    suspend fun rename(url: String, name: String?) = withContext(Dispatchers.IO) {
+        dao.rename(url, name?.trim()?.takeIf { it.isNotEmpty() })
+    }
+
+    suspend fun delete(url: String) = mutex.withLock {
         withContext(Dispatchers.IO) {
-            dao.getAll().map { it.source }.filterNot { it in keep }.forEach { url ->
-                RuleSetKind.entries.forEach { runCatching { store.remove(RuleLists.fileName(url, it)) } }
-                dao.delete(url)
-            }
+            RuleSetKind.entries.forEach { runCatching { store.remove(RuleLists.fileName(url, it)) } }
+            dao.delete(url)
             revision.update { it + 1 }
         }
     }
@@ -134,7 +149,8 @@ class RuleListDatabase(private val store: RuleListStore, private val dao: RuleLi
             }
             val kinds = sets.mapTo(HashSet()) { it.kind }
             RuleSetKind.entries.filterNot { it in kinds }.forEach { store.remove(RuleLists.fileName(url, it)) }
-            dao.upsert(RuleListEntity(source = url, title = title, entries = sets.sumOf { it.count }))
+            val record = dao.get(url) ?: RuleListEntity(url)
+            dao.upsert(record.copy(title = title, entries = sets.sumOf { it.count }, failure = null, failureDetail = null))
         } finally {
             staged.forEach(File::delete)
         }

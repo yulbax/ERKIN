@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -55,7 +57,8 @@ fun MainScreen(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val currentScreen = navPages.firstOrNull { it.route == currentRoute } ?: Screen.Main
+    val currentScreen = (navPages + subPages).firstOrNull { it.route == currentRoute } ?: Screen.Main
+    val onSubPage = currentScreen in subPages
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -123,14 +126,33 @@ fun MainScreen(
                             }
                         },
                         navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Menu,
-                                    contentDescription = stringResource(Res.string.open_menu_cd)
-                                )
+                            if (onSubPage) {
+                                IconButton(onClick = { navController.popBackStack() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(Res.string.back)
+                                    )
+                                }
+                            } else {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Menu,
+                                        contentDescription = stringResource(Res.string.open_menu_cd)
+                                    )
+                                }
                             }
                         },
-                        actions = topBarActions
+                        actions = {
+                            if (currentScreen == Screen.Rules) {
+                                IconButton(onClick = { navController.navigate(Screen.RuleSets.route) }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Download,
+                                        contentDescription = stringResource(Res.string.rule_sets_title)
+                                    )
+                                }
+                            }
+                            topBarActions()
+                        }
                     )
                 }
             }

@@ -59,9 +59,9 @@ object EngineConfigComposer {
         check(!routed.isEmpty) {
             if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN or ByeDPI"
         }
-        val lists = inputs.rules.mapNotNull { RuleLists.source(it)?.url }.distinct()
+        val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
-        val rules = inputs.rules.filter { rule -> RuleLists.source(rule)?.let { it.url in lists } ?: true }
+        val rules = inputs.rules.filter { rule -> RuleLists.url(rule)?.let { it in lists } ?: true }
         val proxies = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
 
         return AppliedConfig(

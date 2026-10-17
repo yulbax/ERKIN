@@ -1,6 +1,8 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,15 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -48,8 +47,6 @@ import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.vpn.core.RuleListSource
-import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import java.text.DateFormat
@@ -136,11 +133,12 @@ private fun RuleMatchGroup(
 @Composable
 internal fun RuleDialog(
     initial: RoutingRuleEntity?,
+    ruleSets: Map<String, RuleListState>,
     onDismiss: () -> Unit,
     onSave: (RuleMatch, String, RuleTarget) -> Unit,
     onDelete: (() -> Unit)?,
-    listState: (String) -> RuleListState?,
-    onUpdateList: (RuleListSource) -> Unit
+    onOpenRuleSets: () -> Unit,
+    isNew: Boolean = initial == null
 ) {
     val initialMatch = initial?.let { RuleMatch.fromWire(it.type) } ?: RuleMatch.DOMAIN_SUFFIX
     var match by remember { mutableStateOf(initialMatch) }
@@ -148,14 +146,12 @@ internal fun RuleDialog(
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
     val normalized = match.normalize(text)
     val invalid = text.isNotBlank() && normalized == null
-    val source = normalized?.let { RuleLists.source(match, it) }
-    val state = source?.let { listState(it.url) }
     val groupColors = ToggleButtonDefaults.toggleButtonColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
     )
 
     AppDialog(
-        title = stringResource(if (initial == null) Res.string.new_rule else Res.string.edit_rule),
+        title = stringResource(if (isNew) Res.string.new_rule else Res.string.edit_rule),
         onDismiss = onDismiss,
         buttons = {
             if (onDelete != null) {
@@ -188,46 +184,42 @@ internal fun RuleDialog(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 12.dp)
         )
-        GroupCard(
-            itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            items = listOf {
-                if (match.ui.input == RuleInput.Country) {
-                    CountryPicker(code = text, onSelect = { text = it }, modifier = Modifier.fillMaxWidth())
-                } else {
-                    TextField(
-                        value = text,
-                        onValueChange = { text = it },
-                        label = { Text(stringResource(Res.string.rule_value)) },
-                        placeholder = { Text(match.example()) },
-                        singleLine = true,
-                        isError = invalid,
-                        colors = transparentFieldColors(),
-                        modifier = Modifier.fillMaxWidth()
+        when (match.ui.input) {
+            RuleInput.RuleSet -> RuleSetChoice(
+                ruleSets = ruleSets,
+                selected = text,
+                onSelect = { text = it },
+                onOpenRuleSets = onOpenRuleSets
+            )
+            RuleInput.Text -> {
+                GroupCard(
+                    itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    items = listOf {
+                        TextField(
+                            value = text,
+                            onValueChange = { text = it },
+                            label = { Text(stringResource(Res.string.rule_value)) },
+                            placeholder = { Text(match.example()) },
+                            singleLine = true,
+                            isError = invalid,
+                            colors = transparentFieldColors(),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                )
+                val hint = when {
+                    invalid -> stringResource(Res.string.rule_invalid)
+                    normalized != null && normalized != text.trim() -> stringResource(Res.string.rule_saved_as, normalized)
+                    else -> null
+                }
+                if (hint != null) {
+                    Text(
+                        text = hint,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (invalid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, top = 6.dp)
                     )
                 }
-            }
-        )
-        val hint = when {
-            match.ui.input == RuleInput.Country -> null
-            invalid -> stringResource(Res.string.rule_invalid)
-            source == null && normalized != null && normalized != text.trim() -> stringResource(Res.string.rule_saved_as, normalized)
-            else -> null
-        }
-        if (hint != null) {
-            Text(
-                text = hint,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (invalid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, top = 6.dp)
-            )
-        }
-        if (source != null && state != null) {
-            RuleListStateRow(state = state, onUpdate = { onUpdateList(source) })
-        }
-        if (match.ui.input == RuleInput.Link && text.isBlank()) {
-            SectionLabel(stringResource(Res.string.rule_list_presets))
-            RuleListPreset.entries.forEach { preset ->
-                SuggestionChip(onClick = { text = preset.url }, label = { Text(stringResource(preset.label)) })
             }
         }
         SectionLabel(stringResource(Res.string.rule_target))
@@ -239,6 +231,53 @@ internal fun RuleDialog(
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+@Composable
+private fun RuleSetChoice(
+    ruleSets: Map<String, RuleListState>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    onOpenRuleSets: () -> Unit
+) {
+    if (ruleSets.isEmpty()) {
+        Text(
+            text = stringResource(Res.string.rule_sets_none),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        TextButton(onClick = onOpenRuleSets) { Text(stringResource(Res.string.rule_sets_open)) }
+        return
+    }
+    val options = ruleSets.map { (url, state) -> Triple(url, ruleSetName(url, state), state) }.sortedBy { it.second.lowercase() }
+    GroupCard(
+        itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        items = options.map<Triple<String, String, RuleListState>, @Composable () -> Unit> { (url, name, state) ->
+            {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(url) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(selected = url == selected, onClick = null)
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            text = state.text(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = state.textColor(),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable
@@ -264,28 +303,6 @@ internal fun RuleTargetIcon(target: RuleTarget, modifier: Modifier = Modifier) {
     when (val channel = target.channel) {
         null -> Icon(Icons.Default.Block, contentDescription = target.label(), modifier = modifier)
         else -> ConnectionTypeIcon(channel, modifier)
-    }
-}
-
-@Composable
-private fun RuleListStateRow(state: RuleListState, onUpdate: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = state.text(),
-            style = MaterialTheme.typography.bodySmall,
-            color = state.textColor(),
-            modifier = Modifier.weight(1f)
-        )
-        if (state.downloading) {
-            CircularProgressIndicator(modifier = Modifier.padding(12.dp).size(20.dp), strokeWidth = 2.dp)
-        } else {
-            IconButton(onClick = onUpdate) {
-                Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.rule_list_update))
-            }
-        }
     }
 }
 

@@ -1,6 +1,8 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
+import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleMatch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,7 +56,9 @@ class BackupFormatHistoryTest {
         val backup = read(6)
         val chain = requireNotNull(backup.profiles).single { it.type == "chain" }
         assertTrue(chain.selected)
-        assertEquals("RU", requireNotNull(backup.rules).single().value)
+        val rule = requireNotNull(backup.rules).single()
+        assertEquals(RuleMatch.RULE_SET.wire, rule.type)
+        assertEquals(RuleLists.country("RU").url, rule.value)
     }
 
     @Test
