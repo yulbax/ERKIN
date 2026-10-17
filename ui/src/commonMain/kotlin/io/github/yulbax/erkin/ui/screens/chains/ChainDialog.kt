@@ -59,7 +59,12 @@ internal fun ChainDialog(
     val chain = exitId?.let { ProxyChain(hops, it) }
     val valid = chain != null && chain.isValid && chain.serverIds.all { id -> servers.any { it.id == id } }
     val unused = servers.firstOrNull { server -> chain?.uses(server.id) != true }
-    val serverHops = servers.map { ChainEntry.Server(it.id) }
+    fun hopServers(except: Int? = null): Set<Long> =
+        hops.filterIndexed { i, _ -> i != except }.mapNotNullTo(HashSet()) { (it as? ChainEntry.Server)?.profileId }
+    fun hopOptions(index: Int): List<ChainEntry> {
+        val taken = hopServers(except = index) + listOfNotNull(exitId)
+        return servers.filter { it.id !in taken }.map { ChainEntry.Server(it.id) }
+    }
 
     AppDialog(
         title = stringResource(if (initial == null) Res.string.new_chain else Res.string.edit_chain),
@@ -98,7 +103,7 @@ internal fun ChainDialog(
                             Box(modifier = Modifier.weight(1f)) {
                                 DropdownSetting(
                                     label = stringResource(if (index == 0) Res.string.chain_entry else Res.string.chain_via),
-                                    options = if (index == 0) listOf<ChainEntry>(ChainEntry.ByeDpi) + serverHops else serverHops,
+                                    options = if (index == 0) listOf<ChainEntry>(ChainEntry.ByeDpi) + hopOptions(index) else hopOptions(index),
                                     selected = hop,
                                     optionLabel = ::hopLabel,
                                     onSelect = { selected -> hops = hops.toMutableList().also { it[index] = selected } }
@@ -115,7 +120,7 @@ internal fun ChainDialog(
                 add {
                     DropdownSetting(
                         label = stringResource(Res.string.chain_exit),
-                        options = servers.map { it.id },
+                        options = servers.map { it.id }.filterNot { it in hopServers() },
                         selected = exitId ?: -1L,
                         optionLabel = ::serverName,
                         onSelect = { exitId = it }
