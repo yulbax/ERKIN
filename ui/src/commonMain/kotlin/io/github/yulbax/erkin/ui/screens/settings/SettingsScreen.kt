@@ -58,7 +58,6 @@ fun Settings(
         ByeDpiSection(ui, viewModel)
         AutostartSection(ui, viewModel)
         NetworkSection(ui, viewModel)
-        GeoIpSection(viewModel)
         BackupSection(viewModel)
     }
 }

@@ -22,8 +22,6 @@ import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
-import io.github.yulbax.erkin.geoip.GeoIpDatabase
-import io.github.yulbax.erkin.geoip.GeoIpStore
 import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.di.uiModule
@@ -103,7 +101,6 @@ class DesktopRenderTest {
                     single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _ -> "{}" } }
                     single { VpnStateRepository() }
                     single { VpnCommandBus() }
-                    single { GeoIpDatabase(NoGeoIp) }
                     single<VpnLauncher> { VpnLauncher { } }
                     single<ByeDpiSiteProbe> { NoSiteProbe }
                     single<AppLog> { SilentLog }
@@ -225,11 +222,5 @@ class DesktopRenderTest {
         override val isLoading: StateFlow<Boolean> = MutableStateFlow(false)
         override val error: StateFlow<String?> = MutableStateFlow(null)
         override fun retry() = Unit
-    }
-
-    private object NoGeoIp : GeoIpStore {
-        override fun installedAt(): Long? = null
-        override fun stagingFile(): File = File.createTempFile("geoip", ".download")
-        override suspend fun install(downloaded: File) = Unit
     }
 }

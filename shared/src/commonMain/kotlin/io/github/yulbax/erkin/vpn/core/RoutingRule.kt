@@ -5,17 +5,12 @@ import java.net.InetAddress
 import java.net.URI
 import java.util.Locale
 
-enum class RuleMatch(
-    val wire: String,
-    val mihomo: String,
-    val format: RuleValueFormat,
-    val requiresGeoIp: Boolean = false
-) {
+enum class RuleMatch(val wire: String, val mihomo: String, val format: RuleValueFormat) {
     DOMAIN_SUFFIX("suffix", "DOMAIN-SUFFIX", RuleValues.Domain),
     DOMAIN("domain", "DOMAIN", RuleValues.Domain),
     DOMAIN_KEYWORD("keyword", "DOMAIN-KEYWORD", RuleValues.Keyword),
     IP_CIDR("ip_cidr", "IP-CIDR", RuleValues.Cidr),
-    COUNTRY("country", "GEOIP", RuleValues.Country, requiresGeoIp = true),
+    COUNTRY("country", "RULE-SET", RuleValues.Country),
     LIST("list", "RULE-SET", RuleValues.Link);
 
     fun normalize(raw: String): String? = format.normalize(raw)

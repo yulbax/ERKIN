@@ -5,48 +5,41 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+
+	"github.com/yulbax/erkin/mihomocore"
 )
 
 const (
-	ruleListDir      = "lists"
-	ruleListMaxBytes = 64 << 20
+	ruleListDir     = "lists"
+	legacyGeoIPName = "geoip.metadb"
 )
 
-var ruleListName = regexp.MustCompile(`^[0-9a-f]{16}\.(domain|ipcidr)\.txt$`)
+var (
+	ruleListKey      = regexp.MustCompile(`^[0-9a-f]{16}$`)
+	ruleListFileName = regexp.MustCompile(`^[0-9a-f]{16}\.(domain|ipcidr)\.mrs$`)
+)
 
-func importRuleList(workDir string, name string, source string) error {
-	if !ruleListName.MatchString(name) {
-		return errors.New("bad rule list name")
-	}
-	dir := filepath.Join(workDir, ruleListDir)
-	target := filepath.Join(dir, name)
-	if source == "" {
-		if err := os.Remove(target); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		return nil
+func importRuleList(workDir string, key string, source string, format string, behavior string) (*mihomocore.RuleSet, error) {
+	if !ruleListKey.MatchString(key) {
+		return nil, errors.New("bad rule list key")
 	}
 	if !filepath.IsAbs(source) {
-		return errors.New("rule list path must be absolute")
+		return nil, errors.New("rule list path must be absolute")
 	}
-	info, err := os.Stat(source)
-	if err != nil {
-		return err
+	return mihomocore.InstallRuleSet(source, filepath.Join(workDir, ruleListDir), key, format, behavior)
+}
+
+func removeRuleList(workDir string, name string) error {
+	if !ruleListFileName.MatchString(name) {
+		return errors.New("bad rule list name")
 	}
-	if !info.Mode().IsRegular() || info.Size() > ruleListMaxBytes {
-		return errors.New("not a rule list")
+	err := os.Remove(filepath.Join(workDir, ruleListDir, name))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	temp := target + ".import"
-	if err := copyFile(source, temp); err != nil {
-		_ = os.Remove(temp)
-		return err
-	}
-	if err := os.Rename(temp, target); err != nil {
-		_ = os.Remove(temp)
-		return err
-	}
-	return nil
+	return err
+}
+
+func removeLegacyGeoIP(workDir string) {
+	_ = os.Remove(filepath.Join(workDir, legacyGeoIPName))
 }

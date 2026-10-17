@@ -11,7 +11,6 @@ import (
 
 	"github.com/metacubex/mihomo/adapter"
 	"github.com/metacubex/mihomo/component/dialer"
-	"github.com/metacubex/mihomo/component/mmdb"
 	"github.com/metacubex/mihomo/component/resolver"
 	"github.com/metacubex/mihomo/config"
 	C "github.com/metacubex/mihomo/constant"
@@ -129,10 +128,6 @@ func CurrentTraffic() *Traffic {
 func TotalTraffic() *Traffic {
 	up, down := statistic.DefaultManager.Total()
 	return &Traffic{Up: up, Down: down}
-}
-
-func ReloadGeoIP() {
-	mmdb.ReloadIP()
 }
 
 func DefaultInterface() string {

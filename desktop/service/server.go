@@ -24,6 +24,9 @@ type request struct {
 	URL      string `json:"url,omitempty"`
 	Path     string `json:"path,omitempty"`
 	Name     string `json:"name,omitempty"`
+	Key      string `json:"key,omitempty"`
+	Format   string `json:"format,omitempty"`
+	Behavior string `json:"behavior,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
 }
 
@@ -38,6 +41,8 @@ type response struct {
 	Delays  json.RawMessage `json:"delays,omitempty"`
 	Up      int64           `json:"up,omitempty"`
 	Down    int64           `json:"down,omitempty"`
+	Kind    string          `json:"kind,omitempty"`
+	Count   int64           `json:"count,omitempty"`
 }
 
 const maxMessageSize = 16 << 20
@@ -67,6 +72,7 @@ func listen(socketPath string, workDir string) (*server, error) {
 	if err = os.Chdir(workDir); err != nil {
 		return nil, err
 	}
+	removeLegacyGeoIP(workDir)
 	_ = os.Remove(socketPath)
 	listener, err := net.Listen("unix", relativeTo(workDir, socketPath))
 	if err != nil {
@@ -180,10 +186,14 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 		}
 		result.Delays = json.RawMessage(delays)
 		result.OK = true
-	case "geoip":
-		return fail(importGeoIP(s.workDir, message.Path))
 	case "rulelist":
-		return fail(importRuleList(s.workDir, message.Name, message.Path))
+		set, err := importRuleList(s.workDir, message.Key, message.Path, message.Format, message.Behavior)
+		if err != nil {
+			return fail(err)
+		}
+		result.Kind, result.Count, result.OK = set.Behavior, set.Count, true
+	case "rulelistRemove":
+		return fail(removeRuleList(s.workDir, message.Name))
 	case "traffic":
 		result.Up, result.Down, result.OK = s.engine.traffic()
 	default:

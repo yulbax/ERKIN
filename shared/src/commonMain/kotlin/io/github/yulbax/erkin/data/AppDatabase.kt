@@ -14,12 +14,14 @@ import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
+import io.github.yulbax.erkin.data.rules.RuleListDao
+import io.github.yulbax.erkin.data.rules.RuleListEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class],
-    version = 11,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class],
+    version = 12,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -29,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun settingsDao(): SettingsDao
     abstract fun profileDao(): ProfileDao
     abstract fun routingRuleDao(): RoutingRuleDao
+    abstract fun ruleListDao(): RuleListDao
 
     suspend fun <R> transaction(block: suspend () -> R): R =
         useWriterConnection { connection -> connection.immediateTransaction { block() } }
@@ -92,6 +95,14 @@ abstract class AppDatabase : RoomDatabase() {
             object : Migration(10, 11) {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE settings ADD COLUMN chainsHintSeen INTEGER NOT NULL DEFAULT 0")
+                }
+            },
+            object : Migration(11, 12) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `rule_lists` (`source` TEXT NOT NULL, `title` TEXT, " +
+                            "`entries` INTEGER NOT NULL, `failure` TEXT, `failureDetail` TEXT, PRIMARY KEY(`source`))"
+                    )
                 }
             }
         )

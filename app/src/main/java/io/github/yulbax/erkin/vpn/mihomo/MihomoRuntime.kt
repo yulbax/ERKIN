@@ -18,6 +18,7 @@ import java.util.TimeZone
 
 object MihomoRuntime {
     private const val DNS_PORT = 53
+    private const val LEGACY_GEOIP = "geoip.metadb"
 
     @Volatile private var ready = false
     @Volatile private var privateDnsHost: String? = null
@@ -37,6 +38,7 @@ object MihomoRuntime {
         val appContext = context.applicationContext
         runCatching { go.Seq.setContext(appContext) }
         val workDir = workDir(appContext).apply { mkdirs() }
+        File(workDir, LEGACY_GEOIP).delete()
         Mihomocore.setup(workDir.absolutePath, logFile(appContext).absolutePath, TimeZone.getDefault().id)
         observeSystemDns(appContext)
         ready = true

@@ -9,6 +9,7 @@ import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.vpn.core.RoutingRule
+import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -63,17 +64,21 @@ class EngineConfigComposerTest {
     }
 
     @Test
-    fun countryRulesWaitForTheGeoIpDatabase() {
+    fun countryRulesWaitForTheirCountryList() {
         val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
         val country = RoutingRule(RuleMatch.COUNTRY, "RU", RuleTarget.DIRECT)
         val domain = RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT)
         val inputs = inputs(apps).copy(rules = listOf(country, domain))
 
-        val missing = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT, geoIpReady = false)
-        val ready = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT, geoIpReady = true)
+        val countryUrl = RuleLists.source(country)!!.url
+        val missing = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT)
+        val ready = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT) { url ->
+            InstalledRuleList(setOf(RuleSetKind.IPCIDR), 1).takeIf { url == countryUrl }
+        }
 
         assertEquals(listOf(domain), missing.engineConfig.rules)
         assertEquals(listOf(country, domain), ready.engineConfig.rules)
+        assertEquals(mapOf(countryUrl to setOf(RuleSetKind.IPCIDR)), ready.engineConfig.ruleLists)
         assertTrue(ready.isStructuralChangeFrom(missing))
     }
 
@@ -82,7 +87,7 @@ class EngineConfigComposerTest {
         val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
         val list = RoutingRule(RuleMatch.LIST, "https://example.com/ads.txt", RuleTarget.BLOCK)
         val inputs = inputs(apps).copy(rules = listOf(list))
-        fun installed(at: Long) = InstalledRuleList(setOf(RuleSetKind.DOMAIN), at, null, 1)
+        fun installed(at: Long) = InstalledRuleList(setOf(RuleSetKind.DOMAIN), at)
 
         val missing = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT)
         val ready = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT) { installed(1) }
