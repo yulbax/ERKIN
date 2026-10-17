@@ -7,6 +7,8 @@ import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RoutingRule
+import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
@@ -109,6 +111,30 @@ class MihomoConfigBuilderTest {
             MihomoConfigBuilder.build(engine(emptyList(), "", listOf("org.dpi"), emptyList(), rules = rules), PROBE)
         ).jsonObject
         assertTrue("DOMAIN,a.example,REJECT" in noServer.rules())
+    }
+
+    @Test
+    fun aRuleListBecomesLocalProvidersInTheRulesPosition() {
+        val url = "https://example.com/ads.txt"
+        val rules = listOf(
+            RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN),
+            RoutingRule(RuleMatch.LIST, url, RuleTarget.BLOCK)
+        )
+        val engine = engine(listOf(vless), "p1", listOf("org.dpi"), emptyList(), rules = rules)
+            .copy(ruleLists = mapOf(url to setOf(RuleSetKind.DOMAIN, RuleSetKind.IPCIDR)))
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE)).jsonObject
+        val domains = RuleLists.providerName(url, RuleSetKind.DOMAIN)
+        val cidrs = RuleLists.providerName(url, RuleSetKind.IPCIDR)
+
+        val all = config.rules()
+        val first = all.indexOf("DOMAIN,a.example,p1")
+        assertEquals(listOf("RULE-SET,$domains,REJECT", "RULE-SET,$cidrs,REJECT"), all.subList(first + 1, first + 3))
+        val provider = config.getValue("rule-providers").jsonObject.getValue(domains).jsonObject
+        assertEquals("file", provider.getValue("type").jsonPrimitive.content)
+        assertEquals("domain", provider.getValue("behavior").jsonPrimitive.content)
+        assertEquals("text", provider.getValue("format").jsonPrimitive.content)
+        assertEquals(RuleLists.path(url, RuleSetKind.DOMAIN), provider.getValue("path").jsonPrimitive.content)
+        assertFalse("rule-providers" in build(rules = rules.take(1)))
     }
 
     @Test

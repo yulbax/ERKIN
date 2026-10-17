@@ -63,6 +63,11 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
 
     fun importGeoIp(path: String) = call("geoip", timeoutMs = GEOIP_TIMEOUT_MS) { put("path", path) }.throwIfFailed()
 
+    fun importRuleList(name: String, path: String?) = call("rulelist", timeoutMs = GEOIP_TIMEOUT_MS) {
+        put("name", name)
+        if (path != null) put("path", path)
+    }.throwIfFailed()
+
     fun urlTest(proxies: String, url: String, timeoutMs: Int): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
         put("proxies", proxies)
         put("url", url)

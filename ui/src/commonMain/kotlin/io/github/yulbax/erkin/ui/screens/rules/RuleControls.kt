@@ -11,11 +11,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -39,8 +43,12 @@ import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.viewmodel.RuleListStatus
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
+import java.text.DateFormat
+import java.text.NumberFormat
+import java.util.Date
 import org.jetbrains.compose.resources.stringResource
 
 private val TARGET_ORDER = listOf(RuleTarget.BLOCK, RuleTarget.DIRECT, RuleTarget.BYEDPI, RuleTarget.VPN)
@@ -125,7 +133,9 @@ internal fun RuleDialog(
     onDismiss: () -> Unit,
     onSave: (RuleMatch, String, RuleTarget) -> Unit,
     onDelete: (() -> Unit)?,
-    countryAvailable: Boolean
+    countryAvailable: Boolean,
+    listStatus: (String) -> RuleListStatus?,
+    onUpdateList: (String) -> Unit
 ) {
     val initialMatch = initial?.let { RuleMatch.fromWire(it.type) } ?: RuleMatch.DOMAIN_SUFFIX
     val options = RuleMatch.entries.filter { !it.requiresGeoIp || countryAvailable || it == initialMatch }
@@ -134,6 +144,7 @@ internal fun RuleDialog(
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
     val normalized = match.normalize(text)
     val invalid = text.isNotBlank() && normalized == null
+    val status = normalized?.takeIf { match.ui.input == RuleInput.Link }?.let(listStatus)
     val groupColors = ToggleButtonDefaults.toggleButtonColors(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
     )
@@ -183,6 +194,17 @@ internal fun RuleDialog(
                         onValueChange = { text = it },
                         label = { Text(stringResource(Res.string.rule_value)) },
                         placeholder = { Text(match.example()) },
+                        trailingIcon = status?.let {
+                            {
+                                if (it == RuleListStatus.Downloading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                } else {
+                                    IconButton(onClick = { onUpdateList(normalized) }) {
+                                        Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.rule_list_update))
+                                    }
+                                }
+                            }
+                        },
                         singleLine = true,
                         isError = invalid,
                         colors = transparentFieldColors(),
@@ -194,6 +216,7 @@ internal fun RuleDialog(
         val hint = when {
             match.ui.input == RuleInput.Country -> null
             invalid -> stringResource(Res.string.rule_invalid)
+            status != null -> status.text()
             normalized != null && normalized != text.trim() -> stringResource(Res.string.rule_saved_as, normalized)
             else -> null
         }
@@ -204,6 +227,12 @@ internal fun RuleDialog(
                 color = if (invalid) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, top = 6.dp)
             )
+        }
+        if (match.ui.input == RuleInput.Link && text.isBlank()) {
+            SectionLabel(stringResource(Res.string.rule_list_presets))
+            RuleListPreset.entries.forEach { preset ->
+                SuggestionChip(onClick = { text = preset.url }, label = { Text(stringResource(preset.label)) })
+            }
         }
         SectionLabel(stringResource(Res.string.rule_target))
         RuleTargetGroup(
@@ -240,6 +269,17 @@ internal fun RuleTargetIcon(target: RuleTarget, modifier: Modifier = Modifier) {
         null -> Icon(Icons.Default.Block, contentDescription = target.label(), modifier = modifier)
         else -> ConnectionTypeIcon(channel, modifier)
     }
+}
+
+@Composable
+internal fun RuleListStatus.text(): String = when (this) {
+    RuleListStatus.Missing -> stringResource(Res.string.rule_list_missing)
+    RuleListStatus.Downloading -> stringResource(Res.string.rule_list_downloading)
+    is RuleListStatus.Ready -> stringResource(
+        Res.string.rule_list_entries,
+        NumberFormat.getIntegerInstance().format(list.entries),
+        DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(list.updatedAt))
+    )
 }
 
 @Composable

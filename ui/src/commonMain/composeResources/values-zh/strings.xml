@@ -192,6 +192,16 @@
     <string name="rule_type_country_short">国家</string>
     <string name="rule_country">国家</string>
     <string name="rule_country_search">输入国家名称</string>
+    <string name="rule_type_list">来自链接的域名或 IP 列表（hosts、AdGuard、mihomo）</string>
+    <string name="rule_type_list_short">列表</string>
+    <string name="rule_example_list">https://example.com/list.txt</string>
+    <string name="rule_list_presets">现成列表</string>
+    <string name="rule_list_preset_ads">广告和跟踪器（HaGeZi）</string>
+    <string name="rule_list_entries">%1$s 条，更新于 %2$s</string>
+    <string name="rule_list_downloading">正在下载…</string>
+    <string name="rule_list_missing">未下载</string>
+    <string name="rule_list_update">更新</string>
+    <string name="rule_list_failed">无法下载列表：%1$s</string>
     <string name="chain">代理链</string>
     <string name="chains_title">代理链</string>
     <string name="chains_description">代理链通过入口（ByeDPI 或其他服务器）连接到出口服务器。网站看到的是出口服务器，运营商只看到入口。代理链会显示在主界面的服务器列表中。</string>

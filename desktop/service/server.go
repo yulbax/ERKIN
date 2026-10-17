@@ -23,6 +23,7 @@ type request struct {
 	Resolver string `json:"resolver,omitempty"`
 	URL      string `json:"url,omitempty"`
 	Path     string `json:"path,omitempty"`
+	Name     string `json:"name,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
 }
 
@@ -181,6 +182,8 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 		result.OK = true
 	case "geoip":
 		return fail(importGeoIP(s.workDir, message.Path))
+	case "rulelist":
+		return fail(importRuleList(s.workDir, message.Name, message.Path))
 	case "traffic":
 		result.Up, result.Down, result.OK = s.engine.traffic()
 	default:

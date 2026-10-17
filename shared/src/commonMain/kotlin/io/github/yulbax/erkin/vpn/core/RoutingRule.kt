@@ -15,7 +15,8 @@ enum class RuleMatch(
     DOMAIN("domain", "DOMAIN", RuleValues.Domain),
     DOMAIN_KEYWORD("keyword", "DOMAIN-KEYWORD", RuleValues.Keyword),
     IP_CIDR("ip_cidr", "IP-CIDR", RuleValues.Cidr),
-    COUNTRY("country", "GEOIP", RuleValues.Country, requiresGeoIp = true);
+    COUNTRY("country", "GEOIP", RuleValues.Country, requiresGeoIp = true),
+    LIST("list", "RULE-SET", RuleValues.Link);
 
     fun normalize(raw: String): String? = format.normalize(raw)
 
@@ -82,6 +83,16 @@ object RuleValues {
             if (prefix !in 0..maxPrefix) return null
             val canonical = runCatching { InetAddress.getByName(address).hostAddress }.getOrNull() ?: return null
             return "$canonical/$prefix"
+        }
+    }
+
+    object Link : RuleValueFormat {
+        private val SCHEMES = setOf("http", "https")
+
+        override fun normalize(raw: String): String? {
+            val uri = runCatching { URI(raw.trim()) }.getOrNull() ?: return null
+            if (uri.scheme?.lowercase() !in SCHEMES || uri.host.isNullOrEmpty()) return null
+            return uri.toString()
         }
     }
 

@@ -11,8 +11,10 @@ import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.geoip.GeoIpDatabase
+import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.update.UpdateChecker
 import io.github.yulbax.erkin.vpn.mihomo.AndroidGeoIpStore
+import io.github.yulbax.erkin.vpn.mihomo.AndroidRuleListStore
 import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.VersionInfo
@@ -70,12 +72,17 @@ class AppModule {
     fun geoIpDatabase(context: Context): GeoIpDatabase = GeoIpDatabase(AndroidGeoIpStore(context.applicationContext))
 
     @Single
+    fun ruleListDatabase(context: Context): RuleListDatabase =
+        RuleListDatabase(AndroidRuleListStore(context.applicationContext))
+
+    @Single
     fun vpnSessionFactory(
         store: VpnSessionStore,
         stateRepository: VpnStateRepository,
         geoIp: GeoIpDatabase,
+        ruleLists: RuleListDatabase,
         log: AppLog
-    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, geoIp, log)
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, geoIp, ruleLists, log)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =

@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.vpn
 
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
+import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
@@ -33,7 +34,8 @@ class VpnSession(
     private val scope: CoroutineScope,
     private val requestWork: (Command) -> Unit,
     private val onByeDpiExit: (run: Long, code: Int) -> Unit,
-    private val geoIpReady: () -> Boolean = { false }
+    private val geoIpReady: () -> Boolean = { false },
+    private val ruleLists: (String) -> InstalledRuleList? = { null }
 ) {
     private enum class Phase { Idle, Starting, Running, Stopping }
 
@@ -68,7 +70,7 @@ class VpnSession(
         val inputs = store.load()
         byeDpiArgs = ByeDpiArgs.parse(inputs.settings.byeDpiArgs)
         byeDpiPort = freeLoopbackPort()
-        val config = EngineConfigComposer.compose(inputs, ownPackage, byeDpiPort, geoIpReady())
+        val config = EngineConfigComposer.compose(inputs, ownPackage, byeDpiPort, geoIpReady(), ruleLists)
         log.i(
             TAG,
             "config: server='${config.configName}' profiles=${config.engineConfig.proxies.size} " +
@@ -90,7 +92,7 @@ class VpnSession(
         if (!isRunning) return ReloadOutcome.Done
         val inputs = store.load()
         val current = checkNotNull(appliedConfig) { "VPN has no applied config" }
-        val desired = runCatching { EngineConfigComposer.compose(inputs, ownPackage, byeDpiPort, geoIpReady()) }.getOrElse { error ->
+        val desired = runCatching { EngineConfigComposer.compose(inputs, ownPackage, byeDpiPort, geoIpReady(), ruleLists) }.getOrElse { error ->
             if (inputs.selected == null) {
                 log.i(TAG, "selected server removed and nothing else to run; stopping")
                 return ReloadOutcome.SelectionRemoved
@@ -113,7 +115,7 @@ class VpnSession(
         if (!isRunning) return
         log.i(TAG, "vpn channel down; reloading service")
         resetChannels()
-        applyReload(EngineConfigComposer.compose(store.load(), ownPackage, byeDpiPort, geoIpReady()))
+        applyReload(EngineConfigComposer.compose(store.load(), ownPackage, byeDpiPort, geoIpReady(), ruleLists))
         startHealth()
     }
 

@@ -9,7 +9,8 @@ data class EngineConfig(
     val byeDpiSocksPort: Int,
     val network: NetworkOptions,
     val directPaths: List<String> = emptyList(),
-    val rules: List<RoutingRule> = emptyList()
+    val rules: List<RoutingRule> = emptyList(),
+    val ruleLists: Map<String, Set<RuleSetKind>> = emptyMap()
 )
 
 data class EngineProxy(
