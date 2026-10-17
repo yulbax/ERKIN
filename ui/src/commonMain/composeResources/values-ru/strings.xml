@@ -197,15 +197,10 @@
     <string name="rule_sets_formats">Подходят списки доменов, hosts-файлы, фильтры AdGuard и наборы mihomo (текст, YAML, mrs).</string>
     <string name="rule_sets_group_ads">Реклама</string>
     <string name="rule_sets_group_telemetry">Телеметрия</string>
-    <string name="rule_sets_group_russia">Россия</string>
     <string name="rule_sets_countries">Страны</string>
     <string name="rule_sets_countries_description">IP-адреса страны, данные MetaCubeX.</string>
     <string name="rule_sets_pick_country">Выбрать страну</string>
     <string name="rule_set_country">%1$s (IP-адреса)</string>
-    <string name="rule_set_russian_sites">Российские сайты</string>
-    <string name="rule_set_russian_government">Госсайты РФ</string>
-    <string name="rule_set_blocked_in_russia">Заблокированное в РФ</string>
-    <string name="rule_set_blocked_ips_in_russia">IP-адреса, заблокированные в РФ</string>
     <string name="rule_set_download">Скачать</string>
     <string name="rule_set_link">Ссылка</string>
     <string name="rule_set_name">Название</string>

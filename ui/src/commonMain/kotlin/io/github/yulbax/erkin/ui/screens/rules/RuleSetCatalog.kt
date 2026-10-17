@@ -13,8 +13,7 @@ import org.jetbrains.compose.resources.stringResource
 
 internal enum class RuleSetGroup(val label: StringResource) {
     ADS(Res.string.rule_sets_group_ads),
-    TELEMETRY(Res.string.rule_sets_group_telemetry),
-    RUSSIA(Res.string.rule_sets_group_russia)
+    TELEMETRY(Res.string.rule_sets_group_telemetry)
 }
 
 internal enum class RuleSetPreset(
@@ -29,11 +28,7 @@ internal enum class RuleSetPreset(
     HAGEZI_PRO(RuleSetGroup.ADS, Res.string.rule_set_hagezi_pro, "$HAGEZI/pro-onlydomains.txt", RuleTarget.BLOCK),
     OISD_SMALL(RuleSetGroup.ADS, Res.string.rule_set_oisd_small, "https://small.oisd.nl/domainswild", RuleTarget.BLOCK),
     XIAOMI(RuleSetGroup.TELEMETRY, Res.string.rule_set_xiaomi, "$HAGEZI/native.xiaomi-onlydomains.txt", RuleTarget.BLOCK),
-    SAMSUNG(RuleSetGroup.TELEMETRY, Res.string.rule_set_samsung, "$HAGEZI/native.samsung-onlydomains.txt", RuleTarget.BLOCK),
-    RUSSIAN_SITES(RuleSetGroup.RUSSIA, Res.string.rule_set_russian_sites, "$GEOSITE/category-ru.mrs", RuleTarget.DIRECT, RuleSetKind.DOMAIN),
-    RUSSIAN_GOVERNMENT(RuleSetGroup.RUSSIA, Res.string.rule_set_russian_government, "$GEOSITE/category-gov-ru.mrs", RuleTarget.DIRECT, RuleSetKind.DOMAIN),
-    BLOCKED_IN_RUSSIA(RuleSetGroup.RUSSIA, Res.string.rule_set_blocked_in_russia, "$ITDOG/Russia/inside-raw.lst", RuleTarget.VPN),
-    BLOCKED_IPS_IN_RUSSIA(RuleSetGroup.RUSSIA, Res.string.rule_set_blocked_ips_in_russia, "https://community.antifilter.download/list/community.lst", RuleTarget.VPN, RuleSetKind.IPCIDR);
+    SAMSUNG(RuleSetGroup.TELEMETRY, Res.string.rule_set_samsung, "$HAGEZI/native.samsung-onlydomains.txt", RuleTarget.BLOCK);
 
     val source: RuleListSource get() = RuleListSource(url, kind)
 
@@ -43,8 +38,6 @@ internal enum class RuleSetPreset(
 }
 
 private const val HAGEZI = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard"
-private const val GEOSITE = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite"
-private const val ITDOG = "https://raw.githubusercontent.com/itdoginfo/allow-domains/main"
 
 @Composable
 internal fun ruleSetName(url: String, state: RuleListState?): String {
