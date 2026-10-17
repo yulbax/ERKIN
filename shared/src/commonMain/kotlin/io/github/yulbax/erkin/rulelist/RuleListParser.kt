@@ -81,12 +81,13 @@ object RuleListParser {
     }
 
     private fun suffix(raw: String): Entry? {
-        val host = WILDCARD_PREFIXES.firstOrNull { raw.startsWith(it) }?.let { raw.removePrefix(it) } ?: raw
-        return domain(host)?.let { Entry.Domain(SUFFIX_PREFIX + it) }
+        val prefix = WILDCARD_PREFIXES.firstOrNull { raw.startsWith(it) }
+        val host = prefix?.let { raw.removePrefix(it) } ?: raw
+        return domain(host, zone = prefix != null)?.let { Entry.Domain(SUFFIX_PREFIX + it) }
     }
 
-    private fun domain(raw: String): String? =
-        raw.takeUnless { "://" in it }?.let(RuleValues.Domain::normalize)?.takeIf { '.' in it }
+    private fun domain(raw: String, zone: Boolean = false): String? =
+        raw.takeUnless { "://" in it }?.let(RuleValues.Domain::normalize)?.takeIf { zone || '.' in it }
 
     private fun cidr(raw: String): Entry? =
         raw.takeIf { it.firstOrNull()?.isDigit() == true || ':' in it }?.let(RuleValues.Cidr::normalize)?.let(Entry::Cidr)

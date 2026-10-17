@@ -21,6 +21,12 @@ class RuleListParserTest {
     }
 
     @Test
+    fun wholeZonesNeedAnExplicitWildcard() {
+        val parsed = parse(".ua", "+.ru", "*.рф", "com", "DOMAIN-SUFFIX,su", "||org^")
+        assertEquals(listOf("+.ua", "+.ru", "+.xn--p1ai"), parsed.domains)
+    }
+
+    @Test
     fun hostsFilesKeepOnlyTheBlockedNames() {
         val parsed = parse(
             "127.0.0.1 localhost",
