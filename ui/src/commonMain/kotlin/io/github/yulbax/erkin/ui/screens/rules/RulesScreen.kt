@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,19 +35,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.ui.components.AddFab
-import io.github.yulbax.erkin.ui.components.CountryFlag
+import io.github.yulbax.erkin.ui.components.GroupPlaceholder
+import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
@@ -100,7 +97,7 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
-            contentPadding = PaddingValues(bottom = 96.dp),
+            contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             if (!hintSeen) {
@@ -108,20 +105,15 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                     HintBanner(
                         text = hint,
                         onDismiss = viewModel::dismissHint,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                     )
                 }
             }
             if (order.isEmpty()) {
                 item(key = EMPTY_KEY) {
-                    Text(
+                    GroupPlaceholder(
                         text = stringResource(Res.string.rules_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
             }
@@ -130,43 +122,37 @@ fun Rules(viewModel: RulesViewModel = koinViewModel()) {
                     val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
                     val isChecked = rule.id in checked
                     Surface(
+                        shape = if (dragging) groupItemShape(0, 1) else groupItemShape(index, order.size),
                         shadowElevation = elevation,
-                        color = when {
-                            isChecked -> MaterialTheme.colorScheme.secondaryContainer
-                            dragging -> MaterialTheme.colorScheme.surfaceContainerHigh
-                            else -> Color.Transparent
-                        }
+                        color = if (isChecked) {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        },
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp)
                     ) {
-                        Column {
-                            RuleRow(
-                                rule = rule,
-                                selecting = selecting,
-                                checked = isChecked,
-                                onClick = { if (selecting) toggle(rule) else editing = rule },
-                                onLongClick = { toggle(rule) },
-                                onTargetChange = { viewModel.setTarget(rule, it) },
-                                handle = {
-                                    IconButton(
-                                        onClick = {},
-                                        modifier = Modifier.draggableHandle(
-                                            onDragStopped = { viewModel.reorder(order.map { it.id }) }
-                                        )
-                                    ) {
-                                        Icon(
-                                            Icons.Default.DragHandle,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
+                        RuleRow(
+                            rule = rule,
+                            selecting = selecting,
+                            checked = isChecked,
+                            onClick = { if (selecting) toggle(rule) else editing = rule },
+                            onLongClick = { toggle(rule) },
+                            onTargetChange = { viewModel.setTarget(rule, it) },
+                            handle = {
+                                IconButton(
+                                    onClick = {},
+                                    modifier = Modifier.draggableHandle(
+                                        onDragStopped = { viewModel.reorder(order.map { it.id }) }
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.DragHandle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
-                            )
-                            if (index < order.lastIndex && !dragging) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.outlineVariant
-                                )
                             }
-                        }
+                        )
                     }
                 }
             }
@@ -265,16 +251,13 @@ private fun RuleRow(
         handle()
         Spacer(Modifier.width(4.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (match?.ui?.input == RuleInput.Country) CountryFlag(rule.value, 16.sp)
-                Text(
-                    text = rule.displayValue(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            Text(
+                text = rule.displayValue(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             if (match != null) {
                 Text(
                     text = match.label(),
@@ -301,7 +284,7 @@ private fun RuleRow(
 private fun RoutingRuleEntity.displayValue(): String {
     val match = RuleMatch.fromWire(type) ?: return value
     return when (match.ui.input) {
-        RuleInput.Country -> "${countryName(value)} ($value)"
+        RuleInput.Country -> countryName(value)
         RuleInput.Text -> match.display(value)
     }
 }

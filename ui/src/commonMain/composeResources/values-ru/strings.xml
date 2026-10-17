@@ -210,4 +210,6 @@
     <string name="chain_via">Затем через</string>
     <string name="chain_add_hop">Добавить звено</string>
     <string name="chain_remove_hop">Убрать звено</string>
+    <string name="delete_chains_title">Удалить цепочки?</string>
+    <string name="delete_chains_message">Удалить выбранные цепочки (%1$d)?</string>
 </resources>

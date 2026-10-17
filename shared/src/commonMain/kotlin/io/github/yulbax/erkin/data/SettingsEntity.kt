@@ -27,7 +27,8 @@ data class SettingsEntity(
     val appsHintSeen: Boolean = false,
     val newAppsConnectionType: String = "",
     val rulesHintSeen: Boolean = false,
-    val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic
+    val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic,
+    val chainsHintSeen: Boolean = false
 ) {
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
         ConnectionType.fromWire(newAppsConnectionType) ?: platformDefault

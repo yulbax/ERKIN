@@ -208,4 +208,6 @@
     <string name="chain_via">سپس از طریق</string>
     <string name="chain_add_hop">افزودن حلقه</string>
     <string name="chain_remove_hop">حذف حلقه</string>
+    <string name="delete_chains_title">زنجیره‌ها حذف شوند؟</string>
+    <string name="delete_chains_message">%1$d زنجیرهٔ انتخاب‌شده حذف شوند؟</string>
 </resources>
