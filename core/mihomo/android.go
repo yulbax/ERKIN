@@ -42,8 +42,9 @@ var (
 	current atomic.Pointer[session]
 )
 
-func Setup(homeDir string, logPath string, timezone string) {
-	Init(homeDir, logPath, timezone)
+func Setup(homeDir string, timezone string, sink LogSink) {
+	SetLogSink(sink)
+	Init(homeDir, "", timezone)
 	dialer.DefaultSocketHook = func(network, address string, conn syscall.RawConn) error {
 		active := current.Load()
 		if active == nil {

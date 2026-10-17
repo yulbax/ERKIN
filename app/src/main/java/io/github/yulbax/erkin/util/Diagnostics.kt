@@ -3,7 +3,6 @@ package io.github.yulbax.erkin.util
 import android.content.Context
 import android.os.Build
 import io.github.yulbax.erkin.data.profile.ProfileRepository
-import io.github.yulbax.erkin.vpn.mihomo.MihomoRuntime
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -21,8 +20,7 @@ object Diagnostics {
                 "android" to "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                 "abi" to Build.SUPPORTED_ABIS.joinToString(",")
             ),
-            appLog = erkinLog.dump(),
-            coreLog = MihomoRuntime.logFile(context),
+            log = erkinLog.dump(),
             profiles = profiles.profileDiagnostics()
         )
     }

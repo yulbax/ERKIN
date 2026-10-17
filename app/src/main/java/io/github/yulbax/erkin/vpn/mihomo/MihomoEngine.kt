@@ -34,7 +34,6 @@ class MihomoEngine(
     @Volatile private var activeProxyTag: String = ""
     private var tunConfig: TunConfig? = null
     private var traffic: ScheduledExecutorService? = null
-    private val logFile = MihomoRuntime.logFile(appContext)
 
     private val platform = object : Platform {
         override fun protect(fd: Int): Boolean = tunPlatform.protectFd(fd)
@@ -50,8 +49,7 @@ class MihomoEngine(
     @Synchronized
     override fun start(config: EngineConfig) {
         check(traffic == null) { "mihomo engine is already started" }
-        MihomoRuntime.ensureSetup(appContext)
-        runCatching { logFile.writeText("") }
+        MihomoRuntime.ensureSetup(appContext, log)
         launch(config)
         traffic = sampleTraffic()
     }

@@ -8,6 +8,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import io.github.yulbax.erkin.BuildConfig
 import io.github.yulbax.erkin.util.ErkinLog
+import io.github.yulbax.erkin.util.LogSource
 import io.github.yulbax.erkin.vpn.core.TunConfig
 import io.github.yulbax.erkin.vpn.core.TunPlatform
 import io.github.yulbax.erkin.vpn.mihomo.MihomoEngine
@@ -47,7 +48,7 @@ class ErkinVpnService :
                 controller = controller,
                 scope = scope,
                 engine = MihomoEngine(applicationContext, this, controller, erkinLog),
-                byeDpi = ByeDpiRunner(packageName, erkinLog) { fd -> protect(fd) },
+                byeDpi = ByeDpiRunner(packageName, erkinLog.of(LogSource.BYEDPI)) { fd -> protect(fd) },
                 byeDpiHealthProbeUrl = BuildConfig.BYEDPI_HEALTH_PROBE_URL,
                 ownPackage = packageName
             )

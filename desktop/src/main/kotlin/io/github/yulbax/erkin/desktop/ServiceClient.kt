@@ -26,7 +26,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 
-class ServiceClient private constructor(private val channel: SocketChannel) : AutoCloseable {
+class ServiceClient private constructor(
+    private val channel: SocketChannel,
+    private val onLog: (level: String, message: String) -> Unit
+) : AutoCloseable {
 
     data class Hello(val version: String, val core: String, val workDir: File)
 
@@ -63,6 +66,8 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
     fun stop() = call("stop", timeoutMs = STOP_TIMEOUT_MS).throwIfFailed()
 
     fun clearLog() = call("clearLog").throwIfFailed()
+
+    fun subscribeLog() = call("logs").throwIfFailed()
 
     fun importRuleList(key: String, path: String, format: RuleSetFormat, kind: RuleSetKind?): InstalledSet {
         val reply = call("rulelist", timeoutMs = RULE_LIST_TIMEOUT_MS) {
@@ -136,6 +141,10 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
             Channels.newInputStream(channel).bufferedReader().useLines { lines ->
                 lines.forEach { line ->
                     val reply = runCatching { Json.parseToJsonElement(line).jsonObject }.getOrNull() ?: return@forEach
+                    (reply["log"] as? JsonObject)?.let { event ->
+                        runCatching { onLog(event.string("level"), event.string("message")) }
+                        return@forEach
+                    }
                     val id = reply["id"]?.jsonPrimitive?.longOrNull ?: return@forEach
                     pending.remove(id)?.complete(reply)
                 }
@@ -161,7 +170,7 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
         private const val URL_TEST_TIMEOUT_MS = 120_000L
         private const val RULE_LIST_TIMEOUT_MS = 60_000L
 
-        fun connect(socket: File): ServiceClient {
+        fun connect(socket: File, onLog: (level: String, message: String) -> Unit = { _, _ -> }): ServiceClient {
             val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
             try {
                 channel.connect(UnixDomainSocketAddress.of(socket.toPath()))
@@ -169,7 +178,7 @@ class ServiceClient private constructor(private val channel: SocketChannel) : Au
                 channel.close()
                 throw t
             }
-            return ServiceClient(channel)
+            return ServiceClient(channel, onLog)
         }
     }
 }

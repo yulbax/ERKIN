@@ -2,12 +2,12 @@ package io.github.yulbax.erkin.vpn
 
 import android.os.SystemClock
 import io.github.yulbax.erkin.engine.ByeDpi
-import io.github.yulbax.erkin.util.ErkinLog
+import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
 
 class ByeDpiRunner(
     private val packageName: String,
-    private val log: ErkinLog,
+    private val log: AppLog,
     private val protect: (Int) -> Boolean
 ) : ByeDpiProcess {
     private var process: ByeDpi? = null

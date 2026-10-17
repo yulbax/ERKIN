@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.update.UpdatePlatform
 import io.github.yulbax.erkin.util.DiagnosticsReport
 import io.github.yulbax.erkin.util.DiagnosticsSource
+import io.github.yulbax.erkin.util.LogFeed
 import io.github.yulbax.erkin.util.FileAppLog
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
@@ -36,6 +37,8 @@ class DesktopDiagnostics(
     private val versionInfo: VersionInfo,
     private val profiles: ProfileRepository
 ) : DiagnosticsSource {
+    override val feed: LogFeed get() = log
+
     override suspend fun collect(): String = withContext(Dispatchers.IO) {
         DiagnosticsReport.build(
             environment = listOf(
@@ -44,8 +47,7 @@ class DesktopDiagnostics(
                 "java" to System.getProperty("java.version"),
                 "service" to (service.peek()?.version ?: "not running")
             ),
-            appLog = log.dump(),
-            coreLog = File(service.peek()?.workDir ?: DesktopPaths.serviceSocket.parentFile, "core.log"),
+            log = log.dump(),
             profiles = profiles.profileDiagnostics()
         )
     }

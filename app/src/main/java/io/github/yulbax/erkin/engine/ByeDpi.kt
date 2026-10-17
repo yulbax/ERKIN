@@ -1,6 +1,6 @@
 package io.github.yulbax.erkin.engine
 
-import io.github.yulbax.erkin.util.ErkinLog
+import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
@@ -9,7 +9,7 @@ import kotlin.concurrent.thread
 const val BYEDPI_VERSION = "17.3"
 
 class ByeDpi(
-    private val log: ErkinLog,
+    private val log: AppLog,
     private val host: String = DEFAULT_HOST,
     private val port: Int = DEFAULT_PORT,
     private val protectPath: String? = null,

@@ -5,6 +5,8 @@ fun interface VpnLauncher {
 }
 
 interface DiagnosticsSource {
+    val feed: LogFeed
+
     suspend fun collect(): String
 
     suspend fun clear()

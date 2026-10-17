@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.desktop
 
 import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.util.core
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -43,7 +44,10 @@ class DesktopService(
     }
 
     private fun tryConnect(): ServiceClient? = runCatching {
-        ServiceClient.connect(socket).also { hello = it.hello() }
+        ServiceClient.connect(socket) { level, message -> log.core(level, message) }.also { connected ->
+            hello = connected.hello()
+            runCatching { connected.subscribeLog() }.onFailure { log.w(TAG, "the service does not stream the core log", it) }
+        }
     }.getOrNull()
 
     private fun isOutdated(connected: ServiceClient): Boolean {
