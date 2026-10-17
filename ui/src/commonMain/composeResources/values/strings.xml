@@ -200,6 +200,16 @@
     <string name="rule_type_country_short">Country</string>
     <string name="rule_country">Country</string>
     <string name="rule_country_search">Start typing a country</string>
+    <string name="rule_type_list">Domain or IP list from a link (hosts, AdGuard, mihomo)</string>
+    <string name="rule_type_list_short">List</string>
+    <string name="rule_example_list">https://example.com/list.txt</string>
+    <string name="rule_list_presets">Ready-made lists</string>
+    <string name="rule_list_preset_ads">Ads and trackers (HaGeZi)</string>
+    <string name="rule_list_entries">%1$s entries, updated %2$s</string>
+    <string name="rule_list_downloading">Downloading…</string>
+    <string name="rule_list_missing">Not downloaded</string>
+    <string name="rule_list_update">Update</string>
+    <string name="rule_list_failed">Could not download the list: %1$s</string>
     <string name="chain">Proxy chain</string>
     <string name="chains_title">Chains</string>
     <string name="chains_description">A chain connects to its exit server through an entry: ByeDPI or another server. Sites see the exit server, your provider only sees the entry. Chains show up in the server list on the main screen.</string>

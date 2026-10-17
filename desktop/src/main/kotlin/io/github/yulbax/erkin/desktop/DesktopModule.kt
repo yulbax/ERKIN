@@ -12,6 +12,7 @@ import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.geoip.GeoIpDatabase
+import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.update.UpdateChecker
 import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.update.UpdatePlatform
@@ -65,6 +66,7 @@ val desktopModule = module {
     }
     single<VersionInfo> { DesktopVersionInfo(get()) }
     single { GeoIpDatabase(DesktopGeoIpStore(get())) }
+    single { RuleListDatabase(DesktopRuleListStore(get())) }
     single { ServerLatencyProbe(get(), ServiceLatencyTester(get())) }
     single<InstalledAppsSource>(createdAtStart = true) {
         val settings = get<SettingsRepository>()
@@ -73,7 +75,7 @@ val desktopModule = module {
         }
     }
 
-    single { VpnSessionFactory(get(), get(), get(), get()) }
+    single { VpnSessionFactory(get(), get(), get(), get(), get()) }
     single {
         val log = get<AppLog>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -7,8 +7,10 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.proxy.LinkParser
+import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -73,6 +75,24 @@ class EngineConfigComposerTest {
         assertEquals(listOf(domain), missing.engineConfig.rules)
         assertEquals(listOf(country, domain), ready.engineConfig.rules)
         assertTrue(ready.isStructuralChangeFrom(missing))
+    }
+
+    @Test
+    fun listRulesWaitForTheirFilesAndReloadWhenUpdated() {
+        val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))
+        val list = RoutingRule(RuleMatch.LIST, "https://example.com/ads.txt", RuleTarget.BLOCK)
+        val inputs = inputs(apps).copy(rules = listOf(list))
+        fun installed(at: Long) = InstalledRuleList(setOf(RuleSetKind.DOMAIN), at, null, 1)
+
+        val missing = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT)
+        val ready = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT) { installed(1) }
+        val updated = EngineConfigComposer.compose(inputs, OWN, BYEDPI_PORT) { installed(2) }
+
+        assertEquals(emptyList<RoutingRule>(), missing.engineConfig.rules)
+        assertEquals(listOf(list), ready.engineConfig.rules)
+        assertEquals(mapOf(list.value to setOf(RuleSetKind.DOMAIN)), ready.engineConfig.ruleLists)
+        assertTrue(ready.isStructuralChangeFrom(missing))
+        assertTrue(updated.isStructuralChangeFrom(ready))
     }
 
     @Test

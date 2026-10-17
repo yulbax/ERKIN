@@ -7,10 +7,12 @@ import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
+import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 
 object ProxyTag {
@@ -44,7 +46,13 @@ data class AppliedConfig(
 
 object EngineConfigComposer {
 
-    fun compose(inputs: SessionInputs, ownPackage: String, byeDpiPort: Int, geoIpReady: Boolean = false): AppliedConfig {
+    fun compose(
+        inputs: SessionInputs,
+        ownPackage: String,
+        byeDpiPort: Int,
+        geoIpReady: Boolean = false,
+        ruleLists: (String) -> InstalledRuleList? = { null }
+    ): AppliedConfig {
         val selected = inputs.selected
         check(selected != null || inputs.profiles.isEmpty()) { "No server selected" }
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
@@ -52,7 +60,11 @@ object EngineConfigComposer {
         check(!routed.isEmpty) {
             if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN or ByeDPI"
         }
-        val rules = inputs.rules.filter { geoIpReady || !it.match.requiresGeoIp }
+        val lists = inputs.rules.filter { it.match == RuleMatch.LIST }.map { it.value }.distinct()
+            .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
+        val rules = inputs.rules.filter { rule ->
+            (geoIpReady || !rule.match.requiresGeoIp) && (rule.match != RuleMatch.LIST || rule.value in lists)
+        }
         val proxies = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
 
         return AppliedConfig(
@@ -65,14 +77,16 @@ object EngineConfigComposer {
                 byeDpiSocksPort = byeDpiPort,
                 network = inputs.settings.networkOptions(),
                 directPaths = routed.directPaths,
-                rules = rules
+                rules = rules,
+                ruleLists = lists.mapValues { it.value.kinds }
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
             sessionRequirements = proxies.lastOrNull()?.sessionRequirements.orEmpty(),
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}" } +
-                rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" },
+                rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" } +
+                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
             vpnActive = routed.hasVpn
         )
     }
