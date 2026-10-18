@@ -2,8 +2,7 @@ package io.github.yulbax.erkin.update
 
 import io.github.yulbax.erkin.util.readBounded
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URI
+import io.github.yulbax.erkin.vpn.DownloadRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.SerialName
@@ -17,7 +16,7 @@ object GitHubReleases {
     private const val SHA256_PREFIX = "sha256:"
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun latest(): AppRelease? = parse(runInterruptible(Dispatchers.IO) { download() })
+    suspend fun latest(route: DownloadRoute): AppRelease? = parse(runInterruptible(Dispatchers.IO) { download(route) })
 
     fun parse(body: String): AppRelease? {
         val release = json.decodeFromString<ReleaseJson>(body)
@@ -38,15 +37,14 @@ object GitHubReleases {
         )
     }
 
-    private fun download(): String {
-        val connection = URI(LATEST_URL).toURL().openConnection() as HttpURLConnection
+    private fun download(route: DownloadRoute): String = route.fetch(LATEST_URL) { connection ->
         connection.connectTimeout = TIMEOUT_MS
         connection.readTimeout = TIMEOUT_MS
         connection.setRequestProperty("Accept", "application/vnd.github+json")
         try {
             val code = connection.responseCode
             if (code !in 200..299) throw IOException("HTTP $code")
-            return connection.inputStream.use { it.readBounded(MAX_BYTES).decodeToString() }
+            connection.inputStream.use { it.readBounded(MAX_BYTES).decodeToString() }
         } finally {
             connection.disconnect()
         }

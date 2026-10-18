@@ -154,6 +154,11 @@
     <string name="update_open_page">Open page</string>
     <string name="update_downloading">Downloading ERKIN %1$s</string>
     <string name="update_failed">Could not download the update. You can get it from the release page.</string>
+    <string name="updates_title">Updates</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_current">Installed version %1$s</string>
+    <string name="update_up_to_date">You have the latest version</string>
+    <string name="update_check_failed">Could not check for updates</string>
     <string name="rules_title">Rules</string>
     <string name="rules_description">Rules are checked from top to bottom and the first match wins. A matching rule overrides the app&apos;s channel.</string>
     <string name="rules_scope_tunneled">On Android rules only apply to apps in the VPN and ByeDPI channels: apps in the Direct channel bypass ERKIN completely.</string>

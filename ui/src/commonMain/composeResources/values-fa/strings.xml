@@ -151,6 +151,11 @@
     <string name="update_open_page">باز کردن صفحه</string>
     <string name="update_downloading">در حال دانلود ERKIN %1$s</string>
     <string name="update_failed">دانلود به‌روزرسانی ممکن نشد. می‌توانید آن را از صفحهٔ انتشار دریافت کنید.</string>
+    <string name="updates_title">به‌روزرسانی‌ها</string>
+    <string name="update_check">بررسی به‌روزرسانی</string>
+    <string name="update_current">نسخه نصب‌شده %1$s</string>
+    <string name="update_up_to_date">آخرین نسخه نصب است</string>
+    <string name="update_check_failed">بررسی به‌روزرسانی ناموفق بود</string>
     <string name="rules_title">قوانین</string>
     <string name="rules_description">قوانین از بالا به پایین بررسی می‌شوند و اولین قانون منطبق اعمال می‌شود. قانون منطبق بر کانال برنامه اولویت دارد.</string>
     <string name="rules_scope_tunneled">در اندروید قوانین فقط روی برنامه‌های کانال VPN و ByeDPI اعمال می‌شوند: برنامه‌های کانال مستقیم از ERKIN عبور نمی‌کنند.</string>

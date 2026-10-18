@@ -17,11 +17,13 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.SwitchRow
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
+import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun Settings(
-    viewModel: SettingsViewModel = koinViewModel()
+    viewModel: SettingsViewModel = koinViewModel(),
+    updates: UpdateViewModel = koinViewModel()
 ) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -59,5 +61,6 @@ fun Settings(
         AutostartSection(ui, viewModel)
         NetworkSection(ui, viewModel)
         BackupSection(viewModel)
+        UpdatesSection(updates)
     }
 }

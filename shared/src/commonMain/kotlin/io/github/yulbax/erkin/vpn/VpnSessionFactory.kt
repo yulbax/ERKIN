@@ -10,6 +10,7 @@ class VpnSessionFactory(
     private val store: VpnSessionStore,
     private val stateRepository: VpnStateRepository,
     private val ruleLists: RuleListDatabase,
+    private val downloadRoute: DownloadRoute,
     private val log: AppLog
 ) {
     fun create(
@@ -31,6 +32,7 @@ class VpnSessionFactory(
         scope = scope,
         requestWork = controller::requestWork,
         onByeDpiExit = controller::onByeDpiExit,
-        ruleLists = ruleLists::installed
+        ruleLists = ruleLists::installed,
+        downloadRoute = downloadRoute
     )
 }

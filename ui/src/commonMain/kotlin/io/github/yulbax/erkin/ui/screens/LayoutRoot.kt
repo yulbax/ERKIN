@@ -46,13 +46,16 @@ import io.github.yulbax.erkin.ui.components.AppSearchBar
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.platform.LocalMessages
 import io.github.yulbax.erkin.ui.platform.drawerSwipeToOpen
+import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     topBarFrame: @Composable (content: @Composable () -> Unit) -> Unit = { it() },
-    topBarActions: @Composable RowScope.() -> Unit = {}
+    topBarActions: @Composable RowScope.() -> Unit = {},
+    updates: UpdateViewModel = koinViewModel()
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -161,10 +164,11 @@ fun MainScreen(
                 ErkinNavHost(
                     navController = navController,
                     appsQuery = appsQuery,
+                    updates = updates,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
-            UpdatePrompt()
+            UpdatePrompt(updates)
         }
     }
 }

@@ -23,6 +23,8 @@ sealed interface UpdateUiState {
     data class Failed(val release: AppRelease) : UpdateUiState
 }
 
+enum class UpdateCheckResult { AVAILABLE, UP_TO_DATE, FAILED }
+
 class UpdateViewModel(
     private val checker: UpdateChecker,
     private val downloader: UpdateDownloader,
@@ -30,22 +32,38 @@ class UpdateViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow<UpdateUiState>(UpdateUiState.Hidden)
     val state: StateFlow<UpdateUiState> = _state.asStateFlow()
+    private val _checking = MutableStateFlow(false)
+    val checking: StateFlow<Boolean> = _checking.asStateFlow()
+    val currentVersion: String? get() = checker.currentVersion?.toString()
     private var download: Job? = null
 
     init {
-        viewModelScope.launch {
-            val release = try {
-                checker.check()
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                null
-            } ?: return@launch
-            _state.value = UpdateUiState.Available(
-                release = release,
-                current = checker.currentVersion.toString(),
-                installable = platform.assetSuffix?.let(release::asset) != null
-            )
+        viewModelScope.launch { check() }
+    }
+
+    fun checkNow(onResult: (UpdateCheckResult) -> Unit) {
+        if (_checking.value) return
+        viewModelScope.launch { onResult(check()) }
+    }
+
+    private suspend fun check(): UpdateCheckResult {
+        _checking.value = true
+        return try {
+            val release = checker.check() ?: return UpdateCheckResult.UP_TO_DATE
+            if (_state.value !is UpdateUiState.Downloading) {
+                _state.value = UpdateUiState.Available(
+                    release = release,
+                    current = checker.currentVersion.toString(),
+                    installable = platform.assetSuffix?.let(release::asset) != null
+                )
+            }
+            UpdateCheckResult.AVAILABLE
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Exception) {
+            UpdateCheckResult.FAILED
+        } finally {
+            _checking.value = false
         }
     }
 

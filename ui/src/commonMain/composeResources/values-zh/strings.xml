@@ -150,6 +150,11 @@
     <string name="update_open_page">打开页面</string>
     <string name="update_downloading">正在下载 ERKIN %1$s</string>
     <string name="update_failed">无法下载更新。可以从发布页面获取。</string>
+    <string name="updates_title">更新</string>
+    <string name="update_check">检查更新</string>
+    <string name="update_current">已安装版本 %1$s</string>
+    <string name="update_up_to_date">已是最新版本</string>
+    <string name="update_check_failed">无法检查更新</string>
     <string name="rules_title">规则</string>
     <string name="rules_description">规则从上到下依次检查，第一条匹配的规则生效。匹配的规则优先于应用所在的通道。</string>
     <string name="rules_scope_tunneled">在 Android 上，规则只作用于 VPN 和 ByeDPI 通道中的应用：直连通道中的应用完全不经过 ERKIN。</string>

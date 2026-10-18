@@ -21,6 +21,7 @@ import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
 import io.github.yulbax.erkin.vpn.SocksSiteProbe
 import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
+import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.mihomo.MihomoLatencyTester
 import io.github.yulbax.erkin.vpn.VpnCommandBus
@@ -67,16 +68,20 @@ class AppModule {
     fun routingRuleRepository(database: AppDatabase): RoutingRuleRepository = RoutingRuleRepository(database)
 
     @Single
-    fun ruleListDatabase(context: Context, database: AppDatabase): RuleListDatabase =
-        RuleListDatabase(AndroidRuleListStore(context.applicationContext), database.ruleListDao())
+    fun downloadRoute(): DownloadRoute = DownloadRoute()
+
+    @Single
+    fun ruleListDatabase(context: Context, database: AppDatabase, route: DownloadRoute): RuleListDatabase =
+        RuleListDatabase(AndroidRuleListStore(context.applicationContext), database.ruleListDao(), route)
 
     @Single
     fun vpnSessionFactory(
         store: VpnSessionStore,
         stateRepository: VpnStateRepository,
         ruleLists: RuleListDatabase,
+        route: DownloadRoute,
         log: AppLog
-    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, log)
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, log)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =
@@ -90,7 +95,7 @@ class AppModule {
     fun byeDpiSiteProbe(): ByeDpiSiteProbe = SocksSiteProbe
 
     @Single
-    fun subscriptionProfileSource(): SubscriptionProfileSource = HttpSubscriptionProfileSource()
+    fun subscriptionProfileSource(route: DownloadRoute): SubscriptionProfileSource = HttpSubscriptionProfileSource(route)
 
     @Single
     fun vpnStateRepository(): VpnStateRepository = VpnStateRepository()
@@ -99,10 +104,10 @@ class AppModule {
     fun vpnCommandBus(): VpnCommandBus = VpnCommandBus()
 
     @Single
-    fun updateChecker(versionInfo: VersionInfo): UpdateChecker = UpdateChecker(versionInfo)
+    fun updateChecker(versionInfo: VersionInfo, route: DownloadRoute): UpdateChecker = UpdateChecker(versionInfo, route)
 
     @Single
-    fun updateDownloader(): UpdateDownloader = UpdateDownloader()
+    fun updateDownloader(route: DownloadRoute): UpdateDownloader = UpdateDownloader(route)
 
     @Single
     fun serverLatencyProbe(context: Context, store: VpnSessionStore, log: AppLog): ServerLatencyProbe =

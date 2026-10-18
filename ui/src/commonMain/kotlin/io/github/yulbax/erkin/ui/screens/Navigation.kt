@@ -29,6 +29,7 @@ import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
 import io.github.yulbax.erkin.ui.screens.rules.RuleSets
 import io.github.yulbax.erkin.ui.screens.rules.Rules
 import io.github.yulbax.erkin.ui.screens.settings.Settings
+import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 
 sealed class Screen(
     val route: String,
@@ -132,6 +133,7 @@ fun NavController.navigateToScreen(screen: Screen) {
 fun ErkinNavHost(
     navController: NavHostController,
     appsQuery: String,
+    updates: UpdateViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -148,7 +150,7 @@ fun ErkinNavHost(
         composable(Screen.Rules.route) { Rules(onOpenRuleSets = { navController.navigate(Screen.RuleSets.route) }) }
         composable(Screen.RuleSets.route) { RuleSets() }
         composable(Screen.Chains.route) { Chains() }
-        composable(Screen.Settings.route) { Settings() }
+        composable(Screen.Settings.route) { Settings(updates = updates) }
         composable(Screen.Logs.route) { Logs() }
         composable(Screen.License.route) { License() }
         composable(Screen.About.route) { About() }

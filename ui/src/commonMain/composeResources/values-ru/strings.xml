@@ -153,6 +153,11 @@
     <string name="update_open_page">Открыть страницу</string>
     <string name="update_downloading">Загрузка ERKIN %1$s</string>
     <string name="update_failed">Не удалось загрузить обновление. Его можно скачать со страницы релиза.</string>
+    <string name="updates_title">Обновления</string>
+    <string name="update_check">Проверить обновления</string>
+    <string name="update_current">Установлена версия %1$s</string>
+    <string name="update_up_to_date">Установлена последняя версия</string>
+    <string name="update_check_failed">Не удалось проверить обновления</string>
     <string name="rules_title">Правила</string>
     <string name="rules_description">Правила проверяются сверху вниз, срабатывает первое подходящее. Подходящее правило важнее канала приложения.</string>
     <string name="rules_scope_tunneled">На Android правила действуют только на приложения в каналах VPN и ByeDPI: приложения в канале Direct идут мимо ERKIN.</string>

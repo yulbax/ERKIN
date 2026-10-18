@@ -34,7 +34,8 @@ class VpnSession(
     private val scope: CoroutineScope,
     private val requestWork: (Command) -> Unit,
     private val onByeDpiExit: (run: Long, code: Int) -> Unit,
-    private val ruleLists: (String) -> InstalledRuleList? = { null }
+    private val ruleLists: (String) -> InstalledRuleList? = { null },
+    private val downloadRoute: DownloadRoute? = null
 ) {
     private enum class Phase { Idle, Starting, Running, Stopping }
 
@@ -187,6 +188,7 @@ class VpnSession(
             runCatching { stopByeDpi() }
                 .onFailure { log.w(TAG, "failed to stop ByeDPI", it) }
             appliedConfig = null
+            downloadRoute?.tunnel = null
             runCatching { stateRepository.resetStats() }
             runCatching { stateRepository.update(finalState) }
         } finally {
@@ -196,6 +198,9 @@ class VpnSession(
 
     private fun commit(config: AppliedConfig) {
         appliedConfig = config
+        downloadRoute?.tunnel = config.selectedTag.takeIf { it.isNotEmpty() }?.let {
+            SocksEndpoint(engine.probeSocksPort, SocksCredentials(engine.probeUsername, engine.probePassword))
+        }
         stateRepository.updateStats {
             it.copy(
                 configName = config.configName,

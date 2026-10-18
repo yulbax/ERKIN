@@ -22,6 +22,7 @@ import io.github.yulbax.erkin.util.LogSource
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
+import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.SocksSiteProbe
@@ -45,7 +46,8 @@ val desktopModule = module {
     single { get<AppDatabase>().settingsDao() }
     single { get<AppDatabase>().profileDao() }
     single { SettingsRepository(get(), get()) }
-    single<SubscriptionProfileSource> { HttpSubscriptionProfileSource() }
+    single { DownloadRoute() }
+    single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get()) }
     single { ProfileRepository(get(), get(), get(), get()) }
     single { ConfigBackupRepository(get(), get()) }
     single { RoutingRuleRepository(get()) }
@@ -65,7 +67,7 @@ val desktopModule = module {
         )
     }
     single<VersionInfo> { DesktopVersionInfo(get()) }
-    single { RuleListDatabase(DesktopRuleListStore(get()), get<AppDatabase>().ruleListDao()) }
+    single { RuleListDatabase(DesktopRuleListStore(get()), get<AppDatabase>().ruleListDao(), get()) }
     single { ServerLatencyProbe(get(), ServiceLatencyTester(get())) }
     single<InstalledAppsSource>(createdAtStart = true) {
         val settings = get<SettingsRepository>()
@@ -74,7 +76,7 @@ val desktopModule = module {
         }
     }
 
-    single { VpnSessionFactory(get(), get(), get(), get()) }
+    single { VpnSessionFactory(get(), get(), get(), get(), get()) }
     single {
         val log = get<AppLog>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -98,7 +100,7 @@ val desktopModule = module {
         }
     }
     single<VpnLauncher> { DesktopVpnLauncher(get()) }
-    single { UpdateChecker(get()) }
-    single { UpdateDownloader() }
+    single { UpdateChecker(get(), get()) }
+    single { UpdateDownloader(get()) }
     single<UpdatePlatform> { DesktopUpdatePlatform(get()) }
 }

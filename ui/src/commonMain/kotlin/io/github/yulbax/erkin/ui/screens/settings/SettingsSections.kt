@@ -2,14 +2,19 @@ package io.github.yulbax.erkin.ui.screens.settings
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,6 +33,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.AppConfigBackup
@@ -41,6 +47,8 @@ import io.github.yulbax.erkin.ui.components.SwitchRow
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.viewmodel.SettingsUiState
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
+import io.github.yulbax.erkin.ui.viewmodel.UpdateCheckResult
+import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import io.github.yulbax.erkin.ui.platform.rememberFilePicker
 import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
 import io.github.yulbax.erkin.ui.platform.rememberSharer
@@ -331,4 +339,50 @@ private fun CheckRow(label: String, checked: Boolean, onCheckedChange: (Boolean)
         )
         Checkbox(checked = checked, onCheckedChange = null)
     }
+}
+
+@Composable
+internal fun UpdatesSection(updates: UpdateViewModel) {
+    val checking by updates.checking.collectAsStateWithLifecycle()
+    val showMessage = rememberShowMessage()
+    val upToDate = stringResource(Res.string.update_up_to_date)
+    val failed = stringResource(Res.string.update_check_failed)
+
+    GroupCard(
+        title = stringResource(Res.string.updates_title),
+        items = listOf {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 64.dp)
+                    .clickable(enabled = !checking) {
+                        updates.checkNow { result ->
+                            when (result) {
+                                UpdateCheckResult.UP_TO_DATE -> showMessage(upToDate)
+                                UpdateCheckResult.FAILED -> showMessage(failed)
+                                UpdateCheckResult.AVAILABLE -> Unit
+                            }
+                        }
+                    }
+                    .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(Res.string.update_check), style = MaterialTheme.typography.bodyLarge)
+                    updates.currentVersion?.let {
+                        Text(
+                            text = stringResource(Res.string.update_current, it),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                if (checking) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 3.dp)
+                } else {
+                    Icon(Icons.Filled.Refresh, contentDescription = null)
+                }
+            }
+        }
+    )
 }

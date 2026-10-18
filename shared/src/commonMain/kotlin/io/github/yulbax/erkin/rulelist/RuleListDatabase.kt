@@ -2,14 +2,13 @@ package io.github.yulbax.erkin.rulelist
 
 import io.github.yulbax.erkin.data.rules.RuleListDao
 import io.github.yulbax.erkin.data.rules.RuleListEntity
+import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.core.RuleListSource
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleSetFormat
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import java.io.File
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URI
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -46,7 +45,11 @@ data class RuleListState(
     val downloading: Boolean = false
 )
 
-class RuleListDatabase(private val store: RuleListStore, private val dao: RuleListDao) {
+class RuleListDatabase(
+    private val store: RuleListStore,
+    private val dao: RuleListDao,
+    private val route: DownloadRoute = DownloadRoute()
+) {
     private val mutex = Mutex()
     private val downloading = MutableStateFlow(emptySet<String>())
     private val revision = MutableStateFlow(0)
@@ -172,34 +175,38 @@ class RuleListDatabase(private val store: RuleListStore, private val dao: RuleLi
     }
 
     private suspend fun fetch(url: String, target: File) {
-        val connection = URI(url).toURL().openConnection() as HttpURLConnection
-        connection.connectTimeout = TIMEOUT_MS
-        connection.readTimeout = TIMEOUT_MS
+        val context = currentCoroutineContext()
         try {
-            val code = connection.responseCode
-            if (code !in 200..299) throw RuleListException(RuleListFailure.DOWNLOAD, "HTTP $code")
-            if (connection.contentType.orEmpty().startsWith(HTML_TYPE)) throw RuleListException(RuleListFailure.NOT_A_LIST)
-            if (connection.contentLengthLong > MAX_BYTES) throw RuleListException(RuleListFailure.TOO_LARGE)
-            connection.inputStream.use { input ->
-                target.outputStream().use { output ->
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    var done = 0L
-                    while (true) {
-                        currentCoroutineContext().ensureActive()
-                        val read = input.read(buffer)
-                        if (read < 0) break
-                        done += read
-                        if (done > MAX_BYTES) throw RuleListException(RuleListFailure.TOO_LARGE)
-                        output.write(buffer, 0, read)
+            route.fetch(url) { connection ->
+                connection.connectTimeout = TIMEOUT_MS
+                connection.readTimeout = TIMEOUT_MS
+                try {
+                    val code = connection.responseCode
+                    if (code !in 200..299) throw RuleListException(RuleListFailure.DOWNLOAD, "HTTP $code")
+                    if (connection.contentType.orEmpty().startsWith(HTML_TYPE)) throw RuleListException(RuleListFailure.NOT_A_LIST)
+                    if (connection.contentLengthLong > MAX_BYTES) throw RuleListException(RuleListFailure.TOO_LARGE)
+                    connection.inputStream.use { input ->
+                        target.outputStream().use { output ->
+                            val buffer = ByteArray(BUFFER_SIZE)
+                            var done = 0L
+                            while (true) {
+                                context.ensureActive()
+                                val read = input.read(buffer)
+                                if (read < 0) break
+                                done += read
+                                if (done > MAX_BYTES) throw RuleListException(RuleListFailure.TOO_LARGE)
+                                output.write(buffer, 0, read)
+                            }
+                        }
                     }
+                } finally {
+                    connection.disconnect()
                 }
             }
         } catch (error: RuleListException) {
             throw error
         } catch (error: IOException) {
             throw RuleListException(RuleListFailure.DOWNLOAD, error.message ?: error::class.simpleName)
-        } finally {
-            connection.disconnect()
         }
     }
 
