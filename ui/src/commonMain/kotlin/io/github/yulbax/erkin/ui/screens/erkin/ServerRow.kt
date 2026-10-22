@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -77,6 +78,7 @@ internal fun ServerRow(
     onLongClick: () -> Unit,
     onEdit: () -> Unit,
     onShare: () -> Unit,
+    onRefresh: (() -> Unit)? = null,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -176,6 +178,16 @@ internal fun ServerRow(
                                 leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                                 onClick = {
                                     onShare()
+                                    menuExpanded = false
+                                }
+                            )
+                        }
+                        if (onRefresh != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.refresh_subscription)) },
+                                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                onClick = {
+                                    onRefresh()
                                     menuExpanded = false
                                 }
                             )

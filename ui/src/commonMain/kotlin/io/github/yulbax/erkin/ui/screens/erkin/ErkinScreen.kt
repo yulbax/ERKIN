@@ -544,7 +544,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 serverEntries(c.servers.profiles).forEach { entry ->
                     when (entry) {
                         is ServerListEntry.Single -> item(key = entry.profile.id) {
-                            ServerListRow(c, entry.profile, fastestId, Modifier.animateItem())
+                            ServerListRow(c, entry.profile, fastestId, Modifier.animateItem(), refreshable = true)
                         }
                         is ServerListEntry.Group -> item(key = SUBSCRIPTION_KEY_PREFIX + entry.url) {
                             SubscriptionListRow(c, entry, fastestId, Modifier.animateItem())
@@ -652,6 +652,7 @@ private fun serverEntries(profiles: List<ProfileEntity>): List<ServerListEntry> 
         val url = profile.subscriptionUrl
         when {
             url.isEmpty() -> ServerListEntry.Single(profile)
+            groups.getValue(url).size == 1 -> ServerListEntry.Single(profile)
             seen.add(url) -> ServerListEntry.Group(url, groups.getValue(url))
             else -> null
         }
@@ -664,6 +665,7 @@ private fun ServerListRow(
     profile: ProfileEntity,
     fastestId: Long?,
     modifier: Modifier,
+    refreshable: Boolean = false,
     onSelected: () -> Unit = {}
 ) {
     ServerRow(
@@ -686,6 +688,7 @@ private fun ServerListRow(
         onLongClick = { c.onToggleCheck(profile) },
         onEdit = { c.onEdit(profile) },
         onShare = { c.onShare(profile) },
+        onRefresh = profile.subscriptionUrl.takeIf { refreshable && it.isNotEmpty() }?.let { url -> { c.onRefreshSubscription(url) } },
         onDelete = { c.onDelete(profile) },
         modifier = modifier
     )
