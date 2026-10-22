@@ -184,7 +184,7 @@ class DesktopEngineIntegrationTest {
 
     private fun assertLatencyTestWorks(client: ServiceClient) {
         val proxies = """[{"name":"p1","type":"direct"},{"name":"p2","type":"socks5","server":"127.0.0.1","port":${freeLoopbackPort()}}]"""
-        val delays = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000))
+        val delays = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true))
         assertTrue("a working server must be measured: $delays", delays[1L] is ProxyDelay.Measured)
         assertEquals(ProxyDelay.Failed, delays[2L])
     }

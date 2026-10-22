@@ -6,6 +6,7 @@ import (
 	"net/netip"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 	_ "time/tzdata"
 
@@ -42,6 +43,7 @@ var (
 	logOnce   sync.Once
 	sinkMutex sync.RWMutex
 	logSink   LogSink
+	applied   atomic.Bool
 )
 
 func SetLogSink(sink LogSink) {
@@ -72,6 +74,7 @@ func Apply(content string, keepTun bool, resolvedProxy string, resolverAddress s
 		return err
 	}
 	executor.ApplyConfig(parsed, true)
+	applied.Store(true)
 	if resolverAddress != "" {
 		resolveBeforeDial(resolvedProxy, parsed.DNS, parsed.General.IPv6)
 	}
@@ -79,6 +82,7 @@ func Apply(content string, keepTun bool, resolvedProxy string, resolverAddress s
 }
 
 func Shutdown() {
+	applied.Store(false)
 	closeConnections()
 	executor.Shutdown()
 	listener.ReCreateTun(LC.Tun{}, tunnel.Tunnel)
@@ -92,7 +96,10 @@ func URLTest(proxyName string, url string, timeoutMs int32) int32 {
 	return measure(proxy, url, timeoutMs)
 }
 
-func TestProxies(proxies string, url string, timeoutMs int32) (string, error) {
+func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string, error) {
+	if !applied.Load() {
+		resolver.DisableIPv6 = !ipv6
+	}
 	var mappings []map[string]any
 	if err := json.Unmarshal([]byte(proxies), &mappings); err != nil {
 		return "", err

@@ -14,6 +14,6 @@ class MihomoLatencyTester(private val appContext: Context, private val log: AppL
     override suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int): String =
         runInterruptible(Dispatchers.IO) {
             MihomoRuntime.ensureSetup(appContext, log)
-            Mihomocore.testProxies(MihomoConfigBuilder.proxiesForTest(proxies, options), url, timeoutMs)
+            Mihomocore.testProxies(MihomoConfigBuilder.proxiesForTest(proxies, options), url, timeoutMs, options.ipv6Mode.ipv6Enabled)
         }
 }

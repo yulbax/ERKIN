@@ -83,10 +83,11 @@ class ServiceClient private constructor(
 
     fun removeRuleList(name: String) = call("rulelistRemove") { put("name", name) }.throwIfFailed()
 
-    fun urlTest(proxies: String, url: String, timeoutMs: Int): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
+    fun urlTest(proxies: String, url: String, timeoutMs: Int, ipv6: Boolean): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
         put("proxies", proxies)
         put("url", url)
         put("timeout", timeoutMs)
+        put("ipv6", ipv6)
     }.let { reply ->
         reply.throwIfFailed()
         checkNotNull(reply["delays"]) { "ERKIN service returned no delays" }.toString()

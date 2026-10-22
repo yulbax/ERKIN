@@ -28,6 +28,7 @@ type request struct {
 	Format   string `json:"format,omitempty"`
 	Behavior string `json:"behavior,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
+	IPv6     bool   `json:"ipv6,omitempty"`
 }
 
 type response struct {
@@ -197,7 +198,7 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 		result.Delay = s.engine.delay(message.Proxy, message.URL, time.Duration(message.Timeout)*time.Millisecond)
 		result.OK = result.Delay > 0
 	case "urltest":
-		delays, err := mihomocore.TestProxies(message.Proxies, message.URL, int32(message.Timeout))
+		delays, err := mihomocore.TestProxies(message.Proxies, message.URL, int32(message.Timeout), message.IPv6)
 		if err != nil {
 			return fail(err)
 		}
