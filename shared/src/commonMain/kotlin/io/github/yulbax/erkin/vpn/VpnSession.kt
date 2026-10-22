@@ -274,13 +274,14 @@ class VpnSession(
     private suspend fun refreshSubscription() {
         val profile = store.selectedSubscription() ?: return
         log.i(TAG, "reconnect threshold reached; refreshing subscription '${profile.name}'")
-        when (val result = store.refreshSubscription(profile)) {
-            is ProfileOperationResult.Success ->
-                if (result.affected == 0) {
+        when (val result = store.refreshSubscription(profile.subscriptionUrl)) {
+            is ProfileOperationResult.SubscriptionSynced ->
+                if (result.selectedDropped) {
                     log.w(TAG, "subscription no longer lists this server; keeping it unchanged")
                 } else {
-                    log.i(TAG, "subscription refreshed; engine will reload with the new server")
+                    log.i(TAG, "subscription refreshed: +${result.added} ~${result.updated} -${result.removed}")
                 }
+            is ProfileOperationResult.Success -> Unit
             ProfileOperationResult.EmptySubscription ->
                 log.i(TAG, "subscription refresh returned no servers")
             is ProfileOperationResult.FetchFailed ->

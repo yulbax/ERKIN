@@ -5,7 +5,6 @@ import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.proxy.LinkParser
-import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.util.AppLog
 import kotlinx.coroutines.runBlocking
@@ -174,22 +173,26 @@ class ProfileRefreshTest {
 
     private class FakeSubscription : SubscriptionProfileSource {
         var links: List<String> = emptyList()
-        override suspend fun fetch(url: String): List<ParsedProfile> = links.mapNotNull(LinkParser::parse)
+        var info = SubscriptionInfo()
+        override suspend fun fetch(url: String) = FetchedSubscription(links.mapNotNull(LinkParser::parse), info)
     }
 
-    private suspend fun storedSubscriptionServer(link: String): ProfileEntity {
+    private suspend fun storedSubscriptionServer(link: String, selected: Boolean = false): ProfileEntity {
         val parsed = requireNotNull(LinkParser.parse(link))
-        val id = database.profileDao().insert(
+        val id = database.profileDao().append(
             ProfileEntity(
                 name = parsed.name,
                 type = parsed.protocol.wire,
                 link = parsed.link,
                 outboundJson = parsed.proxyJson(),
+                selected = selected,
                 subscriptionUrl = SUBSCRIPTION_URL
             )
         )
         return database.profileDao().getAll().single { it.id == id }
     }
+
+    private suspend fun names(): List<String> = database.profileDao().getAll().map { it.name }
 
     private suspend fun refreshed(profile: ProfileEntity): ProfileEntity =
         database.profileDao().getAll().single { it.id == profile.id }
@@ -202,11 +205,15 @@ class ProfileRefreshTest {
             "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany%20%7C%203%20GB%20left"
         )
 
-        assertEquals(ProfileOperationResult.Success(affected = 1), repository.refreshSubscription(profile))
+        assertEquals(
+            ProfileOperationResult.SubscriptionSynced(added = 1, updated = 1, removed = 0, selectedDropped = false),
+            repository.refreshSubscription(SUBSCRIPTION_URL)
+        )
 
         val stored = refreshed(profile)
         assertTrue(stored.outboundJson.contains("b.example"))
         assertEquals("Germany", stored.name)
+        assertEquals(listOf("Netherlands", "Germany"), names())
     }
 
     @Test
@@ -217,32 +224,99 @@ class ProfileRefreshTest {
             "vless://$OTHER_UUID@c.example:8443?security=tls&sni=c.example#Germany"
         )
 
-        repository.refreshSubscription(profile)
+        repository.refreshSubscription(SUBSCRIPTION_URL)
 
         assertTrue(refreshed(profile).outboundJson.contains("c.example"))
     }
 
     @Test
-    fun refreshNeverReplacesAServerTheSubscriptionNoLongerLists() = runBlocking {
-        val profile = storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
+    fun refreshDropsServersTheSubscriptionNoLongerLists() = runBlocking {
+        storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
         subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
 
-        assertEquals(ProfileOperationResult.Success(affected = 0), repository.refreshSubscription(profile))
+        assertEquals(
+            ProfileOperationResult.SubscriptionSynced(added = 1, updated = 0, removed = 1, selectedDropped = false),
+            repository.refreshSubscription(SUBSCRIPTION_URL)
+        )
 
-        assertEquals(profile, refreshed(profile))
+        assertEquals(listOf("Netherlands"), names())
+    }
+
+    @Test
+    fun refreshKeepsTheSelectedServerAndChainHopsItNoLongerLists() = runBlocking {
+        val selected = storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany", selected = true)
+        val hop = storedSubscriptionServer("vless://$UUID@c.example:443?security=tls&sni=c.example#France")
+        repository.add("vless://id@exit.example:443?security=tls#Exit")
+        val exit = database.profileDao().getAll().single { it.name == "Exit" }
+        assertTrue(repository.saveChain(null, "Chain", ProxyChain(ChainEntry.Server(hop.id), exit.id)))
+        subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
+
+        val result = repository.refreshSubscription(SUBSCRIPTION_URL) as ProfileOperationResult.SubscriptionSynced
+
+        assertTrue(result.selectedDropped)
+        assertEquals(0, result.removed)
+        assertEquals(selected, refreshed(selected).copy(position = selected.position))
+        assertEquals(listOf("Netherlands", "Germany", "France", "Exit", "Chain"), names())
     }
 
     @Test
     fun refreshLeavesAServerAloneWhenItsNameIsAmbiguous() = runBlocking {
-        val profile = storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
+        val profile = storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany", selected = true)
         subscription.links = listOf(
             "vless://$UUID@a.example:443?security=tls&sni=a.example#Germany",
             "vless://$UUID@c.example:443?security=tls&sni=c.example#Germany"
         )
 
-        repository.refreshSubscription(profile)
+        repository.refreshSubscription(SUBSCRIPTION_URL)
 
-        assertEquals(profile, refreshed(profile))
+        assertEquals(profile.outboundJson, refreshed(profile).outboundJson)
+        assertEquals(3, database.profileDao().getAll().size)
+    }
+
+    @Test
+    fun addingASubscriptionAgainUpdatesItInPlace() = runBlocking {
+        repository.add("vless://id@before.example:443?security=tls#Before")
+        subscription.links = listOf(
+            "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        )
+        repository.add(SUBSCRIPTION_URL)
+        repository.add("vless://id@after.example:443?security=tls#After")
+        subscription.links = listOf(
+            "vless://$UUID@c.example:443?security=tls&sni=c.example#France",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        )
+
+        repository.add(SUBSCRIPTION_URL)
+
+        assertEquals(listOf("Before", "France", "Germany", "After"), names())
+    }
+
+    @Test
+    fun subscriptionDetailsAreKeptUntilItsLastServerIsDeleted() = runBlocking {
+        subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
+        subscription.info = SubscriptionInfo(title = "Provider", usage = SubscriptionUsage(1, 2, 10, 1_900_000_000))
+        repository.add(SUBSCRIPTION_URL)
+        repository.renameSubscription(SUBSCRIPTION_URL, "  Mine ")
+
+        val stored = requireNotNull(database.subscriptionDao().get(SUBSCRIPTION_URL))
+        assertEquals("Provider", stored.title)
+        assertEquals("Mine", stored.displayName)
+        assertEquals(SubscriptionUsage(1, 2, 10, 1_900_000_000), stored.usage)
+
+        repository.delete(database.profileDao().getAll())
+
+        assertNull(database.subscriptionDao().get(SUBSCRIPTION_URL))
+    }
+
+    @Test
+    fun anEmptySubscriptionLeavesTheStoredServersAlone() = runBlocking {
+        storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
+        subscription.links = emptyList()
+
+        assertEquals(ProfileOperationResult.EmptySubscription, repository.refreshSubscription(SUBSCRIPTION_URL))
+
+        assertEquals(listOf("Germany"), names())
     }
 
     @Test

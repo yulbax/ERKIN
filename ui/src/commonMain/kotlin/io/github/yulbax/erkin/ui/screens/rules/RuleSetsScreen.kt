@@ -378,7 +378,7 @@ private fun CountryDialog(onDismiss: () -> Unit, onPick: (String) -> Unit) {
 }
 
 @Composable
-private fun RenameDialog(current: String, placeholder: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+internal fun RenameDialog(current: String, placeholder: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var name by remember { mutableStateOf(current) }
     AppDialog(
         title = stringResource(Res.string.rule_set_rename),

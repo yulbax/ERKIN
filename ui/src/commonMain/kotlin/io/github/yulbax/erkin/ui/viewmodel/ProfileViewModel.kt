@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
@@ -32,6 +33,8 @@ data class ServersUiState(
     val selected: ProfileEntity? = null,
     val delays: Map<Long, ProxyDelay> = emptyMap(),
     val testingIds: Set<Long> = emptySet(),
+    val subscriptions: Map<String, SubscriptionEntity> = emptyMap(),
+    val refreshing: Set<String> = emptySet(),
     val error: ServerError? = null
 ) {
     val testing: Boolean get() = testingIds.isNotEmpty()
@@ -46,15 +49,20 @@ class ProfileViewModel(
     private val _error = MutableStateFlow<ServerError?>(null)
     private val _delays = MutableStateFlow<Map<Long, ProxyDelay>>(emptyMap())
     private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
+    private val _refreshing = MutableStateFlow<Set<String>>(emptySet())
+
+    private val subscriptions = combine(profileRepository.subscriptions, _refreshing) { stored, refreshing ->
+        stored.associateBy { it.url } to refreshing
+    }
 
     val uiState: StateFlow<ServersUiState> = combine(
         profileRepository.profiles,
         profileRepository.selected,
-        _delays,
-        _testingIds,
+        combine(_delays, _testingIds) { delays, testingIds -> delays to testingIds },
+        subscriptions,
         _error
-    ) { profiles, selected, delays, testingIds, error ->
-        ServersUiState(profiles, selected, delays, testingIds, error)
+    ) { profiles, selected, (delays, testingIds), (stored, refreshing), error ->
+        ServersUiState(profiles, selected, delays, testingIds, stored, refreshing, error)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
 
     fun testAll() {
@@ -101,10 +109,20 @@ class ProfileViewModel(
         }
     }
 
-    fun refreshSubscription(profile: ProfileEntity) {
+    fun refreshSubscription(url: String) {
+        if (url in _refreshing.value) return
+        _refreshing.value += url
         viewModelScope.launch(Dispatchers.IO) {
-            handleResult("subscription refresh", profileRepository.refreshSubscription(profile))
+            try {
+                handleResult("subscription refresh", profileRepository.refreshSubscription(url))
+            } finally {
+                _refreshing.value -= url
+            }
         }
+    }
+
+    fun renameSubscription(url: String, name: String) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.renameSubscription(url, name) }
     }
 
     fun select(profile: ProfileEntity) {
@@ -120,6 +138,8 @@ class ProfileViewModel(
             is ProfileOperationResult.Success -> {
                 if (result.affected > 1) log.i(TAG, "$operation: ${result.affected} servers")
             }
+            is ProfileOperationResult.SubscriptionSynced ->
+                log.i(TAG, "$operation: +${result.added} ~${result.updated} -${result.removed}")
             ProfileOperationResult.InvalidLink -> {
                 log.w(TAG, "$operation: unsupported or invalid link")
                 _error.value = ServerError.InvalidLink

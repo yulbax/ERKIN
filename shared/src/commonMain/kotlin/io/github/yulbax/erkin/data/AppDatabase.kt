@@ -12,6 +12,8 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.SubscriptionDao
+import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RuleListDao
@@ -23,8 +25,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class],
-    version = 13,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class],
+    version = 14,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -35,6 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun routingRuleDao(): RoutingRuleDao
     abstract fun ruleListDao(): RuleListDao
+    abstract fun subscriptionDao(): SubscriptionDao
 
     suspend fun <R> transaction(block: suspend () -> R): R =
         useWriterConnection { connection -> connection.immediateTransaction { block() } }
@@ -127,6 +130,15 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     connection.execSQL("UPDATE routing_rules SET type = '$ruleSet', value = $countryUrl WHERE type = '$country'")
                     connection.execSQL("UPDATE routing_rules SET type = '$ruleSet' WHERE type = '$list'")
+                }
+            },
+            object : Migration(13, 14) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `subscriptions` (`url` TEXT NOT NULL, `name` TEXT, `title` TEXT, " +
+                            "`upload` INTEGER, `download` INTEGER, `total` INTEGER, `expire` INTEGER, " +
+                            "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`url`))"
+                    )
                 }
             }
         )

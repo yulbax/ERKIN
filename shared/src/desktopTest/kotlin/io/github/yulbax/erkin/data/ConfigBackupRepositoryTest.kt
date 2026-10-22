@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.data
 
 import androidx.room.Room
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
@@ -9,7 +10,6 @@ import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
-import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -93,7 +93,7 @@ class ConfigBackupRepositoryTest {
     }
 
     private object NoSubscriptions : SubscriptionProfileSource {
-        override suspend fun fetch(url: String): List<ParsedProfile> = emptyList()
+        override suspend fun fetch(url: String): FetchedSubscription = FetchedSubscription(emptyList())
     }
 
     private object SilentLog : AppLog {

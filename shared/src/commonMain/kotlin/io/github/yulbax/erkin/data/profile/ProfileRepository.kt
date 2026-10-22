@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import java.io.InputStream
 
 interface SubscriptionProfileSource {
-    suspend fun fetch(url: String): List<ParsedProfile>
+    suspend fun fetch(url: String): FetchedSubscription
 }
 
 class ProfileRepository(
@@ -24,13 +24,14 @@ class ProfileRepository(
 ) {
     val profiles: Flow<List<ProfileEntity>> = profileDao.observeAll()
     val selected: Flow<ProfileEntity?> = profileDao.observeSelected()
+    val subscriptions: Flow<List<SubscriptionEntity>> = database.subscriptionDao().observeAll()
 
     suspend fun add(raw: String, fileName: String? = null): ProfileOperationResult {
         val input = raw.trim()
         val parsed = LinkParser.parse(input)
         return when {
             parsed != null -> insertSingle(fileName?.let(::nameOfFile)?.let { parsed.copy(name = it) } ?: parsed)
-            input.isHttpUrl() -> importSubscription(input)
+            input.isHttpUrl() -> refreshSubscription(input)
             else -> insertAll(SubscriptionParser.parseBody(input))
         }
     }
@@ -60,25 +61,86 @@ class ProfileRepository(
         return ProfileOperationResult.Success()
     }
 
-    suspend fun refreshSubscription(profile: ProfileEntity): ProfileOperationResult {
-        val url = profile.subscriptionUrl.trim()
-        if (url.isEmpty()) return ProfileOperationResult.Success(affected = 0)
-        val parsed = fetchSubscription(url)
-        if (parsed !is FetchResult.Success) return parsed.toOperationResult()
-        if (parsed.profiles.isEmpty()) return ProfileOperationResult.EmptySubscription
+    suspend fun refreshSubscription(url: String): ProfileOperationResult {
+        val source = url.trim()
+        if (source.isEmpty()) return ProfileOperationResult.Success(affected = 0)
+        val fetched = fetchSubscription(source)
+        if (fetched !is FetchResult.Success) return fetched.toOperationResult()
+        if (fetched.subscription.profiles.isEmpty()) return ProfileOperationResult.EmptySubscription
+        return database.transaction { sync(source, fetched.subscription) }
+    }
 
-        val serverKey = profile.link.serverKey()
-        val fresh = parsed.profiles.firstOrNull { it.link.serverKey() == serverKey }
-            ?: parsed.profiles.singleOrNull { it.name == profile.name }
-            ?: return ProfileOperationResult.Success(affected = 0)
-        profileDao.updateConfig(
-            id = profile.id,
-            name = profile.name,
-            type = fresh.protocol.wire,
-            link = fresh.link,
-            outboundJson = fresh.proxyJson()
+    suspend fun renameSubscription(url: String, name: String) {
+        val subscriptions = database.subscriptionDao()
+        val stored = subscriptions.get(url) ?: SubscriptionEntity(url)
+        subscriptions.upsert(stored.copy(name = name.trim().takeIf { it.isNotEmpty() }))
+    }
+
+    private suspend fun sync(url: String, subscription: FetchedSubscription): ProfileOperationResult.SubscriptionSynced {
+        val all = profileDao.getAll()
+        val members = all.filter { it.isLink && it.subscriptionUrl == url }
+        val unmatched = members.toMutableList()
+        val matches = arrayOfNulls<ProfileEntity>(subscription.profiles.size)
+        subscription.profiles.forEachIndexed { index, fresh ->
+            val key = fresh.link.serverKey()
+            unmatched.firstOrNull { it.link.serverKey() == key }?.let {
+                matches[index] = it
+                unmatched -= it
+            }
+        }
+        subscription.profiles.forEachIndexed { index, fresh ->
+            if (matches[index] != null) return@forEachIndexed
+            val sameName = subscription.profiles.indices.count { matches[it] == null && subscription.profiles[it].name == fresh.name }
+            val candidate = unmatched.singleOrNull { it.name == fresh.name }
+            if (sameName == 1 && candidate != null) {
+                matches[index] = candidate
+                unmatched -= candidate
+            }
+        }
+
+        var updated = 0
+        val orderedIds = subscription.profiles.mapIndexed { index, fresh ->
+            val match = matches[index]
+            if (match == null) {
+                profileDao.append(fresh.toEntity(url))
+            } else {
+                val descriptor = fresh.proxyJson()
+                if (match.link != fresh.link || match.outboundJson != descriptor || match.type != fresh.protocol.wire) {
+                    profileDao.updateConfig(match.id, match.name, fresh.protocol.wire, fresh.link, descriptor)
+                    updated++
+                }
+                match.id
+            }
+        }
+        val chained = all.mapNotNull { (it.kind as? ServerKind.Chain)?.chain }
+        val (kept, stale) = unmatched.partition { profile -> profile.selected || chained.any { it.uses(profile.id) } }
+        profileDao.deleteMany(stale)
+
+        val groupIds = orderedIds + kept.map { it.id }
+        val others = profileDao.getAll().map { it.id }.filterNot { it in groupIds }
+        val anchor = all.indexOfFirst { it.subscriptionUrl == url }
+            .let { first -> if (first < 0) others.size else all.take(first).count { it.id in others } }
+        profileDao.reorder(others.take(anchor) + groupIds + others.drop(anchor))
+        ensureSelection(preferredId = orderedIds.firstOrNull())
+
+        val subscriptions = database.subscriptionDao()
+        val usage = subscription.info.usage
+        subscriptions.upsert(
+            (subscriptions.get(url) ?: SubscriptionEntity(url)).copy(
+                title = subscription.info.title,
+                upload = usage?.upload,
+                download = usage?.download,
+                total = usage?.total,
+                expire = usage?.expire,
+                updatedAt = System.currentTimeMillis()
+            )
         )
-        return ProfileOperationResult.Success()
+        return ProfileOperationResult.SubscriptionSynced(
+            added = matches.count { it == null },
+            updated = updated,
+            removed = stale.size,
+            selectedDropped = kept.any { it.selected }
+        )
     }
 
     suspend fun reorder(ids: List<Long>) {
@@ -119,6 +181,7 @@ class ProfileRepository(
                 profile.id !in ids && (profile.kind as? ServerKind.Chain)?.chain?.let { chain -> ids.any(chain::uses) } == true
             }
             profileDao.deleteMany(profiles + orphanedChains)
+            database.subscriptionDao().deleteOrphans()
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {
                 database.appDao().reassignConnectionType(ConnectionType.VPN, ConnectionType.DIRECT)
@@ -185,13 +248,6 @@ class ProfileRepository(
         return ProfileOperationResult.Success()
     }
 
-    private suspend fun importSubscription(url: String): ProfileOperationResult {
-        val parsed = fetchSubscription(url)
-        if (parsed !is FetchResult.Success) return parsed.toOperationResult()
-        if (parsed.profiles.isEmpty()) return ProfileOperationResult.EmptySubscription
-        return insertAll(parsed.profiles, subscriptionUrl = url)
-    }
-
     private suspend fun insertAll(profiles: List<ParsedProfile>, subscriptionUrl: String = ""): ProfileOperationResult {
         if (profiles.isEmpty()) return ProfileOperationResult.InvalidLink
         database.transaction {
@@ -235,12 +291,12 @@ class ProfileRepository(
     private fun String.serverKey(): String = trim().let { if ('\n' in it) it else it.substringBefore('#') }
 
     private sealed interface FetchResult {
-        data class Success(val profiles: List<ParsedProfile>) : FetchResult
+        data class Success(val subscription: FetchedSubscription) : FetchResult
         data class Failed(val cause: Throwable) : FetchResult
     }
 
     private fun FetchResult.toOperationResult(): ProfileOperationResult = when (this) {
-        is FetchResult.Success -> ProfileOperationResult.Success(affected = profiles.size)
+        is FetchResult.Success -> ProfileOperationResult.Success(affected = subscription.profiles.size)
         is FetchResult.Failed -> ProfileOperationResult.FetchFailed(cause)
     }
 }

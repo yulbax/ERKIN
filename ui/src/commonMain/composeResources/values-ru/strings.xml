@@ -242,4 +242,16 @@
     <string name="chain_remove_hop">Убрать звено</string>
     <string name="delete_chains_title">Удалить цепочки?</string>
     <string name="delete_chains_message">Удалить выбранные цепочки (%1$d)?</string>
+    <plurals name="subscription_servers">
+        <item quantity="one">%1$d сервер</item>
+        <item quantity="few">%1$d сервера</item>
+        <item quantity="many">%1$d серверов</item>
+        <item quantity="other">%1$d сервера</item>
+    </plurals>
+    <string name="subscription_usage">%1$s из %2$s</string>
+    <string name="subscription_used">Использовано %1$s</string>
+    <string name="subscription_expires">до %1$s</string>
+    <string name="subscription_expired">истекла</string>
+    <string name="subscription_show_servers">Показать серверы</string>
+    <string name="subscription_hide_servers">Скрыть серверы</string>
 </resources>

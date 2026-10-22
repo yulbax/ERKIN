@@ -41,6 +41,6 @@ class RoomVpnSessionStore(
     override suspend fun selectedSubscription(): ProfileEntity? =
         database.profileDao().getSelected()?.takeIf { it.subscriptionUrl.isNotBlank() }
 
-    override suspend fun refreshSubscription(profile: ProfileEntity): ProfileOperationResult =
-        profileRepository.refreshSubscription(profile)
+    override suspend fun refreshSubscription(url: String): ProfileOperationResult =
+        profileRepository.refreshSubscription(url)
 }

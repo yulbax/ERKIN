@@ -240,4 +240,14 @@
     <string name="chain_remove_hop">حذف حلقه</string>
     <string name="delete_chains_title">زنجیره‌ها حذف شوند؟</string>
     <string name="delete_chains_message">%1$d زنجیرهٔ انتخاب‌شده حذف شوند؟</string>
+    <plurals name="subscription_servers">
+        <item quantity="one">%1$d سرور</item>
+        <item quantity="other">%1$d سرور</item>
+    </plurals>
+    <string name="subscription_usage">%1$s از %2$s</string>
+    <string name="subscription_used">%1$s مصرف شده</string>
+    <string name="subscription_expires">تا %1$s</string>
+    <string name="subscription_expired">منقضی شده</string>
+    <string name="subscription_show_servers">نمایش سرورها</string>
+    <string name="subscription_hide_servers">پنهان کردن سرورها</string>
 </resources>

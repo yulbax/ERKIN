@@ -35,8 +35,8 @@ import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
-import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.di.uiModule
 import io.github.yulbax.erkin.ui.screens.About
@@ -248,7 +248,7 @@ class DesktopRenderTest {
     }
 
     private object NoSubscriptions : SubscriptionProfileSource {
-        override suspend fun fetch(url: String): List<ParsedProfile> = emptyList()
+        override suspend fun fetch(url: String): FetchedSubscription = FetchedSubscription(emptyList())
     }
 
     private object NoSiteProbe : ByeDpiSiteProbe {

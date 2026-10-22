@@ -20,12 +20,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -74,7 +72,6 @@ internal fun ServerRow(
     onLongClick: () -> Unit,
     onEdit: () -> Unit,
     onShare: () -> Unit,
-    onRefresh: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -124,14 +121,6 @@ internal fun ServerRow(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(6.dp))
-                    } else if (profile.subscriptionUrl.isNotEmpty()) {
-                        Icon(
-                            imageVector = Icons.Default.Cloud,
-                            contentDescription = stringResource(Res.string.subscription),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(6.dp))
                     }
                     Text(
                         profile.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
@@ -150,28 +139,7 @@ internal fun ServerRow(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (testing) {
-                        Text(
-                            " · ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        WaveDots(color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else if (delay != null) {
-                        Text(
-                            " · ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = when (delay) {
-                                ProxyDelay.Failed -> stringResource(Res.string.server_ping_timeout)
-                                is ProxyDelay.Measured -> "${delay.ms} ms"
-                            },
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    DelaySuffix(delay = delay, testing = testing)
                 }
             }
 
@@ -207,16 +175,6 @@ internal fun ServerRow(
                                 }
                             )
                         }
-                        if (profile.subscriptionUrl.isNotEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.refresh_subscription)) },
-                                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                                onClick = {
-                                    onRefresh()
-                                    menuExpanded = false
-                                }
-                            )
-                        }
                         DropdownMenuItem(
                             text = { Text(stringResource(Res.string.delete)) },
                             leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
@@ -229,6 +187,28 @@ internal fun ServerRow(
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun DelaySuffix(delay: ProxyDelay?, testing: Boolean) {
+    if (!testing && delay == null) return
+    Text(
+        " · ",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    if (testing) {
+        WaveDots(color = MaterialTheme.colorScheme.onSurfaceVariant)
+    } else if (delay != null) {
+        Text(
+            text = when (delay) {
+                ProxyDelay.Failed -> stringResource(Res.string.server_ping_timeout)
+                is ProxyDelay.Measured -> "${delay.ms} ms"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

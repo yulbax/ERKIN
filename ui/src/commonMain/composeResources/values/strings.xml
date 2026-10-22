@@ -254,4 +254,14 @@
     <string name="chain_remove_hop">Remove hop</string>
     <string name="delete_chains_title">Delete chains?</string>
     <string name="delete_chains_message">Delete %1$d selected chains?</string>
+    <plurals name="subscription_servers">
+        <item quantity="one">%1$d server</item>
+        <item quantity="other">%1$d servers</item>
+    </plurals>
+    <string name="subscription_usage">%1$s of %2$s</string>
+    <string name="subscription_used">%1$s used</string>
+    <string name="subscription_expires">until %1$s</string>
+    <string name="subscription_expired">expired</string>
+    <string name="subscription_show_servers">Show servers</string>
+    <string name="subscription_hide_servers">Hide servers</string>
 </resources>

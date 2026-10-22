@@ -239,4 +239,13 @@
     <string name="chain_remove_hop">移除节点</string>
     <string name="delete_chains_title">删除代理链？</string>
     <string name="delete_chains_message">删除选中的 %1$d 条代理链吗？</string>
+    <plurals name="subscription_servers">
+        <item quantity="other">%1$d 个服务器</item>
+    </plurals>
+    <string name="subscription_usage">%1$s / %2$s</string>
+    <string name="subscription_used">已用 %1$s</string>
+    <string name="subscription_expires">到期 %1$s</string>
+    <string name="subscription_expired">已过期</string>
+    <string name="subscription_show_servers">显示服务器</string>
+    <string name="subscription_hide_servers">隐藏服务器</string>
 </resources>
