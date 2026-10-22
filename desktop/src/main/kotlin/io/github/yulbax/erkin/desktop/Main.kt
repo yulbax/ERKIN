@@ -28,12 +28,17 @@ import io.github.yulbax.erkin.ui.theme.ERKINTheme
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.VpnController
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.skia.Image
 import org.koin.core.context.startKoin
 
 fun main() {
+    val activations = Channel<Unit>(Channel.CONFLATED)
+    val instance = SingleInstance(DesktopPaths.dataDir)
+    if (!instance.claim { activations.trySend(Unit) }) return
+
     val koin = startKoin { modules(desktopModule, uiModule) }.koin
     val controller = koin.get<VpnController>()
     controller.launch()
@@ -62,6 +67,9 @@ fun main() {
         val show = {
             visible = true
             state.isMinimized = false
+        }
+        LaunchedEffect(Unit) {
+            for (activation in activations) show()
         }
 
         if (TraySupport.isAvailable) ProvideAppLocale {
@@ -135,6 +143,7 @@ fun main() {
             }
         }
     }
+    instance.release()
 }
 
 private fun resourceUrl(name: String): String =
