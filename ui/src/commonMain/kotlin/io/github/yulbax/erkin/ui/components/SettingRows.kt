@@ -43,7 +43,11 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f).padding(end = 16.dp)
+        )
         Switch(checked = checked, onCheckedChange = null)
     }
 }

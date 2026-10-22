@@ -54,7 +54,7 @@
 
     <string name="connection_no_routed_apps">No apps are routed yet. Open Applications and set at least one app to VPN or ByeDPI before connecting.</string>
     <string name="servers_title">Servers</string>
-    <string name="sort_servers_by_ping">Sort by ping after a test</string>
+    <string name="sort_servers_by_ping">Sort by ping</string>
     <string name="servers_empty">No servers. Tap + to add a config link or subscription.</string>
     <string name="server_test_latency">Test latency</string>
     <string name="server_ping_timeout">timeout</string>

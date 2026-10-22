@@ -54,7 +54,7 @@
 
     <string name="connection_no_routed_apps">Пока ни одно приложение не маршрутизируется. Откройте «Приложения» и назначьте хотя бы одно на VPN или ByeDPI перед подключением.</string>
     <string name="servers_title">Серверы</string>
-    <string name="sort_servers_by_ping">Сортировать по пингу после проверки</string>
+    <string name="sort_servers_by_ping">Сортировать по пингу</string>
     <string name="servers_empty">Серверов нет. Нажмите +, чтобы добавить ссылку-конфиг или подписку.</string>
     <string name="server_test_latency">Проверить задержку</string>
     <string name="server_ping_timeout">таймаут</string>
