@@ -54,6 +54,7 @@
 
     <string name="connection_no_routed_apps">尚未路由任何应用。请先打开“应用”，将至少一个应用设为 VPN 或 ByeDPI，再进行连接。</string>
     <string name="servers_title">服务器</string>
+    <string name="sort_servers_by_ping">测试后按延迟排序</string>
     <string name="servers_empty">暂无服务器。点按 + 添加配置链接或订阅。</string>
     <string name="server_test_latency">测试延迟</string>
     <string name="server_ping_timeout">超时</string>

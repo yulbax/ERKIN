@@ -58,6 +58,7 @@ fun Settings(
         )
 
         ByeDpiSection(ui, viewModel)
+        ServersSection(ui, viewModel)
         AutostartSection(ui, viewModel)
         NetworkSection(ui, viewModel)
         BackupSection(viewModel)

@@ -100,6 +100,18 @@ internal fun ByeDpiSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
 }
 
 @Composable
+internal fun ServersSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
+    GroupCard(
+        title = stringResource(Res.string.servers_title),
+        items = listOf {
+            SwitchRow(stringResource(Res.string.sort_servers_by_ping), ui.sortServersByPing) {
+                viewModel.setSortServersByPing(it)
+            }
+        }
+    )
+}
+
+@Composable
 internal fun AutostartSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
     val openSystemVpnSettings = rememberSystemVpnSettings()
     val autoConnect = ui.autoConnect

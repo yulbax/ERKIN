@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,6 +48,7 @@ data class ServersUiState(
 
 class ProfileViewModel(
     private val profileRepository: ProfileRepository,
+    private val settingsRepository: SettingsRepository,
     private val latencyProbe: ServerLatencyProbe,
     private val log: AppLog
 ) : ViewModel() {
@@ -88,7 +91,9 @@ class ProfileViewModel(
             try {
                 val delays = latencyProbe.measureAll()
                 _delays.value = delays
-                profileRepository.reorder(uiState.value.profiles.sortedBy { delays[it.id].rank() }.map { it.id })
+                if (settingsRepository.settings.first().sortServersByPing) {
+                    profileRepository.reorder(uiState.value.profiles.sortedBy { delays[it.id].rank() }.map { it.id })
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {

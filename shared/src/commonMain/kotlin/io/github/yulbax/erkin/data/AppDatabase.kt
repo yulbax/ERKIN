@@ -26,7 +26,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -178,6 +178,11 @@ abstract class AppDatabase : RoomDatabase() {
                     connection.execSQL("DROP TABLE profiles")
                     connection.execSQL("ALTER TABLE profiles_new RENAME TO profiles")
                     connection.execSQL("CREATE INDEX IF NOT EXISTS `index_profiles_subscriptionId` ON `profiles` (`subscriptionId`)")
+                }
+            },
+            object : Migration(16, 17) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE settings ADD COLUMN sortServersByPing INTEGER NOT NULL DEFAULT 1")
                 }
             }
         )
