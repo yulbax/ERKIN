@@ -95,14 +95,17 @@ internal fun ServerRowLayout(
                 .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            leading?.invoke()
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-            )
+            if (leading != null) {
+                leading()
+            } else {
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                )
+            }
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
