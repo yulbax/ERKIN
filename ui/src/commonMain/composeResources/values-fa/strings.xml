@@ -205,9 +205,8 @@
     <string name="rule_set_country">%1$s (آدرس‌های IP)</string>
     <string name="rule_set_download">دانلود</string>
     <string name="rule_set_link">پیوند</string>
-    <string name="rule_set_name">نام</string>
     <string name="rule_set_name_optional">نام (اختیاری)</string>
-    <string name="rule_set_rename">تغییر نام</string>
+    <string name="rename">تغییر نام</string>
     <string name="rule_set_delete_title">مجموعه حذف شود؟</string>
     <string name="rule_set_delete_message">«%1$s» حذف خواهد شد.</string>
     <string name="rule_set_delete_rules">قوانینی که از آن استفاده می‌کنند (%1$d) نیز حذف خواهند شد.</string>

@@ -207,9 +207,8 @@
     <string name="rule_set_country">%1$s (IP-адреса)</string>
     <string name="rule_set_download">Скачать</string>
     <string name="rule_set_link">Ссылка</string>
-    <string name="rule_set_name">Название</string>
     <string name="rule_set_name_optional">Название (необязательно)</string>
-    <string name="rule_set_rename">Переименовать</string>
+    <string name="rename">Переименовать</string>
     <string name="rule_set_delete_title">Удалить набор?</string>
     <string name="rule_set_delete_message">Набор «%1$s» будет удалён.</string>
     <string name="rule_set_delete_rules">Правила с этим набором (%1$d) тоже будут удалены.</string>

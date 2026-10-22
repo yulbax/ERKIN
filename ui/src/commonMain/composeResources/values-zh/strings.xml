@@ -204,9 +204,8 @@
     <string name="rule_set_country">%1$s（IP 地址）</string>
     <string name="rule_set_download">下载</string>
     <string name="rule_set_link">链接</string>
-    <string name="rule_set_name">名称</string>
     <string name="rule_set_name_optional">名称（可选）</string>
-    <string name="rule_set_rename">重命名</string>
+    <string name="rename">重命名</string>
     <string name="rule_set_delete_title">删除规则集？</string>
     <string name="rule_set_delete_message">将删除“%1$s”。</string>
     <string name="rule_set_delete_rules">使用它的规则（%1$d）也将被删除。</string>

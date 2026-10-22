@@ -35,9 +35,13 @@ data class ServersUiState(
     val testingIds: Set<Long> = emptySet(),
     val subscriptions: Map<String, SubscriptionEntity> = emptyMap(),
     val refreshing: Set<String> = emptySet(),
+    val items: List<ServerListItem> = emptyList(),
     val error: ServerError? = null
 ) {
     val testing: Boolean get() = testingIds.isNotEmpty()
+
+    fun subscription(url: String): ServerListItem.Subscription? =
+        items.firstOrNull { it is ServerListItem.Subscription && it.url == url } as ServerListItem.Subscription?
 }
 
 class ProfileViewModel(
@@ -62,7 +66,16 @@ class ProfileViewModel(
         subscriptions,
         _error
     ) { profiles, selected, (delays, testingIds), (stored, refreshing), error ->
-        ServersUiState(profiles, selected, delays, testingIds, stored, refreshing, error)
+        ServersUiState(
+            profiles = profiles,
+            selected = selected,
+            delays = delays,
+            testingIds = testingIds,
+            subscriptions = stored,
+            refreshing = refreshing,
+            items = serverListItems(profiles, selected?.id, stored),
+            error = error
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
 
     fun testAll() {

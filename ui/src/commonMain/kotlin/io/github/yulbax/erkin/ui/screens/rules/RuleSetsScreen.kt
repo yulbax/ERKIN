@@ -31,11 +31,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,6 +49,7 @@ import io.github.yulbax.erkin.rulelist.RuleListException
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.GroupCard
+import io.github.yulbax.erkin.ui.components.RenameDialog
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.res.*
@@ -373,35 +374,6 @@ private fun CountryDialog(onDismiss: () -> Unit, onPick: (String) -> Unit) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             items = listOf { CountryPicker(code = code, onSelect = { code = it }, modifier = Modifier.fillMaxWidth()) }
-        )
-    }
-}
-
-@Composable
-internal fun RenameDialog(current: String, placeholder: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var name by remember { mutableStateOf(current) }
-    AppDialog(
-        title = stringResource(Res.string.rule_set_rename),
-        onDismiss = onDismiss,
-        buttons = {
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(name) }) { Text(stringResource(Res.string.save)) }
-        }
-    ) {
-        GroupCard(
-            itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            items = listOf {
-                TextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(Res.string.rule_set_name)) },
-                    placeholder = { Text(placeholder) },
-                    singleLine = true,
-                    colors = transparentFieldColors(),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
         )
     }
 }

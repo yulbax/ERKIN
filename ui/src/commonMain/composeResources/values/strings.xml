@@ -212,9 +212,8 @@
     <string name="rule_set_country">%1$s (IP addresses)</string>
     <string name="rule_set_download">Download</string>
     <string name="rule_set_link">Link</string>
-    <string name="rule_set_name">Name</string>
     <string name="rule_set_name_optional">Name (optional)</string>
-    <string name="rule_set_rename">Rename</string>
+    <string name="rename">Rename</string>
     <string name="rule_set_delete_title">Delete the rule set?</string>
     <string name="rule_set_delete_message">“%1$s” will be deleted.</string>
     <string name="rule_set_delete_rules">Rules that use it (%1$d) will be deleted too.</string>
