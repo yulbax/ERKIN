@@ -9,7 +9,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -48,15 +47,13 @@ internal fun ServerRow(
     isBest: Boolean = false,
     chainLabel: String? = null,
     fromSubscription: Boolean = false,
-    selecting: Boolean = false,
-    checked: Boolean = false,
-    handle: (@Composable () -> Unit)? = null
+    mode: RowMode = RowMode.Normal
 ) {
     ServerRowLayout(
         title = profile.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
         subtitle = chainLabel ?: profile.type,
         isSelected = isSelected,
-        highlighted = checked,
+        mode = mode,
         delay = delay,
         testing = testing,
         isBest = isBest,
@@ -68,14 +65,8 @@ internal fun ServerRow(
             fromSubscription -> RowIcon(Icons.Default.Cloud, Res.string.subscription)
             else -> null
         },
-        leading = if (selecting) ({ Checkbox(checked = checked, onCheckedChange = null) }) else null
-    ) {
-        if (selecting) {
-            handle?.invoke()
-        } else {
-            ServerMenu(actions)
-        }
-    }
+        menu = { ServerMenu(actions) }
+    )
 }
 
 @Composable

@@ -338,6 +338,12 @@ private class ErkinScreenContent(
     val onDeleteChecked: () -> Unit
 ) {
     val selecting: Boolean get() = checked.isNotEmpty()
+
+    fun checkState(ids: List<Long>): ToggleableState = when (ids.count { it in checked }) {
+        0 -> ToggleableState.Off
+        ids.size -> ToggleableState.On
+        else -> ToggleableState.Indeterminate
+    }
 }
 
 @Composable
@@ -580,10 +586,10 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                             shadowElevation = elevation,
                             color = if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
                         ) {
-                            val rowHandle = handle.takeIf { c.selecting }
+                            val mode = if (c.selecting) RowMode.Selecting(c.checkState(item.profileIds), handle) else RowMode.Normal
                             when (item) {
-                                is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, handle = rowHandle)
-                                is ServerListItem.Subscription -> SubscriptionListRow(c, item, fastestId, Modifier, rowHandle)
+                                is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, mode = mode)
+                                is ServerListItem.Subscription -> SubscriptionListRow(c, item, fastestId, Modifier, mode)
                             }
                         }
                     }
@@ -684,7 +690,7 @@ private fun ServerListRow(
     fastestId: Long?,
     modifier: Modifier,
     onSelected: () -> Unit = {},
-    handle: (@Composable () -> Unit)? = null
+    mode: RowMode = RowMode.Normal
 ) {
     val profile = item.profile
     val chainLabel = chainLabel(profile, c.servers.profiles)
@@ -712,9 +718,7 @@ private fun ServerListRow(
         isBest = profile.id == fastestId,
         chainLabel = chainLabel,
         fromSubscription = item.subscriptionId != null,
-        selecting = c.selecting,
-        checked = profile.id in c.checked,
-        handle = handle
+        mode = mode
     )
 }
 
@@ -724,10 +728,9 @@ private fun SubscriptionListRow(
     item: ServerListItem.Subscription,
     fastestId: Long?,
     modifier: Modifier,
-    handle: (@Composable () -> Unit)?
+    mode: RowMode
 ) {
     val current = item.current
-    val checkedCount = item.members.count { it.id in c.checked }
     SubscriptionRow(
         item = item,
         actions = c.subscriptions,
@@ -735,16 +738,10 @@ private fun SubscriptionListRow(
         delay = c.servers.delays[current.id],
         testing = current.id in c.servers.testingIds,
         isBest = current.id == fastestId,
-        selecting = c.selecting,
-        checkState = when (checkedCount) {
-            0 -> ToggleableState.Off
-            item.members.size -> ToggleableState.On
-            else -> ToggleableState.Indeterminate
-        },
+        mode = mode,
         onClick = { if (c.selecting) c.onToggleChecks(item.members) else c.onSelect(current) },
         onLongClick = { c.onToggleChecks(item.members) },
-        modifier = modifier,
-        handle = handle
+        modifier = modifier
     )
 }
 

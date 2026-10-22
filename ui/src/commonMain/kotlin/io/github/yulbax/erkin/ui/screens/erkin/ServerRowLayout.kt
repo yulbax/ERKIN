@@ -30,6 +30,7 @@ import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonShapes
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +43,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -56,12 +58,18 @@ import org.jetbrains.compose.resources.stringResource
 
 internal class RowIcon(val vector: ImageVector, val description: StringResource)
 
+internal sealed interface RowMode {
+    data object Normal : RowMode
+
+    data class Selecting(val state: ToggleableState, val handle: @Composable () -> Unit) : RowMode
+}
+
 @Composable
 internal fun ServerRowLayout(
     title: String,
     subtitle: String,
     isSelected: Boolean,
-    highlighted: Boolean,
+    mode: RowMode,
     delay: ProxyDelay?,
     testing: Boolean,
     isBest: Boolean,
@@ -70,15 +78,14 @@ internal fun ServerRowLayout(
     modifier: Modifier = Modifier,
     titleIcon: RowIcon? = null,
     subtitleIcon: RowIcon? = null,
-    leading: (@Composable () -> Unit)? = null,
-    trailing: @Composable RowScope.() -> Unit
+    menu: @Composable RowScope.() -> Unit
 ) {
     val pingColor = delay?.let(::pingColor)
     val shape = RoundedCornerShape(18.dp)
     Surface(
         shape = shape,
         color = when {
-            highlighted -> MaterialTheme.colorScheme.secondaryContainer
+            mode is RowMode.Selecting && mode.state != ToggleableState.Off -> MaterialTheme.colorScheme.secondaryContainer
             isBest && pingColor != null -> pingColor.copy(alpha = 0.14f)
             isSelected -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
             else -> Color.Transparent
@@ -95,16 +102,15 @@ internal fun ServerRowLayout(
                 .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (leading != null) {
-                leading()
-            } else {
-                Box(
+            when (mode) {
+                RowMode.Normal -> Box(
                     modifier = Modifier
                         .width(4.dp)
                         .height(44.dp)
                         .clip(RoundedCornerShape(2.dp))
                         .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                 )
+                is RowMode.Selecting -> TriStateCheckbox(state = mode.state, onClick = null)
             }
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -131,7 +137,10 @@ internal fun ServerRowLayout(
                     DelaySuffix(delay = delay, testing = testing)
                 }
             }
-            trailing()
+            when (mode) {
+                RowMode.Normal -> menu()
+                is RowMode.Selecting -> mode.handle()
+            }
         }
     }
 }

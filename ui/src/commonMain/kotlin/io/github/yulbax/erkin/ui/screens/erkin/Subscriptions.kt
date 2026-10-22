@@ -34,7 +34,6 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.Text
-import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +44,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
@@ -79,18 +77,16 @@ internal fun SubscriptionRow(
     delay: ProxyDelay?,
     testing: Boolean,
     isBest: Boolean,
-    selecting: Boolean,
-    checkState: ToggleableState,
+    mode: RowMode,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    handle: (@Composable () -> Unit)? = null
+    modifier: Modifier = Modifier
 ) {
     ServerRowLayout(
         title = item.current.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
         subtitle = "${item.name} · ${item.members.size} · ${item.current.type}",
         isSelected = isSelected,
-        highlighted = checkState != ToggleableState.Off,
+        mode = mode,
         delay = delay,
         testing = testing,
         isBest = isBest,
@@ -98,11 +94,7 @@ internal fun SubscriptionRow(
         onLongClick = onLongClick,
         modifier = modifier,
         subtitleIcon = RowIcon(Icons.Default.Cloud, Res.string.subscription),
-        leading = if (selecting) ({ TriStateCheckbox(state = checkState, onClick = null) }) else null
-    ) {
-        if (selecting) {
-            handle?.invoke()
-        } else {
+        menu = {
             var menuExpanded by remember { mutableStateOf(false) }
             SplitButtonLayout(
                 leadingButton = {
@@ -125,7 +117,7 @@ internal fun SubscriptionRow(
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
         }
-    }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
