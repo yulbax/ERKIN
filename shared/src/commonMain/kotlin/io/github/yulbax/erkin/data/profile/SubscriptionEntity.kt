@@ -14,7 +14,8 @@ data class SubscriptionEntity(
     val download: Long? = null,
     val total: Long? = null,
     val expire: Long? = null,
-    val updatedAt: Long = 0
+    val updatedAt: Long = 0,
+    val currentId: Long? = null
 ) {
     val usage: SubscriptionUsage?
         get() = if (upload == null || download == null || total == null || expire == null) null

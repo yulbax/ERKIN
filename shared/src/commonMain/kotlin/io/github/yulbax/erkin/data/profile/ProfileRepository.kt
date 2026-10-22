@@ -148,7 +148,14 @@ class ProfileRepository(
     }
 
     suspend fun select(profile: ProfileEntity) {
-        profileDao.selectExclusive(profile.id)
+        database.transaction {
+            profileDao.selectExclusive(profile.id)
+            if (profile.subscriptionUrl.isNotEmpty()) {
+                val subscriptions = database.subscriptionDao()
+                val stored = subscriptions.get(profile.subscriptionUrl) ?: SubscriptionEntity(profile.subscriptionUrl)
+                subscriptions.upsert(stored.copy(currentId = profile.id))
+            }
+        }
     }
 
     suspend fun saveChain(existing: ProfileEntity?, name: String, chain: ProxyChain): Boolean {

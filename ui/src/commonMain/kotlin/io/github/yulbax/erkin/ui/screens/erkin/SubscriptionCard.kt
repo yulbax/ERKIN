@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -69,29 +70,34 @@ import org.jetbrains.compose.resources.stringResource
 internal fun SubscriptionRow(
     name: String,
     count: Int,
-    selected: ProfileEntity?,
+    current: ProfileEntity,
+    isSelected: Boolean,
     delay: ProxyDelay?,
     testing: Boolean,
+    isBest: Boolean,
     selecting: Boolean,
     checkState: ToggleableState,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onOpen: () -> Unit,
     menu: SubscriptionMenu,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(18.dp)
+    val pingColor = delay?.let(::pingColor)
     Surface(
         shape = shape,
         color = when {
             checkState != ToggleableState.Off -> MaterialTheme.colorScheme.secondaryContainer
-            selected != null -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+            isBest && pingColor != null -> pingColor.copy(alpha = 0.14f)
+            isSelected -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
             else -> Color.Transparent
         },
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .semantics { this.selected = selected != null }
+            .semantics { selected = isSelected }
     ) {
         Row(
             modifier = Modifier
@@ -99,11 +105,11 @@ internal fun SubscriptionRow(
                 .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IndicatorBar(selected != null)
+            IndicatorBar(isSelected)
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    selected?.let { it.name.ifEmpty { stringResource(Res.string.unnamed_profile) } } ?: name,
+                    current.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -117,29 +123,26 @@ internal fun SubscriptionRow(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        if (selected != null) name else pluralStringResource(Res.plurals.subscription_servers, count, count),
+                        "$name · ${current.type}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    if (selected != null) DelaySuffix(delay = delay, testing = testing)
+                    DelaySuffix(delay = delay, testing = testing)
                 }
             }
             if (selecting) {
                 TriStateCheckbox(state = checkState, onClick = null)
             } else {
-                Text(
-                    count.toString(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = stringResource(Res.string.subscription_show_servers),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                TextButton(onClick = onOpen, contentPadding = PaddingValues(start = 12.dp, end = 4.dp)) {
+                    Text(count.toString(), style = MaterialTheme.typography.labelLarge)
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = stringResource(Res.string.subscription_show_servers)
+                    )
+                }
                 SubscriptionMenuButton(menu)
             }
         }

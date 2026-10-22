@@ -310,6 +310,23 @@ class ProfileRefreshTest {
     }
 
     @Test
+    fun aSubscriptionRemembersTheServerLastPickedInIt() = runBlocking {
+        subscription.links = listOf(
+            "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        )
+        repository.add(SUBSCRIPTION_URL)
+        repository.add("vless://id@other.example:443?security=tls#Other")
+        val (_, germany, other) = database.profileDao().getAll()
+
+        repository.select(germany)
+        repository.select(other)
+
+        assertEquals(germany.id, database.subscriptionDao().get(SUBSCRIPTION_URL)?.currentId)
+        assertEquals(other.id, database.profileDao().getSelected()?.id)
+    }
+
+    @Test
     fun anEmptySubscriptionLeavesTheStoredServersAlone() = runBlocking {
         storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
         subscription.links = emptyList()

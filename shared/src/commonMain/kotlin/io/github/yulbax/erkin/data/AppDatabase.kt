@@ -26,7 +26,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -139,6 +139,11 @@ abstract class AppDatabase : RoomDatabase() {
                             "`upload` INTEGER, `download` INTEGER, `total` INTEGER, `expire` INTEGER, " +
                             "`updatedAt` INTEGER NOT NULL, PRIMARY KEY(`url`))"
                     )
+                }
+            },
+            object : Migration(14, 15) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE subscriptions ADD COLUMN currentId INTEGER")
                 }
             }
         )

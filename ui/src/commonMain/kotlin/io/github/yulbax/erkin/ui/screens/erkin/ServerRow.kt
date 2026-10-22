@@ -248,7 +248,7 @@ private const val WAVE_PERIOD_MS = 1_000
 private const val WAVE_DOT_SHIFT = 0.15f
 private val WAVE_LIFT = 4.dp
 
-private fun pingColor(delay: ProxyDelay): Color = when (delay) {
+internal fun pingColor(delay: ProxyDelay): Color = when (delay) {
     ProxyDelay.Failed -> PING_RED
     is ProxyDelay.Measured -> when {
         delay.ms <= 100 -> StatusGreen

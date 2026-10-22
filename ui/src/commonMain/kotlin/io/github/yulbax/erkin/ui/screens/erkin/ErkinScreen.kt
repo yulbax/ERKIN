@@ -547,7 +547,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                             ServerListRow(c, entry.profile, fastestId, Modifier.animateItem())
                         }
                         is ServerListEntry.Group -> item(key = SUBSCRIPTION_KEY_PREFIX + entry.url) {
-                            SubscriptionListRow(c, entry, Modifier.animateItem())
+                            SubscriptionListRow(c, entry, fastestId, Modifier.animateItem())
                         }
                     }
                 }
@@ -692,23 +692,29 @@ private fun ServerListRow(
 }
 
 @Composable
-private fun SubscriptionListRow(c: ErkinScreenContent, entry: ServerListEntry.Group, modifier: Modifier) {
-    val selected = entry.members.firstOrNull { it.id == c.servers.selected?.id }
+private fun SubscriptionListRow(c: ErkinScreenContent, entry: ServerListEntry.Group, fastestId: Long?, modifier: Modifier) {
+    val stored = c.servers.subscriptions[entry.url]
+    val current = entry.members.firstOrNull { it.id == c.servers.selected?.id }
+        ?: entry.members.firstOrNull { it.id == stored?.currentId }
+        ?: entry.members.first()
     val checkedCount = entry.members.count { it.id in c.checked }
     SubscriptionRow(
-        name = c.servers.subscriptions[entry.url].nameOr(entry.url),
+        name = stored.nameOr(entry.url),
         count = entry.members.size,
-        selected = selected,
-        delay = selected?.let { c.servers.delays[it.id] },
-        testing = selected != null && selected.id in c.servers.testingIds,
+        current = current,
+        isSelected = current.id == c.servers.selected?.id,
+        delay = c.servers.delays[current.id],
+        testing = current.id in c.servers.testingIds,
+        isBest = current.id == fastestId,
         selecting = c.selecting,
         checkState = when (checkedCount) {
             0 -> ToggleableState.Off
             entry.members.size -> ToggleableState.On
             else -> ToggleableState.Indeterminate
         },
-        onClick = { if (c.selecting) c.onToggleChecks(entry.members) else c.onOpenSubscription(entry.url) },
+        onClick = { if (c.selecting) c.onToggleChecks(entry.members) else c.onSelect(current) },
         onLongClick = { c.onToggleChecks(entry.members) },
+        onOpen = { c.onOpenSubscription(entry.url) },
         menu = subscriptionMenu(c, entry.url),
         modifier = modifier
     )
