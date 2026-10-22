@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -65,10 +64,8 @@ import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
-import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.screens.rules.RenameDialog
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.state.ToggleableState
 import io.github.yulbax.erkin.ui.platform.rememberSharer
 import io.github.yulbax.erkin.ui.screens.chains.ChainDialog
@@ -106,7 +103,7 @@ fun ErkinScreen(
     var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
     var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
-    var expandedUrls by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var sheetUrl by rememberSaveable { mutableStateOf<String?>(null) }
     var renamingUrl by remember { mutableStateOf<String?>(null) }
     val checked = checkedIds.filterTo(HashSet()) { id -> servers.profiles.any { it.id == id } }
 
@@ -150,8 +147,7 @@ fun ErkinScreen(
         },
         onShare = { profile -> sharer.shareText(profile.link, shareChooserTitle) },
         onDelete = { deleting = listOf(it) },
-        expanded = expandedUrls.toSet(),
-        onToggleExpand = { url -> expandedUrls = if (url in expandedUrls) expandedUrls - url else expandedUrls + url },
+        onOpenSubscription = { sheetUrl = it },
         onRefreshSubscription = { profileViewModel.refreshSubscription(it) },
         onRenameSubscription = { renamingUrl = it },
         onShareSubscription = { url -> sharer.shareText(url, shareChooserTitle) },
@@ -172,6 +168,24 @@ fun ErkinScreen(
     val windowSize = LocalWindowInfo.current.containerSize
     val landscape = windowSize.width > windowSize.height
     if (landscape) ErkinScreenLandscape(content) else ErkinScreenPortrait(content)
+
+    sheetUrl?.let { url ->
+        val members = servers.profiles.filter { it.subscriptionUrl == url }
+        if (members.isEmpty()) {
+            LaunchedEffect(url) { sheetUrl = null }
+        } else {
+            val stored = servers.subscriptions[url]
+            SubscriptionSheet(
+                name = stored.nameOr(url),
+                usage = stored?.usage,
+                members = members,
+                menu = subscriptionMenu(content, url),
+                onDismiss = { sheetUrl = null }
+            ) { profile ->
+                ServerListRow(content, profile, fastestId(servers.delays), Modifier, onSelected = { sheetUrl = null })
+            }
+        }
+    }
 
     if (showByeDpiDialog) {
         LaunchedEffect(Unit) { viewModel.runByeDpiTest(full = false) }
@@ -305,8 +319,7 @@ private class ErkinScreenContent(
     val onEdit: (ProfileEntity) -> Unit,
     val onShare: (ProfileEntity) -> Unit,
     val onDelete: (ProfileEntity) -> Unit,
-    val expanded: Set<String>,
-    val onToggleExpand: (String) -> Unit,
+    val onOpenSubscription: (String) -> Unit,
     val onRefreshSubscription: (String) -> Unit,
     val onRenameSubscription: (String) -> Unit,
     val onShareSubscription: (String) -> Unit,
@@ -527,32 +540,14 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val fastestId = c.servers.delays
-                    .mapNotNull { (id, delay) -> (delay as? ProxyDelay.Measured)?.let { id to it.ms } }
-                    .minByOrNull { it.second }
-                    ?.first
+                val fastestId = fastestId(c.servers.delays)
                 serverEntries(c.servers.profiles).forEach { entry ->
                     when (entry) {
                         is ServerListEntry.Single -> item(key = entry.profile.id) {
                             ServerListRow(c, entry.profile, fastestId, Modifier.animateItem())
                         }
-                        is ServerListEntry.Group -> {
-                            val expanded = entry.url in c.expanded
-                            val count = if (expanded) entry.members.size + 1 else 1
-                            item(key = SUBSCRIPTION_KEY_PREFIX + entry.url) {
-                                SubscriptionListHeader(c, entry, expanded, groupItemShape(0, count), Modifier.animateItem())
-                            }
-                            if (expanded) {
-                                itemsIndexed(entry.members, key = { _, profile -> profile.id }) { index, profile ->
-                                    Surface(
-                                        shape = groupItemShape(index + 1, count),
-                                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                        modifier = Modifier.animateItem()
-                                    ) {
-                                        ServerListRow(c, profile, fastestId, Modifier.padding(4.dp))
-                                    }
-                                }
-                            }
+                        is ServerListEntry.Group -> item(key = SUBSCRIPTION_KEY_PREFIX + entry.url) {
+                            SubscriptionListRow(c, entry, Modifier.animateItem())
                         }
                     }
                 }
@@ -664,7 +659,13 @@ private fun serverEntries(profiles: List<ProfileEntity>): List<ServerListEntry> 
 }
 
 @Composable
-private fun ServerListRow(c: ErkinScreenContent, profile: ProfileEntity, fastestId: Long?, modifier: Modifier) {
+private fun ServerListRow(
+    c: ErkinScreenContent,
+    profile: ProfileEntity,
+    fastestId: Long?,
+    modifier: Modifier,
+    onSelected: () -> Unit = {}
+) {
     ServerRow(
         profile = profile,
         isSelected = profile.id == c.servers.selected?.id,
@@ -674,7 +675,14 @@ private fun ServerListRow(c: ErkinScreenContent, profile: ProfileEntity, fastest
         chainLabel = chainLabel(profile, c.servers.profiles),
         selecting = c.selecting,
         checked = profile.id in c.checked,
-        onSelect = { if (c.selecting) c.onToggleCheck(profile) else c.onSelect(profile) },
+        onSelect = {
+            if (c.selecting) {
+                c.onToggleCheck(profile)
+            } else {
+                c.onSelect(profile)
+                onSelected()
+            }
+        },
         onLongClick = { c.onToggleCheck(profile) },
         onEdit = { c.onEdit(profile) },
         onShare = { c.onShare(profile) },
@@ -684,40 +692,39 @@ private fun ServerListRow(c: ErkinScreenContent, profile: ProfileEntity, fastest
 }
 
 @Composable
-private fun SubscriptionListHeader(
-    c: ErkinScreenContent,
-    entry: ServerListEntry.Group,
-    expanded: Boolean,
-    shape: Shape,
-    modifier: Modifier
-) {
+private fun SubscriptionListRow(c: ErkinScreenContent, entry: ServerListEntry.Group, modifier: Modifier) {
     val selected = entry.members.firstOrNull { it.id == c.servers.selected?.id }
     val checkedCount = entry.members.count { it.id in c.checked }
-    val stored = c.servers.subscriptions[entry.url]
-    SubscriptionHeader(
-        name = stored.nameOr(entry.url),
-        usage = stored?.usage,
+    SubscriptionRow(
+        name = c.servers.subscriptions[entry.url].nameOr(entry.url),
         count = entry.members.size,
         selected = selected,
         delay = selected?.let { c.servers.delays[it.id] },
-        testing = entry.members.any { it.id in c.servers.testingIds },
-        expanded = expanded,
-        refreshing = entry.url in c.servers.refreshing,
+        testing = selected != null && selected.id in c.servers.testingIds,
         selecting = c.selecting,
         checkState = when (checkedCount) {
             0 -> ToggleableState.Off
             entry.members.size -> ToggleableState.On
             else -> ToggleableState.Indeterminate
         },
-        shape = shape,
-        onClick = { if (c.selecting) c.onToggleChecks(entry.members) else c.onToggleExpand(entry.url) },
+        onClick = { if (c.selecting) c.onToggleChecks(entry.members) else c.onOpenSubscription(entry.url) },
         onLongClick = { c.onToggleChecks(entry.members) },
-        onRefresh = { c.onRefreshSubscription(entry.url) },
-        onRename = { c.onRenameSubscription(entry.url) },
-        onShare = { c.onShareSubscription(entry.url) },
-        onDelete = { c.onDeleteSubscription(entry.url) },
+        menu = subscriptionMenu(c, entry.url),
         modifier = modifier
     )
 }
+
+private fun subscriptionMenu(c: ErkinScreenContent, url: String) = SubscriptionMenu(
+    refreshing = url in c.servers.refreshing,
+    onRefresh = { c.onRefreshSubscription(url) },
+    onRename = { c.onRenameSubscription(url) },
+    onShare = { c.onShareSubscription(url) },
+    onDelete = { c.onDeleteSubscription(url) }
+)
+
+private fun fastestId(delays: Map<Long, ProxyDelay>): Long? = delays
+    .mapNotNull { (id, delay) -> (delay as? ProxyDelay.Measured)?.let { id to it.ms } }
+    .minByOrNull { it.second }
+    ?.first
 
 private const val SUBSCRIPTION_KEY_PREFIX = "subscription:"

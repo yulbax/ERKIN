@@ -1,10 +1,11 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,24 +13,31 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,9 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -60,33 +66,26 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun SubscriptionHeader(
+internal fun SubscriptionRow(
     name: String,
-    usage: SubscriptionUsage?,
     count: Int,
     selected: ProfileEntity?,
     delay: ProxyDelay?,
     testing: Boolean,
-    expanded: Boolean,
-    refreshing: Boolean,
     selecting: Boolean,
     checkState: ToggleableState,
-    shape: Shape,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onRefresh: () -> Unit,
-    onRename: () -> Unit,
-    onShare: () -> Unit,
-    onDelete: () -> Unit,
+    menu: SubscriptionMenu,
     modifier: Modifier = Modifier
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    val arrow by animateFloatAsState(if (expanded) 180f else 0f, label = "subscriptionArrow")
+    val shape = RoundedCornerShape(18.dp)
     Surface(
         shape = shape,
         color = when {
             checkState != ToggleableState.Off -> MaterialTheme.colorScheme.secondaryContainer
-            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+            selected != null -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+            else -> Color.Transparent
         },
         modifier = modifier
             .fillMaxWidth()
@@ -100,37 +99,25 @@ internal fun SubscriptionHeader(
                 .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(
-                        if (selected != null && !expanded) MaterialTheme.colorScheme.primary else Color.Transparent
-                    )
-            )
+            IndicatorBar(selected != null)
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    selected?.let { it.name.ifEmpty { stringResource(Res.string.unnamed_profile) } } ?: name,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Cloud,
                         contentDescription = stringResource(Res.string.subscription),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(14.dp)
                     )
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(4.dp))
                     Text(
-                        name,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val servers = pluralStringResource(Res.plurals.subscription_servers, count, count)
-                    Text(
-                        if (selected != null) "$servers · ${selected.name.ifEmpty { stringResource(Res.string.unnamed_profile) }}" else servers,
+                        if (selected != null) name else pluralStringResource(Res.plurals.subscription_servers, count, count),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -139,73 +126,148 @@ internal fun SubscriptionHeader(
                     )
                     if (selected != null) DelaySuffix(delay = delay, testing = testing)
                 }
-                usage?.let { usageText(it) }?.let { text ->
-                    Text(
-                        text,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
+            if (selecting) {
+                TriStateCheckbox(state = checkState, onClick = null)
+            } else {
+                Text(
+                    count.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(Res.string.subscription_show_servers),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                SubscriptionMenuButton(menu)
+            }
+        }
+    }
+}
 
-            when {
-                selecting -> TriStateCheckbox(state = checkState, onClick = null)
-                refreshing -> Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                }
-                else -> Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = stringResource(
-                        if (expanded) Res.string.subscription_hide_servers else Res.string.subscription_show_servers
-                    ),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 12.dp).rotate(arrow)
+internal class SubscriptionMenu(
+    val refreshing: Boolean,
+    val onRefresh: () -> Unit,
+    val onRename: () -> Unit,
+    val onShare: () -> Unit,
+    val onDelete: () -> Unit
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SubscriptionSheet(
+    name: String,
+    usage: SubscriptionUsage?,
+    members: List<ProfileEntity>,
+    menu: SubscriptionMenu,
+    onDismiss: () -> Unit,
+    row: @Composable (ProfileEntity) -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = if (members.size <= SHORT_LIST) setOf(SheetValue.Hidden, SheetValue.Expanded) else SheetValue.entries.toSet()
+        )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    name,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    pluralStringResource(Res.plurals.subscription_servers, members.size, members.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (!selecting) {
-                Box {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.MoreVert,
-                            contentDescription = stringResource(Res.string.more_options_cd)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false }
-                    ) {
-                        SubscriptionMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, enabled = !refreshing) {
-                            onRefresh()
-                            menuExpanded = false
-                        }
-                        SubscriptionMenuItem(Res.string.rule_set_rename, Icons.Default.DriveFileRenameOutline) {
-                            onRename()
-                            menuExpanded = false
-                        }
-                        SubscriptionMenuItem(Res.string.share, Icons.Default.Share) {
-                            onShare()
-                            menuExpanded = false
-                        }
-                        SubscriptionMenuItem(Res.string.delete, Icons.Default.Delete) {
-                            onDelete()
-                            menuExpanded = false
-                        }
-                    }
+            if (menu.refreshing) {
+                Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
+            } else {
+                IconButton(onClick = menu.onRefresh) {
+                    Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh_subscription))
+                }
+            }
+            SubscriptionMenuButton(menu, inSheet = true)
+        }
+        usage?.let { UsageBlock(it) }
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            items(members, key = { it.id }) { row(it) }
+        }
+    }
+}
+
+@Composable
+private fun UsageBlock(usage: SubscriptionUsage) {
+    val text = usageText(usage) ?: return
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (usage.total > 0) {
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { (usage.used.toFloat() / usage.total).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun IndicatorBar(visible: Boolean) {
+    Box(
+        modifier = Modifier
+            .width(4.dp)
+            .height(44.dp)
+            .clip(RoundedCornerShape(2.dp))
+            .background(if (visible) MaterialTheme.colorScheme.primary else Color.Transparent)
+    )
+}
+
+@Composable
+private fun SubscriptionMenuButton(menu: SubscriptionMenu, inSheet: Boolean = false) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (!inSheet) {
+                SubscriptionMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, enabled = !menu.refreshing) {
+                    menu.onRefresh()
+                    expanded = false
+                }
+            }
+            SubscriptionMenuItem(Res.string.rule_set_rename, Icons.Default.DriveFileRenameOutline) {
+                menu.onRename()
+                expanded = false
+            }
+            SubscriptionMenuItem(Res.string.share, Icons.Default.Share) {
+                menu.onShare()
+                expanded = false
+            }
+            SubscriptionMenuItem(Res.string.delete, Icons.Default.Delete) {
+                menu.onDelete()
+                expanded = false
             }
         }
     }
 }
 
 @Composable
-private fun SubscriptionMenuItem(
-    label: StringResource,
-    icon: ImageVector,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
+private fun SubscriptionMenuItem(label: StringResource, icon: ImageVector, enabled: Boolean = true, onClick: () -> Unit) {
     DropdownMenuItem(
         text = { Text(stringResource(label)) },
         leadingIcon = { Icon(icon, contentDescription = null) },
@@ -244,5 +306,6 @@ private fun formatBytes(bytes: Long): String {
 }
 
 private val BYTE_UNITS = listOf("B", "KB", "MB", "GB", "TB", "PB")
+private const val SHORT_LIST = 6
 
 internal fun SubscriptionEntity?.nameOr(url: String): String = this?.displayName ?: SubscriptionEntity.hostOf(url)
