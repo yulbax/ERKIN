@@ -23,19 +23,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.ButtonColors
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SplitButtonLayout
-import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -82,12 +79,6 @@ internal fun ServerRow(
     modifier: Modifier = Modifier
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    val splitColors = ButtonColors(
-        containerColor = MaterialTheme.colorScheme.secondary,
-        contentColor = MaterialTheme.colorScheme.onSecondary,
-        disabledContentColor = MaterialTheme.colorScheme.surface,
-        disabledContainerColor = MaterialTheme.colorScheme.onSurface
-    )
 
     val pingColor = delay?.let { pingColor(it) }
     val rowColor = when {
@@ -110,7 +101,7 @@ internal fun ServerRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
+                .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -187,70 +178,55 @@ internal fun ServerRow(
             if (selecting) {
                 Checkbox(checked = checked, onCheckedChange = null)
             } else {
-                SplitButtonLayout(
-                    leadingButton = {
-                        SplitButtonDefaults.LeadingButton(
-                            onClick = onEdit,
-                            colors = splitColors
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize),
-                                contentDescription = stringResource(Res.string.edit),
-                            )
-                            Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                            Text(stringResource(Res.string.edit))
-                        }
-                    },
-                    trailingButton = {
-                        Box {
-                            SplitButtonDefaults.TrailingButton(
-                                checked = menuExpanded,
-                                onCheckedChange = { menuExpanded = it },
-                                colors = splitColors
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.KeyboardArrowDown,
-                                    contentDescription = stringResource(Res.string.more_options_cd)
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = menuExpanded,
-                                onDismissRequest = { menuExpanded = false }
-                            ) {
-                                if (chainLabel == null) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(Res.string.share)) },
-                                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                                        onClick = {
-                                            onShare()
-                                            menuExpanded = false
-                                        }
-                                    )
-                                }
-                                if (profile.subscriptionUrl.isNotEmpty()) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(Res.string.refresh_subscription)) },
-                                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                                        onClick = {
-                                            onRefresh()
-                                            menuExpanded = false
-                                        }
-                                    )
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(Res.string.delete)) },
-                                    leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                                    onClick = {
-                                        onDelete()
-                                        menuExpanded = false
-                                    }
-                                )
-                            }
-                        }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = stringResource(Res.string.more_options_cd)
+                        )
                     }
-                )
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.edit)) },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            onClick = {
+                                onEdit()
+                                menuExpanded = false
+                            }
+                        )
+                        if (chainLabel == null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.share)) },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                onClick = {
+                                    onShare()
+                                    menuExpanded = false
+                                }
+                            )
+                        }
+                        if (profile.subscriptionUrl.isNotEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(Res.string.refresh_subscription)) },
+                                leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                                onClick = {
+                                    onRefresh()
+                                    menuExpanded = false
+                                }
+                            )
+                        }
+                        DropdownMenuItem(
+                            text = { Text(stringResource(Res.string.delete)) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                            onClick = {
+                                onDelete()
+                                menuExpanded = false
+                            }
+                        )
+                    }
+                }
             }
         }
     }
