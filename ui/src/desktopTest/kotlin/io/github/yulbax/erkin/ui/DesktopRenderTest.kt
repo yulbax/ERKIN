@@ -134,7 +134,7 @@ class DesktopRenderTest {
                     }
                     single<VersionInfo> { FakeVersionInfo }
                     single<InstalledAppsSource> { FakeInstalledApps(installedApps) }
-                    single { UpdateChecker(get(), NoUpdatePlatform) { null } }
+                    single { UpdateChecker(get(), NoUpdatePlatform) { emptyList() } }
                     single { UpdateDownloader() }
                     single<UpdatePlatform> { NoUpdatePlatform }
                     single { RoutingRuleRepository(get()) }
@@ -190,7 +190,7 @@ class DesktopRenderTest {
             notes = "## ERKIN 1.4.0\n\n### Improvements\n- Faster **server test**\n- Smaller download"
         )
         render("update", width = 420, height = 600) {
-            UpdatePrompt(UpdateViewModel(UpdateChecker(FakeVersionInfo, NoUpdatePlatform) { release }, UpdateDownloader(), NoUpdatePlatform))
+            UpdatePrompt(UpdateViewModel(UpdateChecker(FakeVersionInfo, NoUpdatePlatform) { listOf(release) }, UpdateDownloader(), NoUpdatePlatform))
         }
     }
 

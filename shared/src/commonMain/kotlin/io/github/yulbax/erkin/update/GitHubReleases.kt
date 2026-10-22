@@ -10,17 +10,18 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 object GitHubReleases {
-    private const val LATEST_URL = "https://api.github.com/repos/yulbax/ERKIN/releases/latest"
+    private const val RELEASES_URL = "https://api.github.com/repos/yulbax/ERKIN/releases?per_page=30"
     private const val TIMEOUT_MS = 15_000
     private const val MAX_BYTES = 1L shl 20
     private const val SHA256_PREFIX = "sha256:"
     private val BUILD_LABEL = Regex("""\(([0-9a-f]{7,40})\)$""")
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun latest(route: DownloadRoute): AppRelease? = parse(runInterruptible(Dispatchers.IO) { download(route) })
+    suspend fun releases(route: DownloadRoute): List<AppRelease> = parse(runInterruptible(Dispatchers.IO) { download(route) })
 
-    fun parse(body: String): AppRelease? {
-        val release = json.decodeFromString<ReleaseJson>(body)
+    fun parse(body: String): List<AppRelease> = json.decodeFromString<List<ReleaseJson>>(body).mapNotNull(::release)
+
+    private fun release(release: ReleaseJson): AppRelease? {
         if (release.draft || release.prerelease) return null
         val version = AppVersion.parse(release.tag) ?: return null
         return AppRelease(
@@ -39,7 +40,7 @@ object GitHubReleases {
         )
     }
 
-    private fun download(route: DownloadRoute): String = route.fetch(LATEST_URL) { connection ->
+    private fun download(route: DownloadRoute): String = route.fetch(RELEASES_URL) { connection ->
         connection.connectTimeout = TIMEOUT_MS
         connection.readTimeout = TIMEOUT_MS
         connection.setRequestProperty("Accept", "application/vnd.github+json")

@@ -21,15 +21,15 @@ class UpdateTest {
     fun parsesLatestReleaseAndPicksAsset() {
         val release = GitHubReleases.parse(
             """
-            {"tag_name":"v1.0.1","html_url":"https://github.com/yulbax/ERKIN/releases/tag/v1.0.1","draft":false,"prerelease":false,
+            [{"tag_name":"v1.0.1","html_url":"https://github.com/yulbax/ERKIN/releases/tag/v1.0.1","draft":false,"prerelease":false,
              "body":"## ERKIN 1.0.1\r\n- Fixes\r\n",
              "assets":[
                {"name":"ERKIN-1.0.1-android-arm64-v8a.apk","browser_download_url":"https://example.com/a.apk","size":42,"digest":"sha256:abc"},
                {"name":"ERKIN-1.0.1-windows-x86_64.msi","browser_download_url":"https://example.com/w.msi","size":7,
                 "label":"ERKIN-1.0.1-windows-x86_64.msi (1cdb23f)"}
-             ]}
+             ]}]
             """.trimIndent()
-        )!!
+        ).single()
         assertEquals("1.0.1", release.version.toString())
         assertEquals("## ERKIN 1.0.1\r\n- Fixes", release.notes)
         assertEquals("abc", release.asset("android-arm64-v8a.apk")!!.sha256)
@@ -41,13 +41,13 @@ class UpdateTest {
 
     @Test
     fun ignoresPrereleases() {
-        assertNull(GitHubReleases.parse("""{"tag_name":"v2.0.0","html_url":"x","prerelease":true}"""))
+        assertTrue(GitHubReleases.parse("""[{"tag_name":"v2.0.0","html_url":"x","prerelease":true}]""").isEmpty())
     }
 
     @Test
     fun reportsOnlyNewerReleases() = runBlocking {
         fun checker(installed: String) = UpdateChecker(FixedVersion(installed), Platform) {
-            AppRelease(AppVersion.parse("1.0.1")!!, "page", emptyList())
+            listOf(AppRelease(AppVersion.parse("1.0.1")!!, "page", emptyList()))
         }
         assertEquals("1.0.1", checker("1.0.0").check()?.version.toString())
         assertNull(checker("1.0.1").check())
@@ -64,14 +64,24 @@ class UpdateTest {
                 ReleaseAsset("ERKIN-1.0.1-windows-x86_64.msi", "w", 1, null, build = "aaaaaaa")
             )
         )
-        fun checker(installed: String, build: String?) = UpdateChecker(FixedVersion(installed, build), Platform) { release }
+        fun checker(installed: String, build: String?) = UpdateChecker(FixedVersion(installed, build), Platform) { listOf(release) }
         val outdated = checker("1.0.1", "a".repeat(40))
         assertEquals("1.0.1 (bbbbbbb)", outdated.check()?.let(outdated::label))
         assertNull(checker("1.0.1", "b".repeat(40)).check())
         assertNull(checker("1.0.1", null).check())
         assertNull(checker("1.0.2", "a".repeat(40)).check())
         val unlabelled = AppRelease(release.version, "page", listOf(ReleaseAsset("ERKIN-1.0.1-$SUFFIX", "a", 1, null)))
-        assertNull(UpdateChecker(FixedVersion("1.0.1", "a".repeat(40)), Platform) { unlabelled }.check())
+        assertNull(UpdateChecker(FixedVersion("1.0.1", "a".repeat(40)), Platform) { listOf(unlabelled) }.check())
+    }
+
+    @Test
+    fun collectsTheNotesOfEveryReleaseAfterTheInstalledOne() = runBlocking {
+        fun release(version: String, notes: String) = AppRelease(AppVersion.parse(version)!!, "page", emptyList(), notes)
+        val releases = listOf(release("1.0.2", "two"), release("1.1.0", "three"), release("1.0.1", "one"), release("1.0.0", "zero"))
+        val update = UpdateChecker(FixedVersion("1.0.0"), Platform) { releases }.check()!!
+        assertEquals("1.1.0", update.version.toString())
+        assertEquals("## 1.1.0\n\nthree\n\n## 1.0.2\n\ntwo\n\n## 1.0.1\n\none", update.notes)
+        assertEquals("three", UpdateChecker(FixedVersion("1.0.2"), Platform) { releases }.check()!!.notes)
     }
 
     private object Platform : UpdatePlatform {
