@@ -18,13 +18,13 @@ object Socks : ProtocolHandler {
         val credentials = Credentials.of(uri.rawUserInfo)
 
         val descriptor = buildJsonObject {
-            proxy("socks5", uri.host, if (uri.port > 0) uri.port else DEFAULT_PORT)
+            proxy("socks5", uri.hostName, if (uri.port > 0) uri.port else DEFAULT_PORT)
             credentials?.let {
                 put("username", it.username)
                 put("password", it.password)
             }
         }
-        return ParsedLink(uri.fragmentName(uri.host), descriptor)
+        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
@@ -48,16 +48,16 @@ object Https : ProtocolHandler {
         val credentials = Credentials.of(uri.rawUserInfo)
 
         val descriptor = buildJsonObject {
-            proxy("http", uri.host, uri.port)
+            proxy("http", uri.hostName, uri.port)
             put("udp", false)
             put("tls", true)
-            put("sni", uri.host)
+            put("sni", uri.hostName)
             credentials?.let {
                 put("username", it.username)
                 put("password", it.password)
             }
         }
-        return ParsedLink(uri.fragmentName(uri.host), descriptor)
+        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()

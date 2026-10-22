@@ -18,11 +18,11 @@ object AnyTls : ProtocolHandler {
         require(password.isNotEmpty()) { "AnyTLS links need a password" }
 
         val descriptor = buildJsonObject {
-            proxy("anytls", uri.host, if (uri.port > 0) uri.port else 443)
+            proxy("anytls", uri.hostName, if (uri.port > 0) uri.port else 443)
             put("password", password)
-            tls(TlsStyle.SNI, q["sni"] ?: uri.host, q["fp"] ?: "", q.insecure(), q["alpn"] ?: "")
+            tls(TlsStyle.SNI, q["sni"] ?: uri.hostName, q["fp"] ?: "", q.insecure(), q["alpn"] ?: "")
         }
-        return ParsedLink(uri.fragmentName(uri.host), descriptor)
+        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(enabled = true)

@@ -18,10 +18,10 @@ object Vless : ProtocolHandler {
         val net = q["type"] ?: "tcp"
         val host = q["host"] ?: ""
         val path = q["path"] ?: "/"
-        val sni = q["sni"] ?: host.ifEmpty { uri.host }
+        val sni = q["sni"] ?: host.ifEmpty { uri.hostName }
 
         val descriptor = buildJsonObject {
-            proxy("vless", uri.host, uri.port)
+            proxy("vless", uri.hostName, uri.port)
             put("uuid", uri.userInfo ?: "")
             q["flow"]?.takeIf { it.isNotEmpty() }?.let { put("flow", it) }
             when (security) {
@@ -33,7 +33,7 @@ object Vless : ProtocolHandler {
             }
             transport(net, path, host, q["serviceName"], XhttpParams(q["mode"], q["extra"]))
         }
-        return ParsedLink(uri.fragmentName(uri.host), descriptor)
+        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(descriptor.flag("tls"))

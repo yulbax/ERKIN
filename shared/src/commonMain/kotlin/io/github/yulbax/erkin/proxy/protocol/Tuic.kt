@@ -20,16 +20,16 @@ object Tuic : ProtocolHandler {
         require(uuid.isNotEmpty() && password.isNotEmpty()) { "TUIC links need a UUID and a password" }
 
         val descriptor = buildJsonObject {
-            proxy("tuic", uri.host, if (uri.port > 0) uri.port else 443)
+            proxy("tuic", uri.hostName, if (uri.port > 0) uri.port else 443)
             put("uuid", uuid)
             put("password", password)
             q["congestion_control"]?.takeIf { it.isNotEmpty() }?.let { put("congestion-controller", it) }
             q["udp_relay_mode"]?.takeIf { it.isNotEmpty() }?.let { put("udp-relay-mode", it) }
             if (q.enabled("reduce_rtt")) put("reduce-rtt", true)
             if (q.enabled("disable_sni")) put("disable-sni", true)
-            tls(TlsStyle.SNI, q["sni"] ?: uri.host, fp = "", insecure = q.insecure(), alpn = q["alpn"] ?: "")
+            tls(TlsStyle.SNI, q["sni"] ?: uri.hostName, fp = "", insecure = q.insecure(), alpn = q["alpn"] ?: "")
         }
-        return ParsedLink(uri.fragmentName(uri.host), descriptor)
+        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()

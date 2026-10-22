@@ -42,9 +42,11 @@ internal enum class TlsStyle(val sniKey: String, val flagged: Boolean) {
 
 internal data class Reality(val publicKey: String, val shortId: String)
 
+internal val URI.hostName: String get() = host.orEmpty().removeSurrounding("[", "]")
+
 internal fun JsonObjectBuilder.proxy(type: String, host: String, port: Int) {
     put("type", type)
-    put("server", host)
+    put("server", host.removeSurrounding("[", "]"))
     put("port", port)
     put("udp", true)
 }

@@ -16,15 +16,15 @@ object Trojan : ProtocolHandler {
         val q = uri.queryMap()
         val net = q["type"] ?: "tcp"
         val host = q["host"] ?: ""
-        val sni = q["sni"] ?: host.ifEmpty { uri.host }
+        val sni = q["sni"] ?: host.ifEmpty { uri.hostName }
 
         val descriptor = buildJsonObject {
-            proxy("trojan", uri.host, uri.port)
+            proxy("trojan", uri.hostName, uri.port)
             put("password", uri.userInfo ?: "")
             tls(TlsStyle.SNI, sni, q["fp"] ?: "", q["allowInsecure"] == "1", q["alpn"] ?: "")
             transport(net, q["path"] ?: "/", host, q["serviceName"], XhttpParams(q["mode"], q["extra"]))
         }
-        return ParsedLink(uri.fragmentName(uri.host), descriptor)
+        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = tlsRequirements(enabled = true)

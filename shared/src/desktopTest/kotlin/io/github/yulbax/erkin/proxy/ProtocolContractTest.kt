@@ -81,6 +81,22 @@ class ProtocolContractTest {
     }
 
     @Test
+    fun anIpv6LiteralReachesTheCoreWithoutBrackets() {
+        listOf(
+            "hysteria2://secret@[2001:db8::1]:10444?sni=bingo&insecure=1#V6",
+            "vless://00000000-0000-0000-0000-000000000000@[2001:db8::1]:443?security=tls#V6",
+            "trojan://secret@[2001:db8::1]:443#V6",
+            "tuic://00000000-0000-0000-0000-000000000000:secret@[2001:db8::1]:443#V6",
+            "anytls://secret@[2001:db8::1]:443#V6",
+            "socks5://[2001:db8::1]:1080#V6",
+            "ss://YWVzLTEyOC1nY206c2VjcmV0@[2001:db8::1]:8388#V6"
+        ).forEach { link ->
+            val parsed = requireNotNull(LinkParser.parse(link)) { link }
+            assertEquals(link, "2001:db8::1", parsed.protocol.handler.server(parsed.proxy)?.host)
+        }
+    }
+
+    @Test
     fun eachParsedSampleSurvivesABackupRoundTrip() {
         val profiles = parsedSamples().map { (protocol, parsed) ->
             ProfileBackup(name = parsed.name, type = protocol.wire, link = parsed.link, outboundJson = parsed.proxyJson())
