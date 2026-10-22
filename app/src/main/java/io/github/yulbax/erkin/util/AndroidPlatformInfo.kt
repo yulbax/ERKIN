@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.util
 
 import android.content.Context
+import io.github.yulbax.erkin.BuildConfig
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.engine.BYEDPI_VERSION
 import io.github.yulbax.erkin.vpn.ErkinVpnService
@@ -36,6 +37,8 @@ class AndroidVersionInfo(private val context: Context) : VersionInfo {
         get() = runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName
         }.getOrNull()
+
+    override val build: String? = BuildConfig.BUILD_HASH.ifBlank { null }
 
     override val byeDpiVersion: String = BYEDPI_VERSION
 

@@ -23,7 +23,9 @@ fun About() {
     val versions = koinInject<VersionInfo>()
     val unknown = stringResource(Res.string.about_unknown)
 
-    val appVersion = versions.appVersion ?: unknown
+    val appVersion = versions.appVersion?.let { version ->
+        versions.shortBuild?.let { "$version ($it)" } ?: version
+    } ?: unknown
     val coreVersion by produceState(initialValue = "…") {
         value = versions.coreVersion() ?: unknown
     }

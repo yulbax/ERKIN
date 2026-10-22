@@ -4,11 +4,27 @@ name: Release
 # matching tag doesn't exist yet (i.e. you bumped the version), build the FOSS release
 # APKs plus the Windows MSI and cut a GitHub Release with the tag. Quality checks still run when the
 # version is unchanged. Mirrors the GitLab pipeline (.gitlab-ci.yml).
+# Run it by hand to rebuild chosen platforms of the current release from main and replace their assets;
+# each asset is labelled with its commit, so only those platforms see the rebuild as an update.
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      android:
+        description: Rebuild the Android APKs
+        type: boolean
+        default: false
+      windows:
+        description: Rebuild the Windows MSI
+        type: boolean
+        default: false
+      linux:
+        description: Rebuild the Linux packages
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -35,13 +51,25 @@ jobs:
     outputs:
       version: ${{ steps.v.outputs.version }}
       should_release: ${{ steps.v.outputs.should_release }}
+      respin: ${{ steps.v.outputs.respin }}
     steps:
       - uses: actions/checkout@v5
       - id: v
+        env:
+          RESPIN_PLATFORMS: ${{ inputs.android }}${{ inputs.windows }}${{ inputs.linux }}
         run: |
           VERSION="$(sed -n 's/^erkin\.versionName=//p' gradle.properties | head -n1)"
           [ -n "$VERSION" ] || { echo "erkin.versionName not found in gradle.properties"; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            [[ "$RESPIN_PLATFORMS" == *true* ]] || { echo "Pick at least one platform to rebuild."; exit 1; }
+            git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1 \
+              || { echo "No release v$VERSION to rebuild."; exit 1; }
+            echo "Rebuilding the chosen platforms of v$VERSION."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "respin=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "$GITHUB_EVENT_NAME" != "push" ]; then
             echo "Pull request: quality checks only."
             echo "should_release=false" >> "$GITHUB_OUTPUT"
@@ -162,7 +190,7 @@ jobs:
   # ── Build the release APKs (arm64 + x86_64 + armv7 + universal), signed. ─────────
   android:
     needs: [check, aar]
-    if: needs.check.outputs.should_release == 'true'
+    if: needs.check.outputs.should_release == 'true' || (needs.check.outputs.respin == 'true' && inputs.android)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -316,3 +344,44 @@ jobs:
             apks/*.apk
             msi/*.msi
             linux/*
+      - name: Label the assets with the build commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: scripts/label-release-assets.sh "v${{ needs.check.outputs.version }}" "$GITHUB_SHA" apks/*.apk msi/*.msi linux/*
+
+  # ── Replace the chosen platforms' assets of the current release with a rebuild from this commit. ──
+  respin:
+    needs: [check, quality, android, windows, linux]
+    if: >-
+      !cancelled() && needs.check.outputs.respin == 'true' && needs.quality.result == 'success'
+      && needs.windows.result == 'success' && needs.linux.result == 'success'
+      && (needs.android.result == 'success' || !inputs.android)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: v${{ needs.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        if: inputs.android
+        with:
+          name: apks
+          path: assets
+      - uses: actions/download-artifact@v4
+        if: inputs.windows
+        with:
+          name: msi
+          path: assets
+      - uses: actions/download-artifact@v4
+        if: inputs.linux
+        with:
+          name: linux-packages
+          path: assets
+      - name: Replace and label the assets
+        run: |
+          gh release upload "$TAG" --clobber assets/*
+          scripts/label-release-assets.sh "$TAG" "$GITHUB_SHA" assets/*

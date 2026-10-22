@@ -40,7 +40,7 @@ fun UpdatePrompt(viewModel: UpdateViewModel = koinViewModel()) {
     when (val current = state) {
         UpdateUiState.Hidden -> Unit
         is UpdateUiState.Available -> AppDialog(
-            title = stringResource(Res.string.update_available_title, current.release.version.toString()),
+            title = stringResource(Res.string.update_available_title, viewModel.label(current.release)),
             onDismiss = viewModel::dismiss,
             buttons = {
                 TextButton(onClick = viewModel::dismiss) { Text(stringResource(Res.string.update_later)) }
@@ -71,7 +71,7 @@ fun UpdatePrompt(viewModel: UpdateViewModel = koinViewModel()) {
             }
         }
         is UpdateUiState.Downloading -> AppDialog(
-            title = stringResource(Res.string.update_downloading, current.release.version.toString()),
+            title = stringResource(Res.string.update_downloading, viewModel.label(current.release)),
             onDismiss = {},
             buttons = {
                 TextButton(onClick = viewModel::dismiss) { Text(stringResource(Res.string.cancel)) }
@@ -82,7 +82,7 @@ fun UpdatePrompt(viewModel: UpdateViewModel = koinViewModel()) {
             if (progress == null) LinearProgressIndicator(modifier) else LinearProgressIndicator({ progress }, modifier)
         }
         is UpdateUiState.Failed -> AppDialog(
-            title = stringResource(Res.string.update_available_title, current.release.version.toString()),
+            title = stringResource(Res.string.update_available_title, viewModel.label(current.release)),
             onDismiss = viewModel::dismiss,
             buttons = {
                 TextButton(onClick = viewModel::dismiss) { Text(stringResource(Res.string.update_later)) }

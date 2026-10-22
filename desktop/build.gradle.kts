@@ -12,6 +12,9 @@ plugins {
 
 val appVersion = providers.gradleProperty("erkin.versionName").get()
 val byeDpiVersion = "17.3"
+val buildHash = runCatching {
+    providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
+}.getOrDefault("")
 
 kotlin {
     jvmToolchain(21)
@@ -111,7 +114,7 @@ val prepareLinuxBinaries = registerBundledBinaries(
 compose.desktop {
     application {
         mainClass = "io.github.yulbax.erkin.desktop.MainKt"
-        jvmArgs += listOf("-Derkin.version=$appVersion", "-Derkin.byedpi.version=$byeDpiVersion")
+        jvmArgs += listOf("-Derkin.version=$appVersion", "-Derkin.build=$buildHash", "-Derkin.byedpi.version=$byeDpiVersion")
         if (System.getProperty("os.name").startsWith("Windows")) jvmArgs += "-Derkin.updateAsset=windows-x86_64.msi"
 
         buildTypes.release.proguard {

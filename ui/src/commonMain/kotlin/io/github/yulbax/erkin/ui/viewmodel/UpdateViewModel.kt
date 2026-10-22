@@ -53,7 +53,7 @@ class UpdateViewModel(
             if (_state.value !is UpdateUiState.Downloading) {
                 _state.value = UpdateUiState.Available(
                     release = release,
-                    current = checker.currentVersion.toString(),
+                    current = checker.currentLabel.toString(),
                     installable = platform.assetSuffix?.let(release::asset) != null
                 )
             }
@@ -86,6 +86,8 @@ class UpdateViewModel(
             }
         }
     }
+
+    fun label(release: AppRelease): String = checker.label(release)
 
     fun dismiss() {
         download?.cancel()

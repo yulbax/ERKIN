@@ -22,7 +22,15 @@ data class AppVersion(private val parts: List<Int>) : Comparable<AppVersion> {
     }
 }
 
-data class ReleaseAsset(val name: String, val url: String, val size: Long, val sha256: String?)
+data class ReleaseAsset(
+    val name: String,
+    val url: String,
+    val size: Long,
+    val sha256: String?,
+    val build: String? = null
+) {
+    fun builtFrom(commit: String): Boolean = build != null && commit.startsWith(build)
+}
 
 data class AppRelease(
     val version: AppVersion,

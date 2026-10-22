@@ -26,6 +26,10 @@ val byeDpiHealthProbeUrl = healthProbeUrl(
     "https://www.youtube.com/generate_204"
 )
 
+val buildHash = runCatching {
+    providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
+}.getOrDefault("")
+
 val baseVersionCode = 10600
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
 
@@ -59,6 +63,7 @@ android {
             "BYEDPI_HEALTH_PROBE_URL",
             byeDpiHealthProbeUrl.asBuildConfigString()
         )
+        buildConfigField("String", "BUILD_HASH", buildHash.asBuildConfigString())
         buildConfigField(
             "String[]",
             "UPDATE_ABIS",

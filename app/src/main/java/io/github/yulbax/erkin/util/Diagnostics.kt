@@ -15,7 +15,7 @@ object Diagnostics {
     ): String = withContext(Dispatchers.IO) {
         DiagnosticsReport.build(
             environment = listOf(
-                "app" to "${versionInfo.appVersion ?: "unknown"} (core ${versionInfo.coreVersion() ?: "unknown"}, byedpi ${versionInfo.byeDpiVersion})",
+                "app" to "${versionInfo.appVersion ?: "unknown"} (build ${versionInfo.shortBuild ?: "unknown"}, core ${versionInfo.coreVersion() ?: "unknown"}, byedpi ${versionInfo.byeDpiVersion})",
                 "device" to "${Build.MANUFACTURER} ${Build.MODEL}",
                 "android" to "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
                 "abi" to Build.SUPPORTED_ABIS.joinToString(",")

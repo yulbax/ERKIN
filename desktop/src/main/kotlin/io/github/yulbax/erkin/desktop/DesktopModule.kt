@@ -100,7 +100,7 @@ val desktopModule = module {
         }
     }
     single<VpnLauncher> { DesktopVpnLauncher(get()) }
-    single { UpdateChecker(get(), get()) }
+    single { UpdateChecker(get(), get(), get()) }
     single { UpdateDownloader(get()) }
     single<UpdatePlatform> { DesktopUpdatePlatform(get()) }
 }

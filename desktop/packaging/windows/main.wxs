@@ -26,7 +26,7 @@
   <?endif?>
 
   <Product
-    Id="$(var.JpProductCode)"
+    Id="*"
     Name="$(var.JpAppName)"
     Language="$(var.JpProductLanguage)"
     Version="$(var.JpAppVersion)"
@@ -49,13 +49,13 @@
         Property="JP_UPGRADABLE_FOUND"
         Maximum="$(var.JpAppVersion)"
         MigrateFeatures="yes"
-        IncludeMaximum="$(var.JpUpgradeVersionOnlyDetectUpgrade)" />
+        IncludeMaximum="yes" />
       <UpgradeVersion
         OnlyDetect="$(var.JpUpgradeVersionOnlyDetectDowngrade)"
         Property="JP_DOWNGRADABLE_FOUND"
         Minimum="$(var.JpAppVersion)"
         MigrateFeatures="yes"
-        IncludeMinimum="$(var.JpUpgradeVersionOnlyDetectDowngrade)" />
+        IncludeMinimum="no" />
     </Upgrade>
 
     <Upgrade Id="6f0b3a2e-6c1b-4a8e-9c7e-3f4d5a1b2c90">

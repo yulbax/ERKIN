@@ -14,6 +14,7 @@ object GitHubReleases {
     private const val TIMEOUT_MS = 15_000
     private const val MAX_BYTES = 1L shl 20
     private const val SHA256_PREFIX = "sha256:"
+    private val BUILD_LABEL = Regex("""\(([0-9a-f]{7,40})\)$""")
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun latest(route: DownloadRoute): AppRelease? = parse(runInterruptible(Dispatchers.IO) { download(route) })
@@ -30,7 +31,8 @@ object GitHubReleases {
                     name = asset.name,
                     url = asset.url,
                     size = asset.size,
-                    sha256 = asset.digest?.takeIf { it.startsWith(SHA256_PREFIX) }?.removePrefix(SHA256_PREFIX)
+                    sha256 = asset.digest?.takeIf { it.startsWith(SHA256_PREFIX) }?.removePrefix(SHA256_PREFIX),
+                    build = asset.label?.let { BUILD_LABEL.find(it) }?.groupValues?.get(1)
                 )
             },
             notes = release.body.orEmpty().trim()
@@ -65,6 +67,7 @@ object GitHubReleases {
         val name: String,
         @SerialName("browser_download_url") val url: String,
         val size: Long = 0,
-        val digest: String? = null
+        val digest: String? = null,
+        val label: String? = null
     )
 }

@@ -134,7 +134,7 @@ class DesktopRenderTest {
                     }
                     single<VersionInfo> { FakeVersionInfo }
                     single<InstalledAppsSource> { FakeInstalledApps(installedApps) }
-                    single { UpdateChecker(get()) { null } }
+                    single { UpdateChecker(get(), NoUpdatePlatform) { null } }
                     single { UpdateDownloader() }
                     single<UpdatePlatform> { NoUpdatePlatform }
                     single { RoutingRuleRepository(get()) }
@@ -190,7 +190,7 @@ class DesktopRenderTest {
             notes = "## ERKIN 1.4.0\n\n### Improvements\n- Faster **server test**\n- Smaller download"
         )
         render("update", width = 420, height = 600) {
-            UpdatePrompt(UpdateViewModel(UpdateChecker(FakeVersionInfo) { release }, UpdateDownloader(), NoUpdatePlatform))
+            UpdatePrompt(UpdateViewModel(UpdateChecker(FakeVersionInfo, NoUpdatePlatform) { release }, UpdateDownloader(), NoUpdatePlatform))
         }
     }
 
@@ -263,6 +263,7 @@ class DesktopRenderTest {
 
     private object FakeVersionInfo : VersionInfo {
         override val appVersion: String = "1.3.0"
+        override val build: String? = null
         override val byeDpiVersion: String = "17.3"
         override suspend fun coreVersion(): String = "1.13.16"
     }

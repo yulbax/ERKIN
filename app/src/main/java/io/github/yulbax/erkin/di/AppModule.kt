@@ -12,6 +12,7 @@ import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.update.UpdateChecker
+import io.github.yulbax.erkin.update.UpdatePlatform
 import io.github.yulbax.erkin.vpn.mihomo.AndroidRuleListStore
 import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.util.AppLog
@@ -104,7 +105,8 @@ class AppModule {
     fun vpnCommandBus(): VpnCommandBus = VpnCommandBus()
 
     @Single
-    fun updateChecker(versionInfo: VersionInfo, route: DownloadRoute): UpdateChecker = UpdateChecker(versionInfo, route)
+    fun updateChecker(versionInfo: VersionInfo, platform: UpdatePlatform, route: DownloadRoute): UpdateChecker =
+        UpdateChecker(versionInfo, platform, route)
 
     @Single
     fun updateDownloader(route: DownloadRoute): UpdateDownloader = UpdateDownloader(route)

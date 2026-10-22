@@ -42,7 +42,7 @@ class DesktopDiagnostics(
     override suspend fun collect(): String = withContext(Dispatchers.IO) {
         DiagnosticsReport.build(
             environment = listOf(
-                "app" to "${versionInfo.appVersion ?: "unknown"} (core ${versionInfo.coreVersion() ?: "unknown"}, byedpi ${versionInfo.byeDpiVersion})",
+                "app" to "${versionInfo.appVersion ?: "unknown"} (build ${versionInfo.shortBuild ?: "unknown"}, core ${versionInfo.coreVersion() ?: "unknown"}, byedpi ${versionInfo.byeDpiVersion})",
                 "os" to "${System.getProperty("os.name")} ${System.getProperty("os.version")} (${System.getProperty("os.arch")})",
                 "java" to System.getProperty("java.version"),
                 "service" to (service.peek()?.version ?: "not running")
@@ -60,6 +60,7 @@ class DesktopDiagnostics(
 
 class DesktopVersionInfo(private val service: DesktopService) : VersionInfo {
     override val appVersion: String? = System.getProperty("erkin.version")
+    override val build: String? = System.getProperty("erkin.build")?.ifBlank { null }
     override val byeDpiVersion: String = System.getProperty("erkin.byedpi.version") ?: "unknown"
 
     override suspend fun coreVersion(): String? = withContext(Dispatchers.IO) {

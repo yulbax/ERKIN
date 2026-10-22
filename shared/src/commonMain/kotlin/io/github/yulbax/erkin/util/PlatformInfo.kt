@@ -14,7 +14,12 @@ interface DiagnosticsSource {
 
 interface VersionInfo {
     val appVersion: String?
+    val build: String?
     val byeDpiVersion: String
+
+    val shortBuild: String? get() = build?.take(SHORT_BUILD_LENGTH)
 
     suspend fun coreVersion(): String?
 }
+
+const val SHORT_BUILD_LENGTH = 7
