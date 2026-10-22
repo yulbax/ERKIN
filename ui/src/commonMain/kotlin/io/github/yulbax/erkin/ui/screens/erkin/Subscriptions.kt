@@ -62,12 +62,12 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 internal class SubscriptionActions(
-    val refreshing: Set<String>,
-    val onOpen: (String) -> Unit,
-    val onRefresh: (String) -> Unit,
-    val onRename: (String) -> Unit,
-    val onShare: (String) -> Unit,
-    val onDelete: (String) -> Unit
+    val refreshing: Set<Long>,
+    val onOpen: (Long) -> Unit,
+    val onRefresh: (Long) -> Unit,
+    val onRename: (Long) -> Unit,
+    val onShare: (Long) -> Unit,
+    val onDelete: (Long) -> Unit
 )
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -104,7 +104,7 @@ internal fun SubscriptionRow(
             var menuExpanded by remember { mutableStateOf(false) }
             SplitButtonLayout(
                 leadingButton = {
-                    SplitButtonDefaults.LeadingButton(onClick = { actions.onOpen(item.url) }, colors = splitButtonColors()) {
+                    SplitButtonDefaults.LeadingButton(onClick = { actions.onOpen(item.id) }, colors = splitButtonColors()) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.List,
                             contentDescription = stringResource(Res.string.subscription_show_servers),
@@ -116,7 +116,7 @@ internal fun SubscriptionRow(
                     Box {
                         MenuTrailingButton(expanded = menuExpanded, onExpandedChange = { menuExpanded = it })
                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                            SubscriptionMenuItems(item.url, actions, withRefresh = true) { menuExpanded = false }
+                            SubscriptionMenuItems(item.id, actions, withRefresh = true) { menuExpanded = false }
                         }
                     }
                 },
@@ -158,12 +158,12 @@ internal fun SubscriptionSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            if (item.url in actions.refreshing) {
+            if (item.id in actions.refreshing) {
                 Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                 }
             } else {
-                IconButton(onClick = { actions.onRefresh(item.url) }) {
+                IconButton(onClick = { actions.onRefresh(item.id) }) {
                     Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh_subscription))
                 }
             }
@@ -203,29 +203,29 @@ private fun SubscriptionMenuButton(item: ServerListItem.Subscription, actions: S
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SubscriptionMenuItems(item.url, actions, withRefresh = false) { expanded = false }
+            SubscriptionMenuItems(item.id, actions, withRefresh = false) { expanded = false }
         }
     }
 }
 
 @Composable
-private fun SubscriptionMenuItems(url: String, actions: SubscriptionActions, withRefresh: Boolean, close: () -> Unit) {
+private fun SubscriptionMenuItems(id: Long, actions: SubscriptionActions, withRefresh: Boolean, close: () -> Unit) {
     if (withRefresh) {
-        SubscriptionMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, enabled = url !in actions.refreshing) {
-            actions.onRefresh(url)
+        SubscriptionMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, enabled = id !in actions.refreshing) {
+            actions.onRefresh(id)
             close()
         }
     }
     SubscriptionMenuItem(Res.string.rename, Icons.Default.DriveFileRenameOutline) {
-        actions.onRename(url)
+        actions.onRename(id)
         close()
     }
     SubscriptionMenuItem(Res.string.share, Icons.Default.Share) {
-        actions.onShare(url)
+        actions.onShare(id)
         close()
     }
     SubscriptionMenuItem(Res.string.delete, Icons.Default.Delete) {
-        actions.onDelete(url)
+        actions.onDelete(id)
         close()
     }
 }

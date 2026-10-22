@@ -272,9 +272,9 @@ class VpnSession(
     }
 
     private suspend fun refreshSubscription() {
-        val profile = store.selectedSubscription() ?: return
-        log.i(TAG, "reconnect threshold reached; refreshing subscription '${profile.name}'")
-        when (val result = store.refreshSubscription(profile.subscriptionUrl)) {
+        val subscription = store.selectedSubscription() ?: return
+        log.i(TAG, "reconnect threshold reached; refreshing subscription ${subscription.id}")
+        when (val result = store.refreshSubscription(subscription.url)) {
             is ProfileOperationResult.SubscriptionSynced ->
                 if (result.selectedDropped) {
                     log.w(TAG, "subscription no longer lists this server; keeping it unchanged")

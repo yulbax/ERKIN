@@ -33,15 +33,15 @@ data class ServersUiState(
     val selected: ProfileEntity? = null,
     val delays: Map<Long, ProxyDelay> = emptyMap(),
     val testingIds: Set<Long> = emptySet(),
-    val subscriptions: Map<String, SubscriptionEntity> = emptyMap(),
-    val refreshing: Set<String> = emptySet(),
+    val subscriptions: Map<Long, SubscriptionEntity> = emptyMap(),
+    val refreshing: Set<Long> = emptySet(),
     val items: List<ServerListItem> = emptyList(),
     val error: ServerError? = null
 ) {
     val testing: Boolean get() = testingIds.isNotEmpty()
 
-    fun subscription(url: String): ServerListItem.Subscription? =
-        items.firstOrNull { it is ServerListItem.Subscription && it.url == url } as ServerListItem.Subscription?
+    fun subscription(id: Long): ServerListItem.Subscription? =
+        items.firstOrNull { it is ServerListItem.Subscription && it.id == id } as ServerListItem.Subscription?
 }
 
 class ProfileViewModel(
@@ -53,10 +53,10 @@ class ProfileViewModel(
     private val _error = MutableStateFlow<ServerError?>(null)
     private val _delays = MutableStateFlow<Map<Long, ProxyDelay>>(emptyMap())
     private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
-    private val _refreshing = MutableStateFlow<Set<String>>(emptySet())
+    private val _refreshing = MutableStateFlow<Set<Long>>(emptySet())
 
     private val subscriptions = combine(profileRepository.subscriptions, _refreshing) { stored, refreshing ->
-        stored.associateBy { it.url } to refreshing
+        stored.associateBy { it.id } to refreshing
     }
 
     val uiState: StateFlow<ServersUiState> = combine(
@@ -122,20 +122,20 @@ class ProfileViewModel(
         }
     }
 
-    fun refreshSubscription(url: String) {
-        if (url in _refreshing.value) return
-        _refreshing.value += url
+    fun refreshSubscription(id: Long) {
+        if (id in _refreshing.value) return
+        _refreshing.value += id
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                handleResult("subscription refresh", profileRepository.refreshSubscription(url))
+                handleResult("subscription refresh", profileRepository.refreshSubscription(id))
             } finally {
-                _refreshing.value -= url
+                _refreshing.value -= id
             }
         }
     }
 
-    fun renameSubscription(url: String, name: String) {
-        viewModelScope.launch(Dispatchers.IO) { profileRepository.renameSubscription(url, name) }
+    fun renameSubscription(id: Long, name: String) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.renameSubscription(id, name) }
     }
 
     fun select(profile: ProfileEntity) {

@@ -7,18 +7,19 @@ import io.github.yulbax.erkin.data.profile.SubscriptionUsage
 sealed interface ServerListItem {
     val key: Any
 
-    data class Server(val profile: ProfileEntity, val subscriptionUrl: String? = null) : ServerListItem {
+    data class Server(val profile: ProfileEntity, val subscriptionId: Long? = null) : ServerListItem {
         override val key: Any get() = profile.id
     }
 
     data class Subscription(
+        val id: Long,
         val url: String,
         val name: String,
         val usage: SubscriptionUsage?,
         val members: List<ProfileEntity>,
         val current: ProfileEntity
     ) : ServerListItem {
-        override val key: Any get() = SUBSCRIPTION_KEY_PREFIX + url
+        override val key: Any get() = SUBSCRIPTION_KEY_PREFIX + id
     }
 
     private companion object {
@@ -29,26 +30,27 @@ sealed interface ServerListItem {
 internal fun serverListItems(
     profiles: List<ProfileEntity>,
     selectedId: Long?,
-    subscriptions: Map<String, SubscriptionEntity>
+    subscriptions: Map<Long, SubscriptionEntity>
 ): List<ServerListItem> {
-    val groups = profiles.filter { it.subscriptionUrl.isNotEmpty() }.groupBy { it.subscriptionUrl }
-    val seen = HashSet<String>()
+    val groups = profiles.filter { it.subscriptionId != null }.groupBy { it.subscriptionId }
+    val seen = HashSet<Long>()
     return profiles.mapNotNull { profile ->
-        val url = profile.subscriptionUrl
-        val members = groups[url]
+        val id = profile.subscriptionId
+        val members = groups[id]
+        val stored = id?.let(subscriptions::get)
         when {
-            members == null -> ServerListItem.Server(profile)
-            members.size == 1 -> ServerListItem.Server(profile, subscriptionUrl = url)
-            !seen.add(url) -> null
+            id == null || members == null || stored == null -> ServerListItem.Server(profile)
+            members.size == 1 -> ServerListItem.Server(profile, subscriptionId = id)
+            !seen.add(id) -> null
             else -> {
-                val stored = subscriptions[url]
                 ServerListItem.Subscription(
-                    url = url,
-                    name = stored?.displayName ?: SubscriptionEntity.hostOf(url),
-                    usage = stored?.usage,
+                    id = id,
+                    url = stored.url,
+                    name = stored.displayName,
+                    usage = stored.usage,
                     members = members,
                     current = members.firstOrNull { it.id == selectedId }
-                        ?: members.firstOrNull { it.id == stored?.currentId }
+                        ?: members.firstOrNull { it.id == stored.currentId }
                         ?: members.first()
                 )
             }

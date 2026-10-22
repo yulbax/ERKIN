@@ -89,12 +89,13 @@ object BackupCodec {
     private fun isValidDns(value: String): Boolean =
         value.isNotBlank() && value.length <= MAX_DNS_LENGTH && value.none(Char::isWhitespace)
 
-    private fun isValidProfilesBackup(profiles: List<ProfileEntity>): Boolean {
-        val linkIds = profiles.filter { it.isLink && it.id != 0L }.map { it.id }
+    private fun isValidProfilesBackup(backups: List<ProfileBackup>): Boolean {
+        val linkIds = backups.map { it.toEntity() }.filter { it.isLink && it.id != 0L }.map { it.id }
         if (linkIds.size != linkIds.toSet().size) return false
-        return profiles.all { profile ->
+        return backups.all { backup ->
+            val profile = backup.toEntity()
             when (val kind = profile.kind) {
-                is ServerKind.Link -> isValidProfileBackup(profile)
+                is ServerKind.Link -> isValidSubscriptionUrl(backup.subscriptionUrl) && isValidProfileBackup(profile)
                 is ServerKind.Chain -> isValidChainBackup(profile, kind.chain, linkIds.toSet())
             }
         }
@@ -109,7 +110,6 @@ object BackupCodec {
         if (profile.name.isBlank() || profile.name.length > MAX_PROFILE_NAME_LENGTH) return false
         if (profile.link.isBlank() || profile.link.length > MAX_LINK_LENGTH) return false
         if (profile.outboundJson.isBlank() || profile.outboundJson.length > MAX_OUTBOUND_LENGTH) return false
-        if (!isValidSubscriptionUrl(profile.subscriptionUrl)) return false
 
         val parsed = LinkParser.parse(profile.link) ?: return false
         if (parsed.protocol.wire != profile.type) return false

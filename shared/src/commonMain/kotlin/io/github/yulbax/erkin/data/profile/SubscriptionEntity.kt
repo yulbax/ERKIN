@@ -1,13 +1,15 @@
 package io.github.yulbax.erkin.data.profile
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import io.github.yulbax.erkin.proxy.ParsedProfile
 import java.net.URI
 
-@Entity(tableName = "subscriptions")
+@Entity(tableName = "subscriptions", indices = [Index("url", unique = true)])
 data class SubscriptionEntity(
-    @PrimaryKey val url: String,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val url: String,
     val name: String? = null,
     val title: String? = null,
     val upload: Long? = null,

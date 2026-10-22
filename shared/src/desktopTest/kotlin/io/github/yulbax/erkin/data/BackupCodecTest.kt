@@ -1,7 +1,6 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ChainEntry
-import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.util.readBounded
@@ -113,7 +112,7 @@ class BackupCodecTest {
     @Test
     fun onlyServerIdsLeaveTheDatabaseAsBackupKeys() {
         val backup = validBackup().copy(
-            profiles = validBackup().profiles?.map { it.copy(id = 7, position = 3) },
+            profiles = validBackup().profiles?.map { it.copy(id = 7) },
             rules = listOf(RoutingRuleEntity(id = 5, type = "suffix", value = "ru", target = "DIRECT", position = 2))
         )
         val encoded = Json.parseToJsonElement(Json.encodeToString(backup)).jsonObject
@@ -126,7 +125,7 @@ class BackupCodecTest {
     @Test
     fun chainsMustPointAtServersInTheSameBackup() {
         val server = requireNotNull(validBackup().profiles).single().copy(id = 7, selected = false)
-        fun chainTo(exit: Long) = ProfileEntity(id = 9, name = "Chain", type = ProxyChain.TYPE, outboundJson = ProxyChain(ChainEntry.ByeDpi, exit).encode())
+        fun chainTo(exit: Long) = ProfileBackup(id = 9, name = "Chain", type = ProxyChain.TYPE, outboundJson = ProxyChain(ChainEntry.ByeDpi, exit).encode())
 
         assertTrue(BackupCodec.isValid(validBackup().copy(profiles = listOf(server, chainTo(7)))))
         assertFalse(BackupCodec.isValid(validBackup().copy(profiles = listOf(server, chainTo(8)))))
@@ -153,7 +152,7 @@ class BackupCodecTest {
         apps = mapOf("com.example.app" to "VPN"),
         settings = SettingsEntity(),
         profiles = listOf(
-            ProfileEntity(
+            ProfileBackup(
                 name = "Example",
                 type = "vless",
                 link = VALID_LINK,

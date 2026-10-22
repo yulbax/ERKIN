@@ -179,6 +179,7 @@ class ProfileRefreshTest {
 
     private suspend fun storedSubscriptionServer(link: String, selected: Boolean = false): ProfileEntity {
         val parsed = requireNotNull(LinkParser.parse(link))
+        val subscriptionId = database.subscriptionDao().obtain(SUBSCRIPTION_URL).id
         val id = database.profileDao().append(
             ProfileEntity(
                 name = parsed.name,
@@ -186,7 +187,7 @@ class ProfileRefreshTest {
                 link = parsed.link,
                 outboundJson = parsed.proxyJson(),
                 selected = selected,
-                subscriptionUrl = SUBSCRIPTION_URL
+                subscriptionId = subscriptionId
             )
         )
         return database.profileDao().getAll().single { it.id == id }
@@ -297,16 +298,17 @@ class ProfileRefreshTest {
         subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
         subscription.info = SubscriptionInfo(title = "Provider", usage = SubscriptionUsage(1, 2, 10, 1_900_000_000))
         repository.add(SUBSCRIPTION_URL)
-        repository.renameSubscription(SUBSCRIPTION_URL, "  Mine ")
+        val id = requireNotNull(database.subscriptionDao().find(SUBSCRIPTION_URL)).id
+        repository.renameSubscription(id, "  Mine ")
 
-        val stored = requireNotNull(database.subscriptionDao().get(SUBSCRIPTION_URL))
+        val stored = requireNotNull(database.subscriptionDao().get(id))
         assertEquals("Provider", stored.title)
         assertEquals("Mine", stored.displayName)
         assertEquals(SubscriptionUsage(1, 2, 10, 1_900_000_000), stored.usage)
 
         repository.delete(database.profileDao().getAll())
 
-        assertNull(database.subscriptionDao().get(SUBSCRIPTION_URL))
+        assertNull(database.subscriptionDao().get(id))
     }
 
     @Test
@@ -322,7 +324,7 @@ class ProfileRefreshTest {
         repository.select(germany)
         repository.select(other)
 
-        assertEquals(germany.id, database.subscriptionDao().get(SUBSCRIPTION_URL)?.currentId)
+        assertEquals(germany.id, database.subscriptionDao().find(SUBSCRIPTION_URL)?.currentId)
         assertEquals(other.id, database.profileDao().getSelected()?.id)
     }
 
@@ -348,7 +350,7 @@ class ProfileRefreshTest {
 
         val stored = database.profileDao().getAll()
         assertEquals(listOf("Netherlands", "Germany"), stored.map { it.name })
-        assertTrue(stored.all { it.subscriptionUrl.isEmpty() })
+        assertTrue(stored.all { it.subscriptionId == null })
     }
 
     @Test

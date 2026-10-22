@@ -1,7 +1,6 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ProfileRepository
-import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
@@ -57,7 +56,8 @@ class ConfigBackupRepository(
                     null
                 },
                 profiles = if (selection.profiles) {
-                    database.profileDao().getAll()
+                    val urls = database.subscriptionDao().getAll().associate { it.id to it.url }
+                    database.profileDao().getAll().map { ProfileBackup.of(it, it.subscriptionId?.let(urls::get)) }
                 } else {
                     null
                 },
@@ -153,8 +153,10 @@ class ConfigBackupRepository(
         return SectionResult(added, skipped)
     }
 
-    private suspend fun applyProfiles(profiles: List<ProfileEntity>): SectionResult {
+    private suspend fun applyProfiles(backups: List<ProfileBackup>): SectionResult {
         val profileDao = database.profileDao()
+        val subscriptionDao = database.subscriptionDao()
+        val profiles = backups.map { it to it.toEntity() }
         val stored = profileDao.getAll()
         val existingByLink = stored.filter { it.isLink }.associateTo(HashMap()) { it.link to it.id }
         val existingChains = stored.mapNotNullTo(HashSet()) { (it.kind as? ServerKind.Chain)?.chain }
@@ -162,7 +164,7 @@ class ConfigBackupRepository(
         var importedSelectedId: Long? = null
         var added = 0
         var skipped = 0
-        for (profile in profiles.filter { it.isLink }) {
+        for ((backup, profile) in profiles.filter { (_, it) -> it.isLink }) {
             val existingId = existingByLink[profile.link]
             val id = if (existingId != null) {
                 skipped++
@@ -170,14 +172,21 @@ class ConfigBackupRepository(
             } else {
                 val parsed = checkNotNull(LinkParser.parse(profile.link))
                 added++
+                val subscriptionId = backup.subscriptionUrl.takeIf { it.isNotBlank() }?.let { subscriptionDao.obtain(it).id }
                 profileDao.append(
-                    profile.copy(id = 0, type = parsed.protocol.wire, outboundJson = parsed.proxyJson(), selected = false)
+                    profile.copy(
+                        id = 0,
+                        type = parsed.protocol.wire,
+                        outboundJson = parsed.proxyJson(),
+                        selected = false,
+                        subscriptionId = subscriptionId
+                    )
                 ).also { existingByLink[profile.link] = it }
             }
             newIds[profile.id] = id
             if (profile.selected) importedSelectedId = id
         }
-        for (profile in profiles) {
+        for ((_, profile) in profiles) {
             val chain = (profile.kind as? ServerKind.Chain)?.chain ?: continue
             val remapped = chain.remap(newIds)
             if (remapped == null || !existingChains.add(remapped)) {

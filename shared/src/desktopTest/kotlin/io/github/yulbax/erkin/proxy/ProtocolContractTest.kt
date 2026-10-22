@@ -2,7 +2,7 @@ package io.github.yulbax.erkin.proxy
 
 import io.github.yulbax.erkin.data.AppConfigBackup
 import io.github.yulbax.erkin.data.BackupCodec
-import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.ProfileBackup
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
@@ -83,7 +83,7 @@ class ProtocolContractTest {
     @Test
     fun eachParsedSampleSurvivesABackupRoundTrip() {
         val profiles = parsedSamples().map { (protocol, parsed) ->
-            ProfileEntity(name = parsed.name, type = protocol.wire, link = parsed.link, outboundJson = parsed.proxyJson())
+            ProfileBackup(name = parsed.name, type = protocol.wire, link = parsed.link, outboundJson = parsed.proxyJson())
         }
         val backup = AppConfigBackup(version = AppConfigBackup.CURRENT_VERSION, profiles = profiles)
 

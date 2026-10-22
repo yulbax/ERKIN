@@ -104,8 +104,8 @@ fun ErkinScreen(
     var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
     var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
-    var sheetUrl by rememberSaveable { mutableStateOf<String?>(null) }
-    var renamingUrl by remember { mutableStateOf<String?>(null) }
+    var sheetId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var renamingId by remember { mutableStateOf<Long?>(null) }
     val checked = checkedIds.filterTo(HashSet()) { id -> servers.profiles.any { it.id == id } }
 
     NavigationBackHandler(
@@ -150,11 +150,11 @@ fun ErkinScreen(
         onDelete = { deleting = listOf(it) },
         subscriptions = SubscriptionActions(
             refreshing = servers.refreshing,
-            onOpen = { sheetUrl = it },
+            onOpen = { sheetId = it },
             onRefresh = profileViewModel::refreshSubscription,
-            onRename = { renamingUrl = it },
-            onShare = { url -> sharer.shareText(url, shareChooserTitle) },
-            onDelete = { url -> deleting = servers.subscription(url)?.members }
+            onRename = { renamingId = it },
+            onShare = { id -> servers.subscriptions[id]?.let { sharer.shareText(it.url, shareChooserTitle) } },
+            onDelete = { id -> deleting = servers.profiles.filter { it.subscriptionId == id } }
         ),
         checked = checked,
         onToggleCheck = { profile ->
@@ -173,12 +173,12 @@ fun ErkinScreen(
     val landscape = windowSize.width > windowSize.height
     if (landscape) ErkinScreenLandscape(content) else ErkinScreenPortrait(content)
 
-    sheetUrl?.let { url ->
-        val item = servers.subscription(url)
+    sheetId?.let { id ->
+        val item = servers.subscription(id)
         if (item == null) {
-            LaunchedEffect(url) { sheetUrl = null }
+            LaunchedEffect(id) { sheetId = null }
         } else {
-            SubscriptionSheet(item, content.subscriptions, onDismiss = { sheetUrl = null }) { profile, close ->
+            SubscriptionSheet(item, content.subscriptions, onDismiss = { sheetId = null }) { profile, close ->
                 ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.delays), Modifier, onSelected = close)
             }
         }
@@ -220,17 +220,21 @@ fun ErkinScreen(
         )
     }
 
-    renamingUrl?.let { url ->
-        val stored = servers.subscriptions[url]
-        RenameDialog(
-            current = stored?.name.orEmpty(),
-            placeholder = stored?.title ?: SubscriptionEntity.hostOf(url),
-            onDismiss = { renamingUrl = null },
-            onSave = { name ->
-                profileViewModel.renameSubscription(url, name)
-                renamingUrl = null
-            }
-        )
+    renamingId?.let { id ->
+        val stored = servers.subscriptions[id]
+        if (stored == null) {
+            LaunchedEffect(id) { renamingId = null }
+        } else {
+            RenameDialog(
+                current = stored.name.orEmpty(),
+                placeholder = stored.title ?: SubscriptionEntity.hostOf(stored.url),
+                onDismiss = { renamingId = null },
+                onSave = { name ->
+                    profileViewModel.renameSubscription(id, name)
+                    renamingId = null
+                }
+            )
+        }
     }
 
     editing?.let { profile ->
@@ -645,7 +649,7 @@ private fun ServerListRow(
         actions = ServerActions(
             onEdit = { c.onEdit(profile) },
             onShare = if (chainLabel == null) ({ c.onShare(profile) }) else null,
-            onRefreshSubscription = item.subscriptionUrl?.let { url -> { c.subscriptions.onRefresh(url) } },
+            onRefreshSubscription = item.subscriptionId?.let { id -> { c.subscriptions.onRefresh(id) } },
             onDelete = { c.onDelete(profile) }
         ),
         onSelect = {
@@ -662,7 +666,7 @@ private fun ServerListRow(
         testing = profile.id in c.servers.testingIds,
         isBest = profile.id == fastestId,
         chainLabel = chainLabel,
-        fromSubscription = item.subscriptionUrl != null,
+        fromSubscription = item.subscriptionId != null,
         selecting = c.selecting,
         checked = profile.id in c.checked
     )

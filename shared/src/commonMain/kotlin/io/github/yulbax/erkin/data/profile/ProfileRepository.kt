@@ -70,15 +70,20 @@ class ProfileRepository(
         return database.transaction { sync(source, fetched.subscription) }
     }
 
-    suspend fun renameSubscription(url: String, name: String) {
-        val subscriptions = database.subscriptionDao()
-        val stored = subscriptions.get(url) ?: SubscriptionEntity(url)
-        subscriptions.upsert(stored.copy(name = name.trim().takeIf { it.isNotEmpty() }))
+    suspend fun refreshSubscription(id: Long): ProfileOperationResult {
+        val stored = database.subscriptionDao().get(id) ?: return ProfileOperationResult.Success(affected = 0)
+        return refreshSubscription(stored.url)
+    }
+
+    suspend fun renameSubscription(id: Long, name: String) {
+        database.subscriptionDao().rename(id, name.trim().takeIf { it.isNotEmpty() })
     }
 
     private suspend fun sync(url: String, subscription: FetchedSubscription): ProfileOperationResult.SubscriptionSynced {
+        val subscriptions = database.subscriptionDao()
+        val stored = subscriptions.obtain(url)
         val all = profileDao.getAll()
-        val members = all.filter { it.isLink && it.subscriptionUrl == url }
+        val members = all.filter { it.isLink && it.subscriptionId == stored.id }
         val unmatched = members.toMutableList()
         val matches = arrayOfNulls<ProfileEntity>(subscription.profiles.size)
         subscription.profiles.forEachIndexed { index, fresh ->
@@ -102,7 +107,7 @@ class ProfileRepository(
         val orderedIds = subscription.profiles.mapIndexed { index, fresh ->
             val match = matches[index]
             if (match == null) {
-                profileDao.append(fresh.toEntity(url))
+                profileDao.append(fresh.toEntity(stored.id))
             } else {
                 val descriptor = fresh.proxyJson()
                 if (match.link != fresh.link || match.outboundJson != descriptor || match.type != fresh.protocol.wire) {
@@ -118,15 +123,14 @@ class ProfileRepository(
 
         val groupIds = orderedIds + kept.map { it.id }
         val others = profileDao.getAll().map { it.id }.filterNot { it in groupIds }
-        val anchor = all.indexOfFirst { it.subscriptionUrl == url }
+        val anchor = all.indexOfFirst { it.subscriptionId == stored.id }
             .let { first -> if (first < 0) others.size else all.take(first).count { it.id in others } }
         profileDao.reorder(others.take(anchor) + groupIds + others.drop(anchor))
         ensureSelection(preferredId = orderedIds.firstOrNull())
 
-        val subscriptions = database.subscriptionDao()
         val usage = subscription.info.usage
-        subscriptions.upsert(
-            (subscriptions.get(url) ?: SubscriptionEntity(url)).copy(
+        subscriptions.update(
+            stored.copy(
                 title = subscription.info.title,
                 upload = usage?.upload,
                 download = usage?.download,
@@ -150,11 +154,7 @@ class ProfileRepository(
     suspend fun select(profile: ProfileEntity) {
         database.transaction {
             profileDao.selectExclusive(profile.id)
-            if (profile.subscriptionUrl.isNotEmpty()) {
-                val subscriptions = database.subscriptionDao()
-                val stored = subscriptions.get(profile.subscriptionUrl) ?: SubscriptionEntity(profile.subscriptionUrl)
-                subscriptions.upsert(stored.copy(currentId = profile.id))
-            }
+            profile.subscriptionId?.let { database.subscriptionDao().updateCurrent(it, profile.id) }
         }
     }
 
@@ -188,7 +188,7 @@ class ProfileRepository(
                 profile.id !in ids && (profile.kind as? ServerKind.Chain)?.chain?.let { chain -> ids.any(chain::uses) } == true
             }
             profileDao.deleteMany(profiles + orphanedChains)
-            database.subscriptionDao().deleteOrphans()
+            database.subscriptionDao().deleteEmpty()
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {
                 database.appDao().reassignConnectionType(ConnectionType.VPN, ConnectionType.DIRECT)
@@ -237,7 +237,7 @@ class ProfileRepository(
             append(" parses=").append(parsed != null)
             if (parsed != null) append(" fresh=").append(parsed.proxyJson() == profile.outboundJson)
             append(" selected=").append(profile.selected)
-            append(" subscription=").append(profile.subscriptionUrl.isNotEmpty())
+            append(" subscription=").append(profile.subscriptionId != null)
         }
     }
 
@@ -255,10 +255,10 @@ class ProfileRepository(
         return ProfileOperationResult.Success()
     }
 
-    private suspend fun insertAll(profiles: List<ParsedProfile>, subscriptionUrl: String = ""): ProfileOperationResult {
+    private suspend fun insertAll(profiles: List<ParsedProfile>): ProfileOperationResult {
         if (profiles.isEmpty()) return ProfileOperationResult.InvalidLink
         database.transaction {
-            val ids = profileDao.appendAll(profiles.map { it.toEntity(subscriptionUrl) })
+            val ids = profileDao.appendAll(profiles.map { it.toEntity() })
             ensureSelection(preferredId = ids.firstOrNull())
         }
         return ProfileOperationResult.Success(affected = profiles.size)
@@ -272,12 +272,12 @@ class ProfileRepository(
         FetchResult.Failed(error)
     }
 
-    private fun ParsedProfile.toEntity(subscriptionUrl: String = "") = ProfileEntity(
+    private fun ParsedProfile.toEntity(subscriptionId: Long? = null) = ProfileEntity(
         name = name,
         type = protocol.wire,
         link = link,
         outboundJson = proxyJson(),
-        subscriptionUrl = subscriptionUrl
+        subscriptionId = subscriptionId
     )
 
     private companion object {

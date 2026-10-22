@@ -61,6 +61,30 @@ class AppDatabaseUpgradeTest {
         }
     }
 
+    @Test
+    fun subscriptionServersAreLinkedToOneSubscriptionRecord() = runBlocking {
+        seed(version = 4, settingsColumns = SETTINGS_V4_COLUMNS, settingsValues = SETTINGS_V4_VALUES, identityHash = "legacy")
+        BundledSQLiteDriver().open(dbFile.absolutePath).use { connection ->
+            connection.execSQL(
+                "INSERT INTO `profiles` (name, type, link, outboundJson, selected, subscriptionUrl) VALUES " +
+                    "('A', 'vless', 'vless://id@a.example:443', '{}', 0, '$SUBSCRIPTION_URL'), " +
+                    "('B', 'vless', 'vless://id@b.example:443', '{}', 0, '$SUBSCRIPTION_URL')"
+            )
+        }
+
+        open().useDatabase { database ->
+            val subscription = requireNotNull(database.subscriptionDao().find(SUBSCRIPTION_URL))
+            val profiles = database.profileDao().getAll()
+            assertEquals(listOf(null, subscription.id, subscription.id), profiles.map { it.subscriptionId })
+
+            database.subscriptionDao().deleteEmpty()
+            assertEquals(subscription, database.subscriptionDao().get(subscription.id))
+            database.profileDao().deleteMany(profiles.filter { it.subscriptionId != null })
+            database.subscriptionDao().deleteEmpty()
+            assertNull(database.subscriptionDao().get(subscription.id))
+        }
+    }
+
     private suspend fun assertSeededRows(database: AppDatabase) {
         assertEquals(ConnectionType.BYEDPI, database.appDao().getApp("com.example.app")?.connectionType)
         assertNull(database.appDao().getApp("com.example.app")?.path)
@@ -109,6 +133,7 @@ class AppDatabaseUpgradeTest {
     }
 
     private companion object {
+        const val SUBSCRIPTION_URL = "https://sub.example/list"
         const val V3_IDENTITY_HASH = "b93f15925f5dda6d2dc3488b9b0a0006"
         const val SETTINGS_V1_COLUMNS =
             "`id` INTEGER NOT NULL, `showSystemApps` INTEGER NOT NULL, `byeDpiArgs` TEXT NOT NULL, `tunStack` TEXT NOT NULL, " +

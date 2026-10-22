@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.data
 
-import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import kotlinx.serialization.Serializable
 
@@ -9,7 +8,7 @@ data class AppConfigBackup(
     val version: Int = MIN_SUPPORTED_VERSION,
     val apps: Map<String, String>? = null,
     val settings: SettingsEntity? = null,
-    val profiles: List<ProfileEntity>? = null,
+    val profiles: List<ProfileBackup>? = null,
     val rules: List<RoutingRuleEntity>? = null
 ) {
     companion object {
