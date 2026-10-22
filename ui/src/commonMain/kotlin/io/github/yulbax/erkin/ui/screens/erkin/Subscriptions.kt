@@ -98,10 +98,10 @@ internal fun SubscriptionRow(
         onLongClick = onLongClick,
         modifier = modifier,
         subtitleIcon = RowIcon(Icons.Default.Cloud, Res.string.subscription),
-        leading = handle
+        leading = if (selecting) ({ TriStateCheckbox(state = checkState, onClick = null) }) else null
     ) {
         if (selecting) {
-            TriStateCheckbox(state = checkState, onClick = null, modifier = Modifier.padding(end = 8.dp))
+            handle?.invoke()
         } else {
             var menuExpanded by remember { mutableStateOf(false) }
             SplitButtonLayout(

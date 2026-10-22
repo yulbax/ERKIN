@@ -68,10 +68,10 @@ internal fun ServerRow(
             fromSubscription -> RowIcon(Icons.Default.Cloud, Res.string.subscription)
             else -> null
         },
-        leading = handle
+        leading = if (selecting) ({ Checkbox(checked = checked, onCheckedChange = null) }) else null
     ) {
         if (selecting) {
-            Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.padding(end = 8.dp))
+            handle?.invoke()
         } else {
             ServerMenu(actions)
         }
