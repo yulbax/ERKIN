@@ -715,6 +715,7 @@ private fun SubscriptionListRow(c: ErkinScreenContent, entry: ServerListEntry.Gr
         onClick = { if (c.selecting) c.onToggleChecks(entry.members) else c.onSelect(current) },
         onLongClick = { c.onToggleChecks(entry.members) },
         onOpen = { c.onOpenSubscription(entry.url) },
+        menu = subscriptionMenu(c, entry.url),
         modifier = modifier
     )
 }

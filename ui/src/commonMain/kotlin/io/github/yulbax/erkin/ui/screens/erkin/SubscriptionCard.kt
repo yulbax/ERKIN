@@ -24,12 +24,10 @@ import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonLayout
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,6 +83,7 @@ internal fun SubscriptionRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onOpen: () -> Unit,
+    menu: SubscriptionMenu,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -127,7 +126,7 @@ internal fun SubscriptionRow(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        "$name · ${current.type}",
+                        "$name · $count · ${current.type}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -140,17 +139,30 @@ internal fun SubscriptionRow(
             if (selecting) {
                 TriStateCheckbox(state = checkState, onClick = null)
             } else {
-                BadgedBox(
-                    badge = { Badge { Text(count.toString()) } },
+                var menuExpanded by remember { mutableStateOf(false) }
+                SplitButtonLayout(
+                    leadingButton = {
+                        SplitButtonDefaults.LeadingButton(onClick = onOpen, colors = splitButtonColors()) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.List,
+                                contentDescription = stringResource(Res.string.subscription_show_servers),
+                                modifier = Modifier.size(SplitButtonDefaults.LeadingIconSize)
+                            )
+                        }
+                    },
+                    trailingButton = {
+                        Box {
+                            MenuTrailingButton(
+                                expanded = menuExpanded,
+                                onExpandedChange = { menuExpanded = it }
+                            )
+                            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                SubscriptionMenuItems(menu, withRefresh = true) { menuExpanded = false }
+                            }
+                        }
+                    },
                     modifier = Modifier.padding(horizontal = 4.dp)
-                ) {
-                    FilledTonalIconButton(onClick = onOpen, shapes = IconButtonDefaults.shapes()) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = stringResource(Res.string.subscription_show_servers)
-                        )
-                    }
-                }
+                )
             }
         }
     }
@@ -254,19 +266,30 @@ private fun SubscriptionMenuButton(menu: SubscriptionMenu) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SubscriptionMenuItem(Res.string.rule_set_rename, Icons.Default.DriveFileRenameOutline) {
-                menu.onRename()
-                expanded = false
-            }
-            SubscriptionMenuItem(Res.string.share, Icons.Default.Share) {
-                menu.onShare()
-                expanded = false
-            }
-            SubscriptionMenuItem(Res.string.delete, Icons.Default.Delete) {
-                menu.onDelete()
-                expanded = false
-            }
+            SubscriptionMenuItems(menu, withRefresh = false) { expanded = false }
         }
+    }
+}
+
+@Composable
+private fun SubscriptionMenuItems(menu: SubscriptionMenu, withRefresh: Boolean, close: () -> Unit) {
+    if (withRefresh) {
+        SubscriptionMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, enabled = !menu.refreshing) {
+            menu.onRefresh()
+            close()
+        }
+    }
+    SubscriptionMenuItem(Res.string.rule_set_rename, Icons.Default.DriveFileRenameOutline) {
+        menu.onRename()
+        close()
+    }
+    SubscriptionMenuItem(Res.string.share, Icons.Default.Share) {
+        menu.onShare()
+        close()
+    }
+    SubscriptionMenuItem(Res.string.delete, Icons.Default.Delete) {
+        menu.onDelete()
+        close()
     }
 }
 

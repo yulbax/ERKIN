@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Checkbox
@@ -29,8 +31,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.FilledTonalIconButton
-import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.SplitButtonDefaults
+import androidx.compose.material3.SplitButtonShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -149,16 +152,12 @@ internal fun ServerRow(
                 Checkbox(checked = checked, onCheckedChange = null)
             } else {
                 Box {
-                    FilledTonalIconButton(
-                        onClick = { menuExpanded = true },
-                        shapes = IconButtonDefaults.shapes(),
+                    MenuTrailingButton(
+                        expanded = menuExpanded,
+                        onExpandedChange = { menuExpanded = it },
+                        shapes = STANDALONE_MENU_SHAPES,
                         modifier = Modifier.padding(horizontal = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Edit,
-                            contentDescription = stringResource(Res.string.more_options_cd)
-                        )
-                    }
+                    )
                     DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false }
@@ -195,6 +194,41 @@ internal fun ServerRow(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun MenuTrailingButton(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    shapes: SplitButtonShapes? = null,
+    modifier: Modifier = Modifier
+) {
+    val icon: @Composable RowScope.() -> Unit = {
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = stringResource(Res.string.more_options_cd)
+        )
+    }
+    if (shapes == null) {
+        SplitButtonDefaults.TrailingButton(expanded, onExpandedChange, modifier, colors = splitButtonColors(), content = icon)
+    } else {
+        SplitButtonDefaults.TrailingButton(expanded, onExpandedChange, modifier, shapes = shapes, colors = splitButtonColors(), content = icon)
+    }
+}
+
+private val STANDALONE_MENU_SHAPES = SplitButtonShapes(
+    shape = RoundedCornerShape(50),
+    pressedShape = RoundedCornerShape(8.dp),
+    checkedShape = RoundedCornerShape(50)
+)
+
+@Composable
+internal fun splitButtonColors() = ButtonColors(
+    containerColor = MaterialTheme.colorScheme.secondary,
+    contentColor = MaterialTheme.colorScheme.onSecondary,
+    disabledContentColor = MaterialTheme.colorScheme.surface,
+    disabledContainerColor = MaterialTheme.colorScheme.onSurface
+)
 
 @Composable
 internal fun DelaySuffix(delay: ProxyDelay?, testing: Boolean) {
