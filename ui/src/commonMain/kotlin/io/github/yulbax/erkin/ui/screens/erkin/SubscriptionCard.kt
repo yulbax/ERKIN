@@ -17,14 +17,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,7 +40,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -66,6 +70,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun SubscriptionRow(
     name: String,
@@ -80,7 +85,6 @@ internal fun SubscriptionRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onOpen: () -> Unit,
-    menu: SubscriptionMenu,
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -136,14 +140,17 @@ internal fun SubscriptionRow(
             if (selecting) {
                 TriStateCheckbox(state = checkState, onClick = null)
             } else {
-                TextButton(onClick = onOpen, contentPadding = PaddingValues(start = 12.dp, end = 4.dp)) {
-                    Text(count.toString(), style = MaterialTheme.typography.labelLarge)
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = stringResource(Res.string.subscription_show_servers)
-                    )
+                BadgedBox(
+                    badge = { Badge { Text(count.toString()) } },
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    FilledTonalIconButton(onClick = onOpen, shapes = IconButtonDefaults.shapes()) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = stringResource(Res.string.subscription_show_servers)
+                        )
+                    }
                 }
-                SubscriptionMenuButton(menu)
             }
         }
     }
@@ -200,7 +207,7 @@ internal fun SubscriptionSheet(
                     Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh_subscription))
                 }
             }
-            SubscriptionMenuButton(menu, inSheet = true)
+            SubscriptionMenuButton(menu)
         }
         usage?.let { UsageBlock(it) }
         Spacer(Modifier.height(8.dp))
@@ -240,19 +247,13 @@ private fun IndicatorBar(visible: Boolean) {
 }
 
 @Composable
-private fun SubscriptionMenuButton(menu: SubscriptionMenu, inSheet: Boolean = false) {
+private fun SubscriptionMenuButton(menu: SubscriptionMenu) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            if (!inSheet) {
-                SubscriptionMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, enabled = !menu.refreshing) {
-                    menu.onRefresh()
-                    expanded = false
-                }
-            }
             SubscriptionMenuItem(Res.string.rule_set_rename, Icons.Default.DriveFileRenameOutline) {
                 menu.onRename()
                 expanded = false

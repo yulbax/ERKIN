@@ -23,13 +23,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,6 +59,7 @@ import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlin.math.PI
 import kotlin.math.sin
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun ServerRow(
     profile: ProfileEntity,
@@ -147,9 +149,13 @@ internal fun ServerRow(
                 Checkbox(checked = checked, onCheckedChange = null)
             } else {
                 Box {
-                    IconButton(onClick = { menuExpanded = true }) {
+                    FilledTonalIconButton(
+                        onClick = { menuExpanded = true },
+                        shapes = IconButtonDefaults.shapes(),
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Filled.MoreVert,
+                            imageVector = Icons.Filled.Edit,
                             contentDescription = stringResource(Res.string.more_options_cd)
                         )
                     }
