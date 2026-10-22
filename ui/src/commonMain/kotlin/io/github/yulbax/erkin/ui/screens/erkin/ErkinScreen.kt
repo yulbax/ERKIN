@@ -675,6 +675,7 @@ private fun ServerListRow(
         testing = profile.id in c.servers.testingIds,
         isBest = profile.id == fastestId,
         chainLabel = chainLabel(profile, c.servers.profiles),
+        subscriptionIcon = refreshable && profile.subscriptionUrl.isNotEmpty(),
         selecting = c.selecting,
         checked = profile.id in c.checked,
         onSelect = {

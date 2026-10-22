@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -72,6 +73,7 @@ internal fun ServerRow(
     testing: Boolean = false,
     isBest: Boolean = false,
     chainLabel: String? = null,
+    subscriptionIcon: Boolean = false,
     selecting: Boolean = false,
     checked: Boolean = false,
     onSelect: () -> Unit,
@@ -124,6 +126,14 @@ internal fun ServerRow(
                         Icon(
                             imageVector = Icons.Default.Link,
                             contentDescription = stringResource(Res.string.chain),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    } else if (subscriptionIcon) {
+                        Icon(
+                            imageVector = Icons.Default.Cloud,
+                            contentDescription = stringResource(Res.string.subscription),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
