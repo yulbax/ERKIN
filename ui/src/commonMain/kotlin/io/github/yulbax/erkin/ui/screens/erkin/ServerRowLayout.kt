@@ -70,6 +70,7 @@ internal fun ServerRowLayout(
     modifier: Modifier = Modifier,
     titleIcon: RowIcon? = null,
     subtitleIcon: RowIcon? = null,
+    leading: (@Composable () -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit
 ) {
     val pingColor = delay?.let(::pingColor)
@@ -94,6 +95,7 @@ internal fun ServerRowLayout(
                 .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            leading?.invoke()
             Box(
                 modifier = Modifier
                     .width(4.dp)

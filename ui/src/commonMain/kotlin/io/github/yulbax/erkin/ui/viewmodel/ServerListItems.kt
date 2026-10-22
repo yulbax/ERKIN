@@ -6,9 +6,11 @@ import io.github.yulbax.erkin.data.profile.SubscriptionUsage
 
 sealed interface ServerListItem {
     val key: Any
+    val profileIds: List<Long>
 
     data class Server(val profile: ProfileEntity, val subscriptionId: Long? = null) : ServerListItem {
         override val key: Any get() = profile.id
+        override val profileIds: List<Long> get() = listOf(profile.id)
     }
 
     data class Subscription(
@@ -20,6 +22,7 @@ sealed interface ServerListItem {
         val current: ProfileEntity
     ) : ServerListItem {
         override val key: Any get() = SUBSCRIPTION_KEY_PREFIX + id
+        override val profileIds: List<Long> get() = members.map { it.id }
     }
 
     private companion object {

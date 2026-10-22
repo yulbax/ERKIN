@@ -84,6 +84,13 @@ import io.github.yulbax.erkin.vpn.ConnectionStats
 import io.github.yulbax.erkin.vpn.VpnState
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.graphics.Color
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun ErkinScreen(
@@ -139,6 +146,7 @@ fun ErkinScreen(
         onByedpiClick = { showByeDpiDialog = true },
         onAddServerClick = { showAddDialog = true },
         onTestClick = { profileViewModel.testAll() },
+        onReorder = profileViewModel::reorder,
         onSelect = { profileViewModel.select(it) },
         onEdit = { profile ->
             when (profile.kind) {
@@ -316,6 +324,7 @@ private class ErkinScreenContent(
     val onByedpiClick: () -> Unit,
     val onAddServerClick: () -> Unit,
     val onTestClick: () -> Unit,
+    val onReorder: (List<Long>) -> Unit,
     val onSelect: (ProfileEntity) -> Unit,
     val onEdit: (ProfileEntity) -> Unit,
     val onShare: (ProfileEntity) -> Unit,
@@ -526,8 +535,19 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
         modifier = modifier
     ) {
         val showTest = c.servers.profiles.isNotEmpty()
+        var order by remember { mutableStateOf(c.servers.items) }
+        LaunchedEffect(c.servers.items) { order = c.servers.items }
+        val listState = rememberLazyListState()
+        val reorderState = rememberReorderableLazyListState(listState) { from, to ->
+            val fromIndex = order.indexOfFirst { it.key == from.key }
+            val toIndex = order.indexOfFirst { it.key == to.key }
+            if (fromIndex >= 0 && toIndex >= 0) {
+                order = order.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+            }
+        }
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     start = 6.dp,
@@ -538,10 +558,34 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 val fastestId = fastestId(c.servers.delays)
-                items(c.servers.items, key = { it.key }) { item ->
-                    when (item) {
-                        is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier.animateItem())
-                        is ServerListItem.Subscription -> SubscriptionListRow(c, item, fastestId, Modifier.animateItem())
+                items(order, key = { it.key }) { item ->
+                    ReorderableItem(reorderState, key = item.key) { dragging ->
+                        val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
+                        val handle: @Composable () -> Unit = {
+                            IconButton(
+                                onClick = {},
+                                modifier = Modifier.draggableHandle(
+                                    onDragStopped = { c.onReorder(order.flatMap { it.profileIds }) }
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.DragHandle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Surface(
+                            shape = RoundedCornerShape(18.dp),
+                            shadowElevation = elevation,
+                            color = if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
+                        ) {
+                            val rowHandle = handle.takeIf { c.selecting }
+                            when (item) {
+                                is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, handle = rowHandle)
+                                is ServerListItem.Subscription -> SubscriptionListRow(c, item, fastestId, Modifier, rowHandle)
+                            }
+                        }
                     }
                 }
             }
@@ -639,7 +683,8 @@ private fun ServerListRow(
     item: ServerListItem.Server,
     fastestId: Long?,
     modifier: Modifier,
-    onSelected: () -> Unit = {}
+    onSelected: () -> Unit = {},
+    handle: (@Composable () -> Unit)? = null
 ) {
     val profile = item.profile
     val chainLabel = chainLabel(profile, c.servers.profiles)
@@ -668,12 +713,19 @@ private fun ServerListRow(
         chainLabel = chainLabel,
         fromSubscription = item.subscriptionId != null,
         selecting = c.selecting,
-        checked = profile.id in c.checked
+        checked = profile.id in c.checked,
+        handle = handle
     )
 }
 
 @Composable
-private fun SubscriptionListRow(c: ErkinScreenContent, item: ServerListItem.Subscription, fastestId: Long?, modifier: Modifier) {
+private fun SubscriptionListRow(
+    c: ErkinScreenContent,
+    item: ServerListItem.Subscription,
+    fastestId: Long?,
+    modifier: Modifier,
+    handle: (@Composable () -> Unit)?
+) {
     val current = item.current
     val checkedCount = item.members.count { it.id in c.checked }
     SubscriptionRow(
@@ -691,7 +743,8 @@ private fun SubscriptionListRow(c: ErkinScreenContent, item: ServerListItem.Subs
         },
         onClick = { if (c.selecting) c.onToggleChecks(item.members) else c.onSelect(current) },
         onLongClick = { c.onToggleChecks(item.members) },
-        modifier = modifier
+        modifier = modifier,
+        handle = handle
     )
 }
 

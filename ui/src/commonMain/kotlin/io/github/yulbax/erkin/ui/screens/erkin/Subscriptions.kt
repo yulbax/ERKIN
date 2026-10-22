@@ -83,7 +83,8 @@ internal fun SubscriptionRow(
     checkState: ToggleableState,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    handle: (@Composable () -> Unit)? = null
 ) {
     ServerRowLayout(
         title = item.current.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
@@ -96,10 +97,11 @@ internal fun SubscriptionRow(
         onClick = onClick,
         onLongClick = onLongClick,
         modifier = modifier,
-        subtitleIcon = RowIcon(Icons.Default.Cloud, Res.string.subscription)
+        subtitleIcon = RowIcon(Icons.Default.Cloud, Res.string.subscription),
+        leading = handle
     ) {
         if (selecting) {
-            TriStateCheckbox(state = checkState, onClick = null)
+            TriStateCheckbox(state = checkState, onClick = null, modifier = Modifier.padding(end = 8.dp))
         } else {
             var menuExpanded by remember { mutableStateOf(false) }
             SplitButtonLayout(

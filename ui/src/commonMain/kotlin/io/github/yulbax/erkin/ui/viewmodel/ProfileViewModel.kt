@@ -139,6 +139,10 @@ class ProfileViewModel(
         }
     }
 
+    fun reorder(ids: List<Long>) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.reorder(ids) }
+    }
+
     fun renameSubscription(id: Long, name: String) {
         viewModelScope.launch(Dispatchers.IO) { profileRepository.renameSubscription(id, name) }
     }

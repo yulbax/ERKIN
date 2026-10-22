@@ -49,7 +49,8 @@ internal fun ServerRow(
     chainLabel: String? = null,
     fromSubscription: Boolean = false,
     selecting: Boolean = false,
-    checked: Boolean = false
+    checked: Boolean = false,
+    handle: (@Composable () -> Unit)? = null
 ) {
     ServerRowLayout(
         title = profile.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
@@ -66,10 +67,11 @@ internal fun ServerRow(
             chainLabel != null -> RowIcon(Icons.Default.Link, Res.string.chain)
             fromSubscription -> RowIcon(Icons.Default.Cloud, Res.string.subscription)
             else -> null
-        }
+        },
+        leading = handle
     ) {
         if (selecting) {
-            Checkbox(checked = checked, onCheckedChange = null)
+            Checkbox(checked = checked, onCheckedChange = null, modifier = Modifier.padding(end = 8.dp))
         } else {
             ServerMenu(actions)
         }
