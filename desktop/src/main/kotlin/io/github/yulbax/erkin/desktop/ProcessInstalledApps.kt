@@ -58,7 +58,7 @@ class ProcessInstalledApps(
             val discovered = running.filter { it.packageName !in savedById }
             if (discovered.isNotEmpty()) {
                 val type = newAppsType()
-                appDao.upsertApps(discovered.map { App(it.packageName, it.name, it.isSystemApp, type, it.path) })
+                appDao.addApps(discovered.map { App(it.packageName, it.name, it.isSystemApp, type, it.path) })
             }
             running.filter { it.path != null && savedById[it.packageName]?.let { app -> app.path != it.path } == true }
                 .forEach { appDao.updatePath(it.packageName, it.path) }

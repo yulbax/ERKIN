@@ -54,6 +54,7 @@ object BackupCodec {
         if ((backup.apps?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
         if ((backup.profiles?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
         if ((backup.rules?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
+        if ((backup.appServers?.size ?: 0) > AppConfigBackup.MAX_ENTRIES_PER_SECTION) return false
         if ((backup.profiles?.count { it.selected } ?: 0) > 1) return false
         if (backup.apps?.any(::isInvalidAppBackup) == true) return false
         if (backup.settings?.let(::isValidSettingsBackup) == false) return false

@@ -45,7 +45,7 @@
     <string name="export_logs">导出日志</string>
     <string name="export_app_config">导出应用配置</string>
     <string name="import_app_config">导入应用配置</string>
-    <string name="import_done">应用：应用 %1$d 个，跳过 %2$d 个 · 服务器：新增 %3$d 个 · 规则：新增 %4$d 条</string>
+    <string name="import_done">应用：应用 %1$d 个，%2$d 个待安装后应用 · 服务器：新增 %3$d 个 · 规则：新增 %4$d 条</string>
     <string name="import_failed">导入失败：%1$s</string>
     <string name="import_invalid_file">文件无效或无法读取</string>
     <string name="backup_export_title">导出内容</string>

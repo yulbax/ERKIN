@@ -25,8 +25,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class],
-    version = 18,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class],
+    version = 19,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -188,6 +188,14 @@ abstract class AppDatabase : RoomDatabase() {
             object : Migration(17, 18) {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE apps ADD COLUMN serverId INTEGER DEFAULT NULL")
+                }
+            },
+            object : Migration(18, 19) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `pending_apps` (`packageName` TEXT NOT NULL, " +
+                            "`connectionType` TEXT NOT NULL, `serverId` INTEGER, PRIMARY KEY(`packageName`))"
+                    )
                 }
             }
         )

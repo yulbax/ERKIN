@@ -23,7 +23,7 @@ data class BackupSelection(
 
 data class ImportResult(
     val applied: Int = 0,
-    val skipped: Int = 0,
+    val deferred: Int = 0,
     val settingsApplied: Boolean = false,
     val profilesAdded: Int = 0,
     val profilesSkipped: Int = 0,
@@ -34,6 +34,8 @@ data class ImportResult(
 
 private data class SectionResult(val applied: Int, val skipped: Int)
 
+private data class ProfilesImport(val result: SectionResult, val ids: Map<Long, Long>)
+
 class ConfigBackupRepository(
     private val database: AppDatabase,
     private val profileRepository: ProfileRepository
@@ -41,12 +43,16 @@ class ConfigBackupRepository(
 
     suspend fun export(selection: BackupSelection): String = withContext(Dispatchers.IO) {
         val backup = database.transaction {
+            val apps = database.appDao().getAllAppsSnapshot().sortedBy { it.packageName }
             AppConfigBackup(
                 version = AppConfigBackup.CURRENT_VERSION,
                 apps = if (selection.apps) {
-                    database.appDao().getAllAppsSnapshot()
-                        .sortedBy { it.packageName }
-                        .associate { it.packageName to it.connectionType.wire }
+                    apps.associate { it.packageName to it.connectionType.wire }
+                } else {
+                    null
+                },
+                appServers = if (selection.apps && selection.profiles) {
+                    apps.mapNotNull { app -> app.serverId?.let { app.packageName to it } }.toMap().ifEmpty { null }
                 } else {
                     null
                 },
@@ -56,8 +62,8 @@ class ConfigBackupRepository(
                     null
                 },
                 profiles = if (selection.profiles) {
-                    val urls = database.subscriptionDao().getAll().associate { it.id to it.url }
-                    database.profileDao().getAll().map { ProfileBackup.of(it, it.subscriptionId?.let(urls::get)) }
+                    val subscriptions = database.subscriptionDao().getAll().associateBy { it.id }
+                    database.profileDao().getAll().map { ProfileBackup.of(it, it.subscriptionId?.let(subscriptions::get)) }
                 } else {
                     null
                 },
@@ -97,40 +103,45 @@ class ConfigBackupRepository(
         backup: AppConfigBackup,
         selection: BackupSelection
     ): ImportResult {
-        val apps = backup.apps?.takeIf { selection.apps }?.let { applyApps(it) }
+        val profiles = backup.profiles?.let { applyProfiles(it, insert = selection.profiles) }
+        val apps = backup.apps?.takeIf { selection.apps }?.let { applyApps(it, backup.appServers.orEmpty(), profiles?.ids.orEmpty()) }
         val settings = backup.settings?.takeIf { selection.settings }
         settings?.let { database.settingsDao().upsertSettings(it) }
-        val profiles = backup.profiles?.takeIf { selection.profiles }?.let { applyProfiles(it) }
+        val added = profiles?.result?.takeIf { selection.profiles }
         val rules = backup.rules?.takeIf { selection.rules }?.let { applyRules(it) }
         return ImportResult(
             applied = apps?.applied ?: 0,
-            skipped = apps?.skipped ?: 0,
+            deferred = apps?.skipped ?: 0,
             settingsApplied = settings != null,
-            profilesAdded = profiles?.applied ?: 0,
-            profilesSkipped = profiles?.skipped ?: 0,
+            profilesAdded = added?.applied ?: 0,
+            profilesSkipped = added?.skipped ?: 0,
             rulesAdded = rules?.applied ?: 0,
             rulesSkipped = rules?.skipped ?: 0
         )
     }
 
-    private suspend fun applyApps(apps: Map<String, String>): SectionResult {
+    private suspend fun applyApps(apps: Map<String, String>, servers: Map<String, Long>, ids: Map<Long, Long>): SectionResult {
         val appDao = database.appDao()
         val existing = appDao.getAllAppsSnapshot().associateBy { it.packageName }
         val updates = mutableListOf<App>()
+        val pending = mutableListOf<PendingApp>()
         var applied = 0
-        var skipped = 0
         for ((packageName, typeWire) in apps) {
+            val type = ConnectionType.fromWire(typeWire) ?: continue
+            val serverId = servers[packageName]?.let(ids::get)?.takeIf { type == ConnectionType.VPN }
             val app = existing[packageName]
-            val type = ConnectionType.fromWire(typeWire)
-            if (app == null || type == null) {
-                skipped++
+            if (app == null) {
+                pending.add(PendingApp(packageName, type, serverId))
                 continue
             }
-            if (app.connectionType != type) updates.add(app.copy(connectionType = type))
+            if (app.connectionType != type || app.serverId != serverId) {
+                updates.add(app.copy(connectionType = type, serverId = serverId))
+            }
             applied++
         }
         if (updates.isNotEmpty()) appDao.upsertApps(updates)
-        return SectionResult(applied, skipped)
+        if (pending.isNotEmpty()) appDao.upsertPending(pending)
+        return SectionResult(applied, pending.size)
     }
 
     private suspend fun applyRules(rules: List<RoutingRuleEntity>): SectionResult {
@@ -153,13 +164,15 @@ class ConfigBackupRepository(
         return SectionResult(added, skipped)
     }
 
-    private suspend fun applyProfiles(backups: List<ProfileBackup>): SectionResult {
+    private suspend fun applyProfiles(backups: List<ProfileBackup>, insert: Boolean): ProfilesImport {
         val profileDao = database.profileDao()
         val subscriptionDao = database.subscriptionDao()
         val profiles = backups.map { it to it.toEntity() }
         val stored = profileDao.getAll()
         val existingByLink = stored.filter { it.isLink }.associateTo(HashMap()) { it.link to it.id }
-        val existingChains = stored.mapNotNullTo(HashSet()) { (it.kind as? ServerKind.Chain)?.chain }
+        val existingChains = stored.mapNotNull { profile ->
+            (profile.kind as? ServerKind.Chain)?.chain?.let { it to profile.id }
+        }.toMap(HashMap())
         val newIds = HashMap<Long, Long>()
         var importedSelectedId: Long? = null
         var added = 0
@@ -169,6 +182,8 @@ class ConfigBackupRepository(
             val id = if (existingId != null) {
                 skipped++
                 existingId
+            } else if (!insert) {
+                continue
             } else {
                 val parsed = checkNotNull(LinkParser.parse(profile.link))
                 added++
@@ -189,16 +204,33 @@ class ConfigBackupRepository(
         for ((_, profile) in profiles) {
             val chain = (profile.kind as? ServerKind.Chain)?.chain ?: continue
             val remapped = chain.remap(newIds)
-            if (remapped == null || !existingChains.add(remapped)) {
+            val existingId = remapped?.let(existingChains::get)
+            if (remapped == null || existingId != null || !insert) {
+                existingId?.let { newIds[profile.id] = it }
                 skipped++
                 continue
             }
             val id = profileDao.append(profile.copy(id = 0, outboundJson = remapped.encode(), selected = false))
+            existingChains[remapped] = id
+            newIds[profile.id] = id
             if (profile.selected) importedSelectedId = id
             added++
         }
-        profileRepository.ensureSelection(preferredId = importedSelectedId)
-        return SectionResult(added, skipped)
+        if (insert) {
+            restoreSubscriptionNames(backups)
+            profileRepository.ensureSelection(preferredId = importedSelectedId)
+        }
+        return ProfilesImport(SectionResult(added, skipped), newIds)
+    }
+
+    private suspend fun restoreSubscriptionNames(backups: List<ProfileBackup>) {
+        val subscriptionDao = database.subscriptionDao()
+        backups.mapNotNull { backup -> backup.subscriptionName?.let { backup.subscriptionUrl to it } }
+            .filter { (url, _) -> url.isNotBlank() }
+            .distinctBy { (url, _) -> url }
+            .forEach { (url, name) ->
+                subscriptionDao.find(url)?.takeIf { it.name == null }?.let { subscriptionDao.rename(it.id, name) }
+            }
     }
 
     private fun RoutingRuleEntity.identity() = Triple(type, value, target)

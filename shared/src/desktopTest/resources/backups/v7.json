@@ -1,0 +1,9 @@
+{
+  "version": 7,
+  "apps": {"org.telegram.messenger": "VPN", "com.discord": "BYEDPI"},
+  "appServers": {"org.telegram.messenger": 4},
+  "profiles": [
+    {"id": 3, "name": "Example", "type": "vless", "link": "vless://00000000-0000-0000-0000-000000000000@example.com:443?security=tls#Example", "outboundJson": "{\"type\":\"vless\"}", "selected": true},
+    {"id": 4, "name": "Home", "type": "vless", "link": "vless://00000000-0000-0000-0000-000000000000@home.example.com:443?security=tls#Home", "outboundJson": "{\"type\":\"vless\"}", "subscriptionUrl": "https://sub.example.com/list", "subscriptionName": "My home"}
+  ]
+}

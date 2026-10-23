@@ -92,6 +92,44 @@ class ConfigBackupRepositoryTest {
         }
     }
 
+    @Test
+    fun appServersSubscriptionNamesAndMissingAppsSurviveARestore() = runBlocking {
+        val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        profiles.add("vless://id@main.example:443?security=tls#Main")
+        val subscription = database.subscriptionDao().obtain("https://sub.example/list")
+        database.subscriptionDao().rename(subscription.id, "Home")
+        val homeId = database.profileDao().append(
+            ProfileEntity(name = "Home", type = "vless", link = "vless://id@home.example:443?security=tls#Home", outboundJson = "{}", subscriptionId = subscription.id)
+        )
+        database.appDao().upsertApps(
+            listOf(
+                App("org.bound", "Bound", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = homeId),
+                App("org.later", "Later", isSystemApp = false, connectionType = ConnectionType.BYEDPI)
+            )
+        )
+        val all = BackupSelection(settings = false, apps = true, profiles = true, rules = false)
+        val exported = requireNotNull(BackupCodec.decode(repository.export(all)))
+
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        try {
+            fresh.appDao().upsertApp(App("org.bound", "Bound", isSystemApp = false, connectionType = ConnectionType.DIRECT))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog))
+            val result = target.apply(exported, all)
+            val home = fresh.profileDao().getAll().single { it.name == "Home" }
+
+            assertEquals(1, result.applied)
+            assertEquals(1, result.deferred)
+            assertEquals(home.id, fresh.appDao().getApp("org.bound")?.serverId)
+            assertEquals("Home", fresh.subscriptionDao().find("https://sub.example/list")?.name)
+
+            fresh.appDao().addApps(listOf(App("org.later", "Later", isSystemApp = false)))
+            assertEquals(ConnectionType.BYEDPI, fresh.appDao().getApp("org.later")?.connectionType)
+            assertEquals(emptyList<PendingApp>(), fresh.appDao().getPending(listOf("org.later")))
+        } finally {
+            fresh.close()
+        }
+    }
+
     private object NoSubscriptions : SubscriptionProfileSource {
         override suspend fun fetch(url: String): FetchedSubscription = FetchedSubscription(emptyList())
     }

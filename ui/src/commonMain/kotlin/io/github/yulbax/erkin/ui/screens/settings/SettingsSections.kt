@@ -276,7 +276,7 @@ internal fun BackupSection(viewModel: SettingsViewModel) {
                     val message = if (result.error != null) {
                         importFailedFormat.format(result.error)
                     } else {
-                        importDoneFormat.format(result.applied, result.skipped, result.profilesAdded, result.rulesAdded)
+                        importDoneFormat.format(result.applied, result.deferred, result.profilesAdded, result.rulesAdded)
                     }
                     showMessage(message)
                 }

@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -11,7 +12,8 @@ data class ProfileBackup(
     val link: String = "",
     val outboundJson: String = "",
     val selected: Boolean = false,
-    val subscriptionUrl: String = ""
+    val subscriptionUrl: String = "",
+    val subscriptionName: String? = null
 ) {
     fun toEntity(subscriptionId: Long? = null) = ProfileEntity(
         id = id,
@@ -24,14 +26,15 @@ data class ProfileBackup(
     )
 
     companion object {
-        fun of(profile: ProfileEntity, subscriptionUrl: String?) = ProfileBackup(
+        fun of(profile: ProfileEntity, subscription: SubscriptionEntity?) = ProfileBackup(
             id = profile.id,
             name = profile.name,
             type = profile.type,
             link = profile.link,
             outboundJson = profile.outboundJson,
             selected = profile.selected,
-            subscriptionUrl = subscriptionUrl.orEmpty()
+            subscriptionUrl = subscription?.url.orEmpty(),
+            subscriptionName = subscription?.name
         )
     }
 }

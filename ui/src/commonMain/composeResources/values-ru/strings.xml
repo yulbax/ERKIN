@@ -45,7 +45,7 @@
     <string name="export_logs">Экспорт логов</string>
     <string name="export_app_config">Экспорт настроек приложений</string>
     <string name="import_app_config">Импорт настроек приложений</string>
-    <string name="import_done">Приложения: %1$d применено, %2$d пропущено · Серверы: %3$d добавлено · Правила: %4$d добавлено</string>
+    <string name="import_done">Приложения: %1$d применено, %2$d после установки · Серверы: %3$d добавлено · Правила: %4$d добавлено</string>
     <string name="import_failed">Не удалось импортировать: %1$s</string>
     <string name="import_invalid_file">Неверный или нечитаемый файл</string>
     <string name="backup_export_title">Что экспортировать</string>

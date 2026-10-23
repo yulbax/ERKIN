@@ -45,7 +45,7 @@
     <string name="export_logs">خروجی گرفتن گزارش‌ها</string>
     <string name="export_app_config">خروجی پیکربندی برنامه‌ها</string>
     <string name="import_app_config">ورود پیکربندی برنامه‌ها</string>
-    <string name="import_done">برنامه‌ها: %1$d اعمال، %2$d رد · سرورها: %3$d افزوده · قوانین: %4$d افزوده</string>
+    <string name="import_done">برنامه‌ها: %1$d اعمال، %2$d پس از نصب · سرورها: %3$d افزوده · قوانین: %4$d افزوده</string>
     <string name="import_failed">ورود ناموفق بود: %1$s</string>
     <string name="import_invalid_file">فایل نامعتبر یا غیرقابل‌خواندن</string>
     <string name="backup_export_title">چه چیزی صادر شود</string>

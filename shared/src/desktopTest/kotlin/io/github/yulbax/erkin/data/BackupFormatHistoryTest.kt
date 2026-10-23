@@ -68,6 +68,13 @@ class BackupFormatHistoryTest {
         assertTrue(!encoded.contains("\"id\"") && !encoded.contains("\"tunStack\""))
     }
 
+    @Test
+    fun versionSevenBackupsCarryAppServersAndSubscriptionNames() {
+        val backup = read(7)
+        assertEquals(mapOf("org.telegram.messenger" to 4L), backup.appServers)
+        assertEquals("My home", requireNotNull(backup.profiles).single { it.id == 4L }.subscriptionName)
+    }
+
     private fun read(version: Int): AppConfigBackup {
         val text = requireNotNull(javaClass.getResource("/backups/v$version.json")) { "missing v$version fixture" }.readText()
         return requireNotNull(BackupCodec.decode(text)) { "v$version backup no longer imports" }

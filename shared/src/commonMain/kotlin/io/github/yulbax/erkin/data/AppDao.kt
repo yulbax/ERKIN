@@ -43,7 +43,35 @@ interface AppDao {
     suspend fun reassignConnectionType(from: ConnectionType, to: ConnectionType): Int
 
     @Query("UPDATE apps SET serverId = NULL WHERE serverId IN (:serverIds)")
-    suspend fun clearServers(serverIds: List<Long>)
+    suspend fun clearAppServers(serverIds: List<Long>)
+
+    @Query("UPDATE pending_apps SET serverId = NULL WHERE serverId IN (:serverIds)")
+    suspend fun clearPendingServers(serverIds: List<Long>)
+
+    @Transaction
+    suspend fun clearServers(serverIds: List<Long>) {
+        clearAppServers(serverIds)
+        clearPendingServers(serverIds)
+    }
+
+    @Query("SELECT * FROM pending_apps WHERE packageName IN (:packageNames)")
+    suspend fun getPending(packageNames: List<String>): List<PendingApp>
+
+    @Upsert
+    suspend fun upsertPending(apps: List<PendingApp>)
+
+    @Query("DELETE FROM pending_apps WHERE packageName IN (:packageNames)")
+    suspend fun deletePending(packageNames: List<String>)
+
+    @Transaction
+    suspend fun addApps(apps: List<App>) {
+        if (apps.isEmpty()) return
+        val pending = getPending(apps.map { it.packageName }).associateBy { it.packageName }
+        upsertApps(apps.map { app ->
+            pending[app.packageName]?.let { app.copy(connectionType = it.connectionType, serverId = it.serverId) } ?: app
+        })
+        if (pending.isNotEmpty()) deletePending(pending.keys.toList())
+    }
 
     @Query("UPDATE apps SET path = :path WHERE packageName = :packageName")
     suspend fun updatePath(packageName: String, path: String?)

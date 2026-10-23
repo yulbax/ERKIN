@@ -127,10 +127,11 @@ class InstalledAppsRepository(
         }.getOrNull() ?: return
 
         val existing = appDao.getApp(packageName)
-        appDao.upsertApp(
-            existing?.copy(name = installed.name, isSystemApp = installed.isSystemApp)
-                ?: installed.toStoredApp(newAppsType())
-        )
+        if (existing != null) {
+            appDao.upsertApp(existing.copy(name = installed.name, isSystemApp = installed.isSystemApp))
+        } else {
+            appDao.addApps(listOf(installed.toStoredApp(newAppsType())))
+        }
         _installedApps.value = (_installedApps.value.filterNot { it.packageName == packageName } + installed)
             .sortedBy { it.name.lowercase() }
     }
@@ -148,15 +149,13 @@ class InstalledAppsRepository(
         if (orphaned.isNotEmpty()) appDao.deleteApps(orphaned)
 
         val newAppsType = newAppsType()
+        val added = installed.filter { it.packageName !in existing }.map { it.toStoredApp(newAppsType) }
         val changed = installed.mapNotNull { app ->
-            val saved = existing[app.packageName]
-            when {
-                saved == null -> app.toStoredApp(newAppsType)
-                saved.name != app.name || saved.isSystemApp != app.isSystemApp ->
-                    saved.copy(name = app.name, isSystemApp = app.isSystemApp)
-                else -> null
-            }
+            val saved = existing[app.packageName] ?: return@mapNotNull null
+            saved.takeIf { it.name != app.name || it.isSystemApp != app.isSystemApp }
+                ?.copy(name = app.name, isSystemApp = app.isSystemApp)
         }
+        appDao.addApps(added)
         if (changed.isNotEmpty()) appDao.upsertApps(changed)
     }
 
