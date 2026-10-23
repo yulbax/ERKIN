@@ -50,6 +50,7 @@
     <string name="import_invalid_file">文件无效或无法读取</string>
     <string name="backup_export_title">导出内容</string>
     <string name="backup_import_title">导入内容</string>
+    <string name="backup_servers">服务器（含代理链）</string>
     <string name="export">导出</string>
 
     <string name="connection_no_routed_apps">尚未路由任何应用。请先打开“应用”，将至少一个应用设为 VPN 或 ByeDPI，再进行连接。</string>

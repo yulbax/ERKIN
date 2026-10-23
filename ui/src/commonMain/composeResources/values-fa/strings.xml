@@ -50,6 +50,7 @@
     <string name="import_invalid_file">فایل نامعتبر یا غیرقابل‌خواندن</string>
     <string name="backup_export_title">چه چیزی صادر شود</string>
     <string name="backup_import_title">چه چیزی وارد شود</string>
+    <string name="backup_servers">سرورها (همراه با زنجیره‌ها)</string>
     <string name="export">خروجی گرفتن</string>
 
     <string name="connection_no_routed_apps">هنوز هیچ برنامه‌ای مسیردهی نشده است. پیش از اتصال، «برنامه‌ها» را باز کنید و حداقل یک برنامه را روی VPN یا ByeDPI تنظیم کنید.</string>

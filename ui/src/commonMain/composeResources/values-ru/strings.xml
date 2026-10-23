@@ -50,6 +50,7 @@
     <string name="import_invalid_file">Неверный или нечитаемый файл</string>
     <string name="backup_export_title">Что экспортировать</string>
     <string name="backup_import_title">Что импортировать</string>
+    <string name="backup_servers">Серверы (включая цепочки)</string>
     <string name="export">Экспорт</string>
 
     <string name="connection_no_routed_apps">Пока ни одно приложение не маршрутизируется. Откройте «Приложения» и назначьте хотя бы одно на VPN или ByeDPI перед подключением.</string>

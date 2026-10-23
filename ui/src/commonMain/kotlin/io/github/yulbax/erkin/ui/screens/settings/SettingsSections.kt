@@ -323,7 +323,7 @@ private fun BackupSelectionDialog(
                     add { CheckRow(stringResource(Res.string.applications), apps) { apps = it } }
                 }
                 if (profilesAvailable) {
-                    add { CheckRow(stringResource(Res.string.servers_title), profiles) { profiles = it } }
+                    add { CheckRow(stringResource(Res.string.backup_servers), profiles) { profiles = it } }
                 }
                 if (rulesAvailable) {
                     add { CheckRow(stringResource(Res.string.rules_title), rules) { rules = it } }

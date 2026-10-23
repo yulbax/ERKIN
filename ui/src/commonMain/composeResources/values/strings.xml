@@ -50,6 +50,7 @@
     <string name="import_invalid_file">Invalid or unreadable file</string>
     <string name="backup_export_title">What to export</string>
     <string name="backup_import_title">What to import</string>
+    <string name="backup_servers">Servers (chains included)</string>
     <string name="export">Export</string>
 
     <string name="connection_no_routed_apps">No apps are routed yet. Open Applications and set at least one app to VPN or ByeDPI before connecting.</string>
