@@ -71,12 +71,11 @@
     <string name="dismiss">Закрыть</string>
     <string name="got_it">Понятно</string>
     <string name="apps_hint_title">Как направляется трафик</string>
-    <string name="apps_hint_direct">напрямую, без VPN</string>
-    <string name="apps_hint_byedpi">обход DPI без VPN</string>
-    <string name="apps_hint_vpn">через выбранный сервер</string>
-    <string name="apps_hint_change">Нажимайте кнопки справа от приложения, чтобы сменить тип. «Применить ко всем» меняет весь список сразу. Нажмите VPN ещё раз, чтобы выбрать сервер.</string>
+    <string name="apps_hint_direct">трафик идёт напрямую вне туннеля</string>
+    <string name="apps_hint_byedpi">трафик идёт через ByeDPI</string>
+    <string name="apps_hint_vpn">трафик идёт через VPN · нажмите ещё раз, чтобы выбрать сервер</string>
+    <string name="apps_hint_ru_default">Приложения ru/vk/yandex сразу попадают в Direct</string>
     <string name="app_server_main">Основной · %1$s</string>
-    <string name="apps_hint_ru_default">Пакеты, содержащие ru/vk/yandex, по умолчанию в Direct</string>
     <string name="dialog_error">Ошибка</string>
     <string name="vpn_disconnected">Отключено</string>
     <string name="vpn_connecting">Подключение…</string>

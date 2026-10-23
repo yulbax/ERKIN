@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
-import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.ui
 
 @Composable
@@ -60,12 +59,6 @@ internal fun AppsHint(onDismiss: () -> Unit) {
             }
             Spacer(Modifier.height(8.dp))
             ConnectionType.entries.forEach { TypeLine(it, stringResource(it.ui.hint)) }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = stringResource(Res.string.apps_hint_change),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
             Spacer(Modifier.height(4.dp))
             Text(
                 text = stringResource(Res.string.apps_hint_ru_default),
@@ -91,7 +84,7 @@ private fun TypeLine(type: ConnectionType, description: String) {
         ConnectionTypeIcon(type, Modifier.size(18.dp))
         Spacer(Modifier.width(10.dp))
         Text(
-            text = "${type.label()} — $description",
+            text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSecondaryContainer
         )

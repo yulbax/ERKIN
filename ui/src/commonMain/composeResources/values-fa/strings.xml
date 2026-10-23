@@ -71,12 +71,11 @@
     <string name="dismiss">بستن</string>
     <string name="got_it">متوجه شدم</string>
     <string name="apps_hint_title">نحوهٔ مسیریابی ترافیک</string>
-    <string name="apps_hint_direct">مستقیم، بدون VPN</string>
-    <string name="apps_hint_byedpi">عبور از DPI، بدون VPN</string>
-    <string name="apps_hint_vpn">از طریق سرور انتخاب‌شده</string>
-    <string name="apps_hint_change">برای تغییر نوع، دکمه‌های کنار هر برنامه را بزنید. «اعمال به همه» کل فهرست را یکجا تغییر می‌دهد. برای انتخاب سرور، دوباره روی VPN بزنید.</string>
+    <string name="apps_hint_direct">ترافیک مستقیم و خارج از تونل می‌رود</string>
+    <string name="apps_hint_byedpi">ترافیک از ByeDPI عبور می‌کند</string>
+    <string name="apps_hint_vpn">ترافیک از VPN عبور می‌کند · برای انتخاب سرور دوباره بزنید</string>
+    <string name="apps_hint_ru_default">برنامه‌های ru/vk/yandex از ابتدا در Direct هستند</string>
     <string name="app_server_main">اصلی · %1$s</string>
-    <string name="apps_hint_ru_default">بسته‌هایی که شامل ru/vk/yandex هستند به‌صورت پیش‌فرض روی Direct هستند</string>
     <string name="dialog_error">خطا</string>
     <string name="vpn_disconnected">قطع شد</string>
     <string name="vpn_connecting">در حال اتصال…</string>

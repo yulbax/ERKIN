@@ -71,12 +71,11 @@
     <string name="dismiss">Dismiss</string>
     <string name="got_it">Got it</string>
     <string name="apps_hint_title">How traffic is routed</string>
-    <string name="apps_hint_direct">direct, no VPN</string>
-    <string name="apps_hint_byedpi">DPI bypass, no VPN</string>
-    <string name="apps_hint_vpn">through the selected server</string>
-    <string name="apps_hint_change">Use the buttons next to an app to change its type. “Apply to all” changes the whole list at once. Tap VPN again to pick a server.</string>
+    <string name="apps_hint_direct">traffic goes directly, outside the tunnel</string>
+    <string name="apps_hint_byedpi">traffic goes through ByeDPI</string>
+    <string name="apps_hint_vpn">traffic goes through the VPN · tap again to pick a server</string>
+    <string name="apps_hint_ru_default">ru/vk/yandex apps start in Direct</string>
     <string name="app_server_main">Main · %1$s</string>
-    <string name="apps_hint_ru_default">Packages that contain ru/vk/yandex are Direct by default</string>
     <string name="dialog_error">Error</string>
     <string name="vpn_disconnected">Disconnected</string>
     <string name="vpn_connecting">Connecting…</string>
