@@ -101,6 +101,13 @@
     <string name="more_options_cd">Ещё</string>
     <string name="share">Поделиться</string>
     <string name="refresh_subscription">Обновить</string>
+    <string name="test_subscription">Проверить пинг</string>
+    <plurals name="unreachable_servers">
+        <item quantity="one">%1$d сервер недоступен</item>
+        <item quantity="few">%1$d сервера недоступны</item>
+        <item quantity="many">%1$d серверов недоступны</item>
+        <item quantity="other">%1$d сервера недоступны</item>
+    </plurals>
     <string name="delete">Удалить</string>
     <string name="delete_server_title">Удалить сервер?</string>
     <string name="delete_server_message">Удалить «%1$s»? Это действие нельзя отменить.</string>

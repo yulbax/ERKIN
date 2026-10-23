@@ -14,7 +14,9 @@ import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -57,6 +59,8 @@ class ProfileViewModel(
     private val _delays = MutableStateFlow<Map<Long, ProxyDelay>>(emptyMap())
     private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _refreshing = MutableStateFlow<Set<Long>>(emptySet())
+    private val _unreachable = MutableSharedFlow<List<Long>>(extraBufferCapacity = 1)
+    val unreachable: SharedFlow<List<Long>> = _unreachable
 
     private val subscriptions = combine(profileRepository.subscriptions, _refreshing) { stored, refreshing ->
         stored.associateBy { it.id } to refreshing
@@ -82,18 +86,33 @@ class ProfileViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
 
     fun testAll() {
+        test(uiState.value.profiles.filter { it.isLink }.map { it.id }.toSet(), subscription = false)
+    }
+
+    fun testSubscription(id: Long) {
+        test(uiState.value.profiles.filter { it.isLink && it.subscriptionId == id }.map { it.id }.toSet(), subscription = true)
+    }
+
+    private fun test(ids: Set<Long>, subscription: Boolean) {
         if (_testingIds.value.isNotEmpty()) return
-        val ids = uiState.value.profiles.filter { it.isLink }.map { it.id }.toSet()
         if (ids.isEmpty()) return
         _delays.value -= ids
         _testingIds.value = ids
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val delays = latencyProbe.measureAll()
-                _delays.value = delays
+                val delays = latencyProbe.measure(ids.takeIf { subscription })
+                _delays.value = if (subscription) _delays.value + delays else delays
                 if (settingsRepository.settings.first().sortServersByPing) {
-                    profileRepository.reorder(uiState.value.profiles.sortedBy { delays[it.id].rank() }.map { it.id })
+                    val profiles = uiState.value.profiles
+                    val order = if (subscription) {
+                        val sorted = profiles.filter { it.id in ids }.sortedBy { delays[it.id].rank() }.iterator()
+                        profiles.map { if (it.id in ids) sorted.next() else it }
+                    } else {
+                        profiles.sortedBy { delays[it.id].rank() }
+                    }
+                    profileRepository.reorder(order.map { it.id })
                 }
+                ids.filter { delays[it] == ProxyDelay.Failed }.takeIf { it.isNotEmpty() }?.let(_unreachable::tryEmit)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {

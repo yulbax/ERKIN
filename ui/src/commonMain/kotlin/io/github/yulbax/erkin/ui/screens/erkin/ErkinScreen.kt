@@ -90,6 +90,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.ui.graphics.Color
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.ui.text.style.TextOverflow
+import org.jetbrains.compose.resources.getPluralString
 
 @Composable
 fun ErkinScreen(
@@ -132,6 +141,17 @@ fun ErkinScreen(
     val onConnectClick = { if (ui.bypassLan) requestLocalNetwork() else startVpn() }
 
     val connected = state.isActive
+    val snackbarHostState = remember { SnackbarHostState() }
+    val deleteLabel = stringResource(Res.string.delete)
+    LaunchedEffect(profileViewModel) {
+        profileViewModel.unreachable.collect { ids ->
+            val message = getPluralString(Res.plurals.unreachable_servers, ids.size, ids.size)
+            val result = snackbarHostState.showSnackbar(message, actionLabel = deleteLabel, duration = SnackbarDuration.Long)
+            if (result == SnackbarResult.ActionPerformed) {
+                deleting = profileViewModel.uiState.value.profiles.filter { it.id in ids }.ifEmpty { null }
+            }
+        }
+    }
 
     val content = ErkinScreenContent(
         ui = ui,
@@ -157,12 +177,15 @@ fun ErkinScreen(
         onDelete = { deleting = listOf(it) },
         subscriptions = SubscriptionActions(
             refreshing = servers.refreshing,
+            testing = servers.testing,
             onOpen = { sheetId = it },
+            onTest = profileViewModel::testSubscription,
             onRefresh = profileViewModel::refreshSubscription,
             onRename = { renamingId = it },
             onShare = { id -> servers.subscriptions[id]?.let { sharer.shareText(it.url, shareChooserTitle) } },
             onDelete = { id -> deleting = servers.profiles.filter { it.subscriptionId == id } }
         ),
+        snackbarHostState = snackbarHostState,
         checked = checked,
         onToggleCheck = { profile ->
             checkedIds = if (profile.id in checked) checked.minus(profile.id).toList() else checked.plus(profile.id).toList()
@@ -288,7 +311,21 @@ fun ErkinScreen(
                     Text(stringResource(message, displayName))
                 } else {
                     val message = if (last) Res.string.delete_all_servers_message else Res.string.delete_servers_message
-                    Text(stringResource(message, profiles.size))
+                    val unnamed = stringResource(Res.string.unnamed_profile)
+                    Column {
+                        Text(stringResource(message, profiles.size))
+                        Spacer(Modifier.height(12.dp))
+                        Column(modifier = Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState())) {
+                            profiles.forEach { profile ->
+                                Text(
+                                    text = "• ${profile.name.ifEmpty { unnamed }}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 }
             }
         )
@@ -329,6 +366,7 @@ private class ErkinScreenContent(
     val onShare: (ProfileEntity) -> Unit,
     val onDelete: (ProfileEntity) -> Unit,
     val subscriptions: SubscriptionActions,
+    val snackbarHostState: SnackbarHostState,
     val checked: Set<Long>,
     val onToggleCheck: (ProfileEntity) -> Unit,
     val onToggleChecks: (List<ProfileEntity>) -> Unit,
@@ -603,8 +641,10 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                     }
                 }
             }
-            AnimatedSpeedometerButton(visible = showTest && !c.selecting, testing = c.servers.testing, onClick = c.onTestClick)
+            val notifying = c.snackbarHostState.currentSnackbarData != null
+            AnimatedSpeedometerButton(visible = showTest && !c.selecting && !notifying, testing = c.servers.testing, onClick = c.onTestClick)
             SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked)
+            SnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
             if (!showHeader && !c.selecting) {
                 AddFab(
                     onClick = c.onAddServerClick,

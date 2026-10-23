@@ -37,6 +37,7 @@ gradle/gradle-daemon-jvm.properties
 *.keystore
 
 # Personal coding-preferences file, carried across projects
+CLAUDE.md
 rules.md
 /changelog/
 /app/libs/*-sources.jar

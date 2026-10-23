@@ -101,6 +101,11 @@
     <string name="more_options_cd">More options</string>
     <string name="share">Share</string>
     <string name="refresh_subscription">Refresh</string>
+    <string name="test_subscription">Test ping</string>
+    <plurals name="unreachable_servers">
+        <item quantity="one">%1$d server is unreachable</item>
+        <item quantity="other">%1$d servers are unreachable</item>
+    </plurals>
     <string name="delete">Delete</string>
     <string name="delete_server_title">Delete server?</string>
     <string name="delete_server_message">Delete &quot;%1$s&quot;? This cannot be undone.</string>

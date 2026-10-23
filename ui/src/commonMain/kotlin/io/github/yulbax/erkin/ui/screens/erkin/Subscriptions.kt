@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.DriveFileRenameOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -61,7 +62,9 @@ import org.jetbrains.compose.resources.stringResource
 
 internal class SubscriptionActions(
     val refreshing: Set<Long>,
+    val testing: Boolean,
     val onOpen: (Long) -> Unit,
+    val onTest: (Long) -> Unit,
     val onRefresh: (Long) -> Unit,
     val onRename: (Long) -> Unit,
     val onShare: (Long) -> Unit,
@@ -161,6 +164,7 @@ internal fun SubscriptionSheet(
                     Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh_subscription))
                 }
             }
+            TestSubscriptionButton(item.id, actions)
             SubscriptionMenuButton(item, actions)
         }
         item.usage?.let { UsageBlock(it) }
@@ -186,6 +190,13 @@ private fun UsageBlock(usage: SubscriptionUsage) {
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+@Composable
+private fun TestSubscriptionButton(id: Long, actions: SubscriptionActions) {
+    IconButton(onClick = { actions.onTest(id) }, enabled = !actions.testing) {
+        Icon(Icons.Default.Speed, contentDescription = stringResource(Res.string.test_subscription))
     }
 }
 

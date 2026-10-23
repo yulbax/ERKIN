@@ -101,6 +101,11 @@
     <string name="more_options_cd">گزینه‌های بیشتر</string>
     <string name="share">اشتراک‌گذاری</string>
     <string name="refresh_subscription">بازخوانی</string>
+    <string name="test_subscription">بررسی پینگ</string>
+    <plurals name="unreachable_servers">
+        <item quantity="one">%1$d سرور در دسترس نیست</item>
+        <item quantity="other">%1$d سرور در دسترس نیستند</item>
+    </plurals>
     <string name="delete">حذف</string>
     <string name="delete_server_title">سرور حذف شود؟</string>
     <string name="delete_server_message">«%1$s» حذف شود؟ این کار قابل بازگشت نیست.</string>

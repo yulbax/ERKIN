@@ -17,10 +17,11 @@ class ServerLatencyProbe(
     private val store: VpnSessionStore,
     private val tester: ProxyLatencyTester
 ) {
-    suspend fun measureAll(): Map<Long, ProxyDelay> {
+    suspend fun measure(ids: Set<Long>? = null): Map<Long, ProxyDelay> {
         val inputs = store.load()
-        if (inputs.profiles.none { it.isLink }) return emptyMap()
-        val proxies = with(EngineConfigComposer) { inputs.profiles.filter { it.isLink }.map { it.engineProxy() } }
+        val targets = inputs.profiles.filter { it.isLink && (ids == null || it.id in ids) }
+        if (targets.isEmpty()) return emptyMap()
+        val proxies = with(EngineConfigComposer) { targets.map { it.engineProxy() } }
         return parse(tester.measure(proxies, inputs.settings.networkOptions(), ProbeUrls.VPN, TIMEOUT_MS))
     }
 
