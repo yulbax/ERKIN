@@ -53,6 +53,14 @@
     <string name="export">导出</string>
 
     <string name="connection_no_routed_apps">尚未路由任何应用。请先打开“应用”，将至少一个应用设为 VPN 或 ByeDPI，再进行连接。</string>
+
+    <string name="setup_title">开始使用</string>
+
+    <string name="setup_step_server">添加服务器或订阅</string>
+
+    <string name="setup_step_apps">选择走 VPN 和 ByeDPI 的应用</string>
+
+    <string name="setup_step_connect">连接</string>
     <string name="servers_title">服务器</string>
     <string name="sort_servers_by_ping">按延迟排序</string>
     <string name="servers_empty">暂无服务器。点按 + 添加配置链接或订阅。</string>
@@ -61,8 +69,6 @@
     <string name="ok">确定</string>
     <string name="dismiss">关闭</string>
     <string name="got_it">知道了</string>
-    <string name="home_hint">打开「应用」板块，选择哪些应用走 VPN/ByeDPI。</string>
-    <string name="home_hint_action">打开应用</string>
     <string name="apps_hint_title">流量如何分流</string>
     <string name="apps_hint_direct">直连，不走 VPN</string>
     <string name="apps_hint_byedpi">绕过 DPI，不走 VPN</string>

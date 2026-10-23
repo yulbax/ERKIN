@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -48,6 +49,13 @@ class ConnectionViewModel(
         val routed = RoutedApps.from(apps)
         ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi, settings.bypassLan)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ErkinUiState())
+
+    init {
+        viewModelScope.launch {
+            vpnStateRepository.state.first { it is VpnState.Connected }
+            if (!settingsRepository.settings.first().homeHintSeen) dismissHomeHint()
+        }
+    }
 
     fun dismissHomeHint() {
         viewModelScope.launch {

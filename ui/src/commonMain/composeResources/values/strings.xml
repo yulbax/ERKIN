@@ -53,6 +53,14 @@
     <string name="export">Export</string>
 
     <string name="connection_no_routed_apps">No apps are routed yet. Open Applications and set at least one app to VPN or ByeDPI before connecting.</string>
+
+    <string name="setup_title">Getting started</string>
+
+    <string name="setup_step_server">Add a server or subscription</string>
+
+    <string name="setup_step_apps">Choose apps for VPN and ByeDPI</string>
+
+    <string name="setup_step_connect">Connect</string>
     <string name="servers_title">Servers</string>
     <string name="sort_servers_by_ping">Sort by ping</string>
     <string name="servers_empty">No servers. Tap + to add a config link or subscription.</string>
@@ -61,8 +69,6 @@
     <string name="ok">OK</string>
     <string name="dismiss">Dismiss</string>
     <string name="got_it">Got it</string>
-    <string name="home_hint">Open the Applications section to choose which apps go through VPN/ByeDPI.</string>
-    <string name="home_hint_action">Open Applications</string>
     <string name="apps_hint_title">How traffic is routed</string>
     <string name="apps_hint_direct">direct, no VPN</string>
     <string name="apps_hint_byedpi">DPI bypass, no VPN</string>

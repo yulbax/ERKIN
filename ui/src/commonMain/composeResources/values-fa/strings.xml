@@ -53,6 +53,14 @@
     <string name="export">خروجی گرفتن</string>
 
     <string name="connection_no_routed_apps">هنوز هیچ برنامه‌ای مسیردهی نشده است. پیش از اتصال، «برنامه‌ها» را باز کنید و حداقل یک برنامه را روی VPN یا ByeDPI تنظیم کنید.</string>
+
+    <string name="setup_title">شروع کار</string>
+
+    <string name="setup_step_server">افزودن سرور یا اشتراک</string>
+
+    <string name="setup_step_apps">انتخاب برنامه‌ها برای VPN و ByeDPI</string>
+
+    <string name="setup_step_connect">اتصال</string>
     <string name="servers_title">سرورها</string>
     <string name="sort_servers_by_ping">مرتب‌سازی بر اساس پینگ</string>
     <string name="servers_empty">سروری نیست. برای افزودن لینک پیکربندی یا اشتراک، روی + بزنید.</string>
@@ -61,8 +69,6 @@
     <string name="ok">تأیید</string>
     <string name="dismiss">بستن</string>
     <string name="got_it">متوجه شدم</string>
-    <string name="home_hint">برای انتخاب اینکه کدام برنامه‌ها از VPN/ByeDPI عبور کنند، بخش «برنامه‌ها» را باز کنید.</string>
-    <string name="home_hint_action">باز کردن برنامه‌ها</string>
     <string name="apps_hint_title">نحوهٔ مسیریابی ترافیک</string>
     <string name="apps_hint_direct">مستقیم، بدون VPN</string>
     <string name="apps_hint_byedpi">عبور از DPI، بدون VPN</string>

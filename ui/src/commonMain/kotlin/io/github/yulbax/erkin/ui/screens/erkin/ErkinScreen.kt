@@ -62,7 +62,6 @@ import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
-import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.components.RenameDialog
@@ -400,13 +399,22 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
 
 @Composable
 private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Boolean = false) {
+    val hasServers = c.servers.profiles.isNotEmpty()
     if (!c.ui.homeHintSeen) {
-        HintBanner(
-            text = stringResource(Res.string.home_hint),
-            actionLabel = stringResource(Res.string.home_hint_action),
-            onAction = {
-                c.onDismissHint()
-                c.onNavigateToApps()
+        SetupChecklist(
+            done = { step ->
+                when (step) {
+                    SetupStep.Server -> hasServers
+                    SetupStep.Apps -> c.ui.hasByedpiApps || (hasServers && c.ui.hasVpnApps)
+                    SetupStep.Connect -> c.connected
+                }
+            },
+            onStep = { step ->
+                when (step) {
+                    SetupStep.Server -> c.onAddServerClick
+                    SetupStep.Apps -> c.onNavigateToApps
+                    SetupStep.Connect -> null
+                }
             },
             onDismiss = c.onDismissHint
         )
@@ -441,7 +449,7 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Bool
         ChannelsRow(c)
     }
 
-    if (!c.connected && !c.ui.hasRoutedApps) {
+    if (c.ui.homeHintSeen && !c.connected && !c.ui.hasRoutedApps) {
         Spacer(Modifier.height(12.dp))
         AddAppsCard(onClick = c.onNavigateToApps)
     }

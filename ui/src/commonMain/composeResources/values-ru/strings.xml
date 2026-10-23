@@ -53,6 +53,14 @@
     <string name="export">Экспорт</string>
 
     <string name="connection_no_routed_apps">Пока ни одно приложение не маршрутизируется. Откройте «Приложения» и назначьте хотя бы одно на VPN или ByeDPI перед подключением.</string>
+
+    <string name="setup_title">Начало работы</string>
+
+    <string name="setup_step_server">Добавить сервер или подписку</string>
+
+    <string name="setup_step_apps">Выбрать приложения для VPN и ByeDPI</string>
+
+    <string name="setup_step_connect">Подключиться</string>
     <string name="servers_title">Серверы</string>
     <string name="sort_servers_by_ping">Сортировать по пингу</string>
     <string name="servers_empty">Серверов нет. Нажмите +, чтобы добавить ссылку-конфиг или подписку.</string>
@@ -61,8 +69,6 @@
     <string name="ok">ОК</string>
     <string name="dismiss">Закрыть</string>
     <string name="got_it">Понятно</string>
-    <string name="home_hint">Откройте раздел «Приложения», чтобы выбрать, какие из них идут через VPN/ByeDPI.</string>
-    <string name="home_hint_action">Открыть приложения</string>
     <string name="apps_hint_title">Как направляется трафик</string>
     <string name="apps_hint_direct">напрямую, без VPN</string>
     <string name="apps_hint_byedpi">обход DPI без VPN</string>
