@@ -9,6 +9,7 @@ import io.github.yulbax.erkin.ui.platform.AppLocale
 private enum class AppLanguage(val tag: String, val displayName: String) {
     English("en", "English"),
     Russian("ru", "Русский"),
+    Ukrainian("uk", "Українська"),
     Chinese("zh", "中文"),
     Persian("fa", "فارسی");
 
