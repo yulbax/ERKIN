@@ -174,7 +174,11 @@ class ProfileRefreshTest {
     private class FakeSubscription : SubscriptionProfileSource {
         var links: List<String> = emptyList()
         var info = SubscriptionInfo()
-        override suspend fun fetch(url: String) = FetchedSubscription(links.mapNotNull(LinkParser::parse), info)
+        var refusal: SubscriptionRefusal? = null
+        override suspend fun fetch(url: String): FetchedSubscription {
+            refusal?.let { throw SubscriptionRefusedException(it) }
+            return FetchedSubscription(links.mapNotNull(LinkParser::parse), info)
+        }
     }
 
     private suspend fun storedSubscriptionServer(link: String, selected: Boolean = false): ProfileEntity {
@@ -334,6 +338,19 @@ class ProfileRefreshTest {
         subscription.links = emptyList()
 
         assertEquals(ProfileOperationResult.EmptySubscription, repository.refreshSubscription(SUBSCRIPTION_URL))
+
+        assertEquals(listOf("Germany"), names())
+    }
+
+    @Test
+    fun aDeviceLimitRefusalLeavesTheStoredServersAlone() = runBlocking {
+        storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
+        subscription.refusal = SubscriptionRefusal.DEVICE_LIMIT
+
+        assertEquals(
+            ProfileOperationResult.Refused(SubscriptionRefusal.DEVICE_LIMIT),
+            repository.refreshSubscription(SUBSCRIPTION_URL)
+        )
 
         assertEquals(listOf("Germany"), names())
     }

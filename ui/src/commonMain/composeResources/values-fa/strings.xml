@@ -139,6 +139,8 @@
     <string name="subscription">اشتراک</string>
     <string name="fetch_subscription_failed">دریافت اشتراک ناموفق بود: %1$s</string>
     <string name="no_servers_in_subscription">سروری در اشتراک یافت نشد</string>
+    <string name="subscription_device_limit">اشتراک به سقف تعداد دستگاه رسیده است. یک دستگاه قدیمی را نزد ارائه‌دهنده، در ربات یا حساب کاربری او، حذف کنید.</string>
+    <string name="subscription_hwid_required">ارائه‌دهنده اشتراک را نداد: شناسه این دستگاه را نپذیرفت.</string>
     <string name="exit_confirm_title">قطع اتصال و خروج؟</string>
     <string name="exit_confirm_text">VPN متصل است. با بستن ERKIN اتصال قطع می‌شود.</string>
     <string name="exit_confirm_exit">خروج</string>

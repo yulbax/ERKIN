@@ -139,6 +139,8 @@
     <string name="subscription">Subscription</string>
     <string name="fetch_subscription_failed">Failed to fetch subscription: %1$s</string>
     <string name="no_servers_in_subscription">No servers found in subscription</string>
+    <string name="subscription_device_limit">This subscription has reached its device limit. Remove an old device with your provider, in their bot or account page.</string>
+    <string name="subscription_hwid_required">The provider refused the subscription: it did not accept this device’s ID.</string>
     <string name="connection_type_direct">Direct</string>
     <string name="connection_type_byedpi">ByeDPI</string>
     <string name="connection_type_vpn">VPN</string>

@@ -143,6 +143,8 @@
     <string name="subscription">Подписка</string>
     <string name="fetch_subscription_failed">Не удалось получить подписку: %1$s</string>
     <string name="no_servers_in_subscription">В подписке нет серверов</string>
+    <string name="subscription_device_limit">Достигнут лимит устройств подписки. Удалите старое устройство у провайдера — в его боте или личном кабинете.</string>
+    <string name="subscription_hwid_required">Провайдер не выдал подписку: он не принял идентификатор устройства.</string>
     <string name="exit_confirm_title">Отключиться и выйти?</string>
     <string name="exit_confirm_text">VPN подключён. Если закрыть ERKIN, подключение разорвётся.</string>
     <string name="exit_confirm_exit">Выйти</string>

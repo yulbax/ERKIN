@@ -270,6 +270,8 @@ class ProfileRepository(
         FetchResult.Success(subscriptionSource.fetch(url))
     } catch (error: CancellationException) {
         throw error
+    } catch (error: SubscriptionRefusedException) {
+        FetchResult.Refused(error.refusal)
     } catch (error: Exception) {
         FetchResult.Failed(error)
     }
@@ -302,10 +304,12 @@ class ProfileRepository(
     private sealed interface FetchResult {
         data class Success(val subscription: FetchedSubscription) : FetchResult
         data class Failed(val cause: Throwable) : FetchResult
+        data class Refused(val refusal: SubscriptionRefusal) : FetchResult
     }
 
     private fun FetchResult.toOperationResult(): ProfileOperationResult = when (this) {
         is FetchResult.Success -> ProfileOperationResult.Success(affected = subscription.profiles.size)
         is FetchResult.Failed -> ProfileOperationResult.FetchFailed(cause)
+        is FetchResult.Refused -> ProfileOperationResult.Refused(refusal)
     }
 }

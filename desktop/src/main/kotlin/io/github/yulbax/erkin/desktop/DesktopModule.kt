@@ -47,7 +47,7 @@ val desktopModule = module {
     single { get<AppDatabase>().profileDao() }
     single { SettingsRepository(get(), get()) }
     single { DownloadRoute() }
-    single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get()) }
+    single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get(), DesktopDeviceIdentity.load()) }
     single { ProfileRepository(get(), get(), get(), get()) }
     single { ConfigBackupRepository(get(), get()) }
     single { RoutingRuleRepository(get()) }

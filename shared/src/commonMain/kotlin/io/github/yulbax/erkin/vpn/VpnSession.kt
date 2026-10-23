@@ -288,6 +288,8 @@ class VpnSession(
                 log.e(TAG, "subscription refresh failed", result.cause)
             ProfileOperationResult.InvalidLink ->
                 log.w(TAG, "subscription refresh rejected an invalid link")
+            is ProfileOperationResult.Refused ->
+                log.w(TAG, "subscription refused this device: ${result.refusal}")
         }
     }
 

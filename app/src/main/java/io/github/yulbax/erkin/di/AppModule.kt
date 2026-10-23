@@ -15,6 +15,7 @@ import io.github.yulbax.erkin.update.UpdateChecker
 import io.github.yulbax.erkin.update.UpdatePlatform
 import io.github.yulbax.erkin.vpn.mihomo.AndroidRuleListStore
 import io.github.yulbax.erkin.update.UpdateDownloader
+import io.github.yulbax.erkin.util.AndroidDeviceIdentity
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.data.profile.ProfileRepository
@@ -96,7 +97,8 @@ class AppModule {
     fun byeDpiSiteProbe(): ByeDpiSiteProbe = SocksSiteProbe
 
     @Single
-    fun subscriptionProfileSource(route: DownloadRoute): SubscriptionProfileSource = HttpSubscriptionProfileSource(route)
+    fun subscriptionProfileSource(context: Context, route: DownloadRoute): SubscriptionProfileSource =
+        HttpSubscriptionProfileSource(route, AndroidDeviceIdentity.of(context))
 
     @Single
     fun vpnStateRepository(): VpnStateRepository = VpnStateRepository()

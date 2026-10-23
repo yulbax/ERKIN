@@ -6,4 +6,5 @@ sealed interface ProfileOperationResult {
     data object InvalidLink : ProfileOperationResult
     data object EmptySubscription : ProfileOperationResult
     data class FetchFailed(val cause: Throwable) : ProfileOperationResult
+    data class Refused(val refusal: SubscriptionRefusal) : ProfileOperationResult
 }

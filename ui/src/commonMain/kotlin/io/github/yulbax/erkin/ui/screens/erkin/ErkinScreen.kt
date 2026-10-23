@@ -60,6 +60,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.SelectionBar
@@ -336,6 +337,10 @@ fun ErkinScreen(
             ServerError.InvalidLink -> stringResource(Res.string.invalid_link_error)
             ServerError.EmptySubscription -> stringResource(Res.string.no_servers_in_subscription)
             is ServerError.FetchFailed -> stringResource(Res.string.fetch_subscription_failed, error.reason)
+            is ServerError.Refused -> when (error.refusal) {
+                SubscriptionRefusal.DEVICE_LIMIT -> stringResource(Res.string.subscription_device_limit)
+                SubscriptionRefusal.HWID_REQUIRED -> stringResource(Res.string.subscription_hwid_required)
+            }
         }
         AlertDialog(
             onDismissRequest = { profileViewModel.clearError() },

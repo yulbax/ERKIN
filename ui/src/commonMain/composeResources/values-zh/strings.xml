@@ -137,6 +137,8 @@
     <string name="subscription">订阅</string>
     <string name="fetch_subscription_failed">获取订阅失败：%1$s</string>
     <string name="no_servers_in_subscription">订阅中未找到服务器</string>
+    <string name="subscription_device_limit">该订阅已达到设备数量上限。请在服务商的机器人或账户页面中移除旧设备。</string>
+    <string name="subscription_hwid_required">服务商拒绝了订阅：未接受此设备的标识。</string>
     <string name="exit_confirm_title">断开连接并退出？</string>
     <string name="exit_confirm_text">VPN 已连接。关闭 ERKIN 将断开连接。</string>
     <string name="exit_confirm_exit">退出</string>

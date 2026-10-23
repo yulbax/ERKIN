@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
@@ -30,6 +31,7 @@ sealed interface ServerError {
     data object InvalidLink : ServerError
     data object EmptySubscription : ServerError
     data class FetchFailed(val reason: String) : ServerError
+    data class Refused(val refusal: SubscriptionRefusal) : ServerError
 }
 
 data class ServersUiState(
@@ -192,6 +194,10 @@ class ProfileViewModel(
             is ProfileOperationResult.FetchFailed -> {
                 log.w(TAG, "$operation: subscription fetch failed", result.cause)
                 _error.value = ServerError.FetchFailed(redactSensitiveData(result.cause.message ?: "unknown error"))
+            }
+            is ProfileOperationResult.Refused -> {
+                log.w(TAG, "$operation: subscription refused this device: ${result.refusal}")
+                _error.value = ServerError.Refused(result.refusal)
             }
         }
     }

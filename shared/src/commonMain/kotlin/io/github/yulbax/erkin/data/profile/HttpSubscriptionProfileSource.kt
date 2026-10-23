@@ -9,7 +9,10 @@ import java.net.URI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 
-class HttpSubscriptionProfileSource(private val route: DownloadRoute = DownloadRoute()) : SubscriptionProfileSource {
+class HttpSubscriptionProfileSource(
+    private val route: DownloadRoute = DownloadRoute(),
+    private val device: DeviceIdentity? = null
+) : SubscriptionProfileSource {
     override suspend fun fetch(url: String): FetchedSubscription {
         val body = runInterruptible(Dispatchers.IO) { download(url, MAX_REDIRECTS) }
         return FetchedSubscription(
@@ -26,8 +29,10 @@ class HttpSubscriptionProfileSource(private val route: DownloadRoute = DownloadR
             connection.connectTimeout = TIMEOUT_MS
             connection.readTimeout = TIMEOUT_MS
             connection.instanceFollowRedirects = false
+            device?.headers?.forEach(connection::setRequestProperty)
             try {
                 val code = connection.responseCode
+                SubscriptionRefusal.of(code, connection::getHeaderField)?.let { throw SubscriptionRefusedException(it) }
                 if (code in 300..399) {
                     Redirect(connection.getHeaderField("Location") ?: throw IOException("Redirect without location"))
                 } else {
