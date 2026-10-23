@@ -10,7 +10,8 @@ data class EngineConfig(
     val network: NetworkOptions,
     val directPaths: List<String> = emptyList(),
     val rules: List<RoutingRule> = emptyList(),
-    val ruleLists: Map<String, Set<RuleSetKind>> = emptyMap()
+    val ruleLists: Map<String, Set<RuleSetKind>> = emptyMap(),
+    val vpnTargets: Map<String, String> = emptyMap()
 )
 
 data class EngineProxy(

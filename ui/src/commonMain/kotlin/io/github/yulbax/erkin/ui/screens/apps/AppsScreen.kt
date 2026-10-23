@@ -43,6 +43,7 @@ fun Apps(
     val error by viewModel.error.collectAsStateWithLifecycle()
     val appsHintSeen by viewModel.appsHintSeen.collectAsStateWithLifecycle()
     val hasServers by viewModel.hasServers.collectAsStateWithLifecycle()
+    val servers by viewModel.servers.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -110,7 +111,9 @@ fun Apps(
                             else -> AppsList(
                                 apps = filtered,
                                 vpnEnabled = hasServers,
-                                onConnectionTypeChange = viewModel::setConnectionType
+                                servers = servers,
+                                onConnectionTypeChange = viewModel::setConnectionType,
+                                onServerChange = viewModel::setServer
                             )
                         }
                     }

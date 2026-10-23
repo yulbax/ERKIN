@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.data.App
+import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.RoutedApps
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
@@ -19,6 +21,8 @@ object ProxyTag {
     private const val PREFIX = "p"
 
     fun of(profileId: Long): String = "$PREFIX$profileId"
+
+    fun hop(chainId: Long, index: Int): String = "${of(chainId)}h$index"
 
     fun profileId(tag: String): Long? =
         tag.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX)?.toLongOrNull()
@@ -62,7 +66,12 @@ object EngineConfigComposer {
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
         val rules = inputs.rules.filter { rule -> RuleLists.url(rule)?.let { it in lists } ?: true }
-        val proxies = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
+        val active = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
+        val bound = boundServers(foreignApps, selected, inputs.profiles)
+        val proxies = (active + bound.values.flatten()).distinctBy { it.tag }
+        val vpnTargets = foreignApps.mapNotNull { app ->
+            app.serverId?.takeIf { it in bound }?.let { app.packageName to ProxyTag.of(it) }
+        }.toMap()
 
         return AppliedConfig(
             engineConfig = EngineConfig(
@@ -75,13 +84,16 @@ object EngineConfigComposer {
                 network = inputs.settings.networkOptions(),
                 directPaths = routed.directPaths,
                 rules = rules,
-                ruleLists = lists.mapValues { it.value.kinds }
+                ruleLists = lists.mapValues { it.value.kinds },
+                vpnTargets = vpnTargets
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
-            sessionRequirements = proxies.lastOrNull()?.sessionRequirements.orEmpty(),
+            sessionRequirements = (listOf(active) + bound.values).flatMapTo(mutableSetOf()) {
+                it.lastOrNull()?.sessionRequirements.orEmpty()
+            },
             routingKey = foreignApps.sortedBy { it.packageName }
-                .joinToString("|") { "${it.packageName}=${it.connectionType}" } +
+                .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" } +
                 lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
             vpnActive = routed.hasVpn
@@ -89,6 +101,22 @@ object EngineConfigComposer {
     }
 
     const val NO_SERVERS_NO_BYEDPI = "Add a server, or assign apps to ByeDPI to run without one"
+
+    private fun boundServers(
+        apps: List<App>,
+        selected: ProfileEntity?,
+        profiles: List<ProfileEntity>
+    ): Map<Long, List<EngineProxy>> {
+        if (selected == null) return emptyMap()
+        return apps.asSequence()
+            .filter { it.connectionType == ConnectionType.VPN }
+            .mapNotNull { it.serverId }
+            .filter { it != selected.id }
+            .distinct()
+            .mapNotNull { id -> profiles.firstOrNull { it.id == id } }
+            .mapNotNull { profile -> runCatching { proxiesFor(profile, profiles) }.getOrNull()?.let { profile.id to it } }
+            .toMap()
+    }
 
     private fun proxiesFor(selected: ProfileEntity, profiles: List<ProfileEntity>): List<EngineProxy> =
         when (val kind = selected.kind) {
@@ -103,10 +131,11 @@ object EngineConfigComposer {
         }
         val proxies = mutableListOf<EngineProxy>()
         var dialer: String? = null
-        chain.hops.forEach { hop ->
+        chain.hops.forEachIndexed { index, hop ->
             dialer = when (hop) {
                 ChainEntry.ByeDpi -> BYEDPI_PROXY_TAG
-                is ChainEntry.Server -> server(hop.profileId).engineProxy().copy(dialerProxy = dialer).also(proxies::add).tag
+                is ChainEntry.Server -> server(hop.profileId).engineProxy()
+                    .copy(tag = ProxyTag.hop(selected.id, index), dialerProxy = dialer).also(proxies::add).tag
             }
         }
         proxies += server(chain.exitId).engineProxy().copy(tag = ProxyTag.of(selected.id), dialerProxy = dialer)

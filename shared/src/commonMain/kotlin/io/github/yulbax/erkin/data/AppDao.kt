@@ -24,22 +24,26 @@ interface AppDao {
     @Upsert
     suspend fun upsertApps(apps: List<App>)
 
-    @Query("UPDATE apps SET connectionType = :connectionType WHERE packageName = :packageName")
+    @Query("UPDATE apps SET connectionType = :connectionType, serverId = :serverId WHERE packageName = :packageName")
     suspend fun updateConnectionType(
         packageName: String,
-        connectionType: ConnectionType
+        connectionType: ConnectionType,
+        serverId: Long?
     ): Int
 
     @Transaction
     suspend fun setConnectionTypes(apps: List<App>) {
         apps.forEach { app ->
-            val updated = updateConnectionType(app.packageName, app.connectionType)
+            val updated = updateConnectionType(app.packageName, app.connectionType, app.serverId)
             if (updated == 0) upsertApp(app)
         }
     }
 
-    @Query("UPDATE apps SET connectionType = :to WHERE connectionType = :from")
+    @Query("UPDATE apps SET connectionType = :to, serverId = NULL WHERE connectionType = :from")
     suspend fun reassignConnectionType(from: ConnectionType, to: ConnectionType): Int
+
+    @Query("UPDATE apps SET serverId = NULL WHERE serverId IN (:serverIds)")
+    suspend fun clearServers(serverIds: List<Long>)
 
     @Query("UPDATE apps SET path = :path WHERE packageName = :packageName")
     suspend fun updatePath(packageName: String, path: String?)

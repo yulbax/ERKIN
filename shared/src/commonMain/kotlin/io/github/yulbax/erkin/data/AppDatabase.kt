@@ -26,7 +26,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class],
-    version = 17,
+    version = 18,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -183,6 +183,11 @@ abstract class AppDatabase : RoomDatabase() {
             object : Migration(16, 17) {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE settings ADD COLUMN sortServersByPing INTEGER NOT NULL DEFAULT 1")
+                }
+            },
+            object : Migration(17, 18) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE apps ADD COLUMN serverId INTEGER DEFAULT NULL")
                 }
             }
         )

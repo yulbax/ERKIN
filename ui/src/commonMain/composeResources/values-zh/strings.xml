@@ -73,7 +73,8 @@
     <string name="apps_hint_direct">直连，不走 VPN</string>
     <string name="apps_hint_byedpi">绕过 DPI，不走 VPN</string>
     <string name="apps_hint_vpn">通过所选服务器</string>
-    <string name="apps_hint_change">点击应用右侧的按钮切换类型。「全部应用」可一次更改整个列表。</string>
+    <string name="apps_hint_change">点击应用右侧的按钮切换类型。「全部应用」可一次更改整个列表。再次点击 VPN 可选择服务器。</string>
+    <string name="app_server_main">主服务器 · %1$s</string>
     <string name="apps_hint_ru_default">包名包含 ru/vk/yandex 的应用默认走 Direct</string>
     <string name="dialog_error">错误</string>
     <string name="vpn_disconnected">已断开</string>

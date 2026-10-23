@@ -9,7 +9,8 @@ data class App(
     val name: String,
     val isSystemApp: Boolean,
     val connectionType: ConnectionType = ConnectionType.VPN,
-    val path: String? = null
+    val path: String? = null,
+    val serverId: Long? = null
 )
 
 fun isExecutablePath(id: String): Boolean = '/' in id || '\\' in id

@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
+import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ data class AppInfo(
     val isSystemApp: Boolean,
     val isLaunchable: Boolean = true,
     val connectionType: ConnectionType = ConnectionType.VPN,
-    val path: String? = null
+    val path: String? = null,
+    val serverId: Long? = null
 )
 
 class AppsViewModel(
@@ -35,6 +37,9 @@ class AppsViewModel(
     val hasServers: StateFlow<Boolean> = profileRepository.profiles
         .map { it.isNotEmpty() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
+    val servers: StateFlow<List<ProfileEntity>> = profileRepository.profiles
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.appsHintSeen }
@@ -68,36 +73,45 @@ class AppsViewModel(
         mergeSaved(installed, saved)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun setConnectionType(packageName: String, name: String, isSystemApp: Boolean, type: ConnectionType) {
+    fun setConnectionType(app: AppInfo, type: ConnectionType) {
         viewModelScope.launch {
-            appDao.setConnectionTypes(listOf(App(packageName, name, isSystemApp, type)))
+            appDao.setConnectionTypes(listOf(app.stored(type)))
+        }
+    }
+
+    fun setServer(app: AppInfo, serverId: Long?) {
+        viewModelScope.launch {
+            appDao.setConnectionTypes(listOf(app.stored(ConnectionType.VPN, serverId)))
         }
     }
 
     fun setAllConnectionTypes(targets: List<AppInfo>, type: ConnectionType) {
         if (targets.isEmpty()) return
         viewModelScope.launch {
-            appDao.setConnectionTypes(targets.map { App(it.packageName, it.name, it.isSystemApp, type) })
+            appDao.setConnectionTypes(targets.map { it.stored(type) })
         }
     }
 
     fun restoreConnectionTypes(snapshot: List<AppInfo>) {
         if (snapshot.isEmpty()) return
         viewModelScope.launch {
-            appDao.setConnectionTypes(
-                snapshot.map { App(it.packageName, it.name, it.isSystemApp, it.connectionType) }
-            )
+            appDao.setConnectionTypes(snapshot.map { it.stored(it.connectionType) })
         }
     }
+
+    private fun AppInfo.stored(
+        type: ConnectionType,
+        server: Long? = serverId.takeIf { type == ConnectionType.VPN }
+    ) = App(packageName, name, isSystemApp, type, serverId = server)
 
     fun retry() {
         installedAppsRepository.retry()
     }
 
     private fun mergeSaved(installed: List<AppInfo>, saved: List<App>): List<AppInfo> {
-        val savedTypes = saved.associate { it.packageName to it.connectionType }
+        val savedApps = saved.associateBy { it.packageName }
         return installed.map { app ->
-            savedTypes[app.packageName]?.let { app.copy(connectionType = it) } ?: app
+            savedApps[app.packageName]?.let { app.copy(connectionType = it.connectionType, serverId = it.serverId) } ?: app
         }
     }
 

@@ -74,7 +74,8 @@ internal fun AppRowConnectedGroup(
     selected: ConnectionType?,
     vpnEnabled: Boolean,
     onSelect: (ConnectionType) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onReselect: ((ConnectionType) -> Unit)? = null
 ) {
     Row(
         modifier = modifier
@@ -87,7 +88,7 @@ internal fun AppRowConnectedGroup(
 
             ToggleButton(
                 checked = isSelected,
-                onCheckedChange = { if (it) onSelect(type) },
+                onCheckedChange = { if (it) onSelect(type) else onReselect?.invoke(type) },
                 enabled = vpnEnabled || !type.needsServer,
                 shapes = shapes(index),
                 modifier = Modifier

@@ -44,6 +44,18 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun appsBoundToAnotherServerAreRoutedToIt() {
+        val other = vless.copy(tag = "p2")
+        val engine = engine(listOf(vless, other), "p1", emptyList(), listOf("org.main", "org.other"))
+            .copy(vpnTargets = mapOf("org.other" to "p2"))
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject
+        assertEquals(
+            listOf("IN-NAME,probe-in,p1", "PROCESS-NAME,org.main,p1", "PROCESS-NAME,org.other,p2", "MATCH,REJECT"),
+            config.rules()
+        )
+    }
+
+    @Test
     fun androidWithoutServersStillRejectsUnmatchedTraffic() {
         val config = Json.parseToJsonElement(
             MihomoConfigBuilder.build(engine(emptyList(), "", listOf("org.dpi"), emptyList()), PROBE)

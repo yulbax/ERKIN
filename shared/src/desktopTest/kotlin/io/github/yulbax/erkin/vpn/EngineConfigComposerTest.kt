@@ -109,8 +109,8 @@ class EngineConfigComposerTest {
         fun chainOf(hop: ChainEntry) = ProfileEntity(id = 9, name = "Chain", type = ProxyChain.TYPE, link = "", outboundJson = ProxyChain(hop, exit.id).encode(), selected = true)
 
         val viaServer = EngineConfigComposer.compose(base.copy(selected = chainOf(ChainEntry.Server(entry.id)), profiles = listOf(exit, entry, chainOf(ChainEntry.Server(entry.id)))), OWN, BYEDPI_PORT)
-        assertEquals(listOf("p2", "p9"), viaServer.engineConfig.proxies.map { it.tag })
-        assertEquals("p2", viaServer.engineConfig.proxies.last().dialerProxy)
+        assertEquals(listOf("p9h0", "p9"), viaServer.engineConfig.proxies.map { it.tag })
+        assertEquals("p9h0", viaServer.engineConfig.proxies.last().dialerProxy)
         assertEquals("p9", viaServer.selectedTag)
         assertFalse(viaServer.needsByeDpi)
 
@@ -134,8 +134,34 @@ class EngineConfigComposerTest {
 
         val applied = EngineConfigComposer.compose(base.copy(selected = chain, profiles = listOf(exit, first, second, chain)), OWN, BYEDPI_PORT)
 
-        assertEquals(listOf("p2" to "byedpi", "p3" to "p2", "p9" to "p3"), applied.engineConfig.proxies.map { it.tag to it.dialerProxy })
+        assertEquals(listOf("p9h1" to "byedpi", "p9h2" to "p9h1", "p9" to "p9h2"), applied.engineConfig.proxies.map { it.tag to it.dialerProxy })
         assertTrue(applied.needsByeDpi)
+    }
+
+    @Test
+    fun appsBoundToAnotherServerGetItAlongsideTheMainOne() {
+        val base = inputs(emptyList())
+        val main = base.selected!!.copy(selected = true)
+        val other = main.copy(id = 2, name = "Other", selected = false)
+        val gone = 42L
+        val apps = listOf(
+            App("org.example.main", "Main", isSystemApp = false, connectionType = ConnectionType.VPN),
+            App("org.example.other", "Other", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = other.id),
+            App("org.example.self", "Self", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = main.id),
+            App("org.example.gone", "Gone", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = gone)
+        )
+
+        val applied = EngineConfigComposer.compose(base.copy(selected = main, profiles = listOf(main, other), apps = apps), OWN, BYEDPI_PORT)
+
+        assertEquals(listOf("p1", "p2"), applied.engineConfig.proxies.map { it.tag })
+        assertEquals(mapOf("org.example.other" to "p2"), applied.engineConfig.vpnTargets)
+        assertEquals("p1", applied.selectedTag)
+
+        val unbound = EngineConfigComposer.compose(
+            base.copy(selected = main, profiles = listOf(main, other), apps = apps.map { it.copy(serverId = null) }),
+            OWN, BYEDPI_PORT
+        )
+        assertTrue(applied.isStructuralChangeFrom(unbound))
     }
 
     @Test(expected = IllegalStateException::class)

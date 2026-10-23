@@ -120,6 +120,7 @@ class ProfileRepository(
         val chained = all.mapNotNull { (it.kind as? ServerKind.Chain)?.chain }
         val (kept, stale) = unmatched.partition { profile -> profile.selected || chained.any { it.uses(profile.id) } }
         profileDao.deleteMany(stale)
+        database.appDao().clearServers(stale.map { it.id })
 
         val groupIds = orderedIds + kept.map { it.id }
         val others = profileDao.getAll().map { it.id }.filterNot { it in groupIds }
@@ -188,6 +189,7 @@ class ProfileRepository(
                 profile.id !in ids && (profile.kind as? ServerKind.Chain)?.chain?.let { chain -> ids.any(chain::uses) } == true
             }
             profileDao.deleteMany(profiles + orphanedChains)
+            database.appDao().clearServers((profiles + orphanedChains).map { it.id })
             database.subscriptionDao().deleteEmpty()
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {

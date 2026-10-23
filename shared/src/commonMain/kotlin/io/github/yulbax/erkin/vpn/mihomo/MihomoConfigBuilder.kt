@@ -76,8 +76,10 @@ object MihomoConfigBuilder {
         val probeUser = probe.username
         val probePass = probe.password
         val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
-        val ipv6 = options.ipv6Mode.ipv6Enabled && EngineRequirement.IPV4_ONLY !in active?.sessionRequirements.orEmpty()
         val vpnTarget = active?.tag ?: DIRECT
+        val exits = proxies.filter { it.tag == vpnTarget || it.tag in engine.vpnTargets.values }
+        val ipv6 = options.ipv6Mode.ipv6Enabled && exits.none { EngineRequirement.IPV4_ONLY in it.sessionRequirements }
+        val vpnTargetOf = { app: String -> engine.vpnTargets[app] ?: vpnTarget }
         val desktop = platform as? MihomoPlatform.Desktop
         val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { byeDpiPackages.isNotEmpty() }
         val defaultTarget = if (desktop != null) DIRECT else REJECT
@@ -209,12 +211,16 @@ object MihomoConfigBuilder {
                     }
                 }
                 if (desktop != null) {
-                    val channels = listOf(byeDpiPackages to BYEDPI_PROXY, vpnPackages to vpnTarget, directPaths to DIRECT)
+                    val channels = listOf<Pair<List<String>, (String) -> String>>(
+                        byeDpiPackages to { BYEDPI_PROXY },
+                        vpnPackages to vpnTargetOf,
+                        directPaths to { DIRECT }
+                    )
                     channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), target) }
                     channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), target) }
                 } else {
-                    processRules(PROCESS_NAME, byeDpiPackages, BYEDPI_PROXY)
-                    processRules(PROCESS_NAME, vpnPackages, vpnTarget)
+                    processRules(PROCESS_NAME, byeDpiPackages) { BYEDPI_PROXY }
+                    processRules(PROCESS_NAME, vpnPackages, vpnTargetOf)
                 }
                 add("MATCH,$defaultTarget")
             }
@@ -225,7 +231,7 @@ object MihomoConfigBuilder {
     fun proxiesForTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions()): String =
         json.encodeToString(JsonArray.serializer(), JsonArray(proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) }))
 
-    private fun JsonArrayBuilder.processRules(type: String, apps: List<String>, target: String) {
-        apps.forEach { add("$type,$it,$target") }
+    private fun JsonArrayBuilder.processRules(type: String, apps: List<String>, target: (String) -> String) {
+        apps.forEach { add("$type,$it,${target(it)}") }
     }
 }

@@ -17,7 +17,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,18 +39,23 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.HoverHint
 import io.github.yulbax.erkin.ui.platform.rememberAppIcon
 import io.github.yulbax.erkin.ui.platform.revealInFolder
 import io.github.yulbax.erkin.ui.platform.supportsAppIcons
+import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.AppInfo
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun AppsList(
     apps: List<AppInfo>,
     vpnEnabled: Boolean,
-    onConnectionTypeChange: (String, String, Boolean, ConnectionType) -> Unit
+    servers: List<ProfileEntity>,
+    onConnectionTypeChange: (AppInfo, ConnectionType) -> Unit,
+    onServerChange: (AppInfo, Long?) -> Unit
 ) {
     val listState = rememberLazyListState()
     Box(Modifier.fillMaxSize()) {
@@ -63,9 +73,9 @@ internal fun AppsList(
                 AppRow(
                     app = app,
                     vpnEnabled = vpnEnabled,
-                    onConnectionTypeChange = { type ->
-                        onConnectionTypeChange(app.packageName, app.name, app.isSystemApp, type)
-                    }
+                    servers = servers,
+                    onConnectionTypeChange = { type -> onConnectionTypeChange(app, type) },
+                    onServerChange = { id -> onServerChange(app, id) }
                 )
                 if (index < apps.lastIndex) {
                     HorizontalDivider(
@@ -89,9 +99,14 @@ internal fun AppsList(
 private fun AppRow(
     app: AppInfo,
     vpnEnabled: Boolean,
+    servers: List<ProfileEntity>,
     onConnectionTypeChange: (ConnectionType) -> Unit,
+    onServerChange: (Long?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val bound = servers.firstOrNull { it.id == app.serverId && !it.selected }
+    val main = servers.firstOrNull { it.selected }
+    var choosingServer by remember { mutableStateOf(false) }
     val imageBitmap = rememberAppIcon(app.packageName, app.path)
 
     Row(
@@ -148,14 +163,59 @@ private fun AppRow(
                     }
                 )
             }
+            if (app.connectionType == ConnectionType.VPN && main != null) {
+                Text(
+                    text = bound?.name ?: stringResource(Res.string.app_server_main, main.name),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (bound != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        AppRowConnectedGroup(
-            selected = app.connectionType,
-            vpnEnabled = vpnEnabled,
-            onSelect = onConnectionTypeChange
-        )
+        Box {
+            AppRowConnectedGroup(
+                selected = app.connectionType,
+                vpnEnabled = vpnEnabled,
+                onSelect = onConnectionTypeChange,
+                onReselect = { type -> if (type == ConnectionType.VPN && servers.size > 1) choosingServer = true }
+            )
+            DropdownMenu(expanded = choosingServer, onDismissRequest = { choosingServer = false }) {
+                ServerMenuItem(
+                    label = stringResource(Res.string.app_server_main, main?.name.orEmpty()),
+                    checked = bound == null,
+                    onClick = {
+                        choosingServer = false
+                        onServerChange(null)
+                    }
+                )
+                servers.filterNot { it.selected }.forEach { server ->
+                    ServerMenuItem(
+                        label = server.name,
+                        checked = server.id == bound?.id,
+                        onClick = {
+                            choosingServer = false
+                            onServerChange(server.id)
+                        }
+                    )
+                }
+            }
+        }
     }
+}
+
+@Composable
+private fun ServerMenuItem(label: String, checked: Boolean, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        onClick = onClick,
+        trailingIcon = if (checked) {
+            { Icon(Icons.Filled.Check, contentDescription = null) }
+        } else {
+            null
+        }
+    )
 }
