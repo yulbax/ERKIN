@@ -4,11 +4,12 @@ name: Release
 # matching tag doesn't exist yet (i.e. you bumped the version), build the FOSS release
 # APKs plus the Windows MSI and cut a GitHub Release with the tag. Quality checks still run when the
 # version is unchanged. Mirrors the GitLab pipeline (.gitlab-ci.yml).
+# A push to a feature/* or fix/* branch runs the checks and desktop builds only, never a release.
 # Run it by hand to rebuild chosen platforms of the current release from main and replace their assets;
 # each asset is labelled with its commit, so only those platforms see the rebuild as an update.
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 'feature/**', 'fix/**' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -62,6 +63,7 @@ jobs:
           [ -n "$VERSION" ] || { echo "erkin.versionName not found in gradle.properties"; exit 1; }
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            [ "$GITHUB_REF" = "refs/heads/main" ] || { echo "Rebuilds of a release run from main only."; exit 1; }
             [[ "$RESPIN_PLATFORMS" == *true* ]] || { echo "Pick at least one platform to rebuild."; exit 1; }
             git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1 \
               || { echo "No release v$VERSION to rebuild."; exit 1; }
@@ -72,6 +74,11 @@ jobs:
           fi
           if [ "$GITHUB_EVENT_NAME" != "push" ]; then
             echo "Pull request: quality checks only."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Branch ${GITHUB_REF#refs/heads/}: quality checks only."
             echo "should_release=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
