@@ -1,0 +1,42 @@
+--- a/extend.c
++++ b/extend.c
+@@ -634,7 +634,7 @@
+ }
+ 
+ 
+-#ifdef __linux__
++#if defined(__linux__) || defined(__APPLE__)
+ static int protect(int conn_fd, const char *path)
+ {
+     struct sockaddr_un sa;
+--- a/extend.h
++++ b/extend.h
+@@ -22,7 +22,7 @@
+     
+ static bool check_l34(struct desync_params *dp, int st, const union sockaddr_u *dst);
+ 
+-#ifdef __linux__
++#if defined(__linux__) || defined(__APPLE__)
+ static int protect(int conn_fd, const char *path);
+ #else
+ #define protect(fd, path) 0
+--- a/main.c
++++ b/main.c
+@@ -186,6 +186,8 @@
+     {"await-int",     1, 0, 'W'}, //
+     #ifdef __linux__
+     {"drop-sack",     0, 0, 'Y'},
++    #endif
++    #if defined(__linux__) || defined(__APPLE__)
+     {"protect-path",  1, 0, 'P'}, //
+     #endif
+     {"ipset",         1, 0, 'j'},
+@@ -1180,7 +1182,7 @@
+                 dp->custom_dst = 1;
+             break;
+ 
+-        #ifdef __linux__
++        #if defined(__linux__) || defined(__APPLE__)
+         case 'P':
+             params.protect_path = optarg;
+             break;

@@ -33,11 +33,16 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.skia.Image
 import org.koin.core.context.startKoin
+import java.awt.Desktop
+import java.awt.desktop.AppReopenedListener
 
 fun main() {
     val activations = Channel<Unit>(Channel.CONFLATED)
     val instance = SingleInstance(DesktopPaths.dataDir)
     if (!instance.claim { activations.trySend(Unit) }) return
+    if (DesktopPaths.os == DesktopOs.MacOs) {
+        Desktop.getDesktop().addAppEventListener(AppReopenedListener { activations.trySend(Unit) })
+    }
 
     val koin = startKoin { modules(desktopModule, uiModule) }.koin
     val controller = koin.get<VpnController>()

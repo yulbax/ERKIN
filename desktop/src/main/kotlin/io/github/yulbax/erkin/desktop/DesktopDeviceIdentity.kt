@@ -9,7 +9,7 @@ object DesktopDeviceIdentity {
 
     fun load(): DeviceIdentity = DeviceIdentity(
         hwid = hwid(File(DesktopPaths.dataDir, FILE_NAME)),
-        os = if (DesktopPaths.isWindows) "Windows" else "Linux",
+        os = DesktopPaths.os.displayName,
         osVersion = System.getProperty("os.version").orEmpty(),
         model = System.getProperty("os.name").orEmpty()
     )

@@ -28,6 +28,20 @@ class ProcessInstalledAppsTest {
     }
 
     @Test
+    fun macHelpersBelongToTheOutermostAppBundle() {
+        val apps = discover(
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper",
+            "/Applications/ERKIN.app/Contents/MacOS/ERKIN",
+            "/Applications/ERKIN.app/Contents/app/resources/ciadpi",
+            "/opt/homebrew/bin/curl"
+        )
+        assertEquals(listOf("/Applications/Google Chrome.app", "curl"), apps.map { it.packageName })
+        assertEquals(listOf("Google Chrome", "curl"), apps.map { it.name })
+        assertEquals("/Applications/Google Chrome.app", apps.first().path)
+    }
+
+    @Test
     fun removedProgramsAreForgottenButUnmountedDrivesAndUncheckedEntriesStay() {
         val root = Files.createTempDirectory("erkin-apps").toFile()
         try {

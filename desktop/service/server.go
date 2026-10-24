@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -83,6 +84,9 @@ func listen(socketPath string, workDir string) (*server, error) {
 		return nil, err
 	}
 	removeLegacyGeoIP(workDir)
+	if err = restoreSystemDNS(workDir); err != nil {
+		fmt.Fprintln(os.Stderr, "dns:", err)
+	}
 	_ = os.Remove(socketPath)
 	listener, err := net.Listen("unix", relativeTo(workDir, socketPath))
 	if err != nil {
@@ -104,7 +108,7 @@ func listen(socketPath string, workDir string) (*server, error) {
 		_ = protector.Close()
 		return nil, err
 	}
-	s := &server{workDir: workDir, listener: listener, protector: protector, logSubscribers: map[net.Conn]func(response){}}
+	s := &server{engine: engine{stateDir: workDir}, workDir: workDir, listener: listener, protector: protector, logSubscribers: map[net.Conn]func(response){}}
 	mihomocore.SetLogSink(s)
 	mihomocore.Init(workDir, filepath.Join(workDir, coreLogName), "")
 	return s, nil

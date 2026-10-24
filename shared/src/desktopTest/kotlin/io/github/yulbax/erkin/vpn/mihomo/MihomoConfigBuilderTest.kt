@@ -44,6 +44,23 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun macAppBundlesMatchEveryProcessInsideTheBundle() {
+        val config = build(
+            platform = MihomoPlatform.Desktop(listOf("ciadpi")),
+            byeDpi = emptyList(),
+            vpn = listOf("/Applications/Google Chrome.app"),
+            directPaths = listOf("/Applications/Visual Studio Code (1).app")
+        )
+        assertEquals(
+            listOf(
+                "PROCESS-PATH-WILDCARD,/Applications/Google Chrome.app/*,p1",
+                "PROCESS-PATH-WILDCARD,/Applications/Visual Studio Code (1).app/*,DIRECT"
+            ),
+            config.rules().filter { it.startsWith("PROCESS-PATH") }
+        )
+    }
+
+    @Test
     fun appsBoundToAnotherServerAreRoutedToIt() {
         val other = vless.copy(tag = "p2")
         val engine = engine(listOf(vless, other), "p1", emptyList(), listOf("org.main", "org.other"))

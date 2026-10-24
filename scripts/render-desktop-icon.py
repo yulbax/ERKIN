@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import itertools
+import struct
 import subprocess
 import sys
 import tempfile
@@ -17,6 +18,13 @@ LAYERS = [
 ICO_SIZES = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
 WINDOW_ICON_SIZE = 256
 OUT_ICO = REPO / "desktop/icons/erkin.ico"
+OUT_ICNS = REPO / "desktop/icons/erkin.icns"
+ICNS_TYPES = [
+    ("icp4", 16), ("icp5", 32), ("ic11", 32), ("icp6", 64), ("ic12", 64), ("ic07", 128),
+    ("ic08", 256), ("ic13", 256), ("ic09", 512), ("ic14", 512), ("ic10", 1024),
+]
+MAC_CONTENT = 824 / 1024
+MAC_CORNER = 185.4 / 824
 OUT_PNG = REPO / "desktop/src/main/resources/erkin-icon.png"
 LAYER_DP = 108.0
 VISIBLE_DP = 72.0
@@ -100,6 +108,22 @@ def launcher_svg():
     ).format(inset, VISIBLE_DP, center, VISIBLE_DP / 2, "".join(layer(p) for p in LAYERS))
 
 
+def mac_svg():
+    size = VISIBLE_DP / MAC_CONTENT
+    origin = (LAYER_DP - size) / 2
+    inset = (LAYER_DP - VISIBLE_DP) / 2
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="{0} {0} {1} {1}">'
+        '<clipPath id="mask"><rect x="{2}" y="{2}" width="{3}" height="{3}" rx="{4}"/></clipPath>'
+        '<g clip-path="url(#mask)">{5}</g></svg>'
+    ).format(origin, size, inset, VISIBLE_DP, VISIBLE_DP * MAC_CORNER, "".join(layer(p) for p in LAYERS))
+
+
+def write_icns(entries, target):
+    chunks = b"".join(kind.encode() + struct.pack(">I", len(data) + 8) + data for kind, data in entries)
+    target.write_bytes(b"icns" + struct.pack(">I", len(chunks) + 8) + chunks)
+
+
 def render(svg, size, target):
     subprocess.run(["rsvg-convert", "-w", str(size), "-h", str(size), "-o", str(target), str(svg)], check=True)
 
@@ -118,7 +142,16 @@ def main():
         subprocess.run(["magick", *sizes, str(OUT_ICO)], check=True)
         OUT_PNG.parent.mkdir(parents=True, exist_ok=True)
         render(svg, WINDOW_ICON_SIZE, OUT_PNG)
-    print("wrote", OUT_ICO.relative_to(REPO), "and", OUT_PNG.relative_to(REPO))
+        mac = work / "mac.svg"
+        mac.write_text(mac_svg())
+        entries = []
+        for kind, size in ICNS_TYPES:
+            png = work / "mac-{}.png".format(size)
+            if not png.exists():
+                render(mac, size, png)
+            entries.append((kind, png.read_bytes()))
+        write_icns(entries, OUT_ICNS)
+    print("wrote", OUT_ICO.relative_to(REPO), OUT_ICNS.relative_to(REPO), "and", OUT_PNG.relative_to(REPO))
 
 
 if __name__ == "__main__":

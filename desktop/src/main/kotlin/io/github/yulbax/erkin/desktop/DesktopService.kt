@@ -64,15 +64,20 @@ class DesktopService(
             add("install")
             appDir?.let { add("--app-dir"); add(it.absolutePath) }
         }
-        val command = if (DesktopPaths.isWindows) {
-            val argumentList = args.joinToString(",") { "'" + quoteForPowerShell(it) + "'" }
-            listOf(
-                "powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command",
-                "\$p = Start-Process -FilePath '${quoteForPowerShell(bundled.absolutePath)}' " +
-                    "-ArgumentList $argumentList -Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit \$p.ExitCode"
-            )
-        } else {
-            listOf("pkexec", bundled.absolutePath) + args
+        val command = when (DesktopPaths.os) {
+            DesktopOs.Windows -> {
+                val argumentList = args.joinToString(",") { "'" + quoteForPowerShell(it) + "'" }
+                listOf(
+                    "powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command",
+                    "\$p = Start-Process -FilePath '${quoteForPowerShell(bundled.absolutePath)}' " +
+                        "-ArgumentList $argumentList -Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit \$p.ExitCode"
+                )
+            }
+            DesktopOs.Linux -> listOf("pkexec", bundled.absolutePath) + args
+            DesktopOs.MacOs -> {
+                val shell = (listOf(bundled.absolutePath) + args).joinToString(" ", transform = ::quoteForShell)
+                listOf("osascript", "-e", "do shell script \"${quoteForAppleScript(shell)}\" with prompt \"$INSTALL_PROMPT\" with administrator privileges")
+            }
         }
         val process = ProcessBuilder(command).redirectErrorStream(true).start()
         val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
@@ -97,11 +102,16 @@ class DesktopService(
 
     private fun quoteForPowerShell(value: String): String = value.replace("'", "''").replace("\"", "\\\"")
 
+    private fun quoteForShell(value: String): String = "'" + value.replace("'", "'\\''") + "'"
+
+    private fun quoteForAppleScript(value: String): String = value.replace("\\", "\\\\").replace("\"", "\\\"")
+
     private companion object {
         const val TAG = "DesktopService"
         const val INSTALL_TIMEOUT_S = 300L
         const val CONNECT_WAIT_S = 15L
         const val INSTALL_FAILED = "The ERKIN background service could not be installed. It needs administrator rights once."
         const val NOT_RUNNING = "The ERKIN background service is not running."
+        const val INSTALL_PROMPT = "ERKIN needs to install its background VPN service."
     }
 }

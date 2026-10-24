@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.data.APP_BUNDLE_SUFFIX
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.ConnectionType
@@ -34,7 +35,7 @@ class ProcessInstalledApps(
     override val error: StateFlow<String?> = _error.asStateFlow()
 
     private val refreshMutex = Mutex()
-    private val systemRoots = listOfNotNull(System.getenv("SystemRoot"), "/usr/", "/lib", "/sbin", "/bin")
+    private val systemRoots = listOfNotNull(System.getenv("SystemRoot"), "/usr/", "/lib", "/sbin", "/bin", "/System/Library/", "/Library/Apple/")
 
     init {
         scope.launch {
@@ -106,19 +107,25 @@ class ProcessInstalledApps(
             return existing.parentFile == null || !existing.list().isNullOrEmpty()
         }
 
-        fun discover(executables: List<File>, ownExecutable: String?, systemRoots: List<String>): List<InstalledApp> =
-            executables
-                .filter { it.name.isNotBlank() && it.name != ownExecutable }
+        fun bundleOf(executable: File): File? =
+            generateSequence(executable.parentFile) { it.parentFile }.lastOrNull { it.name.endsWith(APP_BUNDLE_SUFFIX) }
+
+        fun discover(executables: List<File>, ownExecutable: String?, systemRoots: List<String>): List<InstalledApp> {
+            fun app(id: String, path: String?, file: File) = InstalledApp(
+                packageName = id,
+                name = file.nameWithoutExtension,
+                isSystemApp = systemRoots.any { file.path.startsWith(it, ignoreCase = true) },
+                isLaunchable = true,
+                path = path
+            )
+            val (bundled, plain) = executables
+                .map { executable -> bundleOf(executable) ?: executable }
+                .filter { it.name.isNotBlank() && it.name != ownExecutable && it.name != ownExecutable + APP_BUNDLE_SUFFIX }
                 .distinctBy { it.path.lowercase() }
+                .partition { it.name.endsWith(APP_BUNDLE_SUFFIX) }
+            return bundled.map { app(it.path, it.path, it) } + plain
                 .groupBy { it.name }
                 .flatMap { (name, copies) ->
-                    fun app(id: String, path: String?, file: File) = InstalledApp(
-                        packageName = id,
-                        name = file.nameWithoutExtension,
-                        isSystemApp = systemRoots.any { file.path.startsWith(it, ignoreCase = true) },
-                        isLaunchable = true,
-                        path = path
-                    )
                     val first = copies.first()
                     if (copies.size == 1) {
                         listOf(app(name, first.path, first))
@@ -126,5 +133,6 @@ class ProcessInstalledApps(
                         listOf(app(name, null, first)) + copies.map { app(it.path, it.path, it) }
                     }
                 }
+        }
     }
 }

@@ -15,6 +15,10 @@ data class App(
 
 fun isExecutablePath(id: String): Boolean = '/' in id || '\\' in id
 
+const val APP_BUNDLE_SUFFIX = ".app"
+
+fun isAppBundle(id: String): Boolean = isExecutablePath(id) && id.endsWith(APP_BUNDLE_SUFFIX)
+
 enum class ConnectionType(val wire: String, val needsServer: Boolean = false) {
     DIRECT("DIRECT"), BYEDPI("BYEDPI"), VPN("VPN", needsServer = true);
 

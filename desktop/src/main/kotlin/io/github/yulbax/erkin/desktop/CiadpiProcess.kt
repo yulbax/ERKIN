@@ -10,7 +10,11 @@ class CiadpiProcess(
     private val binary: File,
     private val protectSocket: File,
     private val log: AppLog,
-    private val unsupportedOptions: Set<String> = if (DesktopPaths.isWindows) WINDOWS_UNSUPPORTED else emptySet()
+    private val unsupportedOptions: Set<String> = when (DesktopPaths.os) {
+        DesktopOs.Windows -> WINDOWS_UNSUPPORTED
+        DesktopOs.MacOs -> MACOS_UNSUPPORTED
+        DesktopOs.Linux -> emptySet()
+    }
 ) : ByeDpiProcess {
     @Volatile private var process: Process? = null
 
@@ -65,5 +69,6 @@ class CiadpiProcess(
         private const val OUTPUT_WAIT_MS = 500L
         private const val OUTPUT_LINES = 10
         val WINDOWS_UNSUPPORTED = setOf("-S", "--md5sig")
+        val MACOS_UNSUPPORTED = setOf("-S", "--md5sig", "-Y", "--drop-sack", "-E", "--transparent")
     }
 }

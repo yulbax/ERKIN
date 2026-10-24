@@ -12,6 +12,8 @@ plugins {
 
 val appVersion = providers.gradleProperty("erkin.versionName").get()
 val byeDpiVersion = "17.3"
+val hostOs = System.getProperty("os.name")
+val macArch = if (System.getProperty("os.arch") == "aarch64") "arm64" else "amd64"
 val buildHash = runCatching {
     providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
 }.getOrDefault("")
@@ -45,7 +47,7 @@ fun registerBundledBinaries(
     os: String,
     executableSuffix: String,
     byeDpiArchive: ByeDpiArchive?
-) = tasks.register("prepare${os.replaceFirstChar { it.uppercase() }}Binaries") {
+) = tasks.register("prepare${os.split('-').joinToString("") { it.replaceFirstChar(Char::uppercase) }}Binaries") {
     group = "distribution"
     description = "Bundles erkin-service built by scripts/build-service.sh and byedpi for $os."
     val ciadpiName = "ciadpi$executableSuffix"
@@ -79,8 +81,8 @@ fun registerBundledBinaries(
         val missing = coreFiles.filterNot { it.isFile }
         check(missing.isEmpty()) {
             "Missing ${missing.joinToString { it.name }} in desktop/libs/$os. " +
-                "Run TARGETS=$os scripts/build-service.sh" +
-                (if (archiveName == null) " and scripts/build-ciadpi.sh" else "") + " first."
+                "Run scripts/build-service.sh" +
+                (if (archiveName == null) " and scripts/build-ciadpi.sh" else "") + " for $os first."
         }
         val target = outputDir.get().asFile.apply { mkdirs() }
         coreFiles.forEach { it.copyTo(File(target, it.name), overwrite = true).setExecutable(true) }
@@ -111,11 +113,17 @@ val prepareLinuxBinaries = registerBundledBinaries(
     )
 )
 
+val prepareMacosBinaries = registerBundledBinaries(
+    os = "macos-$macArch",
+    executableSuffix = "",
+    byeDpiArchive = null
+)
+
 compose.desktop {
     application {
         mainClass = "io.github.yulbax.erkin.desktop.MainKt"
         jvmArgs += listOf("-Derkin.version=$appVersion", "-Derkin.build=$buildHash", "-Derkin.byedpi.version=$byeDpiVersion")
-        if (System.getProperty("os.name").startsWith("Windows")) jvmArgs += "-Derkin.updateAsset=windows-x86_64.msi"
+        if (hostOs.startsWith("Windows")) jvmArgs += "-Derkin.updateAsset=windows-x86_64.msi"
 
         buildTypes.release.proguard {
             isEnabled.set(true)
@@ -124,7 +132,7 @@ compose.desktop {
         }
 
         nativeDistributions {
-            targetFormats(TargetFormat.Msi)
+            targetFormats(TargetFormat.Msi, TargetFormat.Dmg)
             packageName = "ERKIN"
             packageVersion = appVersion
             vendor = "yulbax"
@@ -140,15 +148,37 @@ compose.desktop {
                 perUserInstall = false
                 upgradeUuid = "85e5f814-d069-44e8-9991-526d02154e62"
             }
+
+            macOS {
+                iconFile.set(project.file("icons/erkin.icns"))
+                bundleID = "io.github.yulbax.erkin"
+                dockName = "ERKIN"
+                minimumSystemVersion = "12.0"
+            }
         }
     }
 }
 
-if (System.getProperty("os.name").startsWith("Linux")) {
+if (hostOs.startsWith("Linux")) {
     tasks.matching { it.name == "prepareAppResources" }.configureEach { dependsOn(prepareLinuxBinaries) }
 }
 
-if (System.getProperty("os.name").startsWith("Windows")) {
+if (hostOs.startsWith("Mac")) {
+    tasks.matching { it.name == "prepareAppResources" }.configureEach { dependsOn(prepareMacosBinaries) }
+    mapOf("createDistributable" to "main", "createReleaseDistributable" to "main-release").forEach { (taskName, variant) ->
+        val resources = layout.buildDirectory.dir("compose/binaries/$variant/app/ERKIN.app/Contents/app/resources")
+        tasks.matching { it.name == taskName }.configureEach {
+            doLast {
+                listOf("erkin-service", "ciadpi").forEach { name ->
+                    val binary = resources.get().file(name).asFile
+                    check(binary.setExecutable(true, false)) { "Could not make $binary executable" }
+                }
+            }
+        }
+    }
+}
+
+if (hostOs.startsWith("Windows")) {
     tasks.matching { it.name == "prepareAppResources" }.configureEach { dependsOn(prepareWindowsBinaries) }
 
     tasks.register<Exec>("packageServiceMsi") {

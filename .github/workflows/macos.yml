@@ -1,0 +1,105 @@
+name: macOS
+
+# Builds and tests the macOS port on an Apple Silicon runner: erkin-service and ciadpi, the
+# desktop integration tests, the launchd service install, a real TUN with per-app routing,
+# the DMG and a GUI launch smoke test. Not part of the release until the port is verified.
+on:
+  push:
+    branches: [ feature/macos ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.25.0"
+  ANDROID_COMPILE_SDK: "37.0"
+  GOTOOLCHAIN: "local"
+  BIN_DIR: desktop/libs/macos-arm64
+  SERVICE_SOCKET: /var/run/erkin/erkin.sock
+  SERVICE_LABEL: system/io.github.yulbax.erkin.service
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: desktop/service/go.sum
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Android platform for KMP configuration
+        run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}"
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build erkin-service
+        run: TARGETS=darwin/arm64 bash scripts/build-service.sh
+      - name: Build ciadpi
+        run: TARGET=macos-arm64 CC="clang -mmacosx-version-min=12.0" bash scripts/build-ciadpi.sh
+      - name: Inspect binaries
+        run: |
+          file "$BIN_DIR"/erkin-service "$BIN_DIR"/ciadpi
+          codesign -dv "$BIN_DIR"/erkin-service "$BIN_DIR"/ciadpi
+
+      - name: Desktop tests
+        run: ERKIN_TEST_BIN_DIR="$PWD/$BIN_DIR" ./gradlew -Perkin.desktopOnly :shared:desktopTest :ui:desktopTest :desktop:test --no-daemon
+
+      - name: Install the launchd service
+        run: |
+          sudo "$BIN_DIR/erkin-service" install
+          for _ in $(seq 1 50); do [ -S "$SERVICE_SOCKET" ] && break; sleep 0.2; done
+          ls -la "$SERVICE_SOCKET"
+          sudo launchctl print "$SERVICE_LABEL" | head -n 20
+      - name: TUN routes each app bundle to its channel
+        run: |
+          ERKIN_TEST_BIN_DIR="$PWD/$BIN_DIR" ERKIN_TEST_SERVICE_SOCKET="$SERVICE_SOCKET" \
+            ./gradlew -Perkin.desktopOnly :desktop:test --tests '*DesktopEngineIntegrationTest.tunRoutesEachAppBundleToItsChannel' --rerun --no-daemon
+          grep -q 'testcase name="tunRoutesEachAppBundleToItsChannel"' desktop/build/test-results/test/*.xml
+          ! grep -q '<skipped' desktop/build/test-results/test/TEST-io.github.yulbax.erkin.desktop.DesktopEngineIntegrationTest.xml
+      - name: Service logs
+        if: always()
+        run: |
+          sudo cat "/Library/Application Support/ERKIN Service/service.log" || true
+          sudo tail -n 200 "/Library/Application Support/ERKIN Service/core.log" || true
+      - name: Uninstall the launchd service
+        run: |
+          sudo /Library/PrivilegedHelperTools/erkin-service/erkin-service uninstall
+          ! sudo launchctl print "$SERVICE_LABEL" >/dev/null 2>&1
+          [ ! -e /Library/LaunchDaemons/io.github.yulbax.erkin.service.plist ]
+
+      - name: DMG
+        run: ./gradlew -Perkin.desktopOnly :desktop:packageReleaseDmg --no-daemon
+      - name: Launch the app from the DMG
+        run: |
+          dmg="$(ls desktop/build/compose/binaries/main-release/dmg/*.dmg)"
+          mount="$(hdiutil attach -nobrowse "$dmg" | awk -F'\t' '/\/Volumes\// { print $NF }')"
+          cp -R "$mount/ERKIN.app" /Applications/
+          hdiutil detach "$mount"
+          codesign -dv /Applications/ERKIN.app
+          codesign --verify --deep --strict --verbose=2 /Applications/ERKIN.app
+          ls -la /Applications/ERKIN.app/Contents/app/resources
+          test -x /Applications/ERKIN.app/Contents/app/resources/erkin-service
+          test -x /Applications/ERKIN.app/Contents/app/resources/ciadpi
+          /Applications/ERKIN.app/Contents/MacOS/ERKIN > app.log 2>&1 &
+          sleep 30
+          screencapture -x screenshot.png
+          pgrep -f /Applications/ERKIN.app/Contents/MacOS/ERKIN
+          cat app.log
+          tail -n 50 "$HOME/Library/Application Support/ERKIN/erkin.log" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos
+          path: |
+            desktop/build/compose/binaries/main-release/dmg/*.dmg
+            screenshot.png
+            app.log
+            desktop/build/reports/tests
+          retention-days: 7

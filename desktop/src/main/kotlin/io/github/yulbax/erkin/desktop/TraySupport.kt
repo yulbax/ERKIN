@@ -4,7 +4,10 @@ import java.util.concurrent.TimeUnit
 
 object TraySupport {
     val isAvailable: Boolean by lazy {
-        if (DesktopPaths.isWindows) true else hasStatusNotifierHost()
+        when (DesktopPaths.os) {
+            DesktopOs.Windows, DesktopOs.MacOs -> true
+            DesktopOs.Linux -> hasStatusNotifierHost()
+        }
     }
 
     private fun hasStatusNotifierHost(): Boolean = runCatching {

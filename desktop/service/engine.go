@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"net/netip"
+	"os"
 	"sync"
 	"time"
 
@@ -17,9 +19,10 @@ type tunDevice struct {
 }
 
 type engine struct {
-	mutex   sync.Mutex
-	running bool
-	tun     tunDevice
+	mutex    sync.Mutex
+	running  bool
+	tun      tunDevice
+	stateDir string
 }
 
 func check(config string) error {
@@ -47,6 +50,11 @@ func (e *engine) start(config string, resolvedProxy string, resolver string) err
 	}
 	e.running = true
 	e.tun = tun
+	if tun.name != "" {
+		if err := pinSystemDNS(e.stateDir); err != nil {
+			fmt.Fprintln(os.Stderr, "dns:", err)
+		}
+	}
 	return nil
 }
 
@@ -58,6 +66,9 @@ func (e *engine) stop() error {
 	}
 	e.running = false
 	mihomocore.Shutdown()
+	if err := restoreSystemDNS(e.stateDir); err != nil {
+		fmt.Fprintln(os.Stderr, "dns:", err)
+	}
 	if e.tun.name != "" {
 		return releaseAdapter(e.tun.name, e.tun.addresses)
 	}

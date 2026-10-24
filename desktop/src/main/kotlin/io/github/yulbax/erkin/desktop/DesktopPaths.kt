@@ -3,8 +3,23 @@ package io.github.yulbax.erkin.desktop
 import io.github.yulbax.erkin.data.AppDatabase
 import java.io.File
 
+enum class DesktopOs(val displayName: String) {
+    Windows("Windows"), Linux("Linux"), MacOs("macOS");
+
+    companion object {
+        val current: DesktopOs = System.getProperty("os.name").orEmpty().let { name ->
+            when {
+                name.startsWith("Windows") -> Windows
+                name.startsWith("Mac") -> MacOs
+                else -> Linux
+            }
+        }
+    }
+}
+
 object DesktopPaths {
-    val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
+    val os: DesktopOs = DesktopOs.current
+    val isWindows: Boolean = os == DesktopOs.Windows
 
     val dataDir: File = adoptLegacyData(userDataDir("ERKIN", "erkin"), userDataDir("FRKN", "frkn")).apply { mkdirs() }
 
@@ -18,8 +33,11 @@ object DesktopPaths {
     val serviceBinary: File = File(binDir, executable("erkin-service"))
 
     val serviceSocket: File = System.getenv("ERKIN_SERVICE_SOCKET")?.let(::File)
-        ?: if (isWindows) File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN Service/erkin.sock")
-        else File("/run/erkin/erkin.sock")
+        ?: when (os) {
+            DesktopOs.Windows -> File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN Service/erkin.sock")
+            DesktopOs.Linux -> File("/run/erkin/erkin.sock")
+            DesktopOs.MacOs -> File("/var/run/erkin/erkin.sock")
+        }
 
     val protectSocket: File = File(serviceSocket.parentFile, "protect.sock")
 
@@ -32,9 +50,14 @@ object DesktopPaths {
 
     private fun executable(name: String): String = if (isWindows) "$name.exe" else name
 
-    private fun userDataDir(windowsName: String, unixName: String): File =
-        System.getenv("APPDATA")?.let { File(it, windowsName) }
-            ?: File(System.getProperty("user.home"), ".local/share/$unixName")
+    private fun userDataDir(windowsName: String, unixName: String): File {
+        val home = System.getProperty("user.home")
+        return when (os) {
+            DesktopOs.Windows -> File(System.getenv("APPDATA") ?: home, windowsName)
+            DesktopOs.Linux -> File(home, ".local/share/$unixName")
+            DesktopOs.MacOs -> File(home, "Library/Application Support/$windowsName")
+        }
+    }
 
     private fun adoptLegacyData(dir: File, legacy: File): File {
         if (dir.exists() || !legacy.isDirectory || !legacy.renameTo(dir)) return dir

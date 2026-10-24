@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
+import io.github.yulbax.erkin.data.isAppBundle
 import io.github.yulbax.erkin.data.isExecutablePath
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.EngineConfig
@@ -49,6 +50,7 @@ object MihomoConfigBuilder {
     private const val BYEDPI_PROBE_LISTENER = "byedpi-probe-in"
     private const val PROCESS_NAME = "PROCESS-NAME"
     private const val PROCESS_PATH = "PROCESS-PATH"
+    private const val PROCESS_PATH_WILDCARD = "PROCESS-PATH-WILDCARD"
     private const val FAKE_IP_RANGE = "198.18.0.1/16"
     private const val DESKTOP_TUN_INET4 = "172.19.0.1/30"
     private const val DESKTOP_TUN_INET6 = "fdfe:dcba:9876::1/126"
@@ -216,7 +218,7 @@ object MihomoConfigBuilder {
                         vpnPackages to vpnTargetOf,
                         directPaths to { DIRECT }
                     )
-                    channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), target) }
+                    channels.forEach { (apps, target) -> apps.filter(::isExecutablePath).forEach { add("${pathRule(it)},${target(it)}") } }
                     channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), target) }
                 } else {
                     processRules(PROCESS_NAME, byeDpiPackages) { BYEDPI_PROXY }
@@ -230,6 +232,9 @@ object MihomoConfigBuilder {
 
     fun proxiesForTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions()): String =
         json.encodeToString(JsonArray.serializer(), JsonArray(proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) }))
+
+    private fun pathRule(path: String): String =
+        if (isAppBundle(path)) "$PROCESS_PATH_WILDCARD,$path/*" else "$PROCESS_PATH,$path"
 
     private fun JsonArrayBuilder.processRules(type: String, apps: List<String>, target: (String) -> String) {
         apps.forEach { add("$type,$it,${target(it)}") }

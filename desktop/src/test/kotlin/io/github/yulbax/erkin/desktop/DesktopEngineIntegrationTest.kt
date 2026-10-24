@@ -18,7 +18,10 @@ import io.github.yulbax.erkin.vpn.core.randomToken
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
 import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
+import java.io.DataInputStream
 import java.io.File
+import java.net.InetAddress
+import java.net.ServerSocket
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -28,13 +31,17 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.seconds
+
+private const val TUN_TEST_HOST = "example.com"
 
 class DesktopEngineIntegrationTest {
     private val binDir = System.getenv("ERKIN_TEST_BIN_DIR")?.let(::File)
@@ -178,6 +185,46 @@ class DesktopEngineIntegrationTest {
     }
 
     @Test
+    fun tunRoutesEachAppBundleToItsChannel() {
+        val socket = System.getenv("ERKIN_TEST_SERVICE_SOCKET")?.let(::File)
+        assumeTrue("set ERKIN_TEST_SERVICE_SOCKET to the socket of an erkin-service running as root", socket?.exists() == true)
+        val curl = File("/usr/bin/curl")
+        val tunneled = appBundle("Tunneled", curl)
+        val direct = appBundle("Direct", curl)
+        SocksRecorder().use { recorder ->
+            val server = EngineProxy("p1", """{"type":"socks5","server":"127.0.0.1","port":${recorder.port}}""")
+            val config = MihomoConfigBuilder.build(
+                EngineConfig(
+                    proxies = listOf(server),
+                    activeProxyTag = "p1",
+                    byeDpiPackages = emptyList(),
+                    vpnPackages = listOf(tunneled.bundle.path),
+                    tunneledPackages = listOf(tunneled.bundle.path),
+                    byeDpiSocksPort = freeLoopbackPort(),
+                    network = NetworkOptions(),
+                    directPaths = listOf(direct.bundle.path)
+                ),
+                ProbeInbound(freeLoopbackPort(), randomToken(), randomToken()),
+                MihomoPlatform.Desktop(listOf("ciadpi"), SystemDnsDetector.detect())
+            )
+            val systemDns = systemNameservers()
+            ServiceClient.connect(checkNotNull(socket)).use { client ->
+                client.start(config, "", "")
+                try {
+                    assertNotEquals("the tunneled app must not reach the site directly", "200", fetch(tunneled.executable))
+                    assertTrue("the site must be resolved inside the tunnel: ${recorder.destinations()}", TUN_TEST_HOST in recorder.destinations())
+                    val seen = recorder.destinations().count { it == TUN_TEST_HOST }
+                    assertEquals("the direct app must bypass the server", "200", fetch(direct.executable))
+                    assertEquals(seen, recorder.destinations().count { it == TUN_TEST_HOST })
+                } finally {
+                    client.stop()
+                }
+            }
+            assertEquals("the system DNS must be restored once the tunnel stops", systemDns, systemNameservers())
+        }
+    }
+
+    @Test
     fun serviceMeasuresServersWithoutARunningCore() {
         ServiceClient.connect(startService()).use(::assertLatencyTestWorks)
     }
@@ -187,6 +234,67 @@ class DesktopEngineIntegrationTest {
         val delays = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true))
         assertTrue("a working server must be measured: $delays", delays[1L] is ProxyDelay.Measured)
         assertEquals(ProxyDelay.Failed, delays[2L])
+    }
+
+    private class Bundled(val bundle: File, val executable: File)
+
+    private fun appBundle(name: String, program: File): Bundled {
+        val bundle = File(workDir.canonicalFile, "$name.app")
+        val executable = File(bundle, "Contents/MacOS/${program.name}")
+        executable.parentFile.mkdirs()
+        program.copyTo(executable)
+        executable.setExecutable(true)
+        return Bundled(bundle, executable)
+    }
+
+    private fun systemNameservers(): List<String> {
+        val process = ProcessBuilder("scutil", "--dns").redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().use { it.readLines() }
+        process.waitFor(10, TimeUnit.SECONDS)
+        return output.map(String::trim).filter { it.startsWith("nameserver[") }
+    }
+
+    private fun fetch(curl: File): String {
+        val process = ProcessBuilder(curl.path, "-s", "-o", "/dev/null", "-m", "15", "-w", "%{http_code}", "https://$TUN_TEST_HOST/")
+            .redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+        process.waitFor(20, TimeUnit.SECONDS)
+        return output
+    }
+
+    private class SocksRecorder : AutoCloseable {
+        private val server = ServerSocket(0, 50, InetAddress.getLoopbackAddress())
+        private val seen = mutableListOf<String>()
+        val port: Int get() = server.localPort
+
+        init {
+            thread(isDaemon = true, name = "socks-recorder") {
+                while (!server.isClosed) {
+                    val conn = runCatching { server.accept() }.getOrNull() ?: break
+                    runCatching { conn.use(::record) }
+                }
+            }
+        }
+
+        fun destinations(): List<String> = synchronized(seen) { seen.toList() }
+
+        private fun record(conn: java.net.Socket) {
+            val input = DataInputStream(conn.getInputStream())
+            val output = conn.getOutputStream()
+            input.readUnsignedByte()
+            input.skipBytes(input.readUnsignedByte())
+            output.write(byteArrayOf(5, 0))
+            input.readFully(ByteArray(3))
+            val host = when (input.readUnsignedByte()) {
+                1 -> InetAddress.getByAddress(ByteArray(4).also(input::readFully)).hostAddress
+                4 -> InetAddress.getByAddress(ByteArray(16).also(input::readFully)).hostAddress
+                else -> String(ByteArray(input.readUnsignedByte()).also(input::readFully))
+            }
+            synchronized(seen) { seen += host }
+            output.write(byteArrayOf(5, 5, 0, 1, 0, 0, 0, 0, 0, 0))
+        }
+
+        override fun close() = server.close()
     }
 
     private fun waitForPort(port: Int): Boolean {
