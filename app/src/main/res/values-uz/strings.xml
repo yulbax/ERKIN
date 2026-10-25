@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ERKIN</string>
+    <string name="vpn_notification_channel">VPN holati</string>
+    <string name="vpn_notification_stop">Toʻxtatish</string>
+    <string name="notification_vpn_up">VPN ishlamoqda</string>
+    <string name="notification_vpn_down">VPN mavjud emas</string>
+    <string name="notification_byedpi_up">ByeDPI ishlamoqda</string>
+    <string name="notification_byedpi_down">ByeDPI mavjud emas</string>
+    <string name="notification_byedpi_off">ByeDPI oʻchiq</string>
+    <string name="notification_speed"> ↓%1$s ↑%2$s</string>
+</resources>

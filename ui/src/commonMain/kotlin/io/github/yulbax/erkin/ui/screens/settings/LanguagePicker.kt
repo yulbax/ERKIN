@@ -10,6 +10,8 @@ private enum class AppLanguage(val tag: String, val displayName: String) {
     English("en", "English"),
     Russian("ru", "Русский"),
     Ukrainian("uk", "Українська"),
+    Uzbek("uz", "Oʻzbekcha"),
+    Turkish("tr", "Türkçe"),
     Chinese("zh", "中文"),
     Persian("fa", "فارسی");
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ERKIN</string>
+    <string name="vpn_notification_channel">VPN durumu</string>
+    <string name="vpn_notification_stop">Durdur</string>
+    <string name="notification_vpn_up">VPN çalışıyor</string>
+    <string name="notification_vpn_down">VPN kullanılamıyor</string>
+    <string name="notification_byedpi_up">ByeDPI çalışıyor</string>
+    <string name="notification_byedpi_down">ByeDPI kullanılamıyor</string>
+    <string name="notification_byedpi_off">ByeDPI kapalı</string>
+    <string name="notification_speed"> ↓%1$s ↑%2$s</string>
+</resources>

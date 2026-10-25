@@ -3,6 +3,8 @@
     <locale android:name="en" />
     <locale android:name="ru" />
     <locale android:name="uk" />
+    <locale android:name="uz" />
+    <locale android:name="tr" />
     <locale android:name="zh" />
     <locale android:name="fa" />
 </locale-config>
