@@ -6,6 +6,8 @@ import java.io.File
 object DesktopPaths {
     val isWindows: Boolean = System.getProperty("os.name").startsWith("Windows")
 
+    val ciadpiUnsupportedOptions: Set<String> = if (isWindows) setOf("-S", "--md5sig") else emptySet()
+
     val dataDir: File = adoptLegacyData(userDataDir("ERKIN", "erkin"), userDataDir("FRKN", "frkn")).apply { mkdirs() }
 
     val database: File = File(dataDir, AppDatabase.FILE_NAME)

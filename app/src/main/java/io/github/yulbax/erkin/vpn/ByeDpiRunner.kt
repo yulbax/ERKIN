@@ -1,16 +1,19 @@
 package io.github.yulbax.erkin.vpn
 
 import android.os.SystemClock
-import io.github.yulbax.erkin.engine.ByeDpi
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
+import java.io.File
+
+const val BYEDPI_VERSION = "17.3"
 
 class ByeDpiRunner(
     private val packageName: String,
+    private val binary: File,
     private val log: AppLog,
     private val protect: (Int) -> Boolean
 ) : ByeDpiProcess {
-    private var process: ByeDpi? = null
+    private var process: CiadpiProcess? = null
     private var protector: SocketProtector? = null
 
     override val isRunning: Boolean get() = process != null
@@ -19,19 +22,12 @@ class ByeDpiRunner(
         if (process != null) return
         val protectName = "$packageName.byedpi-protect.${SystemClock.elapsedRealtimeNanos()}"
         val newProtector = SocketProtector(protectName, log, protect)
-        val newProcess = ByeDpi(
-            log = log,
-            port = port,
-            protectPath = protectName,
-            extraArgs = args,
-            onUnexpectedExit = onUnexpectedExit
-        )
+        val newProcess = CiadpiProcess(binary, protectName, log)
         try {
             newProtector.start()
             protector = newProtector
             process = newProcess
-            newProcess.start()
-            log.i(TAG, "byedpi started on port $port args=$args")
+            newProcess.start(port, args, onUnexpectedExit)
         } catch (t: Throwable) {
             process = null
             protector = null
@@ -60,7 +56,7 @@ class ByeDpiRunner(
         failure?.let { throw it }
     }
 
-    private companion object {
-        const val TAG = "ByeDpiRunner"
+    companion object {
+        const val BINARY_NAME = "libciadpi.so"
     }
 }

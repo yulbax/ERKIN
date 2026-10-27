@@ -18,6 +18,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
+import java.io.File
 import java.net.InetSocketAddress
 
 @SuppressLint("VpnServicePolicy")
@@ -48,7 +49,11 @@ class ErkinVpnService :
                 controller = controller,
                 scope = scope,
                 engine = MihomoEngine(applicationContext, this, controller, erkinLog),
-                byeDpi = ByeDpiRunner(packageName, erkinLog.of(LogSource.BYEDPI)) { fd -> protect(fd) },
+                byeDpi = ByeDpiRunner(
+                    packageName,
+                    File(applicationInfo.nativeLibraryDir, ByeDpiRunner.BINARY_NAME),
+                    erkinLog.of(LogSource.BYEDPI)
+                ) { fd -> protect(fd) },
                 byeDpiHealthProbeUrl = BuildConfig.BYEDPI_HEALTH_PROBE_URL,
                 ownPackage = packageName
             )

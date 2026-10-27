@@ -42,13 +42,10 @@
 #endif
 
 
-int server_fd = -1;
-
-extern int erkin_publish_server_fd(int fd);
-extern void erkin_clear_server_fd(int fd);
+int server_fd;
 
 static void on_cancel(int sig) {
-    if (server_fd >= 0) shutdown(server_fd, SHUT_RDWR);
+    shutdown(server_fd, SHUT_RDWR);
 }
 
 void dump_all_cache(void);
@@ -1017,22 +1014,14 @@ int on_ignore(struct poolhd *pool, struct eval *val, int etype)
 
 int start_event_loop(int srvfd)
 {
-    if (!erkin_publish_server_fd(srvfd)) {
-        close(srvfd);
-        return 0;
-    }
     server_fd = srvfd;
     
     struct poolhd *pool = init_pool(params.max_open * 2 + 1);
     if (!pool) {
-        erkin_clear_server_fd(srvfd);
-        server_fd = -1;
         close(srvfd);
         return -1;
     }
     if (!add_event(pool, &on_accept, srvfd, POLLIN)) {
-        erkin_clear_server_fd(srvfd);
-        server_fd = -1;
         destroy_pool(pool);
         close(srvfd);
         return -1;
@@ -1040,8 +1029,6 @@ int start_event_loop(int srvfd)
     loop_event(pool);
     
     LOG(LOG_S, "exit\n");
-    erkin_clear_server_fd(srvfd);
-    server_fd = -1;
     destroy_pool(pool);
     return 0;
 }

@@ -3,7 +3,7 @@ package io.github.yulbax.erkin.util
 import android.content.Context
 import io.github.yulbax.erkin.BuildConfig
 import io.github.yulbax.erkin.data.profile.ProfileRepository
-import io.github.yulbax.erkin.engine.BYEDPI_VERSION
+import io.github.yulbax.erkin.vpn.BYEDPI_VERSION
 import io.github.yulbax.erkin.vpn.ErkinVpnService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

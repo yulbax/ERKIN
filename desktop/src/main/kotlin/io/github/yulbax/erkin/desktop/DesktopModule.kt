@@ -22,6 +22,7 @@ import io.github.yulbax.erkin.util.LogSource
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
+import io.github.yulbax.erkin.vpn.CiadpiProcess
 import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
@@ -93,7 +94,12 @@ val desktopModule = module {
                     listener = controller,
                     log = log
                 ),
-                byeDpi = CiadpiProcess(DesktopPaths.ciadpi, DesktopPaths.protectSocket, log.of(LogSource.BYEDPI)),
+                byeDpi = CiadpiProcess(
+                    DesktopPaths.ciadpi,
+                    DesktopPaths.protectSocket.absolutePath,
+                    log.of(LogSource.BYEDPI),
+                    DesktopPaths.ciadpiUnsupportedOptions
+                ),
                 byeDpiHealthProbeUrl = ProbeUrls.BYEDPI,
                 ownPackage = DesktopPaths.ownExecutable.orEmpty()
             )

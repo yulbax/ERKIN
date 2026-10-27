@@ -1,4 +1,4 @@
-package io.github.yulbax.erkin.desktop
+package io.github.yulbax.erkin.vpn
 
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
@@ -8,9 +8,9 @@ import kotlin.concurrent.thread
 
 class CiadpiProcess(
     private val binary: File,
-    private val protectSocket: File,
+    private val protectPath: String,
     private val log: AppLog,
-    private val unsupportedOptions: Set<String> = if (DesktopPaths.isWindows) WINDOWS_UNSUPPORTED else emptySet()
+    private val unsupportedOptions: Set<String> = emptySet()
 ) : ByeDpiProcess {
     @Volatile private var process: Process? = null
 
@@ -24,7 +24,7 @@ class CiadpiProcess(
         if (supported.size != args.size) {
             log.w(TAG, "dropping options this ciadpi build does not support: ${args.filter { it in unsupportedOptions }}")
         }
-        val started = ProcessBuilder(listOf(binary.absolutePath, "-i", "127.0.0.1", "-p", port.toString(), "-P", protectSocket.absolutePath) + supported)
+        val started = ProcessBuilder(listOf(binary.absolutePath, "-i", "127.0.0.1", "-p", port.toString(), "-P", protectPath) + supported)
             .redirectErrorStream(true)
             .start()
         process = started
@@ -42,12 +42,13 @@ class CiadpiProcess(
             }
         }
         log.i(TAG, "ciadpi started on port $port args=$supported")
-        started.onExit().thenAccept { exited ->
-            if (process !== exited) return@thenAccept
+        thread(isDaemon = true, name = "ciadpi-exit") {
+            val code = runCatching { started.waitFor() }.getOrElse { return@thread }
+            if (process !== started) return@thread
             reader.join(OUTPUT_WAIT_MS)
             val tail = synchronized(output) { output.joinToString(" | ") }
-            log.w(TAG, "ciadpi exited with code ${exited.exitValue()}" + if (tail.isNotBlank()) ": $tail" else "")
-            onUnexpectedExit(exited.exitValue())
+            log.w(TAG, "ciadpi exited with code $code" + if (tail.isNotBlank()) ": $tail" else "")
+            onUnexpectedExit(code)
         }
     }
 
@@ -59,11 +60,10 @@ class CiadpiProcess(
         if (!current.waitFor(STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)) current.destroyForcibly()
     }
 
-    companion object {
-        private const val TAG = "Ciadpi"
-        private const val STOP_TIMEOUT_MS = 3_000L
-        private const val OUTPUT_WAIT_MS = 500L
-        private const val OUTPUT_LINES = 10
-        val WINDOWS_UNSUPPORTED = setOf("-S", "--md5sig")
+    private companion object {
+        const val TAG = "Ciadpi"
+        const val STOP_TIMEOUT_MS = 3_000L
+        const val OUTPUT_WAIT_MS = 500L
+        const val OUTPUT_LINES = 10
     }
 }

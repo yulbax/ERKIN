@@ -6,12 +6,6 @@
 # names/signatures must survive. The vpn package is small, so keep it wholesale.
 -keep class io.github.yulbax.erkin.vpn.** { *; }
 
-# ───────────────────────── byedpi (JNI, name-based lookup) ─────────────────────────
--keepclasseswithmembernames,includedescriptorclasses class * {
-    native <methods>;
-}
--keep class io.github.yulbax.erkin.engine.ByeDpi { *; }
-
 # ───────────────────────── kotlinx.serialization ─────────────────────────
 -keepattributes *Annotation*, InnerClasses
 -dontnote kotlinx.serialization.**
