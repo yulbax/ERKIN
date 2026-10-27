@@ -28,12 +28,15 @@ data class HealthParams(
     val onByedpiChanged: suspend () -> Unit
 )
 
+enum class HealthChannel { VPN, BYEDPI }
+
 data class HealthSnapshot(
     val vpnActive: Boolean,
     val vpnDelayMs: Int?,
     val vpnCountry: String,
     val byedpiActive: Boolean,
-    val byedpiUp: Boolean
+    val byedpiUp: Boolean,
+    val measured: HealthChannel
 ) {
     val vpnUp get() = vpnDelayMs != null
     val anyUp get() = vpnUp || byedpiUp
@@ -62,19 +65,21 @@ class HealthMonitor(
 
         health.onEach(::publishStats).launchIn(childScope)
 
-        health.filter { it.vpnActive }
+        val vpnResults = health.filter { it.vpnActive && it.measured == HealthChannel.VPN }
+
+        vpnResults
             .distinctUntilChangedBy { it.vpnUp }
             .onEach { logVpnTransition(it) }
             .launchIn(childScope)
 
-        health.filter { it.byedpiActive }
+        health.filter { it.byedpiActive && it.measured == HealthChannel.BYEDPI }
             .distinctUntilChangedBy { it.byedpiUp }
             .onEach { onByedpiTransition(it, params) }
             .launchIn(childScope)
 
         childScope.launch {
             var failures = 0
-            health.collect { snapshot ->
+            vpnResults.collect { snapshot ->
                 failures = if (snapshot.vpnHealthy) 0 else failures + 1
                 if (!snapshot.vpnHealthy) recover(failures, snapshot, params)
             }

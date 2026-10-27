@@ -40,7 +40,8 @@ class HealthMonitorTest {
         val probe = object : HealthProbe {
             override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
                 repeat(SNAPSHOTS) {
-                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiUp))
+                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiUp, HealthChannel.VPN))
+                    emit(HealthSnapshot(true, vpnDelayMs, "", true, byedpiUp, HealthChannel.BYEDPI))
                     delay(5)
                 }
             }

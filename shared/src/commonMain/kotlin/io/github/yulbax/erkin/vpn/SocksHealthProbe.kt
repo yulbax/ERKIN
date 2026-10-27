@@ -2,32 +2,51 @@ package io.github.yulbax.erkin.vpn
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.time.Duration.Companion.milliseconds
 
 class SocksHealthProbe(
     private val byeDpiProbeUrl: String
 ) : HealthProbe {
 
-    override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
+    override fun observe(params: ProbeParams): Flow<HealthSnapshot> = channelFlow {
         val engine = params.engine
         val credentials = SocksCredentials(engine.probeUsername, engine.probePassword)
-        var country = ""
-        while (true) {
-            val vpnDelay = if (params.vpnActive) engine.measureVpnDelay() else null
-            val byedpiUp = params.byeDpiPort?.let { byeDpiReachable(it) } == true
-            if (vpnDelay != null && country.isEmpty()) {
-                country = resolveCountry(engine.probeSocksPort, credentials) ?: country
+        val access = Mutex()
+        var latest = HealthSnapshot(
+            vpnActive = params.vpnActive,
+            vpnDelayMs = null,
+            vpnCountry = "",
+            byedpiActive = params.byeDpiPort != null,
+            byedpiUp = false,
+            measured = HealthChannel.VPN
+        )
+        suspend fun publish(update: (HealthSnapshot) -> HealthSnapshot) = access.withLock {
+            latest = update(latest)
+            send(latest)
+        }
+        if (params.vpnActive) launch {
+            var country = ""
+            while (true) {
+                val vpnDelay = engine.measureVpnDelay()
+                if (vpnDelay != null && country.isEmpty()) {
+                    country = resolveCountry(engine.probeSocksPort, credentials) ?: country
+                }
+                publish { it.copy(vpnDelayMs = vpnDelay, vpnCountry = country, measured = HealthChannel.VPN) }
+                delay((if (vpnDelay != null) HEALTH_INTERVAL_MS else HEALTH_RETRY_MS).milliseconds)
             }
-            val snapshot = HealthSnapshot(
-                vpnActive = params.vpnActive,
-                vpnDelayMs = vpnDelay,
-                vpnCountry = country,
-                byedpiActive = params.byeDpiPort != null,
-                byedpiUp = byedpiUp
-            )
-            emit(snapshot)
-            delay((if (snapshot.vpnHealthy) HEALTH_INTERVAL_MS else HEALTH_RETRY_MS).milliseconds)
+        }
+        params.byeDpiPort?.let { port ->
+            launch {
+                while (true) {
+                    val up = byeDpiReachable(port)
+                    publish { it.copy(byedpiUp = up, measured = HealthChannel.BYEDPI) }
+                    delay(HEALTH_INTERVAL_MS.milliseconds)
+                }
+            }
         }
     }
 
