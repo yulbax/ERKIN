@@ -24,12 +24,12 @@ import io.github.yulbax.erkin.util.FileAppLog
 import io.github.yulbax.erkin.util.LogSource
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
-import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
 import io.github.yulbax.erkin.vpn.CiadpiProcess
+import io.github.yulbax.erkin.vpn.ByeDpiSiteCheck
+import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
-import io.github.yulbax.erkin.vpn.SocksSiteProbe
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnController
 import io.github.yulbax.erkin.vpn.VpnSessionFactory
@@ -51,7 +51,19 @@ val desktopModule = module {
     single { get<AppDatabase>().profileDao() }
     single { SettingsRepository(get(), get()) }
     single { ByeDpiHistory(get(), get()) }
-    single<TestNetworkSource> { TestNetworkSource { TestNetwork.Unknown } }
+    single { TestNetworkSource.fixed(TestNetwork.Unknown) }
+    single { ByeDpiSiteCheck(ServiceSiteTester(get())) }
+    single {
+        val log = get<AppLog>()
+        ByeDpiStrategyRunner(
+            newProcess = {
+                CiadpiProcess(DesktopPaths.ciadpi, DesktopPaths.protectSocket.absolutePath, log, DesktopPaths.ciadpiUnsupportedOptions)
+            },
+            siteCheck = get(),
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            log = log
+        )
+    }
     single { DownloadRoute() }
     single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get(), DesktopDeviceIdentity.load()) }
     single { ProfileRepository(get(), get(), get(), get()) }
@@ -61,7 +73,6 @@ val desktopModule = module {
 
     single { VpnStateRepository() }
     single { VpnCommandBus() }
-    single<ByeDpiSiteProbe> { SocksSiteProbe }
     single<DiagnosticsSource> { DesktopDiagnostics(get(), get(), get(), get()) }
     single {
         DesktopService(
@@ -82,7 +93,7 @@ val desktopModule = module {
         }
     }
 
-    single { VpnSessionFactory(get(), get(), get(), get(), get()) }
+    single { VpnSessionFactory(get(), get(), get(), get(), get<ByeDpiSiteCheck>(), get()) }
     single {
         val log = get<AppLog>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

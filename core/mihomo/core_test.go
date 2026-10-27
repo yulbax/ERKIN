@@ -1,11 +1,14 @@
 package mihomocore
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,6 +94,66 @@ rules:
 	_ = response.Body.Close()
 	if response.StatusCode != http.StatusNoContent {
 		t.Fatalf("status %d", response.StatusCode)
+	}
+}
+
+func TestSitesAreCheckedThroughTheGivenPortAndResolver(t *testing.T) {
+	const declared = 64 << 10
+	site := listenTCP(t)
+	go http.Serve(site, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/chunked" {
+			w.Write(make([]byte, 1024))
+			return
+		}
+		w.Header().Set("Content-Length", strconv.Itoa(declared))
+		if r.URL.Path == "/full" {
+			w.Write(make([]byte, declared))
+			return
+		}
+		w.Write(make([]byte, 16<<10))
+		w.(http.Flusher).Flush()
+		<-r.Context().Done()
+	}))
+	resolverPort := serveDNS(t, "probe.test.", net.ParseIP("127.0.0.1"))
+	socksPort := freePort(t)
+	config := fmt.Sprintf(`
+mode: rule
+log-level: silent
+ipv6: false
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  default-nameserver: ["udp://127.0.0.1:1"]
+  nameserver: ["udp://127.0.0.1:1#DIRECT"]
+listeners:
+  - {name: fake-byedpi, type: socks, listen: 127.0.0.1, port: %d, udp: true}
+rules:
+  - IN-NAME,fake-byedpi,DIRECT
+  - MATCH,REJECT
+`, socksPort)
+	if err := Apply(config, false, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	defer Shutdown()
+
+	port := site.Addr().(*net.TCPAddr).Port
+	full := fmt.Sprintf("http://probe.test:%d/full", port)
+	chunked := fmt.Sprintf("http://probe.test:%d/chunked", port)
+	frozen := fmt.Sprintf("http://probe.test:%d/frozen", port)
+	unknown := fmt.Sprintf("http://missing.test:%d/", port)
+	sites := strings.Join([]string{full, chunked, frozen, unknown}, " ")
+	encoded, err := TestSites(int32(socksPort), fmt.Sprintf("udp://127.0.0.1:%d", resolverPort), sites, 1000, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var results map[string]bool
+	if err := json.Unmarshal([]byte(encoded), &results); err != nil {
+		t.Fatal(err)
+	}
+	if !results[full] || !results[chunked] || results[frozen] || results[unknown] || len(results) != 4 {
+		t.Fatalf("unexpected results %v", results)
 	}
 }
 

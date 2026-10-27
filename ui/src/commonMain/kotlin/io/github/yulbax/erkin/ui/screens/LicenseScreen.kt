@@ -55,6 +55,12 @@ fun License() {
             text = ofl
         )
 
+        LicenseSection(
+            title = stringResource(Res.string.license_strategies_title),
+            notice = stringResource(Res.string.license_strategies_notice),
+            text = gpl
+        )
+
         if (bundlesFlagFont) {
             LicenseSection(
                 title = stringResource(Res.string.license_flags_title),

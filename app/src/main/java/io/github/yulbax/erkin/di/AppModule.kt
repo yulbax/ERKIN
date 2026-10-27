@@ -22,8 +22,6 @@ import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
-import io.github.yulbax.erkin.vpn.SocksSiteProbe
-import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
 import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.mihomo.MihomoLatencyTester
@@ -31,6 +29,15 @@ import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnSessionFactory
 import io.github.yulbax.erkin.vpn.VpnSessionStore
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import io.github.yulbax.erkin.vpn.ByeDpiRunner
+import io.github.yulbax.erkin.vpn.ByeDpiSiteCheck
+import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
+import io.github.yulbax.erkin.vpn.CiadpiProcess
+import io.github.yulbax.erkin.vpn.mihomo.MihomoSiteTester
+import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import io.github.yulbax.erkin.vpn.AndroidTestNetworkSource
 import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import org.koin.core.annotation.ComponentScan
@@ -69,6 +76,21 @@ class AppModule {
     fun testNetworkSource(context: Context): TestNetworkSource = AndroidTestNetworkSource(context.applicationContext)
 
     @Single
+    fun byeDpiSiteCheck(context: Context, log: AppLog): ByeDpiSiteCheck =
+        ByeDpiSiteCheck(MihomoSiteTester(context.applicationContext, log))
+
+    @Single
+    fun byeDpiStrategyRunner(context: Context, siteCheck: ByeDpiSiteCheck, log: AppLog): ByeDpiStrategyRunner {
+        val binary = File(context.applicationInfo.nativeLibraryDir, ByeDpiRunner.BINARY_NAME)
+        return ByeDpiStrategyRunner(
+            newProcess = { CiadpiProcess(binary, null, log) },
+            siteCheck = siteCheck,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            log = log
+        )
+    }
+
+    @Single
     fun profileRepository(
         database: AppDatabase,
         profileDao: ProfileDao,
@@ -92,8 +114,9 @@ class AppModule {
         stateRepository: VpnStateRepository,
         ruleLists: RuleListDatabase,
         route: DownloadRoute,
+        siteCheck: ByeDpiSiteCheck,
         log: AppLog
-    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, log)
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =
@@ -102,9 +125,6 @@ class AppModule {
     @Single
     fun configBackupRepository(database: AppDatabase, profileRepository: ProfileRepository): ConfigBackupRepository =
         ConfigBackupRepository(database, profileRepository)
-
-    @Single
-    fun byeDpiSiteProbe(): ByeDpiSiteProbe = SocksSiteProbe
 
     @Single
     fun subscriptionProfileSource(context: Context, route: DownloadRoute): SubscriptionProfileSource =

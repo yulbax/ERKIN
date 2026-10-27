@@ -50,7 +50,7 @@ class SocksHealthProbe(
         }
     }
 
-    private val byeDpiCandidates = listOf(byeDpiProbeUrl) + ByeDpiSites.QUICK.sites.map { "https://$it" }
+    private val byeDpiCandidates = listOf(byeDpiProbeUrl) + ByeDpiSites.HEALTH_CHECK.map { "https://$it" }
     private var lastGoodByeDpi = 0
 
     private suspend fun byeDpiReachable(socksPort: Int): Boolean {

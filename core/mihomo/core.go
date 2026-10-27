@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"net/netip"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,9 +31,12 @@ import (
 )
 
 const (
-	testConcurrency  = 10
-	invalidInterface = "<invalid>"
-	logFileMode      = 0o644
+	siteConcurrency    = 12
+	siteDeadlineFactor = 4
+	siteBodyLimit      = 1 << 20
+	testConcurrency    = 10
+	invalidInterface   = "<invalid>"
+	logFileMode        = 0o644
 )
 
 type Traffic struct {
@@ -304,6 +310,104 @@ func parseConfig(content string, keepTun bool) (*config.Config, error) {
 		raw.Tun.AutoDetectInterface = false
 	}
 	return config.ParseRawConfig(raw)
+}
+
+func TestSites(port int32, resolverAddress string, sites string, timeoutMs int32, ipv6 bool) (string, error) {
+	proxy, err := adapter.ParseProxy(map[string]any{
+		"name":   "byedpi-test",
+		"type":   "socks5",
+		"server": "127.0.0.1",
+		"port":   int(port),
+		"udp":    true,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer proxy.Close()
+	server, err := resolverNameServer(resolverAddress, "")
+	if err != nil {
+		return "", err
+	}
+	server.ProxyAdapter = proxy
+	resolvers := dns.NewResolver(dns.Config{Main: []dns.NameServer{server}, IPv6: ipv6})
+	defer resolvers.Resolver.ResetConnection()
+	tested := &resolvingProxy{Proxy: proxy, resolver: resolvers.Resolver, ipv6: ipv6}
+	hosts := strings.Fields(sites)
+	results := make(map[string]bool, len(hosts))
+	var resultsAccess sync.Mutex
+	var group sync.WaitGroup
+	slots := make(chan struct{}, siteConcurrency)
+	for _, host := range hosts {
+		group.Add(1)
+		go func() {
+			defer group.Done()
+			slots <- struct{}{}
+			defer func() { <-slots }()
+			target := host
+			if !strings.Contains(host, "://") {
+				target = "https://" + host
+			}
+			reachable := fetchThrough(tested, target, timeoutMs)
+			resultsAccess.Lock()
+			results[host] = reachable
+			resultsAccess.Unlock()
+		}()
+	}
+	group.Wait()
+	encoded, err := json.Marshal(results)
+	return string(encoded), err
+}
+
+func fetchThrough(proxy *resolvingProxy, url string, timeoutMs int32) bool {
+	idle := time.Duration(timeoutMs) * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), idle*siteDeadlineFactor)
+	defer cancel()
+	transport := &http.Transport{
+		DisableKeepAlives:  true,
+		DisableCompression: true,
+		DialContext: func(ctx context.Context, network, address string) (net.Conn, error) {
+			metadata := &C.Metadata{NetWork: C.TCP}
+			if err := metadata.SetRemoteAddress(address); err != nil {
+				return nil, err
+			}
+			dialCtx, cancelDial := context.WithTimeout(ctx, idle)
+			defer cancelDial()
+			conn, err := proxy.DialContext(dialCtx, metadata)
+			if err != nil {
+				return nil, err
+			}
+			return &idleConn{Conn: conn, idle: idle}, nil
+		},
+	}
+	defer transport.CloseIdleConnections()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return false
+	}
+	response, err := (&http.Client{Transport: transport}).Do(request)
+	if err != nil {
+		return false
+	}
+	defer response.Body.Close()
+	declared := response.ContentLength
+	limit := declared
+	if limit <= 0 {
+		limit = siteBodyLimit
+	}
+	read, _ := io.Copy(io.Discard, io.LimitReader(response.Body, limit))
+	return declared <= 0 || read >= declared
+}
+
+type idleConn struct {
+	net.Conn
+	idle time.Duration
+}
+
+func (c *idleConn) Read(b []byte) (int, error) {
+	if err := c.Conn.SetReadDeadline(time.Now().Add(c.idle)); err != nil {
+		return 0, err
+	}
+	return c.Conn.Read(b)
 }
 
 func measure(proxy C.Proxy, url string, timeoutMs int32) int32 {

@@ -1,17 +1,25 @@
 package io.github.yulbax.erkin.vpn.core
 
-interface ByeDpiProcess {
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.serialization.json.Json
+
+interface ByeDpiProcess : AutoCloseable {
     val isRunning: Boolean
 
     fun start(port: Int, args: List<String>, onUnexpectedExit: (code: Int) -> Unit)
 
     fun stop()
+
+    override fun close() = stop()
 }
 
-data class ByeDpiReachability(val reachable: Int, val total: Int)
+data class ByeDpiReachability(val reachable: Int, val total: Int) {
+    val percent: Int get() = if (total > 0) reachable * 100 / total else 0
+}
 
 fun interface ByeDpiQualityCheck {
-    suspend fun check(socksPort: Int): ByeDpiReachability
+    suspend fun check(socksPort: Int, network: NetworkOptions): ByeDpiReachability
 }
 
 object ByeDpiArgs {
@@ -70,6 +78,20 @@ sealed interface TestNetwork {
     }
 }
 
-fun interface TestNetworkSource {
-    fun current(): TestNetwork
+interface TestNetworkSource {
+    val network: Flow<TestNetwork>
+
+    companion object {
+        fun fixed(network: TestNetwork): TestNetworkSource = object : TestNetworkSource {
+            override val network: Flow<TestNetwork> = flowOf(network)
+        }
+    }
+}
+
+fun interface ByeDpiSiteTester {
+    suspend fun test(port: Int, resolver: String, sites: List<String>, timeoutMs: Int, ipv6: Boolean): Map<String, Boolean>
+
+    companion object {
+        fun decode(results: String): Map<String, Boolean> = Json.decodeFromString(results)
+    }
 }

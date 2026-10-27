@@ -62,19 +62,18 @@ import io.github.yulbax.erkin.util.DiagnosticsSource
 import io.github.yulbax.erkin.util.LogFeed
 import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
-import io.github.yulbax.erkin.vpn.ByeDpiSiteProbe
+import io.github.yulbax.erkin.vpn.ByeDpiSiteCheck
+import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
-import io.github.yulbax.erkin.vpn.SiteGroup
-import io.github.yulbax.erkin.vpn.SiteResult
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.EncodedImageFormat
@@ -115,7 +114,15 @@ class DesktopRenderTest {
                     single { database.profileDao() }
                     single { SettingsRepository(get(), get()) }
                     single { ByeDpiHistory(get(), get()) }
-                    single<TestNetworkSource> { TestNetworkSource { TestNetwork.Wifi } }
+                    single { TestNetworkSource.fixed(TestNetwork.Wifi) }
+                    single {
+                        ByeDpiStrategyRunner(
+                            newProcess = { error("no ciadpi in render tests") },
+                            siteCheck = ByeDpiSiteCheck { _, _, _, _, _ -> emptyMap() },
+                            scope = CoroutineScope(SupervisorJob()),
+                            log = SilentLog
+                        )
+                    }
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
                     single { ConfigBackupRepository(get(), get()) }
@@ -123,7 +130,6 @@ class DesktopRenderTest {
                     single { VpnStateRepository() }
                     single { VpnCommandBus() }
                     single<VpnLauncher> { VpnLauncher { } }
-                    single<ByeDpiSiteProbe> { NoSiteProbe }
                     single<AppLog> { SilentLog }
                     single<DiagnosticsSource> {
                         object : DiagnosticsSource {
@@ -256,10 +262,6 @@ class DesktopRenderTest {
 
     private object NoSubscriptions : SubscriptionProfileSource {
         override suspend fun fetch(url: String): FetchedSubscription = FetchedSubscription(emptyList())
-    }
-
-    private object NoSiteProbe : ByeDpiSiteProbe {
-        override fun probe(socksPort: Int, groups: List<SiteGroup>): Flow<SiteResult> = emptyFlow()
     }
 
     private object NoUpdatePlatform : UpdatePlatform {

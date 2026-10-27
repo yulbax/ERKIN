@@ -45,7 +45,6 @@ class VpnSession(
 
     private var appliedConfig: AppliedConfig? = null
     private var byeDpiArgs: List<String> = ByeDpiArgs.DEFAULT
-    private var byeDpiArgsLine: String = ByeDpiArgs.effective("")
     private var byeDpiPort = 0
     private var byeDpiRun = 0L
     private var byeDpiStartedAt: TimeMark? = null
@@ -69,7 +68,7 @@ class VpnSession(
         appliedConfig = null
         store.refreshProfiles()
         val inputs = store.load()
-        useByeDpiArgs(inputs.settings.byeDpiArgs)
+        byeDpiArgs = ByeDpiArgs.parse(inputs.settings.byeDpiArgs)
         byeDpiPort = freeLoopbackPort()
         val config = EngineConfigComposer.compose(inputs, ownPackage, byeDpiPort, ruleLists)
         log.i(
@@ -123,12 +122,13 @@ class VpnSession(
     fun checkByeDpi() {
         if (!isRunning || !byeDpi.isRunning) return
         if (byeDpiCheckJob?.isActive == true) return
+        val network = appliedConfig?.engineConfig?.network ?: return
         val port = byeDpiProbePort
         val checkGeneration = generation
         byeDpiCheckJob = scope.launch {
             stateRepository.updateStats { it.copy(byedpiChecking = true) }
             try {
-                val result = quality.check(port)
+                val result = quality.check(port, network)
                 ensureActive()
                 if (isRunning && generation == checkGeneration && byeDpi.isRunning) {
                     stateRepository.updateStats {
@@ -152,9 +152,9 @@ class VpnSession(
 
     suspend fun restartByeDpi() {
         if (!isRunning) return
-        val line = store.load().settings.byeDpiArgs
-        if (ByeDpiArgs.parse(line) == byeDpiArgs) return
-        useByeDpiArgs(line)
+        val args = ByeDpiArgs.parse(store.load().settings.byeDpiArgs)
+        if (args == byeDpiArgs) return
+        byeDpiArgs = args
         if (!byeDpi.isRunning) return
         log.i(TAG, "byedpi arguments changed; restarting it")
         byeDpiCheckJob?.cancel()
@@ -228,12 +228,7 @@ class VpnSession(
         val run = ++byeDpiRun
         byeDpiStartedAt = TimeSource.Monotonic.markNow()
         byeDpi.start(byeDpiPort, byeDpiArgs) { code -> onByeDpiExit(run, code) }
-        stateRepository.updateStats { it.copy(byeDpiPort = byeDpiProbePort, byeDpiArgs = byeDpiArgsLine) }
-    }
-
-    private fun useByeDpiArgs(line: String) {
-        byeDpiArgs = ByeDpiArgs.parse(line)
-        byeDpiArgsLine = ByeDpiArgs.effective(line)
+        stateRepository.updateStats { it.copy(byeDpiPort = byeDpiProbePort) }
     }
 
     private fun stopByeDpi() {

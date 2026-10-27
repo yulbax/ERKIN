@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.vpn
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
+import io.github.yulbax.erkin.vpn.core.ByeDpiQualityCheck
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import kotlinx.coroutines.CoroutineScope
 
@@ -11,6 +12,7 @@ class VpnSessionFactory(
     private val stateRepository: VpnStateRepository,
     private val ruleLists: RuleListDatabase,
     private val downloadRoute: DownloadRoute,
+    private val quality: ByeDpiQualityCheck,
     private val log: AppLog
 ) {
     fun create(
@@ -26,7 +28,7 @@ class VpnSessionFactory(
         store = store,
         stateRepository = stateRepository,
         health = HealthMonitor(stateRepository, log, SocksHealthProbe(byeDpiHealthProbeUrl)),
-        quality = SocksSiteProbe,
+        quality = quality,
         log = log,
         ownPackage = ownPackage,
         scope = scope,

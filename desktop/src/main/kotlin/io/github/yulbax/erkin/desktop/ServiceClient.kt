@@ -93,6 +93,18 @@ class ServiceClient private constructor(
         checkNotNull(reply["delays"]) { "ERKIN service returned no delays" }.toString()
     }
 
+    fun testSites(port: Int, resolver: String, sites: List<String>, timeoutMs: Int, ipv6: Boolean): String =
+        call("sites", timeoutMs = SITES_TEST_TIMEOUT_MS) {
+            put("port", port)
+            put("resolver", resolver)
+            put("sites", sites.joinToString(" "))
+            put("timeout", timeoutMs)
+            put("ipv6", ipv6)
+        }.let { reply ->
+            reply.throwIfFailed()
+            checkNotNull(reply["sites"]) { "ERKIN service returned no site results" }.toString()
+        }
+
     fun delay(proxy: String, url: String, timeoutMs: Int): Int? = call("delay", timeoutMs = timeoutMs + 2_000L) {
         put("proxy", proxy)
         put("url", url)
@@ -169,6 +181,7 @@ class ServiceClient private constructor(
         private const val START_TIMEOUT_MS = 120_000L
         private const val STOP_TIMEOUT_MS = 30_000L
         private const val URL_TEST_TIMEOUT_MS = 120_000L
+        private const val SITES_TEST_TIMEOUT_MS = 60_000L
         private const val RULE_LIST_TIMEOUT_MS = 60_000L
 
         fun connect(socket: File, onLog: (level: String, message: String) -> Unit = { _, _ -> }): ServiceClient {

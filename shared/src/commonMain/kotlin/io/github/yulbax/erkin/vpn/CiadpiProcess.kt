@@ -8,7 +8,7 @@ import kotlin.concurrent.thread
 
 class CiadpiProcess(
     private val binary: File,
-    private val protectPath: String,
+    private val protectPath: String?,
     private val log: AppLog,
     private val unsupportedOptions: Set<String> = emptySet()
 ) : ByeDpiProcess {
@@ -24,7 +24,8 @@ class CiadpiProcess(
         if (supported.size != args.size) {
             log.w(TAG, "dropping options this ciadpi build does not support: ${args.filter { it in unsupportedOptions }}")
         }
-        val started = ProcessBuilder(listOf(binary.absolutePath, "-i", "127.0.0.1", "-p", port.toString(), "-P", protectPath) + supported)
+        val protect = protectPath?.let { listOf("-P", it) }.orEmpty()
+        val started = ProcessBuilder(listOf(binary.absolutePath, "-i", "127.0.0.1", "-p", port.toString()) + protect + supported)
             .redirectErrorStream(true)
             .start()
         process = started

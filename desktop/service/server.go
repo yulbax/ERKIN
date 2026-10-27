@@ -29,6 +29,8 @@ type request struct {
 	Behavior string `json:"behavior,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
 	IPv6     bool   `json:"ipv6,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	Sites    string `json:"sites,omitempty"`
 }
 
 type response struct {
@@ -40,6 +42,7 @@ type response struct {
 	WorkDir string          `json:"workDir,omitempty"`
 	Delay   int             `json:"delay,omitempty"`
 	Delays  json.RawMessage `json:"delays,omitempty"`
+	Sites   json.RawMessage `json:"sites,omitempty"`
 	Up      int64           `json:"up,omitempty"`
 	Down    int64           `json:"down,omitempty"`
 	Kind    string          `json:"kind,omitempty"`
@@ -203,6 +206,13 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 			return fail(err)
 		}
 		result.Delays = json.RawMessage(delays)
+		result.OK = true
+	case "sites":
+		sites, err := mihomocore.TestSites(int32(message.Port), message.Resolver, message.Sites, int32(message.Timeout), message.IPv6)
+		if err != nil {
+			return fail(err)
+		}
+		result.Sites = json.RawMessage(sites)
 		result.OK = true
 	case "rulelist":
 		set, err := importRuleList(s.workDir, message.Key, message.Path, message.Format, message.Behavior)
