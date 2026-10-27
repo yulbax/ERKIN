@@ -16,6 +16,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
@@ -108,6 +109,15 @@ class RuleListDatabase(
             revision.update { it + 1 }
             downloading.update { it - url }
         }
+    }
+
+    suspend fun refreshStale(now: Long = System.currentTimeMillis()): Boolean {
+        val stale = withContext(Dispatchers.IO) {
+            dao.observeAll().first().map { it.source }.filter { url ->
+                installed(url)?.let { now - it.updatedAt >= REFRESH_AFTER_MS } ?: true
+            }
+        }
+        return stale.map { download(it) }.any { it.isSuccess }
     }
 
     suspend fun rename(url: String, name: String?) = withContext(Dispatchers.IO) {
@@ -212,6 +222,7 @@ class RuleListDatabase(
 
     companion object {
         const val MAX_BYTES = 32L shl 20
+        const val REFRESH_AFTER_MS = 24L * 60 * 60 * 1000
         private const val TIMEOUT_MS = 30_000
         private const val BUFFER_SIZE = 64 * 1024
         private const val HTML_TYPE = "text/html"

@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ChainsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
+import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleSetsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
@@ -16,6 +17,7 @@ val uiModule = module {
     viewModelOf(::ChainsViewModel)
     viewModelOf(::ConnectionViewModel)
     viewModelOf(::ProfileViewModel)
+    viewModelOf(::RuleListRefreshViewModel)
     viewModelOf(::RuleSetsViewModel)
     viewModelOf(::RulesViewModel)
     viewModelOf(::SettingsViewModel)

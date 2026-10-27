@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -110,6 +111,28 @@ class RuleListDatabaseTest {
     }
 
     @Test
+    fun onlyStaleOrMissingSetsAreRefreshed() = runBlocking {
+        val fresh = serve("/fresh.txt", "fresh.example.com\n")
+        val stale = serve("/stale.txt", "stale.example.com\n")
+        assertTrue(lists.add(fresh).isSuccess)
+        assertTrue(lists.add(stale).isSuccess)
+        val missing = RuleListSource(url("/missing.txt"), null)
+        lists.add(missing)
+        val now = System.currentTimeMillis()
+        store.modifiedAt(stale.url, now - RuleListDatabase.REFRESH_AFTER_MS)
+        serve("/missing.txt", "missing.example.com\n")
+        serve("/fresh.txt", "changed.example.com\n")
+        serve("/stale.txt", "updated.example.com\n")
+
+        assertTrue(lists.refreshStale(now))
+
+        assertEquals(listOf("+.fresh.example.com"), store.installedText(fresh.url, RuleSetKind.DOMAIN))
+        assertEquals(listOf("+.updated.example.com"), store.installedText(stale.url, RuleSetKind.DOMAIN))
+        assertEquals(listOf("+.missing.example.com"), store.installedText(missing.url, RuleSetKind.DOMAIN))
+        assertFalse(lists.refreshStale(now))
+    }
+
+    @Test
     fun anMrsDownloadIsHandedOverUnparsed() = runBlocking {
         val source = serve("/ru.mrs", byteArrayOf(0x28, 0xB5.toByte(), 0x2F, 0xFD.toByte(), 0x01))
 
@@ -166,6 +189,10 @@ class RuleListDatabaseTest {
 
         override suspend fun remove(fileName: String) {
             File(installedDir, fileName).delete()
+        }
+
+        fun modifiedAt(url: String, time: Long) {
+            RuleSetKind.entries.map { File(installedDir, RuleLists.fileName(url, it)) }.filter(File::isFile).forEach { it.setLastModified(time) }
         }
 
         fun installedText(url: String, kind: RuleSetKind): List<String> =

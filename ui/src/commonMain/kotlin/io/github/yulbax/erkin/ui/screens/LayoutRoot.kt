@@ -46,6 +46,7 @@ import io.github.yulbax.erkin.ui.components.AppSearchBar
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.platform.LocalMessages
 import io.github.yulbax.erkin.ui.platform.drawerSwipeToOpen
+import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.coroutines.launch
@@ -57,6 +58,7 @@ fun MainScreen(
     topBarActions: @Composable RowScope.() -> Unit = {},
     updates: UpdateViewModel = koinViewModel()
 ) {
+    koinViewModel<RuleListRefreshViewModel>()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
