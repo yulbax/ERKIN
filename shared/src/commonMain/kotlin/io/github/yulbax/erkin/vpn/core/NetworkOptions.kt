@@ -5,6 +5,7 @@ data class NetworkOptions(
     val ipv6Mode: Ipv6Mode = Ipv6Mode.DISABLE,
     val dnsRemote: String = "1.1.1.1",
     val dnsDirect: String = "1.1.1.1",
+    val byeDpiDns: ByeDpiDns = ByeDpiDns.DEFAULT,
     val sniff: Boolean = true,
     val bypassLan: Boolean = false,
     val blockQuic: Boolean = false,

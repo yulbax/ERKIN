@@ -32,6 +32,8 @@
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
     <string name="remote_dns">Remote DNS (through VPN)</string>
+    <string name="byedpi_dns">ByeDPI DNS</string>
+    <string name="byedpi_dns_encrypted">Encrypt ByeDPI DNS (DNS over TLS)</string>
     <string name="direct_dns">Service DNS</string>
     <string name="sniff_destination">Sniff destination</string>
     <string name="bypass_lan">Bypass LAN (private IPs direct)</string>
@@ -204,6 +206,7 @@
     <string name="delete_rule_message">Delete the rule for &quot;%1$s&quot;?</string>
     <string name="delete_rules_message">Delete %1$d selected rules?</string>
     <string name="invalid_remote_dns">Invalid DNS address. Use an IP or a tls://, https://, quic://, udp:// or tcp:// address</string>
+    <string name="invalid_byedpi_dns">Invalid ByeDPI DNS address. Use an IP address</string>
     <string name="block_quic">Block QUIC (UDP 443)</string>
     <string name="rule_country">Country</string>
     <string name="rule_country_search">Start typing a country</string>

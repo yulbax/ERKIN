@@ -9,6 +9,8 @@ import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.util.readBounded
+import io.github.yulbax.erkin.vpn.core.ByeDpiDns
+import io.github.yulbax.erkin.vpn.core.DnsTransport
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RemoteDns
@@ -77,6 +79,8 @@ object BackupCodec {
             Ipv6Mode.isKnownWire(settings.ipv6Mode) &&
             isValidDns(settings.dnsRemote) && RemoteDns.isValid(settings.dnsRemote) &&
             isValidDns(settings.dnsDirect) &&
+            ByeDpiDns.normalizeAddress(settings.byeDpiDnsAddress) == settings.byeDpiDnsAddress &&
+            DnsTransport.isKnownWire(settings.byeDpiDnsTransport) &&
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
             (settings.preferredFingerprint.isBlank() ||
                 TlsFingerprint.fromWire(settings.preferredFingerprint) != null)

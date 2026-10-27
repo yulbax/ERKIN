@@ -26,7 +26,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class],
-    version = 19,
+    version = 20,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -196,6 +196,12 @@ abstract class AppDatabase : RoomDatabase() {
                         "CREATE TABLE IF NOT EXISTS `pending_apps` (`packageName` TEXT NOT NULL, " +
                             "`connectionType` TEXT NOT NULL, `serverId` INTEGER, PRIMARY KEY(`packageName`))"
                     )
+                }
+            },
+            object : Migration(19, 20) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE settings ADD COLUMN byeDpiDnsAddress TEXT NOT NULL DEFAULT '1.1.1.1'")
+                    connection.execSQL("ALTER TABLE settings ADD COLUMN byeDpiDnsTransport TEXT NOT NULL DEFAULT 'tls'")
                 }
             }
         )

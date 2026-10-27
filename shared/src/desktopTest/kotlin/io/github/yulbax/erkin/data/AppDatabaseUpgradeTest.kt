@@ -5,6 +5,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.proxy.ProxyProtocol
+import io.github.yulbax.erkin.vpn.core.ByeDpiDns
 import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -31,6 +32,7 @@ class AppDatabaseUpgradeTest {
             val settings = requireNotNull(database.settingsDao().getSettings())
             assertEquals(1500, settings.mtu)
             assertEquals("", settings.preferredFingerprint)
+            assertEquals(ByeDpiDns.DEFAULT, settings.networkOptions().byeDpiDns)
             assertFalse(settings.homeHintSeen)
             assertEquals(ConnectionType.DIRECT, settings.newAppsConnectionType(ConnectionType.DIRECT))
             assertSeededRows(database)

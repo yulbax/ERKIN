@@ -32,6 +32,8 @@
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
     <string name="remote_dns">Удалённый DNS (через VPN)</string>
+    <string name="byedpi_dns">DNS для ByeDPI</string>
+    <string name="byedpi_dns_encrypted">Шифровать DNS для ByeDPI (DoT)</string>
     <string name="direct_dns">Служебный DNS</string>
     <string name="sniff_destination">Определять назначение (sniff)</string>
     <string name="bypass_lan">Обход LAN (приватные IP напрямую)</string>
@@ -201,6 +203,7 @@
     <string name="delete_rule_message">Удалить правило для «%1$s»?</string>
     <string name="delete_rules_message">Удалить выбранные правила (%1$d)?</string>
     <string name="invalid_remote_dns">Неверный адрес DNS. Укажите IP или адрес вида tls://, https://, quic://, udp://, tcp://</string>
+    <string name="invalid_byedpi_dns">Неверный адрес DNS для ByeDPI. Укажите IP-адрес</string>
     <string name="block_quic">Блокировать QUIC (UDP 443)</string>
     <string name="rule_country">Страна</string>
     <string name="rule_country_search">Начните вводить страну</string>

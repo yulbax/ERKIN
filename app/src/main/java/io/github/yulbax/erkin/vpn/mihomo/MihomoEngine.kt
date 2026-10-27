@@ -96,7 +96,7 @@ class MihomoEngine(
     private fun reload(config: EngineConfig) {
         activeProxyTag = config.activeProxyTag
         log.i(TAG, "reloading the core on the current tun")
-        Mihomocore.reload(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.dnsRemote)
+        Mihomocore.reload(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
     }
 
     private fun tunConfigOf(config: EngineConfig): TunConfig {
@@ -127,7 +127,7 @@ class MihomoEngine(
             gateway,
             DNS_HIJACK,
             MihomoConfigBuilder.BYEDPI_PROXY,
-            config.network.dnsRemote,
+            config.network.byeDpiDns.nameserver(),
             platform
         )
         tunConfig = tun

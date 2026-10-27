@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.util.readBounded
+import io.github.yulbax.erkin.vpn.core.ByeDpiDns
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import java.io.ByteArrayInputStream
 import kotlinx.serialization.json.Json
@@ -77,6 +78,17 @@ class BackupCodecTest {
         assertEquals(Ipv6Mode.ENABLE, settings.networkOptions().ipv6Mode)
         assertEquals(Ipv6Mode.ENABLE, SettingsEntity(ipv6Mode = "only").networkOptions().ipv6Mode)
         assertFalse(BackupCodec.isValid(backup.copy(settings = SettingsEntity(ipv6Mode = "sometimes"))))
+    }
+
+    @Test
+    fun byeDpiDnsDefaultsWhenMissingAndMustBeAnAddressWithAKnownTransport() {
+        val backup = requireNotNull(BackupCodec.decode("""{"version":4,"settings":{"mtu":1400}}"""))
+
+        assertEquals(ByeDpiDns.DEFAULT, requireNotNull(backup.settings).networkOptions().byeDpiDns)
+        assertTrue(BackupCodec.isValid(validBackup().copy(settings = SettingsEntity(byeDpiDnsAddress = "9.9.9.9", byeDpiDnsTransport = "udp"))))
+        assertTrue(BackupCodec.isValid(validBackup().copy(settings = SettingsEntity(byeDpiDnsAddress = "2606:4700:4700::1111"))))
+        assertFalse(BackupCodec.isValid(validBackup().copy(settings = SettingsEntity(byeDpiDnsAddress = "dns.google"))))
+        assertFalse(BackupCodec.isValid(validBackup().copy(settings = SettingsEntity(byeDpiDnsTransport = "quic"))))
     }
 
     @Test

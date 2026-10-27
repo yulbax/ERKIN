@@ -3,7 +3,10 @@ package mihomocore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/netip"
+	"net/url"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -73,10 +76,18 @@ func Apply(content string, keepTun bool, resolvedProxy string, resolverAddress s
 	if err != nil {
 		return err
 	}
+	var server *dns.NameServer
+	if resolverAddress != "" {
+		parsedServer, err := resolverNameServer(resolverAddress, resolvedProxy)
+		if err != nil {
+			return err
+		}
+		server = &parsedServer
+	}
 	executor.ApplyConfig(parsed, true)
 	applied.Store(true)
-	if resolverAddress != "" {
-		resolveBeforeDial(resolvedProxy, parsed.DNS, parsed.General.IPv6)
+	if server != nil {
+		resolveBeforeDial(resolvedProxy, *server, parsed.DNS, parsed.General.IPv6)
 	}
 	return nil
 }
@@ -181,18 +192,18 @@ func (p *resolvingProxy) ListenPacketContext(ctx context.Context, metadata *C.Me
 	if err != nil {
 		return nil, err
 	}
-	return p.Proxy.ListenPacketContext(ctx, resolved)
+	conn, err := p.Proxy.ListenPacketContext(ctx, resolved)
+	if err != nil {
+		return nil, err
+	}
+	return &resolvingPacketConn{PacketConn: conn, proxy: p}, nil
 }
 
 func (p *resolvingProxy) resolve(ctx context.Context, metadata *C.Metadata) (*C.Metadata, error) {
 	if metadata.Host == "" {
 		return metadata, nil
 	}
-	resolve := resolver.ResolveIPv4WithResolver
-	if p.ipv6 {
-		resolve = resolver.ResolveIPWithResolver
-	}
-	ip, err := resolve(ctx, metadata.Host, p.resolver)
+	ip, err := p.lookup(ctx, metadata.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -202,24 +213,68 @@ func (p *resolvingProxy) resolve(ctx context.Context, metadata *C.Metadata) (*C.
 	return resolved, nil
 }
 
-func resolveBeforeDial(name string, servers *config.DNS, ipv6 bool) {
-	if name == "" || servers == nil || len(servers.NameServer) == 0 {
-		return
+func (p *resolvingProxy) lookup(ctx context.Context, host string) (netip.Addr, error) {
+	if p.ipv6 {
+		return resolver.ResolveIPWithResolver(ctx, host, p.resolver)
 	}
+	return resolver.ResolveIPv4WithResolver(ctx, host, p.resolver)
+}
+
+type resolvingPacketConn struct {
+	C.PacketConn
+	proxy *resolvingProxy
+}
+
+func (c *resolvingPacketConn) ResolveUDP(ctx context.Context, metadata *C.Metadata) error {
+	if metadata.Resolved() {
+		return nil
+	}
+	ip, err := c.proxy.lookup(ctx, metadata.Host)
+	if err != nil {
+		return fmt.Errorf("can't resolve ip: %w", err)
+	}
+	metadata.DstIP = ip
+	return nil
+}
+
+var resolverTransports = map[string]struct{ network, port string }{
+	"udp": {"", "53"},
+	"tls": {"tls", "853"},
+}
+
+func resolverNameServer(address string, proxy string) (dns.NameServer, error) {
+	parsed, err := url.Parse(address)
+	if err != nil {
+		return dns.NameServer{}, err
+	}
+	transport, known := resolverTransports[parsed.Scheme]
+	if !known {
+		return dns.NameServer{}, fmt.Errorf("unsupported resolver %q", address)
+	}
+	ip, err := netip.ParseAddr(parsed.Hostname())
+	if err != nil {
+		return dns.NameServer{}, fmt.Errorf("resolver %q is not an IP address", address)
+	}
+	port := parsed.Port()
+	if port == "" {
+		port = transport.port
+	}
+	return dns.NameServer{Net: transport.network, Addr: net.JoinHostPort(ip.String(), port), ProxyName: proxy}, nil
+}
+
+func resolveBeforeDial(name string, server dns.NameServer, servers *config.DNS, ipv6 bool) {
 	current := tunnel.Proxies()
 	proxy, loaded := current[name]
 	if !loaded {
 		return
 	}
-	main := make([]dns.NameServer, 0, len(servers.NameServer))
-	for _, server := range servers.NameServer {
-		server.ProxyAdapter = nil
-		server.ProxyName = name
-		main = append(main, server)
+	var defaults []dns.NameServer
+	if servers != nil {
+		defaults = servers.DefaultNameserver
 	}
 	resolvers := dns.NewResolver(dns.Config{
-		Main:    main,
-		Default: servers.DefaultNameserver,
+		Main:    []dns.NameServer{server},
+		Default: defaults,
 		IPv6:    ipv6,
 	})
 	updated := make(map[string]C.Proxy, len(current))

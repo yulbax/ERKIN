@@ -2,6 +2,8 @@ package io.github.yulbax.erkin.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import io.github.yulbax.erkin.vpn.core.ByeDpiDns
+import io.github.yulbax.erkin.vpn.core.DnsTransport
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
@@ -19,6 +21,8 @@ data class SettingsEntity(
     val ipv6Mode: String = NetworkOptions.DEFAULT.ipv6Mode.wire,
     val dnsRemote: String = NetworkOptions.DEFAULT.dnsRemote,
     val dnsDirect: String = NetworkOptions.DEFAULT.dnsDirect,
+    val byeDpiDnsAddress: String = NetworkOptions.DEFAULT.byeDpiDns.address,
+    val byeDpiDnsTransport: String = NetworkOptions.DEFAULT.byeDpiDns.transport.wire,
     val sniff: Boolean = NetworkOptions.DEFAULT.sniff,
     val bypassLan: Boolean = NetworkOptions.DEFAULT.bypassLan,
     val autoConnect: Boolean = false,
@@ -39,6 +43,7 @@ data class SettingsEntity(
         ipv6Mode = Ipv6Mode.fromWire(ipv6Mode),
         dnsRemote = dnsRemote,
         dnsDirect = dnsDirect,
+        byeDpiDns = ByeDpiDns(byeDpiDnsAddress, DnsTransport.fromWire(byeDpiDnsTransport)),
         sniff = sniff,
         bypassLan = bypassLan,
         blockQuic = blockQuic,
@@ -50,6 +55,8 @@ data class SettingsEntity(
         ipv6Mode = options.ipv6Mode.wire,
         dnsRemote = options.dnsRemote,
         dnsDirect = options.dnsDirect,
+        byeDpiDnsAddress = options.byeDpiDns.address,
+        byeDpiDnsTransport = options.byeDpiDns.transport.wire,
         sniff = options.sniff,
         bypassLan = options.bypassLan,
         blockQuic = options.blockQuic,

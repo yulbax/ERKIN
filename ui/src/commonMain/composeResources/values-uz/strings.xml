@@ -32,6 +32,8 @@
     <string name="mtu">MTU</string>
     <string name="ipv6">IPv6</string>
     <string name="remote_dns">Masofaviy DNS (VPN orqali)</string>
+    <string name="byedpi_dns">ByeDPI uchun DNS</string>
+    <string name="byedpi_dns_encrypted">ByeDPI uchun DNSni shifrlash (DNS over TLS)</string>
     <string name="direct_dns">Xizmat DNS</string>
     <string name="sniff_destination">Manzilni aniqlash (sniffing)</string>
     <string name="bypass_lan">Lokal tarmoqni chetlab oʻtish (xususiy IP’lar toʻgʻridan-toʻgʻri)</string>
@@ -197,6 +199,7 @@
     <string name="delete_rule_message">“%1$s” uchun qoida oʻchirilsinmi?</string>
     <string name="delete_rules_message">Tanlangan %1$d ta qoida oʻchirilsinmi?</string>
     <string name="invalid_remote_dns">DNS manzili notoʻgʻri. IP yoki tls://, https://, quic://, udp:// yoxud tcp:// manzilidan foydalaning</string>
+    <string name="invalid_byedpi_dns">ByeDPI uchun DNS manzili notoʻgʻri. IP manzil kiriting</string>
     <string name="block_quic">QUIC’ni bloklash (UDP 443)</string>
     <string name="rule_country">Davlat</string>
     <string name="rule_country_search">Davlat nomini yoza boshlang</string>

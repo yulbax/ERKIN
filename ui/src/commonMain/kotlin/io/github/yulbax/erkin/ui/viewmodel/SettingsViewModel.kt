@@ -11,6 +11,8 @@ import io.github.yulbax.erkin.data.ImportResult
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
+import io.github.yulbax.erkin.vpn.core.ByeDpiDns
+import io.github.yulbax.erkin.vpn.core.DnsTransport
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.RemoteDns
@@ -49,6 +51,13 @@ class SettingsViewModel(
         return true
     }
     fun setDnsDirect(value: String) = updateNetwork { it.copy(dnsDirect = value.trim()) }
+    fun setByeDpiDnsAddress(value: String): Boolean {
+        val address = ByeDpiDns.normalizeAddress(value) ?: return false
+        updateNetwork { it.copy(byeDpiDns = it.byeDpiDns.copy(address = address)) }
+        return true
+    }
+    fun setByeDpiDnsEncrypted(value: Boolean) =
+        updateNetwork { it.copy(byeDpiDns = it.byeDpiDns.copy(transport = DnsTransport.of(value))) }
     fun setSniff(value: Boolean) = updateNetwork { it.copy(sniff = value) }
     fun setBypassLan(value: Boolean) = updateNetwork { it.copy(bypassLan = value) }
     fun setBlockQuic(value: Boolean) = updateNetwork { it.copy(blockQuic = value) }

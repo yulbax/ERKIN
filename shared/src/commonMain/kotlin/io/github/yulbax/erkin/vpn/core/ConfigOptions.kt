@@ -31,3 +31,35 @@ enum class TlsFingerprint(val wire: String) {
             value?.let { v -> entries.firstOrNull { it.wire == v } }
     }
 }
+
+enum class DnsTransport(val wire: String) {
+    TLS("tls"),
+    UDP("udp");
+
+    val encrypted: Boolean get() = this == TLS
+
+    companion object {
+        fun of(encrypted: Boolean): DnsTransport = if (encrypted) TLS else UDP
+
+        fun fromWire(value: String?): DnsTransport = entries.firstOrNull { it.wire == value } ?: TLS
+
+        fun isKnownWire(value: String): Boolean = entries.any { it.wire == value }
+    }
+}
+
+data class ByeDpiDns(val address: String, val transport: DnsTransport) {
+    fun nameserver(): String {
+        val host = if (':' in address) "[$address]" else address
+        return "${transport.wire}://$host"
+    }
+
+    companion object {
+        val DEFAULT = ByeDpiDns("1.1.1.1", DnsTransport.TLS)
+
+        fun normalizeAddress(raw: String): String? {
+            val input = raw.trim().lowercase()
+            if ('/' in input) return null
+            return input.takeIf { RuleValues.Cidr.normalize(it) != null }
+        }
+    }
+}

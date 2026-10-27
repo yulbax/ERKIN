@@ -139,6 +139,7 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
     val showMessage = rememberShowMessage()
     val localNetworkDenied = stringResource(Res.string.local_network_denied)
     val invalidRemoteDns = stringResource(Res.string.invalid_remote_dns)
+    val invalidByeDpiDns = stringResource(Res.string.invalid_byedpi_dns)
     val requestLocalNetwork = rememberLocalNetworkRequest { granted ->
         if (granted) viewModel.setBypassLan(true) else showMessage(localNetworkDenied)
     }
@@ -181,10 +182,22 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
             },
             {
                 CommittedTextField(
+                    label = stringResource(Res.string.byedpi_dns),
+                    saved = network.byeDpiDns.address,
+                    onCommit = { if (it.isNotBlank() && !viewModel.setByeDpiDnsAddress(it)) showMessage(invalidByeDpiDns) }
+                )
+            },
+            {
+                CommittedTextField(
                     label = stringResource(Res.string.direct_dns),
                     saved = network.dnsDirect,
                     onCommit = { if (it.isNotBlank()) viewModel.setDnsDirect(it) }
                 )
+            },
+            {
+                SwitchRow(stringResource(Res.string.byedpi_dns_encrypted), network.byeDpiDns.transport.encrypted) {
+                    viewModel.setByeDpiDnsEncrypted(it)
+                }
             },
             {
                 SwitchRow(stringResource(Res.string.sniff_destination), network.sniff) { viewModel.setSniff(it) }

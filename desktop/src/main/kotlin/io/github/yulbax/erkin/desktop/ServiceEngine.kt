@@ -62,7 +62,7 @@ class ServiceEngine(
     private fun launch(config: EngineConfig) {
         val connected = service.connect()
         activeProxyTag = config.activeProxyTag
-        connected.start(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.dnsRemote)
+        connected.start(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
         client = connected
         log.i(TAG, "mihomo started by the ERKIN service ${service.hello?.version.orEmpty()}")
         traffic = sampleTraffic(connected)
