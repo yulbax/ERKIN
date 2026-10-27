@@ -43,6 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.components.AppSearchBar
+import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.platform.LocalMessages
 import io.github.yulbax.erkin.ui.platform.drawerSwipeToOpen
@@ -178,12 +179,7 @@ fun MainScreen(
 @Composable
 private fun DrawerItem(screen: Screen, selected: Boolean, onClick: () -> Unit) {
     NavigationDrawerItem(
-        icon = {
-            Icon(
-                imageVector = if (selected) screen.selectedIcon else screen.unselectedIcon,
-                contentDescription = null
-            )
-        },
+        icon = { SourceIcon(screen.icon, contentDescription = null) },
         label = { Text(stringResource(screen.title)) },
         selected = selected,
         onClick = onClick,

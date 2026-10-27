@@ -19,6 +19,8 @@ object ByeDpiArgs {
         "-d1", "-s1+s", "-s3+s", "-s6+s", "-s9+s", "-s12+s", "-s15+s", "-s20+s", "-s30+s", "-a1"
     )
 
+    fun effective(line: String): String = line.trim().ifBlank { DEFAULT.joinToString(" ") }
+
     fun parse(line: String): List<String> {
         if (line.isBlank()) return DEFAULT
         val tokens = mutableListOf<String>()
@@ -35,4 +37,39 @@ object ByeDpiArgs {
         if (sb.isNotEmpty()) tokens.add(sb.toString())
         return tokens.ifEmpty { DEFAULT }
     }
+}
+
+private const val CELLULAR_PREFIX = "cellular:"
+
+sealed interface TestNetwork {
+    val wire: String
+
+    data object Wifi : TestNetwork {
+        override val wire: String = "wifi"
+    }
+
+    data object Ethernet : TestNetwork {
+        override val wire: String = "ethernet"
+    }
+
+    data class Cellular(val operator: String) : TestNetwork {
+        override val wire: String get() = CELLULAR_PREFIX + operator
+    }
+
+    data object Unknown : TestNetwork {
+        override val wire: String = ""
+    }
+
+    companion object {
+        fun fromWire(value: String): TestNetwork = when {
+            value == Wifi.wire -> Wifi
+            value == Ethernet.wire -> Ethernet
+            value.startsWith(CELLULAR_PREFIX) -> Cellular(value.removePrefix(CELLULAR_PREFIX))
+            else -> Unknown
+        }
+    }
+}
+
+fun interface TestNetworkSource {
+    fun current(): TestNetwork
 }

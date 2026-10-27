@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.ConfigBackupRepository
 import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsDao
 import io.github.yulbax.erkin.data.SettingsRepository
+import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
@@ -30,6 +31,8 @@ import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnSessionFactory
 import io.github.yulbax.erkin.vpn.VpnSessionStore
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import io.github.yulbax.erkin.vpn.AndroidTestNetworkSource
+import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -57,6 +60,13 @@ class AppModule {
     @Single
     fun settingsRepository(database: AppDatabase, settingsDao: SettingsDao): SettingsRepository =
         SettingsRepository(database, settingsDao)
+
+    @Single
+    fun byeDpiHistory(database: AppDatabase, settingsRepository: SettingsRepository): ByeDpiHistory =
+        ByeDpiHistory(database, settingsRepository)
+
+    @Single
+    fun testNetworkSource(context: Context): TestNetworkSource = AndroidTestNetworkSource(context.applicationContext)
 
     @Single
     fun profileRepository(

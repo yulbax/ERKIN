@@ -38,6 +38,11 @@ class RoomVpnSessionStore(
             .distinctUntilChanged()
             .map { }
 
+    override fun byeDpiArgsChanges(): Flow<String> =
+        database.settingsDao().observeSettings()
+            .map { it?.byeDpiArgs.orEmpty() }
+            .distinctUntilChanged()
+
     override suspend fun selectedSubscription(): SubscriptionEntity? =
         database.profileDao().getSelected()?.subscriptionId?.let { database.subscriptionDao().get(it) }
 

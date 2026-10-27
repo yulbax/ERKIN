@@ -23,6 +23,8 @@ interface VpnSessionStore {
 
     fun routingChanges(): Flow<Unit>
 
+    fun byeDpiArgsChanges(): Flow<String>
+
     suspend fun selectedSubscription(): SubscriptionEntity?
 
     suspend fun refreshSubscription(url: String): ProfileOperationResult

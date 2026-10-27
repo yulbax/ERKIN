@@ -16,6 +16,7 @@ data class ConnectionStats(
     val byedpiReachable: Int = 0,
     val byedpiTotal: Int = 0,
     val byeDpiPort: Int = 0,
+    val byeDpiArgs: String = "",
     val uplink: Long = 0,
     val downlink: Long = 0
 )

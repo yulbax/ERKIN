@@ -10,7 +10,6 @@ import io.github.yulbax.erkin.data.ConfigBackupRepository
 import io.github.yulbax.erkin.data.ImportResult
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.SettingsRepository
-import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.ByeDpiDns
 import io.github.yulbax.erkin.vpn.core.DnsTransport
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
@@ -31,14 +30,11 @@ class SettingsViewModel(
     private val backupRepository: ConfigBackupRepository
 ) : ViewModel() {
 
-    val byeDpiArgsDefault: String = ByeDpiArgs.DEFAULT.joinToString(" ")
-
     val uiState: StateFlow<SettingsUiState> = settingsRepository.settings
         .map { it.toUiState() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsEntity().toUiState())
 
     fun toggleShowSystemApps() = update { it.copy(showSystemApps = !it.showSystemApps) }
-    fun setByeDpiArgs(args: String) = update { it.copy(byeDpiArgs = args) }
     fun setAutoConnect(value: Boolean) = update { it.copy(autoConnect = value) }
     fun setSortServersByPing(value: Boolean) = update { it.copy(sortServersByPing = value) }
     fun setNewAppsConnectionType(value: ConnectionType) = update { it.copy(newAppsConnectionType = value.wire) }
@@ -103,7 +99,6 @@ class SettingsViewModel(
 
 data class SettingsUiState(
     val showSystemApps: Boolean = false,
-    val byeDpiArgs: String = "",
     val autoConnect: Boolean = false,
     val sortServersByPing: Boolean = true,
     val newAppsConnectionType: ConnectionType = ConnectionType.DIRECT,
@@ -112,7 +107,6 @@ data class SettingsUiState(
 
 private fun SettingsEntity.toUiState() = SettingsUiState(
     showSystemApps = showSystemApps,
-    byeDpiArgs = byeDpiArgs,
     autoConnect = autoConnect,
     sortServersByPing = sortServersByPing,
     newAppsConnectionType = newAppsConnectionType(platformNewAppsConnectionType),

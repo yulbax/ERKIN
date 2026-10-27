@@ -14,6 +14,9 @@ sealed interface Command {
     data object CheckByeDpi : Command {
         override val stopsSessionOnFailure: Boolean get() = false
     }
+    data object RestartByeDpi : Command {
+        override val stopsSessionOnFailure: Boolean get() = false
+    }
     data object Stop : Command
 }
 

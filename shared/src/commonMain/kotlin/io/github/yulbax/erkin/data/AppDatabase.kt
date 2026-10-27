@@ -10,6 +10,9 @@ import androidx.room.useWriterConnection
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
+import io.github.yulbax.erkin.data.byedpi.ByeDpiArgsEntity
+import io.github.yulbax.erkin.data.byedpi.ByeDpiHistoryDao
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteResultEntity
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionDao
@@ -25,8 +28,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class],
-    version = 20,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class],
+    version = 21,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -38,6 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun routingRuleDao(): RoutingRuleDao
     abstract fun ruleListDao(): RuleListDao
     abstract fun subscriptionDao(): SubscriptionDao
+    abstract fun byeDpiHistoryDao(): ByeDpiHistoryDao
 
     suspend fun <R> transaction(block: suspend () -> R): R =
         useWriterConnection { connection -> connection.immediateTransaction { block() } }
@@ -202,6 +206,24 @@ abstract class AppDatabase : RoomDatabase() {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE settings ADD COLUMN byeDpiDnsAddress TEXT NOT NULL DEFAULT '1.1.1.1'")
                     connection.execSQL("ALTER TABLE settings ADD COLUMN byeDpiDnsTransport TEXT NOT NULL DEFAULT 'tls'")
+                }
+            },
+            object : Migration(20, 21) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `byedpi_args` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "`args` TEXT NOT NULL, `name` TEXT NOT NULL, `pinned` INTEGER NOT NULL, `lastUsedAt` INTEGER NOT NULL)"
+                    )
+                    connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_byedpi_args_args` ON `byedpi_args` (`args`)")
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `byedpi_site_results` (`argsId` INTEGER NOT NULL, `network` TEXT NOT NULL, " +
+                            "`host` TEXT NOT NULL, `siteGroup` TEXT NOT NULL, `reachable` INTEGER NOT NULL, `testedAt` INTEGER NOT NULL, " +
+                            "PRIMARY KEY(`argsId`, `network`, `host`), FOREIGN KEY(`argsId`) REFERENCES `byedpi_args`(`id`) " +
+                            "ON UPDATE NO ACTION ON DELETE CASCADE )"
+                    )
+                    connection.execSQL(
+                        "CREATE INDEX IF NOT EXISTS `index_byedpi_site_results_argsId` ON `byedpi_site_results` (`argsId`)"
+                    )
                 }
             }
         )

@@ -104,6 +104,7 @@ import org.jetbrains.compose.resources.getPluralString
 @Composable
 fun ErkinScreen(
     onNavigateToApps: () -> Unit = {},
+    onNavigateToByeDpi: () -> Unit = {},
     viewModel: ConnectionViewModel = koinViewModel(),
     profileViewModel: ProfileViewModel = koinViewModel(),
     chainsViewModel: ChainsViewModel = koinViewModel()
@@ -129,8 +130,6 @@ fun ErkinScreen(
         isBackEnabled = checked.isNotEmpty(),
         onBackCompleted = { checkedIds = emptyList() }
     )
-    var showByeDpiDialog by remember { mutableStateOf(false) }
-    val byeDpiTest by viewModel.byeDpiTest.collectAsStateWithLifecycle()
 
     val startVpn = rememberVpnStartRequest(onGranted = viewModel::startVpn)
     val showMessage = rememberShowMessage()
@@ -163,7 +162,7 @@ fun ErkinScreen(
         onToggle = { if (connected) viewModel.stopVpn() else onConnectClick() },
         onDismissHint = { viewModel.dismissHomeHint() },
         onNavigateToApps = onNavigateToApps,
-        onByedpiClick = { showByeDpiDialog = true },
+        onByedpiClick = onNavigateToByeDpi,
         onAddServerClick = { showAddDialog = true },
         onTestClick = { profileViewModel.testAll() },
         onReorder = profileViewModel::reorder,
@@ -213,18 +212,6 @@ fun ErkinScreen(
                 ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.delays), Modifier, onSelected = close)
             }
         }
-    }
-
-    if (showByeDpiDialog) {
-        LaunchedEffect(Unit) { viewModel.runByeDpiTest(full = false) }
-        ByeDpiTestDialog(
-            test = byeDpiTest,
-            onRunFull = { viewModel.runByeDpiTest(full = true) },
-            onDismiss = {
-                viewModel.stopByeDpiTest()
-                showByeDpiDialog = false
-            }
-        )
     }
 
     if (showAddDialog) {
@@ -528,7 +515,7 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
             reachable = c.stats.byedpiReachable,
             total = c.stats.byedpiTotal,
             checking = c.stats.byedpiChecking,
-            onClick = if (c.stats.byedpiActive) c.onByedpiClick else null
+            onClick = c.onByedpiClick
         )
     }
 }

@@ -15,7 +15,7 @@ import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
+import io.github.yulbax.erkin.ui.components.IconSource
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.screens.apps.Apps
+import io.github.yulbax.erkin.ui.screens.byedpi.ByeDpi
 import io.github.yulbax.erkin.ui.screens.chains.Chains
 import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
 import io.github.yulbax.erkin.ui.screens.rules.RuleSets
@@ -34,76 +35,73 @@ import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 sealed class Screen(
     val route: String,
     val title: StringResource,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector
+    val icon: IconSource
 ) {
     object Main : Screen(
         route = "main",
         title = Res.string.erkin,
-        selectedIcon = Icons.Filled.Home,
-        unselectedIcon = Icons.Filled.Home
+        icon = IconSource.Vector(Icons.Filled.Home)
     )
 
     object Apps : Screen(
         route = "apps",
         title = Res.string.applications,
-        selectedIcon = Icons.AutoMirrored.Filled.List,
-        unselectedIcon = Icons.AutoMirrored.Filled.List
+        icon = IconSource.Vector(Icons.AutoMirrored.Filled.List)
+    )
+
+    object ByeDpi : Screen(
+        route = "byedpi",
+        title = Res.string.byedpi_title,
+        icon = IconSource.Drawable(Res.drawable.ic_byedpi)
     )
 
     object Rules : Screen(
         route = "rules",
         title = Res.string.rules_title,
-        selectedIcon = Icons.AutoMirrored.Filled.AltRoute,
-        unselectedIcon = Icons.AutoMirrored.Filled.AltRoute
+        icon = IconSource.Vector(Icons.AutoMirrored.Filled.AltRoute)
     )
 
     object RuleSets : Screen(
         route = "rulesets",
         title = Res.string.rule_sets_title,
-        selectedIcon = Icons.Filled.Download,
-        unselectedIcon = Icons.Filled.Download
+        icon = IconSource.Vector(Icons.Filled.Download)
     )
 
     object Chains : Screen(
         route = "chains",
         title = Res.string.chains_title,
-        selectedIcon = Icons.Filled.Link,
-        unselectedIcon = Icons.Filled.Link
+        icon = IconSource.Vector(Icons.Filled.Link)
     )
 
     object Settings : Screen(
         route = "settings",
         title = Res.string.settings,
-        selectedIcon = Icons.Filled.Settings,
-        unselectedIcon = Icons.Filled.Settings
+        icon = IconSource.Vector(Icons.Filled.Settings)
     )
 
     object Logs : Screen(
         route = "logs",
         title = Res.string.logs_title,
-        selectedIcon = Icons.Filled.Description,
-        unselectedIcon = Icons.Filled.Description
+        icon = IconSource.Vector(Icons.Filled.Description)
     )
 
     object License : Screen(
         route = "license",
         title = Res.string.license_title,
-        selectedIcon = Icons.Filled.Gavel,
-        unselectedIcon = Icons.Filled.Gavel
+        icon = IconSource.Vector(Icons.Filled.Gavel)
     )
 
     object About : Screen(
         route = "about",
         title = Res.string.about_title,
-        selectedIcon = Icons.Filled.Info,
-        unselectedIcon = Icons.Filled.Info
+        icon = IconSource.Vector(Icons.Filled.Info)
     )
 }
 
 val primaryNavPages = listOf(
     Screen.Main,
     Screen.Apps,
+    Screen.ByeDpi,
     Screen.Rules,
     Screen.Chains,
     Screen.Settings,
@@ -144,9 +142,13 @@ fun ErkinNavHost(
         exitTransition = { fadeOut(animationSpec = tween(200)) }
     ) {
         composable(Screen.Main.route) {
-            ErkinScreen(onNavigateToApps = { navController.navigateToScreen(Screen.Apps) })
+            ErkinScreen(
+                onNavigateToApps = { navController.navigateToScreen(Screen.Apps) },
+                onNavigateToByeDpi = { navController.navigateToScreen(Screen.ByeDpi) }
+            )
         }
         composable(Screen.Apps.route) { Apps(query = appsQuery) }
+        composable(Screen.ByeDpi.route) { ByeDpi() }
         composable(Screen.Rules.route) { Rules(onOpenRuleSets = { navController.navigate(Screen.RuleSets.route) }) }
         composable(Screen.RuleSets.route) { RuleSets() }
         composable(Screen.Chains.route) { Chains() }

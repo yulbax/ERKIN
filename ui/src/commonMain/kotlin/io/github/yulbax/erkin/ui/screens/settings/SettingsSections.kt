@@ -59,47 +59,6 @@ import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 
 @Composable
-internal fun ByeDpiSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
-    val savedByeDpiArgs = ui.byeDpiArgs
-    var text by remember { mutableStateOf(savedByeDpiArgs) }
-    var focused by remember { mutableStateOf(false) }
-    LaunchedEffect(savedByeDpiArgs) { if (!focused) text = savedByeDpiArgs }
-
-    GroupCard(
-        title = stringResource(Res.string.byedpi_cli_args),
-        action = {
-            Text(
-                text = stringResource(Res.string.reset_to_default),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable {
-                    text = ""
-                    viewModel.setByeDpiArgs("")
-                }
-            )
-        },
-        items = listOf {
-            TextField(
-                value = text,
-                onValueChange = { text = it },
-                singleLine = true,
-                placeholder = {
-                    Text(viewModel.byeDpiArgsDefault, fontFamily = FontFamily.Monospace)
-                },
-                label = { Text(stringResource(Res.string.flags_label)) },
-                colors = transparentFieldColors(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { st ->
-                        if (focused && !st.isFocused) viewModel.setByeDpiArgs(text.trim())
-                        focused = st.isFocused
-                    }
-            )
-        }
-    )
-}
-
-@Composable
 internal fun ServersSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
     GroupCard(
         title = stringResource(Res.string.servers_title),

@@ -34,6 +34,9 @@ import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsRepository
+import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
+import io.github.yulbax.erkin.vpn.core.TestNetwork
+import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
@@ -44,6 +47,7 @@ import io.github.yulbax.erkin.ui.screens.License
 import io.github.yulbax.erkin.ui.screens.Logs
 import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.screens.apps.Apps
+import io.github.yulbax.erkin.ui.screens.byedpi.ByeDpi
 import io.github.yulbax.erkin.ui.screens.settings.Settings
 import io.github.yulbax.erkin.ui.theme.ERKINTheme
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
@@ -110,6 +114,8 @@ class DesktopRenderTest {
                     single { database.settingsDao() }
                     single { database.profileDao() }
                     single { SettingsRepository(get(), get()) }
+                    single { ByeDpiHistory(get(), get()) }
+                    single<TestNetworkSource> { TestNetworkSource { TestNetwork.Wifi } }
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
                     single { ConfigBackupRepository(get(), get()) }
@@ -173,6 +179,7 @@ class DesktopRenderTest {
         render("main", width = 420, height = 860) { MainScreen() }
         render("main-wide", width = 1100, height = 700) { MainScreen() }
         render("apps", width = 420, height = 860) { Apps(query = "") }
+        render("byedpi", width = 420, height = 860) { ByeDpi() }
         render("settings", width = 420, height = 1400) { Settings() }
         render("logs", width = 420, height = 600) { Logs() }
         render("rules", width = 420, height = 860) { Rules(onOpenRuleSets = {}) }
