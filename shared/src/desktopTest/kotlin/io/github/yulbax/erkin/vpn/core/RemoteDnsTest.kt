@@ -13,6 +13,14 @@ class RemoteDnsTest {
     }
 
     @Test
+    fun plainPrivateAddressesUsePlainDns() {
+        assertEquals("udp://192.168.1.1", RemoteDns.nameserver("192.168.1.1"))
+        assertEquals("udp://10.2.0.1", RemoteDns.nameserver("10.2.0.1"))
+        assertEquals("udp://[fd00::1]", RemoteDns.nameserver("fd00::1"))
+        assertEquals("tls://192.168.1.1", RemoteDns.nameserver("tls://192.168.1.1"))
+    }
+
+    @Test
     fun fullAddressesKeepTheirProtocol() {
         assertEquals("https://dns.google/dns-query", RemoteDns.nameserver("https://dns.google/dns-query"))
         assertEquals("quic://dns.adguard-dns.com", RemoteDns.nameserver("quic://dns.adguard-dns.com"))

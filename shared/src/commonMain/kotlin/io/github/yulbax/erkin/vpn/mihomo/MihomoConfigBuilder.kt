@@ -6,6 +6,7 @@ import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
+import io.github.yulbax.erkin.vpn.core.PrivateNetworks
 import io.github.yulbax.erkin.vpn.core.RemoteDns
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -56,10 +57,6 @@ object MihomoConfigBuilder {
     private const val RULE_LIST_FORMAT = "mrs"
     private const val BLOCK_QUIC_RULE = "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT"
     private val LOCAL_DOMAINS = listOf("+.lan", "+.local", "+.localdomain", "+.home.arpa", "+.internal", "localhost")
-    private val PRIVATE_NETWORKS = listOf(
-        "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "169.254.0.0/16", "100.64.0.0/10",
-        "fc00::/7", "fe80::/10"
-    )
 
     private val json = Json { prettyPrint = false }
 
@@ -194,7 +191,7 @@ object MihomoConfigBuilder {
                 add("IN-NAME,$PROBE_LISTENER,$vpnTarget")
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
                 desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
-                if (options.bypassLan) PRIVATE_NETWORKS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
+                if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
                 rules.forEach { rule ->
                     val target = when (rule.target) {
