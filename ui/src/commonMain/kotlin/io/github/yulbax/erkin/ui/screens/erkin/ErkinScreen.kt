@@ -63,6 +63,8 @@ import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
+import io.github.yulbax.erkin.ui.components.EmptyAction
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.components.RenameDialog
@@ -558,15 +560,9 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
             )
         } else {
             Box(modifier = modifier, contentAlignment = Alignment.Center) {
-                Text(
+                EmptyState(
                     text = stringResource(Res.string.servers_empty),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                AddFab(
-                    onClick = c.onAddServerClick,
-                    contentDescription = stringResource(Res.string.add_server),
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
+                    action = EmptyAction(stringResource(Res.string.add_server), c.onAddServerClick)
                 )
             }
         }

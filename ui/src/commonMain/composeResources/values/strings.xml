@@ -67,7 +67,7 @@
     <string name="setup_step_connect">Connect</string>
     <string name="servers_title">Servers</string>
     <string name="sort_servers_by_ping">Sort by ping</string>
-    <string name="servers_empty">No servers. Tap + to add a config link or subscription.</string>
+    <string name="servers_empty">No servers yet. Add a config link or a subscription.</string>
     <string name="server_test_latency">Test latency</string>
     <string name="server_ping_timeout">timeout</string>
     <string name="ok">OK</string>
@@ -98,6 +98,7 @@
     <string name="channel_status_no_apps">no apps selected</string>
     <string name="byedpi_test_full">Full test (%1$d)</string>
     <string name="byedpi_strategies_title">Strategies</string>
+    <string name="byedpi_empty">No strategies yet</string>
     <string name="byedpi_test_all">Test all</string>
     <string name="byedpi_search">Find strategy</string>
     <string name="byedpi_add_strategy">Add strategy</string>

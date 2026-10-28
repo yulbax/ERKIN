@@ -67,7 +67,7 @@
     <string name="setup_step_connect">اتصال</string>
     <string name="servers_title">سرورها</string>
     <string name="sort_servers_by_ping">مرتب‌سازی بر اساس پینگ</string>
-    <string name="servers_empty">سروری نیست. برای افزودن لینک پیکربندی یا اشتراک، روی + بزنید.</string>
+    <string name="servers_empty">هنوز سروری نیست. لینک پیکربندی یا اشتراک اضافه کنید.</string>
     <string name="server_test_latency">آزمایش تأخیر</string>
     <string name="server_ping_timeout">مهلت تمام شد</string>
     <string name="ok">تأیید</string>
@@ -98,6 +98,7 @@
     <string name="channel_status_no_apps">برنامه‌ای انتخاب نشده</string>
     <string name="byedpi_test_full">آزمایش کامل (%1$d)</string>
     <string name="byedpi_strategies_title">استراتژی‌ها</string>
+    <string name="byedpi_empty">هنوز استراتژی‌ای نیست</string>
     <string name="byedpi_test_all">تست همه</string>
     <string name="byedpi_search">یافتن استراتژی</string>
     <string name="byedpi_add_strategy">افزودن استراتژی</string>

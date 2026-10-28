@@ -79,7 +79,8 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.GroupCard
-import io.github.yulbax.erkin.ui.components.GroupPlaceholder
+import io.github.yulbax.erkin.ui.components.EmptyAction
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.RenameDialog
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.SwitchRow
@@ -136,9 +137,7 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
                 .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (ui.cards.isEmpty()) {
-                GroupPlaceholder(stringResource(Res.string.byedpi_not_tested))
-            } else {
+            if (ui.cards.isNotEmpty()) {
                 GroupCard(
                     title = stringResource(Res.string.byedpi_strategies_title),
                     items = ui.cards.map { card ->
@@ -162,6 +161,13 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
                     }
                 )
             }
+        }
+        if (ui.cards.isEmpty()) {
+            EmptyState(
+                text = stringResource(Res.string.byedpi_empty),
+                action = EmptyAction(stringResource(Res.string.byedpi_search)) { dialog = StrategyDialog.Search },
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
         ActionMenu(
             visible = !selecting,

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.res.*
 
 @Composable
@@ -75,11 +76,7 @@ internal fun EmptyContent() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = stringResource(Res.string.no_apps_found),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        EmptyState(stringResource(Res.string.no_apps_found))
     }
 }
 
@@ -89,11 +86,6 @@ internal fun NoResultsContent(query: String) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = stringResource(Res.string.no_apps_matching, query),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        EmptyState(stringResource(Res.string.no_apps_matching, query))
     }
 }

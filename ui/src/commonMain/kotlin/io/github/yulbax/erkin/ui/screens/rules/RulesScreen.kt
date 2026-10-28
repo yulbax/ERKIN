@@ -45,7 +45,8 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AddFab
-import io.github.yulbax.erkin.ui.components.GroupPlaceholder
+import io.github.yulbax.erkin.ui.components.EmptyAction
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
@@ -113,14 +114,6 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                     )
                 }
             }
-            if (order.isEmpty()) {
-                item(key = EMPTY_KEY) {
-                    GroupPlaceholder(
-                        text = stringResource(Res.string.rules_empty),
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
-            }
             itemsIndexed(order, key = { _, rule -> rule.id }) { index, rule ->
                 ReorderableItem(reorderState, key = rule.id) { dragging ->
                     val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
@@ -162,6 +155,13 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                 }
             }
         }
+        if (order.isEmpty()) {
+            EmptyState(
+                text = stringResource(Res.string.rules_empty),
+                action = EmptyAction(stringResource(Res.string.add_rule)) { adding = true },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
         SelectionBar(
             visible = selecting,
             count = checked.size,
@@ -169,7 +169,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
             onSelectAll = { checkedIds = rules.map { it.id } },
             onDelete = { deleting = rules.filter { it.id in checked } }
         )
-        if (!selecting) {
+        if (!selecting && order.isNotEmpty()) {
             AddFab(
                 onClick = { adding = true },
                 contentDescription = stringResource(Res.string.add_rule),
@@ -302,5 +302,4 @@ private fun RoutingRuleEntity.displayValue(listState: RuleListState?): String {
 }
 
 private const val HINT_KEY = "hint"
-private const val EMPTY_KEY = "empty"
 private val ROW_TARGET_WIDTH = 190.dp

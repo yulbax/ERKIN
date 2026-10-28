@@ -67,7 +67,7 @@
     <string name="setup_step_connect">连接</string>
     <string name="servers_title">服务器</string>
     <string name="sort_servers_by_ping">按延迟排序</string>
-    <string name="servers_empty">暂无服务器。点按 + 添加配置链接或订阅。</string>
+    <string name="servers_empty">暂无服务器。请添加配置链接或订阅。</string>
     <string name="server_test_latency">测试延迟</string>
     <string name="server_ping_timeout">超时</string>
     <string name="ok">确定</string>
@@ -98,6 +98,7 @@
     <string name="channel_status_no_apps">未选择应用</string>
     <string name="byedpi_test_full">完整测试 (%1$d)</string>
     <string name="byedpi_strategies_title">策略</string>
+    <string name="byedpi_empty">暂无策略</string>
     <string name="byedpi_test_all">全部测试</string>
     <string name="byedpi_search">寻找策略</string>
     <string name="byedpi_add_strategy">添加策略</string>

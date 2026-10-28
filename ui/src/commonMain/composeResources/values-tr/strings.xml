@@ -67,7 +67,7 @@
     <string name="setup_step_connect">Bağlanın</string>
     <string name="servers_title">Sunucular</string>
     <string name="sort_servers_by_ping">Ping’e göre sırala</string>
-    <string name="servers_empty">Sunucu yok. Yapılandırma bağlantısı veya abonelik eklemek için + simgesine dokunun.</string>
+    <string name="servers_empty">Henüz sunucu yok. Bir yapılandırma bağlantısı veya abonelik ekleyin.</string>
     <string name="server_test_latency">Gecikmeyi test et</string>
     <string name="server_ping_timeout">zaman aşımı</string>
     <string name="ok">Tamam</string>
@@ -98,6 +98,7 @@
     <string name="channel_status_no_apps">uygulama seçilmedi</string>
     <string name="byedpi_test_full">Tam test (%1$d)</string>
     <string name="byedpi_strategies_title">Stratejiler</string>
+    <string name="byedpi_empty">Henüz strateji yok</string>
     <string name="byedpi_test_all">Tümünü test et</string>
     <string name="byedpi_search">Strateji bul</string>
     <string name="byedpi_add_strategy">Strateji ekle</string>

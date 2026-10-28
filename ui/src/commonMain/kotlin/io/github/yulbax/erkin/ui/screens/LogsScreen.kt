@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.rememberSharer
 import io.github.yulbax.erkin.ui.res.*
@@ -112,13 +113,7 @@ fun Logs() {
         ) {
             Box(Modifier.fillMaxSize()) {
                 if (entries.isEmpty()) {
-                    Text(
-                        text = stringResource(Res.string.logs_empty),
-                        style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(12.dp)
-                    )
+                    EmptyState(stringResource(Res.string.logs_empty), Modifier.align(Alignment.Center))
                 }
                 SelectionContainer {
                     LazyColumn(

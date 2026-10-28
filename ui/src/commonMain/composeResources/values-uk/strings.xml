@@ -67,7 +67,7 @@
     <string name="setup_step_connect">Підключитися</string>
     <string name="servers_title">Сервери</string>
     <string name="sort_servers_by_ping">Сортувати за пінгом</string>
-    <string name="servers_empty">Серверів немає. Натисніть +, щоб додати посилання-конфіг або підписку.</string>
+    <string name="servers_empty">Серверів поки немає. Додайте посилання-конфіг або підписку.</string>
     <string name="server_test_latency">Перевірити затримку</string>
     <string name="server_ping_timeout">тайм-аут</string>
     <string name="ok">ОК</string>
@@ -98,6 +98,7 @@
     <string name="channel_status_no_apps">немає застосунків</string>
     <string name="byedpi_test_full">Повний тест (%1$d)</string>
     <string name="byedpi_strategies_title">Стратегії</string>
+    <string name="byedpi_empty">Стратегій поки немає</string>
     <string name="byedpi_test_all">Перевірити всі</string>
     <string name="byedpi_search">Підбір</string>
     <string name="byedpi_add_strategy">Додати стратегію</string>

@@ -43,7 +43,8 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
-import io.github.yulbax.erkin.ui.components.GroupPlaceholder
+import io.github.yulbax.erkin.ui.components.EmptyAction
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.groupItemShape
@@ -87,14 +88,6 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
                     )
                 }
             }
-            if (chains.isEmpty()) {
-                item(key = EMPTY_KEY) {
-                    GroupPlaceholder(
-                        text = stringResource(Res.string.chains_empty),
-                        modifier = Modifier.padding(horizontal = 16.dp)
-                    )
-                }
-            }
             itemsIndexed(chains, key = { _, chain -> chain.id }) { index, chain ->
                 val isChecked = chain.id in checked
                 Surface(
@@ -117,6 +110,13 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
                 }
             }
         }
+        if (chains.isEmpty()) {
+            EmptyState(
+                text = stringResource(Res.string.chains_empty),
+                action = EmptyAction(stringResource(Res.string.add_chain)) { adding = true },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
         SelectionBar(
             visible = selecting,
             count = checked.size,
@@ -124,7 +124,7 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
             onSelectAll = { checkedIds = chains.map { it.id } },
             onDelete = { deleting = chains.filter { it.id in checked } }
         )
-        if (!selecting) {
+        if (!selecting && chains.isNotEmpty()) {
             AddFab(
                 onClick = { adding = true },
                 contentDescription = stringResource(Res.string.add_chain),
@@ -221,4 +221,3 @@ private fun ChainRow(
 }
 
 private const val HINT_KEY = "hint"
-private const val EMPTY_KEY = "empty"

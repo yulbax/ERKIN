@@ -67,7 +67,7 @@
     <string name="setup_step_connect">Ulaning</string>
     <string name="servers_title">Serverlar</string>
     <string name="sort_servers_by_ping">Ping boʻyicha saralash</string>
-    <string name="servers_empty">Serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshish uchun + tugmasini bosing.</string>
+    <string name="servers_empty">Hozircha serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshing.</string>
     <string name="server_test_latency">Kechikishni tekshirish</string>
     <string name="server_ping_timeout">vaqt tugadi</string>
     <string name="ok">OK</string>
@@ -98,6 +98,7 @@
     <string name="channel_status_no_apps">ilovalar tanlanmagan</string>
     <string name="byedpi_test_full">Toʻliq test (%1$d)</string>
     <string name="byedpi_strategies_title">Strategiyalar</string>
+    <string name="byedpi_empty">Hozircha strategiyalar yoʻq</string>
     <string name="byedpi_test_all">Hammasini tekshirish</string>
     <string name="byedpi_search">Strategiya tanlash</string>
     <string name="byedpi_add_strategy">Strategiya qoʻshish</string>
