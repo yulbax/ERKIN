@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,12 +19,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -40,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.HoverHint
 import io.github.yulbax.erkin.ui.platform.rememberAppIcon
@@ -107,6 +112,7 @@ private fun AppRow(
     val bound = servers.firstOrNull { it.id == app.serverId && !it.selected }
     val main = servers.firstOrNull { it.selected }
     var choosingServer by remember { mutableStateOf(false) }
+    val canChooseServer = servers.size > 1
     val imageBitmap = rememberAppIcon(app.packageName, app.path)
 
     Row(
@@ -164,45 +170,76 @@ private fun AppRow(
                 )
             }
             if (app.connectionType == ConnectionType.VPN && main != null) {
-                Text(
-                    text = bound?.name ?: stringResource(Res.string.app_server_main, main.name),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (bound != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Box(modifier = Modifier.padding(top = 4.dp)) {
+                    ServerChip(
+                        label = bound?.name ?: stringResource(Res.string.app_server_main, main.name),
+                        custom = bound != null,
+                        onClick = if (canChooseServer) {
+                            { choosingServer = true }
+                        } else {
+                            null
+                        }
+                    )
+                    DropdownMenu(expanded = choosingServer, onDismissRequest = { choosingServer = false }) {
+                        ServerMenuItem(
+                            label = stringResource(Res.string.app_server_main, main.name),
+                            checked = bound == null,
+                            onClick = {
+                                choosingServer = false
+                                onServerChange(null)
+                            }
+                        )
+                        servers.filterNot { it.selected }.forEach { server ->
+                            ServerMenuItem(
+                                label = server.name,
+                                checked = server.id == bound?.id,
+                                onClick = {
+                                    choosingServer = false
+                                    onServerChange(server.id)
+                                }
+                            )
+                        }
+                    }
+                }
             }
         }
 
         Spacer(modifier = Modifier.width(6.dp))
 
-        Box {
-            AppRowConnectedGroup(
-                selected = app.connectionType,
-                vpnEnabled = vpnEnabled,
-                onSelect = onConnectionTypeChange,
-                onReselect = { type -> if (type == ConnectionType.VPN && servers.size > 1) choosingServer = true }
+        AppRowConnectedGroup(
+            selected = app.connectionType,
+            vpnEnabled = vpnEnabled,
+            onSelect = onConnectionTypeChange,
+            onReselect = { type -> if (type == ConnectionType.VPN && canChooseServer) choosingServer = true }
+        )
+    }
+}
+
+@Composable
+private fun ServerChip(label: String, custom: Boolean, onClick: (() -> Unit)?) {
+    val colors = MaterialTheme.colorScheme
+    val content = if (custom) colors.onSecondaryContainer else colors.onSurfaceVariant
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = if (custom) colors.secondaryContainer else Color.Transparent,
+        border = if (custom) null else BorderStroke(1.dp, colors.outlineVariant),
+        contentColor = content
+    ) {
+        Row(
+            modifier = (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(start = 6.dp, end = if (onClick != null) 2.dp else 8.dp, top = 2.dp, bottom = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ConnectionTypeIcon(ConnectionType.VPN, Modifier.size(14.dp))
+            Spacer(Modifier.width(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
-            DropdownMenu(expanded = choosingServer, onDismissRequest = { choosingServer = false }) {
-                ServerMenuItem(
-                    label = stringResource(Res.string.app_server_main, main?.name.orEmpty()),
-                    checked = bound == null,
-                    onClick = {
-                        choosingServer = false
-                        onServerChange(null)
-                    }
-                )
-                servers.filterNot { it.selected }.forEach { server ->
-                    ServerMenuItem(
-                        label = server.name,
-                        checked = server.id == bound?.id,
-                        onClick = {
-                            choosingServer = false
-                            onServerChange(server.id)
-                        }
-                    )
-                }
-            }
+            if (onClick != null) Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(18.dp))
         }
     }
 }
