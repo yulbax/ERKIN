@@ -110,6 +110,11 @@ jobs:
         uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.NDK_VERSION }}
+          key: ndk-${{ env.NDK_VERSION }}
       - name: Provision NDK + gomobile and build mihomo.aar
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
@@ -189,6 +194,10 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.NDK_VERSION }}
+          key: ndk-${{ env.NDK_VERSION }}
       - run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests, Android Lint, and debug build
@@ -212,6 +221,10 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.ANDROID_SDK_ROOT }}/ndk/${{ env.NDK_VERSION }}
+          key: ndk-${{ env.NDK_VERSION }}
       - run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
       - uses: gradle/actions/setup-gradle@v4
       - name: Decode release keystore
