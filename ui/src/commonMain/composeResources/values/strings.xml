@@ -7,6 +7,8 @@
     <string name="language">Language</string>
     <string name="language_system">System default</string>
     <string name="logs_title">Logs</string>
+    <string name="docs_title">Help</string>
+    <string name="docs_language">en</string>
     <string name="license_title">License</string>
     <string name="about_title">About</string>
     <string name="logs_empty">No logs yet.</string>

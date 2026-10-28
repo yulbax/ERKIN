@@ -57,6 +57,10 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    systemProperty("erkin.docScreenshots", providers.gradleProperty("docScreenshots").getOrElse("false"))
+}
+
 compose.resources {
     publicResClass = false
     packageOfResClass = "io.github.yulbax.erkin.ui.res"

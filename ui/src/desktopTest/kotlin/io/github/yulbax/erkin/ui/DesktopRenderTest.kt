@@ -84,6 +84,14 @@ import org.junit.Test
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
+import io.github.yulbax.erkin.ui.screens.docs.DocArticle
+import io.github.yulbax.erkin.ui.screens.docs.DocPage
+import io.github.yulbax.erkin.ui.screens.docs.Docs
+import io.github.yulbax.erkin.vpn.ByeDpiSites
+import io.github.yulbax.erkin.vpn.SiteResult
+import java.util.Locale
+import org.junit.Assume.assumeTrue
+import androidx.compose.material3.Surface
 
 class DesktopRenderTest {
     private lateinit var database: AppDatabase
@@ -192,6 +200,42 @@ class DesktopRenderTest {
         render("rule-sets", width = 420, height = 1900) { RuleSets() }
         render("about", width = 420, height = 600) { About() }
         render("license", width = 420, height = 600) { License() }
+        render("docs", width = 420, height = 600) { Docs(onOpen = {}) }
+        render("doc-byedpi", width = 420, height = 2000) { DocPage(DocArticle.BYEDPI) }
+        render("doc-channels", width = 420, height = 1400) { DocPage(DocArticle.CHANNELS) }
+    }
+
+    @Test
+    fun rendersDocScreenshots() {
+        assumeTrue(System.getProperty(DOC_SCREENSHOTS) == "true")
+        runBlocking {
+            get<SettingsRepository>().update { it.copy(homeHintSeen = true, appsHintSeen = true) }
+            seedStrategies()
+        }
+        val systemLocale = Locale.getDefault()
+        try {
+            DOC_LANGUAGES.forEach { language ->
+                Locale.setDefault(Locale.forLanguageTag(language))
+                val dir = File(DOC_IMAGES, language).apply { mkdirs() }
+                render("main", width = 400, height = 600, dark = true, target = File(dir, "main.png")) { MainScreen() }
+                render("apps", width = 400, height = 300, dark = true, target = File(dir, "apps.png")) { Surface { Apps(query = "") } }
+                render("byedpi", width = 400, height = 420, dark = true, target = File(dir, "byedpi.png")) { Surface { ByeDpi() } }
+            }
+        } finally {
+            Locale.setDefault(systemLocale)
+        }
+    }
+
+    private suspend fun seedStrategies() {
+        val history = get<ByeDpiHistory>()
+        val sites = ByeDpiSites.QUICK.flatMap { group -> group.sites.map { it to group.name } }
+        DOC_STRATEGIES.reversed().forEach { (args, reachable) ->
+            history.remember(args)
+            reachable?.let { count ->
+                history.saveResults(args, TestNetwork.Wifi, sites.mapIndexed { index, (host, group) -> SiteResult(host, group, index < count) })
+            }
+        }
+        history.apply(DOC_STRATEGIES.first().first)
     }
 
     @Test
@@ -207,7 +251,14 @@ class DesktopRenderTest {
         }
     }
 
-    private fun render(name: String, width: Int, height: Int, content: @Composable () -> Unit) = runBlocking {
+    private fun render(
+        name: String,
+        width: Int,
+        height: Int,
+        dark: Boolean = false,
+        target: File = File(outputDir, "$name.png"),
+        content: @Composable () -> Unit
+    ) = runBlocking {
         withContext(Dispatchers.Main) {
             val owner = TestOwner()
             val scene = ImageComposeScene(width = width * 2, height = height * 2, density = Density(2f)) {
@@ -215,7 +266,7 @@ class DesktopRenderTest {
                     LocalLifecycleOwner provides owner,
                     LocalViewModelStoreOwner provides owner
                 ) {
-                    ERKINTheme(darkTheme = false) { content() }
+                    ERKINTheme(darkTheme = dark) { content() }
                 }
             }
             try {
@@ -226,7 +277,7 @@ class DesktopRenderTest {
                 }
                 val image = scene.render(System.nanoTime() - start)
                 val png = requireNotNull(image.encodeToData(EncodedImageFormat.PNG)).bytes
-                File(outputDir, "$name.png").writeBytes(png)
+                target.writeBytes(png)
                 assertTrue(png.isNotEmpty())
             } finally {
                 scene.close()
@@ -252,6 +303,18 @@ class DesktopRenderTest {
         override suspend fun install(key: String, source: File, format: RuleSetFormat, kind: RuleSetKind?) =
             InstalledSet(kind ?: RuleSetKind.DOMAIN, 0)
         override suspend fun remove(fileName: String) = Unit
+    }
+
+    private companion object {
+        const val DOC_SCREENSHOTS = "erkin.docScreenshots"
+        val DOC_IMAGES = File("src/commonMain/composeResources/files/docs/img")
+        val DOC_LANGUAGES = listOf("en", "ru")
+        val DOC_STRATEGIES = listOf<Pair<String, Int?>>(
+            "-o1 -d1 -a1 -At,r,s -s1 -d1 -s5+s -s10+s -s15+s -s20+s -r1+s -S -a1" to 32,
+            "-f-200 -Qr -s3:5+sm -a1 -As -d1 -s4+sm -s8+sh -f-300 -d6+sh -a1" to 30,
+            "-d1 -s1+s -s3+s -s6+s -s9+s -s12+s -s15+s -s20+s -s30+s -a1" to 19,
+            "-n \"vk.com\" -Qr -f-204 -s1:5+sm -a1" to null
+        )
     }
 
     private object SilentLog : AppLog {

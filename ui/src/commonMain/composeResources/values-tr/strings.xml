@@ -7,6 +7,7 @@
     <string name="language">Dil</string>
     <string name="language_system">Sistem varsayılanı</string>
     <string name="logs_title">Günlük</string>
+    <string name="docs_title">Yardım</string>
     <string name="license_title">Lisans</string>
     <string name="about_title">Hakkında</string>
     <string name="logs_empty">Henüz kayıt yok.</string>

@@ -7,6 +7,8 @@
     <string name="language">Язык</string>
     <string name="language_system">Системный</string>
     <string name="logs_title">Логи</string>
+    <string name="docs_title">Справка</string>
+    <string name="docs_language">ru</string>
     <string name="license_title">Лицензия</string>
     <string name="about_title">О приложении</string>
     <string name="logs_empty">Логов пока нет.</string>

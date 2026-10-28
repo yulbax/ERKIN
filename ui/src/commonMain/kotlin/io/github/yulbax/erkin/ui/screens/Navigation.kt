@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.AltRoute
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -26,6 +27,9 @@ import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.screens.apps.Apps
 import io.github.yulbax.erkin.ui.screens.byedpi.ByeDpi
 import io.github.yulbax.erkin.ui.screens.chains.Chains
+import io.github.yulbax.erkin.ui.screens.docs.DocArticle
+import io.github.yulbax.erkin.ui.screens.docs.DocPage
+import io.github.yulbax.erkin.ui.screens.docs.Docs
 import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
 import io.github.yulbax.erkin.ui.screens.rules.RuleSets
 import io.github.yulbax.erkin.ui.screens.rules.Rules
@@ -85,6 +89,20 @@ sealed class Screen(
         icon = IconSource.Vector(Icons.Filled.Description)
     )
 
+    object Docs : Screen(
+        route = "docs",
+        title = Res.string.docs_title,
+        icon = IconSource.Vector(Icons.AutoMirrored.Filled.HelpOutline)
+    )
+
+    object DocPage : Screen(
+        route = "docs/{$DOC_SLUG}",
+        title = Res.string.docs_title,
+        icon = IconSource.Vector(Icons.AutoMirrored.Filled.HelpOutline)
+    ) {
+        fun routeOf(article: DocArticle): String = "docs/${article.slug}"
+    }
+
     object License : Screen(
         route = "license",
         title = Res.string.license_title,
@@ -98,6 +116,8 @@ sealed class Screen(
     )
 }
 
+private const val DOC_SLUG = "slug"
+
 val primaryNavPages = listOf(
     Screen.Main,
     Screen.Apps,
@@ -109,11 +129,12 @@ val primaryNavPages = listOf(
 )
 
 val secondaryNavPages = listOf(
+    Screen.Docs,
     Screen.License,
     Screen.About
 )
 
-val subPages = listOf(Screen.RuleSets)
+val subPages = listOf(Screen.RuleSets, Screen.DocPage)
 
 val navPages = primaryNavPages + secondaryNavPages
 
@@ -154,6 +175,10 @@ fun ErkinNavHost(
         composable(Screen.Chains.route) { Chains() }
         composable(Screen.Settings.route) { Settings(updates = updates) }
         composable(Screen.Logs.route) { Logs() }
+        composable(Screen.Docs.route) { Docs(onOpen = { navController.navigate(Screen.DocPage.routeOf(it)) }) }
+        composable(Screen.DocPage.route) { entry ->
+            DocArticle.fromSlug(entry.savedStateHandle.get<String>(DOC_SLUG))?.let { DocPage(it) }
+        }
         composable(Screen.License.route) { License() }
         composable(Screen.About.route) { About() }
     }
