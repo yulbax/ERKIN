@@ -36,7 +36,7 @@ concurrency:
 
 env:
   CORE_CACHE_REV: "1"    # bump to force a fresh mihomo.aar, erkin-service and ciadpi.exe rebuild (busts the caches)
-  GO_VERSION: "1.25.0"
+  GO_VERSION: "1.27.3"
   NFPM_VERSION: "2.47.0"
   NFPM_SHA256: "0660ca602b2d2d2ae4781a06c692b3eeb9d437ffea05b831d76e41f4a3188783"
   NDK_VERSION: "28.0.13004108"
@@ -100,7 +100,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/libs/mihomo.aar
-          key: aar-${{ env.CORE_CACHE_REV }}-${{ hashFiles('core/mihomo/**', 'scripts/build-mihomo.sh') }}
+          key: aar-${{ env.CORE_CACHE_REV }}-${{ env.GO_VERSION }}-${{ hashFiles('core/mihomo/**', 'scripts/build-mihomo.sh') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
@@ -142,7 +142,7 @@ jobs:
             desktop/libs/windows/mihomo-LICENSE.txt
             desktop/libs/linux/erkin-service
             desktop/libs/linux/mihomo-LICENSE.txt
-          key: service-${{ env.CORE_CACHE_REV }}-${{ needs.check.outputs.version }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-service.sh') }}
+          key: service-${{ env.CORE_CACHE_REV }}-${{ env.GO_VERSION }}-${{ needs.check.outputs.version }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-service.sh') }}
       - id: ciadpi-cache
         uses: actions/cache@v4
         with:
