@@ -8,6 +8,7 @@
     <string name="language_system">پیش‌فرض سیستم</string>
     <string name="logs_title">گزارش‌ها</string>
     <string name="docs_title">راهنما</string>
+    <string name="docs_language">fa</string>
     <string name="license_title">مجوز</string>
     <string name="about_title">درباره</string>
     <string name="logs_empty">هنوز گزارشی نیست.</string>

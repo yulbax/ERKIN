@@ -5,6 +5,6 @@
 3. **Give apps a channel** in Apps: VPN, ByeDPI or Direct. See Channels.
 4. **Connect** with the button on the home screen.
 
-![Home screen](../img/en/main.png)
+![Home screen](../img/en/main.webp)
 
 The connection card shows the VPN and ByeDPI status. Tapping ByeDPI opens its page.

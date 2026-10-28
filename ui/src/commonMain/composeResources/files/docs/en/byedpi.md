@@ -2,7 +2,7 @@
 
 ByeDPI (ciadpi) alters packets on the device so the provider's DPI does not recognise them. No server is needed. How it alters them is set by a strategy, a set of ciadpi arguments.
 
-![ByeDPI](../img/en/byedpi.png)
+![ByeDPI](../img/en/byedpi.webp)
 
 ## Strategies
 

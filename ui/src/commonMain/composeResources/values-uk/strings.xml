@@ -8,6 +8,7 @@
     <string name="language_system">Системна</string>
     <string name="logs_title">Журнал</string>
     <string name="docs_title">Довідка</string>
+    <string name="docs_language">uk</string>
     <string name="license_title">Ліцензія</string>
     <string name="about_title">Про застосунок</string>
     <string name="logs_empty">Записів поки немає.</string>

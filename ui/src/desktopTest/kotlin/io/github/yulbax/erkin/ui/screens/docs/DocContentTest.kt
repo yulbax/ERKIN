@@ -6,6 +6,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+internal val WRITTEN_DOC_LANGUAGES = listOf("en", "ru", "uk", "uz", "tr", "zh", "fa")
+
 class DocContentTest {
 
     @Test
@@ -20,7 +22,7 @@ class DocContentTest {
 
     @Test
     fun everyArticleHasATitleAndItsImagesInEveryWrittenLanguage() = runBlocking {
-        listOf(DocLibrary.FALLBACK_LANGUAGE, "ru").forEach { language ->
+        WRITTEN_DOC_LANGUAGES.forEach { language ->
             DocArticle.entries.forEach { article ->
                 val doc = DocLibrary.load(article, language)
                 assertTrue("$language/${article.slug}", doc.title.isNotBlank())

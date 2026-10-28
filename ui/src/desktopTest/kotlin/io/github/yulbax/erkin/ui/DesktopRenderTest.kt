@@ -91,6 +91,10 @@ import io.github.yulbax.erkin.vpn.ByeDpiSites
 import io.github.yulbax.erkin.vpn.SiteResult
 import java.util.Locale
 import org.junit.Assume.assumeTrue
+import io.github.yulbax.erkin.ui.screens.docs.WRITTEN_DOC_LANGUAGES
+import java.awt.ComponentOrientation
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.material3.Surface
 
 class DesktopRenderTest {
@@ -214,12 +218,22 @@ class DesktopRenderTest {
         }
         val systemLocale = Locale.getDefault()
         try {
-            DOC_LANGUAGES.forEach { language ->
-                Locale.setDefault(Locale.forLanguageTag(language))
+            WRITTEN_DOC_LANGUAGES.forEach { language ->
+                val locale = Locale.forLanguageTag(language)
+                Locale.setDefault(locale)
+                val direction = if (ComponentOrientation.getOrientation(locale).isLeftToRight) LayoutDirection.Ltr else LayoutDirection.Rtl
                 val dir = File(DOC_IMAGES, language).apply { mkdirs() }
-                render("main", width = 400, height = 600, dark = true, target = File(dir, "main.png")) { MainScreen() }
-                render("apps", width = 400, height = 300, dark = true, target = File(dir, "apps.png")) { Surface { Apps(query = "") } }
-                render("byedpi", width = 400, height = 420, dark = true, target = File(dir, "byedpi.png")) { Surface { ByeDpi() } }
+                val screens = mapOf<String, Pair<Int, @Composable () -> Unit>>(
+                    "main" to (600 to { MainScreen() }),
+                    "apps" to (300 to { Surface { Apps(query = "") } }),
+                    "byedpi" to (420 to { Surface { ByeDpi() } })
+                )
+                screens.forEach { (name, screen) ->
+                    val (height, content) = screen
+                    render(name, width = 400, height = height, dark = true, target = File(dir, "$name.webp")) {
+                        CompositionLocalProvider(LocalLayoutDirection provides direction) { content() }
+                    }
+                }
             }
         } finally {
             Locale.setDefault(systemLocale)
@@ -276,9 +290,14 @@ class DesktopRenderTest {
                     delay(50)
                 }
                 val image = scene.render(System.nanoTime() - start)
-                val png = requireNotNull(image.encodeToData(EncodedImageFormat.PNG)).bytes
-                target.writeBytes(png)
-                assertTrue(png.isNotEmpty())
+                val encoded = if (target.extension == "webp") {
+                    image.encodeToData(EncodedImageFormat.WEBP, WEBP_QUALITY)
+                } else {
+                    image.encodeToData(EncodedImageFormat.PNG)
+                }
+                val bytes = requireNotNull(encoded).bytes
+                target.writeBytes(bytes)
+                assertTrue(bytes.isNotEmpty())
             } finally {
                 scene.close()
                 owner.viewModelStore.clear()
@@ -307,8 +326,8 @@ class DesktopRenderTest {
 
     private companion object {
         const val DOC_SCREENSHOTS = "erkin.docScreenshots"
+        const val WEBP_QUALITY = 90
         val DOC_IMAGES = File("src/commonMain/composeResources/files/docs/img")
-        val DOC_LANGUAGES = listOf("en", "ru")
         val DOC_STRATEGIES = listOf<Pair<String, Int?>>(
             "-o1 -d1 -a1 -At,r,s -s1 -d1 -s5+s -s10+s -s15+s -s20+s -r1+s -S -a1" to 32,
             "-f-200 -Qr -s3:5+sm -a1 -As -d1 -s4+sm -s8+sh -f-300 -d6+sh -a1" to 30,

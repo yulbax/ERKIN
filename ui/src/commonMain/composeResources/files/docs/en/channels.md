@@ -6,7 +6,7 @@ Every app uses one channel:
 - **ByeDPI** — through ByeDPI on the device, no server needed.
 - **VPN** — through a server.
 
-![Apps](../img/en/apps.png)
+![Apps](../img/en/apps.webp)
 
 - Change the channel with the buttons to the right of an app.
 - Apply to all sets the channel for every app in the list, or only for the search results. It can be undone.
