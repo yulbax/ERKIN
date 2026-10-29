@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.data.profile
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.BackupCodec
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ParsedProfile
 import io.github.yulbax.erkin.proxy.SubscriptionParser
@@ -122,7 +123,13 @@ class ProfileRepository(
         profileDao.deleteMany(stale)
         database.appDao().clearServers(stale.map { it.id })
 
-        val groupIds = orderedIds + kept.map { it.id }
+        val listed = orderedIds + kept.map { it.id }
+        val groupIds = if (keepsOwnOrder()) {
+            val memberIds = members.mapTo(LinkedHashSet()) { it.id }
+            memberIds.filter { it in listed } + listed.filterNot { it in memberIds }
+        } else {
+            listed
+        }
         val others = profileDao.getAll().map { it.id }.filterNot { it in groupIds }
         val anchor = all.indexOfFirst { it.subscriptionId == stored.id }
             .let { first -> if (first < 0) others.size else all.take(first).count { it.id in others } }
@@ -151,6 +158,9 @@ class ProfileRepository(
     suspend fun reorder(ids: List<Long>) {
         profileDao.reorder(ids)
     }
+
+    private suspend fun keepsOwnOrder(): Boolean =
+        (database.settingsDao().getSettings() ?: SettingsEntity()).sortServersByPing
 
     suspend fun select(profile: ProfileEntity) {
         database.transaction {

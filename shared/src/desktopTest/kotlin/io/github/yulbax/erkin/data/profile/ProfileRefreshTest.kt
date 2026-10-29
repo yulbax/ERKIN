@@ -4,6 +4,7 @@ import androidx.room.Room
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.App
+import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.util.AppLog
@@ -199,11 +200,16 @@ class ProfileRefreshTest {
 
     private suspend fun names(): List<String> = database.profileDao().getAll().map { it.name }
 
+    private suspend fun followProviderOrder() {
+        database.settingsDao().upsertSettings(SettingsEntity(sortServersByPing = false))
+    }
+
     private suspend fun refreshed(profile: ProfileEntity): ProfileEntity =
         database.profileDao().getAll().single { it.id == profile.id }
 
     @Test
     fun refreshFollowsTheSameServerWhenTheProviderRenamesIt() = runBlocking {
+        followProviderOrder()
         val profile = storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
         subscription.links = listOf(
             "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
@@ -219,6 +225,21 @@ class ProfileRefreshTest {
         assertTrue(stored.outboundJson.contains("b.example"))
         assertEquals("Germany", stored.name)
         assertEquals(listOf("Netherlands", "Germany"), names())
+    }
+
+    @Test
+    fun refreshKeepsTheOwnOrderOfServersWhenSortingByPing() = runBlocking {
+        storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany")
+        storedSubscriptionServer("vless://$UUID@c.example:443?security=tls&sni=c.example#France")
+        subscription.links = listOf(
+            "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
+            "vless://$UUID@c.example:443?security=tls&sni=c.example#France",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        )
+
+        repository.refreshSubscription(SUBSCRIPTION_URL)
+
+        assertEquals(listOf("Germany", "France", "Netherlands"), names())
     }
 
     @Test
@@ -249,6 +270,7 @@ class ProfileRefreshTest {
 
     @Test
     fun refreshKeepsTheSelectedServerAndChainHopsItNoLongerLists() = runBlocking {
+        followProviderOrder()
         val selected = storedSubscriptionServer("vless://$UUID@b.example:443?security=tls&sni=b.example#Germany", selected = true)
         val hop = storedSubscriptionServer("vless://$UUID@c.example:443?security=tls&sni=c.example#France")
         repository.add("vless://id@exit.example:443?security=tls#Exit")
@@ -280,6 +302,7 @@ class ProfileRefreshTest {
 
     @Test
     fun addingASubscriptionAgainUpdatesItInPlace() = runBlocking {
+        followProviderOrder()
         repository.add("vless://id@before.example:443?security=tls#Before")
         subscription.links = listOf(
             "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
