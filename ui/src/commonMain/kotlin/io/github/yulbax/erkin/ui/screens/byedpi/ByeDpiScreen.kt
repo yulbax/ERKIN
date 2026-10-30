@@ -234,7 +234,7 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
             ui = ui,
             onStart = viewModel::search,
             onStop = viewModel::stop,
-            onApply = viewModel::apply,
+            onApply = viewModel::applyFromSearch,
             onAdd = viewModel::addFromSearch,
             onAddBest = viewModel::addBestFromSearch,
             onDismiss = { dialog = null }

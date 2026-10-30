@@ -143,11 +143,20 @@ class ByeDpiViewModel(
     }
 
     fun addFromSearch(args: String) {
-        val outcome = runner.searchResults.value.firstOrNull { it.args == args } ?: return
+        viewModelScope.launch { keepFromSearch(args) }
+    }
+
+    fun applyFromSearch(args: String) {
         viewModelScope.launch {
-            history.remember(args)
-            history.saveResults(args, networkSource.network.first(), outcome.results)
+            keepFromSearch(args)
+            history.apply(args)
         }
+    }
+
+    private suspend fun keepFromSearch(args: String) {
+        val outcome = runner.searchResults.value.firstOrNull { it.args == args } ?: return
+        history.remember(args)
+        history.saveResults(args, networkSource.network.first(), outcome.results)
     }
 
     fun addBestFromSearch() {
