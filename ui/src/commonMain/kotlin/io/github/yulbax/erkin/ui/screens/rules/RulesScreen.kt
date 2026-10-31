@@ -65,6 +65,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
+    val tunnelDirectApps by viewModel.tunnelDirectApps.collectAsStateWithLifecycle()
     val listStates by viewModel.listStates.collectAsStateWithLifecycle()
     val stateOf = { rule: RoutingRuleEntity ->
         rule.toRule()?.let(RuleLists::url)?.let { listStates[it] ?: RuleListState() }
@@ -97,7 +98,13 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
     }
 
     val hint = stringResource(Res.string.rules_description) + "\n\n" +
-        stringResource(if (rulesCoverAllApps) Res.string.rules_scope_all else Res.string.rules_scope_tunneled)
+        stringResource(
+            when {
+                rulesCoverAllApps -> Res.string.rules_scope_all
+                tunnelDirectApps -> Res.string.rules_scope_tunneled_all_apps
+                else -> Res.string.rules_scope_tunneled
+            }
+        )
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

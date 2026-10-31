@@ -37,6 +37,7 @@ class SettingsViewModel(
     fun toggleShowSystemApps() = update { it.copy(showSystemApps = !it.showSystemApps) }
     fun setAutoConnect(value: Boolean) = update { it.copy(autoConnect = value) }
     fun setSortServersByPing(value: Boolean) = update { it.copy(sortServersByPing = value) }
+    fun setTunnelDirectApps(value: Boolean) = update { it.copy(tunnelDirectApps = value) }
     fun setNewAppsConnectionType(value: ConnectionType) = update { it.copy(newAppsConnectionType = value.wire) }
 
     fun setMtu(value: Int) = updateNetwork { it.copy(mtu = value.coerceIn(NetworkOptions.MTU_RANGE)) }
@@ -101,6 +102,7 @@ data class SettingsUiState(
     val showSystemApps: Boolean = false,
     val autoConnect: Boolean = false,
     val sortServersByPing: Boolean = true,
+    val tunnelDirectApps: Boolean = false,
     val newAppsConnectionType: ConnectionType = ConnectionType.DIRECT,
     val network: NetworkOptions = NetworkOptions.DEFAULT
 )
@@ -109,6 +111,7 @@ private fun SettingsEntity.toUiState() = SettingsUiState(
     showSystemApps = showSystemApps,
     autoConnect = autoConnect,
     sortServersByPing = sortServersByPing,
+    tunnelDirectApps = tunnelDirectApps,
     newAppsConnectionType = newAppsConnectionType(platformNewAppsConnectionType),
     network = networkOptions()
 )

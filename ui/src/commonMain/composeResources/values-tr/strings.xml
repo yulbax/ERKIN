@@ -69,6 +69,8 @@
     <string name="setup_step_connect">Bağlanın</string>
     <string name="servers_title">Sunucular</string>
     <string name="sort_servers_by_ping">Ping’e göre sırala</string>
+    <string name="tunnel_direct_apps">Tüm trafiği ERKIN üzerinden yönlendir</string>
+    <string name="tunnel_direct_apps_warning">Doğrudan kanaldaki uygulamalar da ERKIN üzerinden geçer ve kurallar onlara da uygulanır. Etkin bir VPN görürler, bankacılık uygulamaları bunu fark edebilir. Çekirdek donarsa veya yeniden bağlanırsa onların da interneti kesilir. QUIC engeli onlara da uygulanır ve yerel ağdaki cihazları bulma çalışmayabilir.</string>
     <string name="servers_empty">Henüz sunucu yok. Bir yapılandırma bağlantısı veya abonelik ekleyin.</string>
     <string name="server_test_latency">Gecikmeyi test et</string>
     <string name="server_ping_timeout">zaman aşımı</string>
@@ -201,6 +203,7 @@
     <string name="rules_title">Kurallar</string>
     <string name="rules_description">Kurallar yukarıdan aşağıya denetlenir ve ilk eşleşen geçerli olur. Eşleşen kural, uygulamanın kanalını geçersiz kılar.</string>
     <string name="rules_scope_tunneled">Android’de kurallar yalnızca VPN ve ByeDPI kanallarındaki uygulamalara uygulanır: Doğrudan kanaldaki uygulamalar ERKIN’i tamamen atlar.</string>
+    <string name="rules_scope_tunneled_all_apps">Tüm trafik ERKIN üzerinden geçer, bu yüzden kurallar Doğrudan kanaldaki uygulamalara da uygulanır.</string>
     <string name="rules_scope_all">Kurallar bu bilgisayardaki tüm trafiğe uygulanır.</string>
     <string name="rules_empty">Henüz kural yok. Trafik her uygulamanın kanalını izler.</string>
     <string name="add_rule">Kural ekle</string>

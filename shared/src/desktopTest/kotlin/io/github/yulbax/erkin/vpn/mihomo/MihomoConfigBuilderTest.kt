@@ -44,6 +44,26 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun androidSendsTunneledDirectAppsDirectAfterUserRules() {
+        val engine = engine(
+            listOf(vless), "p1", listOf("org.dpi"), listOf("org.vpn"),
+            rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.VPN))
+        ).copy(directPackages = listOf("org.direct"))
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject
+        assertEquals(
+            listOf(
+                "IN-NAME,probe-in,p1",
+                "DOMAIN-SUFFIX,example.org,p1",
+                "PROCESS-NAME,org.dpi,byedpi",
+                "PROCESS-NAME,org.vpn,p1",
+                "PROCESS-NAME,org.direct,DIRECT",
+                "MATCH,REJECT"
+            ),
+            config.rules()
+        )
+    }
+
+    @Test
     fun appsBoundToAnotherServerAreRoutedToIt() {
         val other = vless.copy(tag = "p2")
         val engine = engine(listOf(vless, other), "p1", emptyList(), listOf("org.main", "org.other"))

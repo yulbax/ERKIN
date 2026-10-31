@@ -69,6 +69,8 @@
     <string name="setup_step_connect">连接</string>
     <string name="servers_title">服务器</string>
     <string name="sort_servers_by_ping">按延迟排序</string>
+    <string name="tunnel_direct_apps">通过 ERKIN 转发所有流量</string>
+    <string name="tunnel_direct_apps_warning">直连通道中的应用也会经过 ERKIN，规则将对它们生效。它们会看到已启用的 VPN，银行应用可能会察觉。如果核心卡死或正在重新连接，它们也会断网。QUIC 阻止同样对它们生效，局域网设备发现可能无法使用。</string>
     <string name="servers_empty">暂无服务器。请添加配置链接或订阅。</string>
     <string name="server_test_latency">测试延迟</string>
     <string name="server_ping_timeout">超时</string>
@@ -199,6 +201,7 @@
     <string name="rules_title">规则</string>
     <string name="rules_description">规则从上到下依次检查，第一条匹配的规则生效。匹配的规则优先于应用所在的通道。</string>
     <string name="rules_scope_tunneled">在 Android 上，规则只作用于 VPN 和 ByeDPI 通道中的应用：直连通道中的应用完全不经过 ERKIN。</string>
+    <string name="rules_scope_tunneled_all_apps">所有流量都经过 ERKIN，因此规则也作用于直连通道中的应用。</string>
     <string name="rules_scope_all">规则作用于这台电脑的全部流量。</string>
     <string name="rules_empty">还没有规则。流量按应用所在的通道走。</string>
     <string name="add_rule">添加</string>

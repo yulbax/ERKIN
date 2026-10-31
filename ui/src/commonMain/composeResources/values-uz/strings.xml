@@ -69,6 +69,8 @@
     <string name="setup_step_connect">Ulaning</string>
     <string name="servers_title">Serverlar</string>
     <string name="sort_servers_by_ping">Ping boʻyicha saralash</string>
+    <string name="tunnel_direct_apps">Barcha trafikni ERKIN orqali yoʻnaltirish</string>
+    <string name="tunnel_direct_apps_warning">Toʻgʻridan-toʻgʻri kanaldagi ilovalar ham ERKIN orqali oʻtadi va qoidalar ularga ham taʼsir qiladi. Ular faol VPNni koʻradi, bank ilovalari buni sezishi mumkin. Yadro qotib qolsa yoki qayta ulansa, ularda ham internet uziladi. QUIC bloklash ularga ham taʼsir qiladi, mahalliy tarmoqdagi qurilmalarni topish ishlamasligi mumkin.</string>
     <string name="servers_empty">Hozircha serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshing.</string>
     <string name="server_test_latency">Kechikishni tekshirish</string>
     <string name="server_ping_timeout">vaqt tugadi</string>
@@ -201,6 +203,7 @@
     <string name="rules_title">Qoidalar</string>
     <string name="rules_description">Qoidalar yuqoridan pastga tekshiriladi va birinchi mos kelgani ishlaydi. Mos kelgan qoida ilova kanalidan ustun turadi.</string>
     <string name="rules_scope_tunneled">Android’da qoidalar faqat VPN va ByeDPI kanallaridagi ilovalarga taʼsir qiladi: Toʻgʻridan-toʻgʻri kanaldagi ilovalar ERKIN’ni butunlay chetlab oʻtadi.</string>
+    <string name="rules_scope_tunneled_all_apps">Barcha trafik ERKIN orqali oʻtadi, shuning uchun qoidalar Toʻgʻridan-toʻgʻri kanaldagi ilovalarga ham taʼsir qiladi.</string>
     <string name="rules_scope_all">Qoidalar ushbu kompyuterdagi barcha trafikka taʼsir qiladi.</string>
     <string name="rules_empty">Hozircha qoidalar yoʻq. Trafik har bir ilovaning kanali boʻyicha boradi.</string>
     <string name="add_rule">Qoida qoʻshish</string>

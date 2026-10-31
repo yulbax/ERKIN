@@ -59,7 +59,7 @@ object EngineConfigComposer {
         val selected = inputs.selected
         check(selected != null || inputs.profiles.isEmpty()) { "No server selected" }
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
-        val routed = RoutedApps.from(foreignApps, hasServers = selected != null)
+        val routed = RoutedApps.from(foreignApps, hasServers = selected != null, tunnelDirectApps = inputs.settings.tunnelDirectApps)
         check(!routed.isEmpty) {
             if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN or ByeDPI"
         }
@@ -85,7 +85,8 @@ object EngineConfigComposer {
                 directPaths = routed.directPaths,
                 rules = rules,
                 ruleLists = lists.mapValues { it.value.kinds },
-                vpnTargets = vpnTargets
+                vpnTargets = vpnTargets,
+                directPackages = routed.directPackages
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
@@ -95,7 +96,8 @@ object EngineConfigComposer {
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" } +
-                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
+                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" } +
+                "#${inputs.settings.tunnelDirectApps}",
             vpnActive = routed.hasVpn
         )
     }

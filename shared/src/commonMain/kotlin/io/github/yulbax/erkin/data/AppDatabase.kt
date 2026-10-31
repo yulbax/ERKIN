@@ -29,7 +29,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class],
-    version = 21,
+    version = 22,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -224,6 +224,11 @@ abstract class AppDatabase : RoomDatabase() {
                     connection.execSQL(
                         "CREATE INDEX IF NOT EXISTS `index_byedpi_site_results_argsId` ON `byedpi_site_results` (`argsId`)"
                     )
+                }
+            },
+            object : Migration(21, 22) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE settings ADD COLUMN tunnelDirectApps INTEGER NOT NULL DEFAULT 0")
                 }
             }
         )

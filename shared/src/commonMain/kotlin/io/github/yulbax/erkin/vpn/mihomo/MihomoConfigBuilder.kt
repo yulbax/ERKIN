@@ -218,6 +218,7 @@ object MihomoConfigBuilder {
                 } else {
                     processRules(PROCESS_NAME, byeDpiPackages) { BYEDPI_PROXY }
                     processRules(PROCESS_NAME, vpnPackages, vpnTargetOf)
+                    processRules(PROCESS_NAME, engine.directPackages) { DIRECT }
                 }
                 add("MATCH,$defaultTarget")
             }

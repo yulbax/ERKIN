@@ -26,20 +26,22 @@ enum class ConnectionType(val wire: String, val needsServer: Boolean = false) {
 data class RoutedApps(
     val byeDpiPackages: List<String>,
     val vpnPackages: List<String>,
-    val directPaths: List<String> = emptyList()
+    val directPaths: List<String> = emptyList(),
+    val directPackages: List<String> = emptyList()
 ) {
-    val tunneledPackages: List<String> get() = byeDpiPackages + vpnPackages
+    val tunneledPackages: List<String> get() = byeDpiPackages + vpnPackages + directPackages
     val hasByeDpi: Boolean get() = byeDpiPackages.isNotEmpty()
     val hasVpn: Boolean get() = vpnPackages.isNotEmpty()
     val isEmpty: Boolean get() = !hasByeDpi && !hasVpn
 
     companion object {
-        fun from(apps: List<App>, hasServers: Boolean = true): RoutedApps {
+        fun from(apps: List<App>, hasServers: Boolean = true, tunnelDirectApps: Boolean = false): RoutedApps {
             val direct = if (hasServers) apps.packagesOf(ConnectionType.DIRECT) else apps.packagesOf(ConnectionType.DIRECT) + apps.packagesOf(ConnectionType.VPN)
             return RoutedApps(
                 byeDpiPackages = apps.packagesOf(ConnectionType.BYEDPI),
                 vpnPackages = if (hasServers) apps.packagesOf(ConnectionType.VPN) else emptyList(),
-                directPaths = direct.filter(::isExecutablePath)
+                directPaths = direct.filter(::isExecutablePath),
+                directPackages = if (tunnelDirectApps) direct.filterNot(::isExecutablePath) else emptyList()
             )
         }
 

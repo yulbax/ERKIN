@@ -69,6 +69,8 @@
     <string name="setup_step_connect">اتصال</string>
     <string name="servers_title">سرورها</string>
     <string name="sort_servers_by_ping">مرتب‌سازی بر اساس پینگ</string>
+    <string name="tunnel_direct_apps">هدایت همه ترافیک از طریق ERKIN</string>
+    <string name="tunnel_direct_apps_warning">برنامه‌های کانال مستقیم هم از ERKIN عبور می‌کنند و قوانین روی آن‌ها اعمال می‌شود. آن‌ها VPN فعال را می‌بینند و برنامه‌های بانکی ممکن است متوجه شوند. اگر هسته هنگ کند یا دوباره وصل شود، اینترنت آن‌ها هم قطع می‌شود. مسدودسازی QUIC روی آن‌ها هم اعمال می‌شود و یافتن دستگاه‌ها در شبکه محلی ممکن است کار نکند.</string>
     <string name="servers_empty">هنوز سروری نیست. لینک پیکربندی یا اشتراک اضافه کنید.</string>
     <string name="server_test_latency">آزمایش تأخیر</string>
     <string name="server_ping_timeout">مهلت تمام شد</string>
@@ -201,6 +203,7 @@
     <string name="rules_title">قوانین</string>
     <string name="rules_description">قوانین از بالا به پایین بررسی می‌شوند و اولین قانون منطبق اعمال می‌شود. قانون منطبق بر کانال برنامه اولویت دارد.</string>
     <string name="rules_scope_tunneled">در اندروید قوانین فقط روی برنامه‌های کانال VPN و ByeDPI اعمال می‌شوند: برنامه‌های کانال مستقیم از ERKIN عبور نمی‌کنند.</string>
+    <string name="rules_scope_tunneled_all_apps">همه ترافیک از ERKIN عبور می‌کند، بنابراین قوانین روی برنامه‌های کانال مستقیم هم اعمال می‌شوند.</string>
     <string name="rules_scope_all">قوانین روی تمام ترافیک این رایانه اعمال می‌شوند.</string>
     <string name="rules_empty">هنوز قانونی وجود ندارد. ترافیک از کانال برنامه پیروی می‌کند.</string>
     <string name="add_rule">افزودن</string>

@@ -69,6 +69,8 @@
     <string name="setup_step_connect">Connect</string>
     <string name="servers_title">Servers</string>
     <string name="sort_servers_by_ping">Sort by ping</string>
+    <string name="tunnel_direct_apps">Route all traffic through ERKIN</string>
+    <string name="tunnel_direct_apps_warning">Apps in the Direct channel also go through ERKIN, so rules apply to them. They will see an active VPN and banking apps may notice it. If the core hangs or reconnects they lose internet too. QUIC blocking applies to them, and finding devices on the local network may stop working.</string>
     <string name="servers_empty">No servers yet. Add a config link or a subscription.</string>
     <string name="server_test_latency">Test latency</string>
     <string name="server_ping_timeout">timeout</string>
@@ -207,6 +209,7 @@
     <string name="rules_title">Rules</string>
     <string name="rules_description">Rules are checked from top to bottom and the first match wins. A matching rule overrides the app&apos;s channel.</string>
     <string name="rules_scope_tunneled">On Android rules only apply to apps in the VPN and ByeDPI channels: apps in the Direct channel bypass ERKIN completely.</string>
+    <string name="rules_scope_tunneled_all_apps">All traffic goes through ERKIN, so rules also apply to apps in the Direct channel.</string>
     <string name="rules_scope_all">Rules apply to all traffic on this computer.</string>
     <string name="rules_empty">No rules yet. Traffic follows each app&apos;s channel.</string>
     <string name="add_rule">Add rule</string>

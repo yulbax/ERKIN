@@ -32,6 +32,10 @@ class RulesViewModel(
         .map { it.rulesHintSeen }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val tunnelDirectApps: StateFlow<Boolean> = settingsRepository.settings
+        .map { it.tunnelDirectApps }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     fun dismissHint() {
         viewModelScope.launch(Dispatchers.IO) {
             settingsRepository.update { it.copy(rulesHintSeen = true) }

@@ -69,6 +69,8 @@
     <string name="setup_step_connect">Підключитися</string>
     <string name="servers_title">Сервери</string>
     <string name="sort_servers_by_ping">Сортувати за пінгом</string>
+    <string name="tunnel_direct_apps">Спрямовувати весь трафік через ERKIN</string>
+    <string name="tunnel_direct_apps_warning">Застосунки в каналі Direct теж ітимуть через ERKIN, і правила почнуть діяти на них. Вони побачать активний VPN, банківські застосунки можуть це помітити. Якщо ядро зависне або перепідключається, інтернет зникне і в них. Блокування QUIC теж діятиме на них, а пошук пристроїв у локальній мережі може перестати працювати.</string>
     <string name="servers_empty">Серверів поки немає. Додайте посилання-конфіг або підписку.</string>
     <string name="server_test_latency">Перевірити затримку</string>
     <string name="server_ping_timeout">тайм-аут</string>
@@ -205,6 +207,7 @@
     <string name="rules_title">Правила</string>
     <string name="rules_description">Правила перевіряються згори донизу, спрацьовує перше відповідне. Відповідне правило важливіше за канал застосунку.</string>
     <string name="rules_scope_tunneled">На Android правила діють лише на застосунки в каналах VPN і ByeDPI: застосунки в каналі Direct ідуть повз ERKIN.</string>
+    <string name="rules_scope_tunneled_all_apps">Весь трафік іде через ERKIN, тому правила діють і на застосунки в каналі Direct.</string>
     <string name="rules_scope_all">Правила діють на весь трафік комп’ютера.</string>
     <string name="rules_empty">Правил поки немає. Трафік іде каналом застосунку.</string>
     <string name="add_rule">Додати</string>
