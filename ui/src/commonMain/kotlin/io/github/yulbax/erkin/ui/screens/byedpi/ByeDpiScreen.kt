@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
@@ -234,7 +235,6 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
             ui = ui,
             onStart = viewModel::search,
             onStop = viewModel::stop,
-            onApply = viewModel::applyFromSearch,
             onAdd = viewModel::addFromSearch,
             onAddBest = viewModel::addBestFromSearch,
             onDismiss = { dialog = null }
@@ -561,7 +561,6 @@ private fun SearchSheet(
     ui: ByeDpiViewModel.UiState,
     onStart: (sni: String, custom: String?) -> Unit,
     onStop: () -> Unit,
-    onApply: (String) -> Unit,
     onAdd: (String) -> Unit,
     onAddBest: () -> Unit,
     onDismiss: () -> Unit
@@ -622,23 +621,24 @@ private fun SearchSheet(
             if (ui.search.isNotEmpty()) {
                 GroupCard(items = ui.search.map { row ->
                     {
-                        Column(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = row.args,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontFamily = FontFamily.Monospace,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = row.args,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(end = 8.dp)
+                            )
+                            ScoreBadge(row.score)
+                            IconButton(onClick = { onAdd(row.args) }, enabled = !row.saved) {
+                                Icon(
+                                    imageVector = if (row.saved) Icons.Filled.Check else Icons.Filled.Add,
+                                    contentDescription = stringResource(if (row.saved) Res.string.byedpi_saved else Res.string.byedpi_add)
                                 )
-                                ScoreBadge(row.score)
-                            }
-                            Row {
-                                TextButton(onClick = { onApply(row.args) }) { Text(stringResource(Res.string.byedpi_apply)) }
-                                TextButton(onClick = { onAdd(row.args) }, enabled = !row.saved) {
-                                    Text(stringResource(if (row.saved) Res.string.byedpi_saved else Res.string.byedpi_add))
-                                }
                             }
                         }
                     }
