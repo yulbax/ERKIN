@@ -17,6 +17,7 @@ class AndroidUpdatePlatform(private val context: Context) : UpdatePlatform {
         }.getOrNull()?.let { "android-$it.apk" }
 
     override val downloadDir: File = File(context.cacheDir, "updates")
+    override val selfUpdates: Boolean = BuildConfig.SELF_UPDATES
 
     override fun install(file: File) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)

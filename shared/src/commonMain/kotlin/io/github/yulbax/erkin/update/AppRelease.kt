@@ -44,6 +44,7 @@ data class AppRelease(
 interface UpdatePlatform {
     val assetSuffix: String?
     val downloadDir: File
+    val selfUpdates: Boolean get() = true
 
     fun install(file: File)
 }

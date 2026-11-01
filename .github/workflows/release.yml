@@ -201,9 +201,9 @@ jobs:
       - run: sdkmanager --channel=3 "platforms;android-${ANDROID_COMPILE_SDK}" "build-tools;${BUILD_TOOLS}" "ndk;${NDK_VERSION}" "cmake;${CMAKE_VERSION}"
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests, Android Lint, and debug build
-        run: ./gradlew testDebugUnitTest :shared:desktopTest :ui:desktopTest lintDebug assembleDebug --no-daemon
+        run: ./gradlew testGithubDebugUnitTest :shared:desktopTest :ui:desktopTest lintGithubDebug assembleGithubDebug assemblePlayDebug --no-daemon
 
-  # ── Build the release APKs (arm64 + x86_64 + armv7 + universal), signed. ─────────
+  # ── Build the release APKs (arm64 + x86_64 + armv7 + universal) and the Play bundle, signed. ──
   android:
     needs: [check, aar]
     if: needs.check.outputs.should_release == 'true' || (needs.check.outputs.respin == 'true' && inputs.android)
@@ -242,12 +242,25 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleGithubRelease --no-daemon
+      - name: Bundle for Google Play
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/${NDK_VERSION}"
+          ./gradlew bundlePlayRelease --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: apks
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/github/release/*.apk
           retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: play-bundle
+          path: app/build/outputs/bundle/playRelease/*.aab
+          retention-days: 30
 
   windows:
     needs: [check, desktop-core]

@@ -32,6 +32,7 @@ val buildHash = runCatching {
 
 val baseVersionCode = 10800
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
+val playVersionCodeSuffix = 9
 
 val releaseStoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull
 val releaseStorePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
@@ -71,6 +72,18 @@ android {
         )
     }
 
+    flavorDimensions += "store"
+    productFlavors {
+        create("github") {
+            dimension = "store"
+            buildConfigField("boolean", "SELF_UPDATES", "true")
+        }
+        create("play") {
+            dimension = "store"
+            buildConfigField("boolean", "SELF_UPDATES", "false")
+        }
+    }
+
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -80,7 +93,7 @@ android {
 
     splits {
         abi {
-            isEnable = true
+            isEnable = gradle.startParameter.taskNames.none { it.contains("bundle", ignoreCase = true) }
             reset()
             val requested = (project.findProperty("abiFilter") as String?)?.split(",")
             include(*(requested ?: listOf("arm64-v8a", "x86_64", "armeabi-v7a")).toTypedArray())
@@ -175,10 +188,11 @@ androidComponents {
             val abi = output.filters
                 .firstOrNull { it.filterType == FilterConfiguration.FilterType.ABI }
                 ?.identifier ?: "universal"
-            val abiCode = updateAbis.indexOf(abi)
+            val play = variant.flavorName == "play"
+            val abiCode = if (play) playVersionCodeSuffix else updateAbis.indexOf(abi)
             check(abiCode >= 0) { "No update ABI code for $abi" }
             output.versionCode.set(baseVersionCode * 10 + abiCode)
-            if (variant.buildType == "release") {
+            if (variant.buildType == "release" && !play) {
                 (output as VariantOutputImpl).outputFileName.set(output.versionName.map { "ERKIN-$it-android-$abi.apk" })
             }
         }

@@ -61,6 +61,6 @@ fun Settings(
         AutostartSection(ui, viewModel)
         NetworkSection(ui, viewModel)
         BackupSection(viewModel)
-        UpdatesSection(updates)
+        if (updates.selfUpdates) UpdatesSection(updates)
     }
 }

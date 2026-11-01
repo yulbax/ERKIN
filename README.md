@@ -75,7 +75,7 @@ go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250808145247-395d808d53cd
 export PATH="$(go env GOPATH)/bin:$PATH"
 export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.0.13004108"
 bash scripts/build-mihomo.sh
-./gradlew assembleRelease
+./gradlew assembleGithubRelease
 ```
 
 Building requires Android SDK 37 and CMake 3.22.1. A physical device is recommended;

@@ -35,10 +35,11 @@ class UpdateViewModel(
     private val _checking = MutableStateFlow(false)
     val checking: StateFlow<Boolean> = _checking.asStateFlow()
     val currentVersion: String? get() = checker.currentVersion?.toString()
+    val selfUpdates: Boolean get() = platform.selfUpdates
     private var download: Job? = null
 
     init {
-        viewModelScope.launch { check() }
+        if (platform.selfUpdates) viewModelScope.launch { check() }
     }
 
     fun checkNow(onResult: (UpdateCheckResult) -> Unit) {
