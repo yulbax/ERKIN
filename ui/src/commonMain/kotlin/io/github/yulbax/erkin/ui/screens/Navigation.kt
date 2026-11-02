@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -89,6 +90,12 @@ sealed class Screen(
         icon = IconSource.Vector(Icons.Filled.Description)
     )
 
+    object Support : Screen(
+        route = "support",
+        title = Res.string.support_title,
+        icon = IconSource.Vector(Icons.Filled.Favorite)
+    )
+
     object Docs : Screen(
         route = "docs",
         title = Res.string.docs_title,
@@ -129,6 +136,7 @@ val primaryNavPages = listOf(
 )
 
 val secondaryNavPages = listOf(
+    Screen.Support,
     Screen.Docs,
     Screen.License,
     Screen.About
@@ -175,6 +183,7 @@ fun ErkinNavHost(
         composable(Screen.Chains.route) { Chains() }
         composable(Screen.Settings.route) { Settings(updates = updates) }
         composable(Screen.Logs.route) { Logs() }
+        composable(Screen.Support.route) { Support() }
         composable(Screen.Docs.route) { Docs(onOpen = { navController.navigate(Screen.DocPage.routeOf(it)) }) }
         composable(Screen.DocPage.route) { entry ->
             DocArticle.fromSlug(entry.savedStateHandle.get<String>(DOC_SLUG))?.let { DocPage(it) }

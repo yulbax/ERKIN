@@ -45,6 +45,7 @@ import io.github.yulbax.erkin.ui.di.uiModule
 import io.github.yulbax.erkin.ui.screens.About
 import io.github.yulbax.erkin.ui.screens.License
 import io.github.yulbax.erkin.ui.screens.Logs
+import io.github.yulbax.erkin.ui.screens.Support
 import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.screens.apps.Apps
 import io.github.yulbax.erkin.ui.screens.byedpi.ByeDpi
@@ -204,6 +205,7 @@ class DesktopRenderTest {
         render("rule-sets", width = 420, height = 1900) { RuleSets() }
         render("about", width = 420, height = 600) { About() }
         render("license", width = 420, height = 600) { License() }
+        render("support", width = 420, height = 400) { Support() }
         render("docs", width = 420, height = 600) { Docs(onOpen = {}) }
         render("doc-byedpi", width = 420, height = 2000) { DocPage(DocArticle.BYEDPI) }
         render("doc-channels", width = 420, height = 1400) { DocPage(DocArticle.CHANNELS) }

@@ -5,6 +5,8 @@ import androidx.compose.ui.unit.Dp
 import io.github.yulbax.erkin.data.ConnectionType
 import android.Manifest
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -107,6 +109,19 @@ private class AndroidSharer(private val context: Context) : Sharer {
                 Intent.createChooser(ShareFiles.intent(uri, mimeType), title)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
+        }
+    }
+}
+
+@Composable
+actual fun rememberCopyText(confirmation: String): (String) -> Unit {
+    val context = LocalContext.current
+    return remember(context, confirmation) {
+        { text ->
+            context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText(text, text))
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                Toast.makeText(context, confirmation, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 }

@@ -71,6 +71,17 @@ private class DesktopSharer : Sharer {
 }
 
 @Composable
+actual fun rememberCopyText(confirmation: String): (String) -> Unit {
+    val showMessage = LocalMessages.current
+    return remember(showMessage, confirmation) {
+        { text ->
+            Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
+            showMessage(confirmation)
+        }
+    }
+}
+
+@Composable
 actual fun rememberFilePicker(mimeTypes: List<String>, onPicked: (PickedFile) -> Unit): () -> Unit = {
     chooseFile(title = "", mode = FileDialog.LOAD, suggestedName = null)?.let { file ->
         onPicked(object : PickedFile {

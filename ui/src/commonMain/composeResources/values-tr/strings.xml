@@ -11,6 +11,9 @@
     <string name="docs_language">tr</string>
     <string name="license_title">Lisans</string>
     <string name="about_title">Hakkında</string>
+    <string name="support_title">Projeyi destekle</string>
+    <string name="support_ton">TON ve USDT (TON)</string>
+    <string name="support_copied">Adres kopyalandı</string>
     <string name="logs_empty">Henüz kayıt yok.</string>
     <string name="license_intro">ERKIN, GNU Genel Kamu Lisansı v3.0 ile lisanslanmış özgür bir yazılımdır. Lisansın tam metni aşağıdadır.</string>
     <string name="license_app_title">ERKIN — GNU GPL-3.0</string>

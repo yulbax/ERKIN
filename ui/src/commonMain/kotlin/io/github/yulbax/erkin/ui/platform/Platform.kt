@@ -37,6 +37,9 @@ expect fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): ()
 expect fun rememberSharer(): Sharer
 
 @Composable
+expect fun rememberCopyText(confirmation: String): (String) -> Unit
+
+@Composable
 expect fun rememberFilePicker(mimeTypes: List<String>, onPicked: (PickedFile) -> Unit): () -> Unit
 
 @Composable

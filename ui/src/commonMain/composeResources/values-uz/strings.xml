@@ -11,6 +11,9 @@
     <string name="docs_language">uz</string>
     <string name="license_title">Litsenziya</string>
     <string name="about_title">Ilova haqida</string>
+    <string name="support_title">Loyihani qoʻllab-quvvatlash</string>
+    <string name="support_ton">TON va USDT (TON)</string>
+    <string name="support_copied">Manzil nusxalandi</string>
     <string name="logs_empty">Hozircha yozuvlar yoʻq.</string>
     <string name="license_intro">ERKIN — GNU General Public License v3.0 litsenziyasi ostidagi erkin dasturiy taʼminot. Litsenziyaning toʻliq matni quyida keltirilgan.</string>
     <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
