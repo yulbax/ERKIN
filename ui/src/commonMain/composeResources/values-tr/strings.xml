@@ -16,13 +16,14 @@
     <string name="support_copied">Adres kopyalandı</string>
     <string name="logs_empty">Henüz kayıt yok.</string>
     <string name="license_intro">ERKIN, GNU Genel Kamu Lisansı v3.0 ile lisanslanmış özgür bir yazılımdır. Lisansın tam metni aşağıdadır.</string>
-    <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
     <string name="license_font_title">Google Sans (gömülü yazı tipi)</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). SIL Open Font License, Sürüm 1.1 ile lisanslanmıştır.</string>
     <string name="license_flags_title">Noto Color Emoji (ülke bayrakları)</string>
     <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). SIL Open Font License, Sürüm 1.1 ile lisanslanmıştır.</string>
     <string name="license_strategies_title">ByeDPI strateji listesi (ByeByeDPI)</string>
     <string name="license_strategies_notice">romanvht tarafından geliştirilen ByeByeDPI’dan alınmıştır (github.com/romanvht/ByeByeDPI). GNU General Public License sürüm 3 ile lisanslanmıştır.</string>
+    <string name="license_core_notice">MetaCubeX tarafından geliştirilmiştir (github.com/MetaCubeX/mihomo). GNU General Public License sürüm 3 ile lisanslanmıştır.</string>
+    <string name="license_byedpi_notice">Copyright (c) 2024 hufrea (github.com/hufrea/byedpi). MIT Lisansı ile lisanslanmıştır.</string>
     <string name="about_font_row">Yazı tipi</string>
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">Sürümler</string>

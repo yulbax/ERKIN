@@ -16,13 +16,14 @@
     <string name="support_copied">نشانی کپی شد</string>
     <string name="logs_empty">هنوز گزارشی نیست.</string>
     <string name="license_intro">ERKIN نرم‌افزار آزاد است و تحت مجوز GNU General Public License v3.0 منتشر می‌شود. متن کامل مجوز در ادامه آمده است.</string>
-    <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
     <string name="license_font_title">Google Sans (فونت همراه)</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). Licensed under the SIL Open Font License, Version 1.1.</string>
     <string name="license_flags_title">Noto Color Emoji (پرچم کشورها)</string>
     <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). Licensed under the SIL Open Font License, Version 1.1.</string>
     <string name="license_strategies_title">فهرست استراتژی‌های ByeDPI (ByeByeDPI)</string>
     <string name="license_strategies_notice">برگرفته از ByeByeDPI اثر romanvht (github.com/romanvht/ByeByeDPI). تحت مجوز GNU General Public License نسخه ۳.</string>
+    <string name="license_core_notice">اثر MetaCubeX (github.com/MetaCubeX/mihomo). تحت مجوز GNU General Public License نسخه ۳.</string>
+    <string name="license_byedpi_notice">Copyright (c) 2024 hufrea (github.com/hufrea/byedpi). تحت مجوز MIT.</string>
     <string name="about_font_row">فونت</string>
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">نسخه‌ها</string>

@@ -16,13 +16,14 @@
     <string name="support_copied">Адресу скопійовано</string>
     <string name="logs_empty">Записів поки немає.</string>
     <string name="license_intro">ERKIN — вільне програмне забезпечення під ліцензією GNU General Public License v3.0. Повний текст ліцензії наведено нижче.</string>
-    <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
     <string name="license_font_title">Google Sans (вбудований шрифт)</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). Licensed under the SIL Open Font License, Version 1.1.</string>
     <string name="license_flags_title">Noto Color Emoji (прапори країн)</string>
     <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). Licensed under the SIL Open Font License, Version 1.1.</string>
     <string name="license_strategies_title">Список стратегій ByeDPI (ByeByeDPI)</string>
     <string name="license_strategies_notice">Узято з ByeByeDPI, автор romanvht (github.com/romanvht/ByeByeDPI). Поширюється за ліцензією GNU General Public License версії 3.</string>
+    <string name="license_core_notice">Автор MetaCubeX (github.com/MetaCubeX/mihomo). Поширюється за ліцензією GNU General Public License версії 3.</string>
+    <string name="license_byedpi_notice">Copyright (c) 2024 hufrea (github.com/hufrea/byedpi). Поширюється за ліцензією MIT.</string>
     <string name="about_font_row">Шрифт</string>
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">Версії</string>

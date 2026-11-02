@@ -16,13 +16,14 @@
     <string name="support_copied">Manzil nusxalandi</string>
     <string name="logs_empty">Hozircha yozuvlar yoʻq.</string>
     <string name="license_intro">ERKIN — GNU General Public License v3.0 litsenziyasi ostidagi erkin dasturiy taʼminot. Litsenziyaning toʻliq matni quyida keltirilgan.</string>
-    <string name="license_app_title">ERKIN — GNU GPL-3.0</string>
     <string name="license_font_title">Google Sans (ichki shrift)</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). SIL Open Font License, 1.1-versiya ostida litsenziyalangan.</string>
     <string name="license_flags_title">Noto Color Emoji (davlat bayroqlari)</string>
     <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). SIL Open Font License, 1.1-versiya ostida litsenziyalangan.</string>
     <string name="license_strategies_title">ByeDPI strategiyalari roʻyxati (ByeByeDPI)</string>
     <string name="license_strategies_notice">romanvht muallifligidagi ByeByeDPI loyihasidan olingan (github.com/romanvht/ByeByeDPI). GNU General Public License 3-versiyasi asosida tarqatiladi.</string>
+    <string name="license_core_notice">Muallif: MetaCubeX (github.com/MetaCubeX/mihomo). GNU General Public License 3-versiyasi asosida tarqatiladi.</string>
+    <string name="license_byedpi_notice">Copyright (c) 2024 hufrea (github.com/hufrea/byedpi). MIT litsenziyasi asosida tarqatiladi.</string>
     <string name="about_font_row">Shrift</string>
     <string name="about_font_value">Google Sans · OFL 1.1</string>
     <string name="about_versions">Versiyalar</string>
