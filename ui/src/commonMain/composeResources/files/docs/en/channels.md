@@ -5,11 +5,14 @@ Every app uses one channel:
 - **Direct** — outside the tunnel, as without ERKIN.
 - **ByeDPI** — through ByeDPI on the device, no server needed.
 - **VPN** — through a server.
+- **Block** — no network while ERKIN is connected.
 
 ![Apps](../img/en/apps.webp)
 
-- Change the channel with the buttons to the right of an app.
-- Apply to all sets the channel for every app in the list, or only for the search results. It can be undone.
-- A VPN app shows its server under the name. Tap it to give the app its own server instead of the main one.
+- Tap the button to the right of an app to pick its channel. An app with its own server shows the server's name on the button.
+- In the menu, the Server row under VPN gives the app its own server or chain instead of the main one.
+- The chips above the list count the apps in each channel and filter the list.
+- To change several apps at once, long-press an app or tap the select button in the search field, check the apps and pick a channel or server. It can be undone.
 - The channel for new apps is set in Settings → Applications. ru, vk and yandex apps start in Direct.
-- Rules win over the channel: a connection that matches a rule goes where the rule says.
+- Rules win over the channel: a connection that matches a rule goes where the rule says. A VPN rule can have its own server too.
+- Block wins over rules: a blocked app gets no network at all.

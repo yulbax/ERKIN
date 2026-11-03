@@ -26,11 +26,16 @@ Get the latest APKs, the Windows installer and the Linux packages from
 
 ## Features
 
-- **Per-app routing.** Assign every app one of three modes:
+- **Per-app routing.** Assign every app one of four modes:
   - **Direct** — leaves the device normally, with its real IP and no overhead.
-  - **VPN** — tunnelled through your proxy server.
+  - **VPN** — tunnelled through your proxy server, the main one or a server or chain of its own.
   - **ByeDPI** — routed through a built-in engine that defeats DPI-based censorship
     locally, without any remote server.
+  - **Block** — no network at all while ERKIN is connected.
+- **Routing rules.** Send domains, IP ranges and rule lists to Direct, ByeDPI, VPN or Block,
+  each VPN rule through the main server or a server of its own.
+- **Pause from the notification.** On Android, pause the connection for a moment and resume
+  it from the notification without opening the app.
 - **Wide protocol support.** Import servers from `vless`, `vmess`, `trojan`,
   `shadowsocks`, `hysteria2` and `wireguard` share links, AmneziaWG `vpn://` links,
   WireGuard / AmneziaWG `.conf` files, or a subscription URL.

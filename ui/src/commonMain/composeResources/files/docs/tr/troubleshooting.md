@@ -8,4 +8,8 @@
 
 **Ev ağındaki cihazlara erişilemiyor.** Ayarlar → Ağ’da Yerel ağı atla’yı açın.
 
+**Duraklatma.** Bildirimde Duraklat düğmesi vardır: ERKIN tüneli durdurur ve uygulamalar VPN, ByeDPI, kurallar ve engelleme olmadan doğrudan internete çıkar. Sürdür yeniden bağlanır.
+
+**Engellenen uygulamanın hâlâ ağ erişimi var.** Engelleme yalnızca ERKIN bağlıyken çalışır; duraklatıldığında veya kapatıldığında çalışmaz.
+
 **Rapor gönderme.** Günlük → Paylaş. Rapor uygulama, çekirdek ve ByeDPI günlüklerini içerir.
