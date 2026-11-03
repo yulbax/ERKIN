@@ -85,6 +85,8 @@
     <string name="apps_hint_direct">流量直连，不经过隧道</string>
     <string name="apps_hint_byedpi">流量经由 ByeDPI</string>
     <string name="apps_hint_vpn">流量经由 VPN · 在通道菜单中点 › 选择服务器</string>
+    <string name="apps_hint_block">ERKIN 连接期间无法访问网络</string>
+    <string name="apps_block_note">ERKIN 连接期间</string>
     <string name="apps_hint_ru_default">ru/vk/yandex 应用默认归入 Direct</string>
     <string name="app_server_main">主服务器 · %1$s</string>
     <string name="dialog_error">错误</string>

@@ -126,9 +126,10 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     if (!appsHintSeen) AppsHint(onDismiss = viewModel::dismissAppsHint)
-                    when (mode) {
+                    when (val current = mode) {
                         is AppsMode.Selecting -> BulkChannelBar(
                             enabled = selectedCount > 0,
+                            blockEnabled = current.canBlock(apps.size),
                             vpnEnabled = choices.vpnEnabled,
                             canChooseServer = choices.canChoose,
                             onSelect = { type -> offerUndo(type, viewModel.setConnectionTypeForSelection(type)) },

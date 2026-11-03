@@ -37,7 +37,7 @@ data class SettingsEntity(
     val tunnelDirectApps: Boolean = false
 ) {
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
-        ConnectionType.fromWire(newAppsConnectionType) ?: platformDefault
+        ConnectionType.fromWire(newAppsConnectionType)?.takeIf { it in ConnectionType.FOR_NEW_APPS } ?: platformDefault
 
     fun networkOptions(): NetworkOptions = NetworkOptions(
         mtu = mtu,

@@ -191,6 +191,8 @@ object MihomoConfigBuilder {
                 add("IN-NAME,$PROBE_LISTENER,$vpnTarget")
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
                 desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
+                processRules(PROCESS_PATH, engine.blockedPackages.filter(::isExecutablePath)) { REJECT }
+                processRules(PROCESS_NAME, engine.blockedPackages.filterNot(::isExecutablePath)) { REJECT }
                 if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
                 rules.forEach { rule ->

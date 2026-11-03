@@ -16,7 +16,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.kdroid.composetray.tray.api.Tray
 import io.github.yulbax.erkin.data.AppDao
-import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.RoutedApps
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.ui.components.ExitConfirmDialog
@@ -159,7 +159,7 @@ private const val TRAY_ICON_WINDOWS = "erkin-icon.ico"
 private fun autoConnect(settings: SettingsRepository, profiles: ProfileRepository, apps: AppDao, launcher: VpnLauncher) {
     val shouldConnect = runBlocking {
         settings.settings.first().autoConnect &&
-            (profiles.selected.first() != null || apps.getAllAppsSnapshot().any { it.connectionType == ConnectionType.BYEDPI })
+            (profiles.selected.first() != null || RoutedApps.from(apps.getAllAppsSnapshot()).runsWithoutServer)
     }
     if (shouldConnect) launcher.start()
 }

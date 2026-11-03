@@ -50,6 +50,14 @@ class AppsStateTest {
     }
 
     @Test
+    fun blockIsAllowedUnlessEveryAppIsSelected() {
+        val selecting = AppsMode.Selecting(setOf(telegram.packageName))
+
+        assertTrue(selecting.canBlock(totalApps = 2))
+        assertFalse(selecting.canBlock(totalApps = 1))
+    }
+
+    @Test
     fun anAppFollowingTheMainServerHasNoCustomLabel() {
         assertEquals(CurrentServer.Main, choices.current(telegram))
         assertEquals(CurrentServer.Main, choices.current(telegram.copy(serverId = main.id)))

@@ -10,10 +10,10 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun NewAppsChannelRow(selected: ConnectionType, onSelect: (ConnectionType) -> Unit) {
-    val labels = ConnectionType.entries.associateWith { it.label() }
+    val labels = ConnectionType.FOR_NEW_APPS.associateWith { it.label() }
     DropdownSetting(
         label = stringResource(Res.string.new_apps_channel),
-        options = ConnectionType.entries,
+        options = ConnectionType.FOR_NEW_APPS,
         selected = selected,
         optionLabel = labels::getValue,
         onSelect = onSelect

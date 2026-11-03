@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import io.github.yulbax.erkin.data.AppDatabase
-import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.RoutedApps
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.util.ErkinLog
 import kotlinx.coroutines.CancellationException
@@ -32,16 +32,16 @@ class BootReceiver : BroadcastReceiver(), KoinComponent {
                 withTimeout(RECEIVER_TIMEOUT_MS.milliseconds) {
                     val settings = database.settingsDao().observeSettings().first() ?: SettingsEntity()
                     val serverSelected = database.profileDao().getSelected() != null
-                    val hasByeDpiApps = database.appDao().getAllAppsSnapshot().any { it.connectionType == ConnectionType.BYEDPI }
+                    val runsWithoutServer = RoutedApps.from(database.appDao().getAllAppsSnapshot()).runsWithoutServer
                     val consentGranted = VpnService.prepare(context) == null
-                    if (settings.autoConnect && (serverSelected || hasByeDpiApps) && consentGranted) {
+                    if (settings.autoConnect && (serverSelected || runsWithoutServer) && consentGranted) {
                         log.i(TAG, "boot received: starting VPN")
                         ErkinVpnService.start(context)
                     } else {
                         log.i(
                             TAG,
                             "autostart skipped: autoConnect=${settings.autoConnect} " +
-                                "serverSelected=$serverSelected byedpiApps=$hasByeDpiApps consent=$consentGranted"
+                                "serverSelected=$serverSelected runsWithoutServer=$runsWithoutServer consent=$consentGranted"
                         )
                     }
                 }

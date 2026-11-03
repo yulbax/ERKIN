@@ -64,6 +64,35 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun blockedAppsAreRejectedBeforeUserRules() {
+        val engine = engine(
+            listOf(vless), "p1", emptyList(), listOf("org.vpn"),
+            rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.DIRECT))
+        ).copy(blockedPackages = listOf("org.blocked"))
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject
+        assertEquals(
+            listOf(
+                "IN-NAME,probe-in,p1",
+                "PROCESS-NAME,org.blocked,REJECT",
+                "DOMAIN-SUFFIX,example.org,DIRECT",
+                "PROCESS-NAME,org.vpn,p1",
+                "MATCH,REJECT"
+            ),
+            config.rules()
+        )
+    }
+
+    @Test
+    fun blockedExecutablePathsAreMatchedByPath() {
+        val engine = engine(listOf(vless), "p1", emptyList(), emptyList())
+            .copy(blockedPackages = listOf("C:\\Games\\ads.exe", "tracker.exe"))
+        val rules = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject.rules()
+
+        assertTrue("PROCESS-PATH,C:\\Games\\ads.exe,REJECT" in rules)
+        assertTrue("PROCESS-NAME,tracker.exe,REJECT" in rules)
+    }
+
+    @Test
     fun appsBoundToAnotherServerAreRoutedToIt() {
         val other = vless.copy(tag = "p2")
         val engine = engine(listOf(vless, other), "p1", emptyList(), listOf("org.main", "org.other"))

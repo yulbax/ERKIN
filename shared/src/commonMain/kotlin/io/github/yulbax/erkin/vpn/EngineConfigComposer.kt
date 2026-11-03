@@ -61,7 +61,7 @@ object EngineConfigComposer {
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
         val routed = RoutedApps.from(foreignApps, hasServers = selected != null, tunnelDirectApps = inputs.settings.tunnelDirectApps)
         check(!routed.isEmpty) {
-            if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN or ByeDPI"
+            if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN, ByeDPI or Block"
         }
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
@@ -86,9 +86,10 @@ object EngineConfigComposer {
                 rules = rules,
                 ruleLists = lists.mapValues { it.value.kinds },
                 vpnTargets = vpnTargets,
-                directPackages = routed.directPackages
+                directPackages = routed.directPackages,
+                blockedPackages = routed.blockedPackages
             ),
-            configName = selected?.name?.ifBlank { "(unnamed)" } ?: "(ByeDPI only)",
+            configName = selected?.name?.ifBlank { "(unnamed)" } ?: if (routed.hasByeDpi) "(ByeDPI only)" else "(Block only)",
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
             sessionRequirements = (listOf(active) + bound.values).flatMapTo(mutableSetOf()) {
                 it.lastOrNull()?.sessionRequirements.orEmpty()

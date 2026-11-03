@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedToggleButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -50,11 +52,12 @@ import io.github.yulbax.erkin.ui.viewmodel.ServerLabel
 import org.jetbrains.compose.resources.stringResource
 
 private val SERVER_ARROW_SHIFT = 16.dp
+private val MENU_ORDER = listOf(ConnectionType.DIRECT, ConnectionType.BYEDPI, ConnectionType.VPN, ConnectionType.BLOCK)
 private val CHANNEL_WIDTH = 112.dp
 private val CHANNEL_MAX_WIDTH = 140.dp
 private val CHANNEL_HEIGHT = 40.dp
 private val BULK_HEIGHT = 40.dp
-private val BULK_SERVER_WIDTH = 40.dp
+private val BULK_SERVER_WIDTH = 32.dp
 
 private const val TINT_ALPHA_DARK = 0.2f
 private const val TINT_ALPHA_LIGHT = 0.14f
@@ -63,6 +66,7 @@ private class ChannelAccent(val dark: Color, val light: Color)
 
 private val ConnectionType.accent: ChannelAccent?
     get() = when (this) {
+        ConnectionType.BLOCK -> ChannelAccent(dark = Color(0xFFF2554D), light = Color(0xFFC62828))
         ConnectionType.DIRECT -> null
         ConnectionType.BYEDPI -> ChannelAccent(dark = Color(0xFF1FA3CF), light = Color(0xFF0E7490))
         ConnectionType.VPN -> ChannelAccent(dark = Color(0xFF2BAE5A), light = Color(0xFF15803D))
@@ -135,9 +139,21 @@ internal fun ChannelMenu(
     onChooseServer: () -> Unit
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, shape = RoundedCornerShape(16.dp)) {
-        ConnectionType.entries.forEach { type ->
+        MENU_ORDER.forEach { type ->
+            if (type == ConnectionType.BLOCK) HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             DropdownMenuItem(
-                text = { Text(type.label()) },
+                text = {
+                    Column {
+                        Text(type.label())
+                        if (type == ConnectionType.BLOCK) {
+                            Text(
+                                stringResource(Res.string.apps_block_note),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
                 leadingIcon = { ConnectionTypeIcon(type, Modifier.size(20.dp)) },
                 trailingIcon = {
                     val serverButton = type == ConnectionType.VPN && canChooseServer
@@ -167,6 +183,7 @@ internal fun ChannelMenu(
 @Composable
 internal fun BulkChannelBar(
     enabled: Boolean,
+    blockEnabled: Boolean,
     vpnEnabled: Boolean,
     canChooseServer: Boolean,
     onSelect: (ConnectionType) -> Unit,
@@ -183,9 +200,9 @@ internal fun BulkChannelBar(
             ElevatedToggleButton(
                 checked = false,
                 onCheckedChange = { onSelect(type) },
-                enabled = enabled && (vpnEnabled || !type.needsServer),
+                enabled = enabled && (vpnEnabled || !type.needsServer) && (blockEnabled || type != ConnectionType.BLOCK),
                 shapes = shapes(index, lastIndex),
-                contentPadding = PaddingValues(horizontal = 6.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp),
                 modifier = Modifier.weight(1f).fillMaxHeight()
             ) {
                 ConnectionTypeIcon(type, Modifier.size(16.dp))

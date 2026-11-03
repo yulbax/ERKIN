@@ -11,6 +11,8 @@ sealed interface AppsMode {
     data class Selecting(val packages: Set<String> = emptySet()) : AppsMode {
         fun toggled(packageName: String): Selecting =
             Selecting(if (packageName in packages) packages - packageName else packages + packageName)
+
+        fun canBlock(totalApps: Int): Boolean = packages.size < totalApps
     }
 
     fun rowMode(packageName: String): AppRowMode = when (this) {

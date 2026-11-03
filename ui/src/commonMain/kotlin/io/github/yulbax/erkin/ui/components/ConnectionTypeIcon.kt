@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ class ConnectionTypeUi(val label: StringResource, val hint: StringResource, val 
 
 val ConnectionType.ui: ConnectionTypeUi
     get() = when (this) {
+        ConnectionType.BLOCK -> ConnectionTypeUi(Res.string.connection_type_block, Res.string.apps_hint_block, IconSource.Vector(Icons.Filled.Block))
         ConnectionType.DIRECT -> ConnectionTypeUi(Res.string.connection_type_direct, Res.string.apps_hint_direct, IconSource.Vector(Icons.Filled.ArrowUpward))
         ConnectionType.BYEDPI -> ConnectionTypeUi(Res.string.connection_type_byedpi, Res.string.apps_hint_byedpi, IconSource.Drawable(Res.drawable.ic_byedpi))
         ConnectionType.VPN -> ConnectionTypeUi(Res.string.connection_type_vpn, Res.string.apps_hint_vpn, IconSource.Vector(Icons.Filled.VpnKey))

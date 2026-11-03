@@ -121,7 +121,8 @@ class DesktopRenderTest {
             database.appDao().upsertApps(
                 listOf(
                     App("telegram.exe", "Telegram", false, ConnectionType.VPN),
-                    App("discord.exe", "Discord", false, ConnectionType.BYEDPI)
+                    App("discord.exe", "Discord", false, ConnectionType.BYEDPI),
+                    App("chrome.exe", "Google Chrome", false, ConnectionType.BLOCK)
                 )
             )
         }
@@ -220,10 +221,12 @@ class DesktopRenderTest {
 
     @Test
     fun rendersAppsInSelectionMode() {
-        render("apps-selecting", width = 420, height = 600) {
-            val viewModel = koinViewModel<AppsViewModel>()
-            LaunchedEffect(Unit) { viewModel.startSelecting("discord.exe") }
-            Apps(viewModel)
+        listOf("apps-selecting" to 420, "apps-selecting-narrow" to 360).forEach { (name, width) ->
+            render(name, width = width, height = 600) {
+                val viewModel = koinViewModel<AppsViewModel>()
+                LaunchedEffect(Unit) { viewModel.startSelecting("discord.exe") }
+                Apps(viewModel)
+            }
         }
     }
 

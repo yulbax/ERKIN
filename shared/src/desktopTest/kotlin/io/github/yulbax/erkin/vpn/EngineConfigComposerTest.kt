@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.vpn
 
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.RoutedApps
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
@@ -38,6 +39,34 @@ class EngineConfigComposerTest {
         assertEquals(listOf("org.example.vpn", "org.example.direct"), on.engineConfig.tunneledPackages)
         assertEquals(listOf("org.example.direct"), on.engineConfig.directPackages)
         assertTrue(on.isStructuralChangeFrom(off))
+    }
+
+    @Test
+    fun blockedAppsEnterTheTunAndChangeTheRouting() {
+        val vpn = App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN)
+        val blocked = App("org.example.ads", "Ads", isSystemApp = false, connectionType = ConnectionType.BLOCK)
+        val before = EngineConfigComposer.compose(inputs(listOf(vpn, blocked.copy(connectionType = ConnectionType.DIRECT))), OWN, BYEDPI_PORT)
+        val after = EngineConfigComposer.compose(inputs(listOf(vpn, blocked)), OWN, BYEDPI_PORT)
+
+        assertEquals(listOf("org.example.ads"), after.engineConfig.blockedPackages)
+        assertEquals(listOf("org.example.ads", "org.example.vpn"), after.engineConfig.tunneledPackages)
+        assertTrue(after.isStructuralChangeFrom(before))
+    }
+
+    @Test
+    fun blockedAppsRunWithoutAServer() {
+        val apps = listOf(App("org.example.ads", "Ads", isSystemApp = false, connectionType = ConnectionType.BLOCK))
+        val config = EngineConfigComposer.compose(inputs(apps).copy(selected = null, profiles = emptyList()), OWN, BYEDPI_PORT)
+
+        assertEquals(listOf("org.example.ads"), config.engineConfig.tunneledPackages)
+        assertFalse(config.vpnActive)
+        assertFalse(config.needsByeDpi)
+        assertTrue(RoutedApps.from(apps, hasServers = false).runsWithoutServer)
+    }
+
+    @Test
+    fun blockIsNotAChannelForNewApps() {
+        assertEquals(ConnectionType.VPN, SettingsEntity(newAppsConnectionType = "BLOCK").newAppsConnectionType(ConnectionType.VPN))
     }
 
     @Test

@@ -85,6 +85,8 @@
     <string name="apps_hint_direct">трафік іде напряму поза тунелем</string>
     <string name="apps_hint_byedpi">трафік іде через ByeDPI</string>
     <string name="apps_hint_vpn">трафік іде через VPN · сервер вибирається кнопкою › у меню каналу</string>
+    <string name="apps_hint_block">немає доступу до мережі, доки ERKIN підключено</string>
+    <string name="apps_block_note">Доки ERKIN підключено</string>
     <string name="apps_hint_ru_default">Застосунки ru/vk/yandex одразу потрапляють у Direct</string>
     <string name="app_server_main">Основний · %1$s</string>
     <string name="dialog_error">Помилка</string>

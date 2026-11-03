@@ -85,6 +85,8 @@
     <string name="apps_hint_direct">trafik tunneldan tashqarida, toʻgʻridan-toʻgʻri boradi</string>
     <string name="apps_hint_byedpi">trafik ByeDPI orqali boradi</string>
     <string name="apps_hint_vpn">trafik VPN orqali boradi · server kanal menyusidagi › tugmasi bilan tanlanadi</string>
+    <string name="apps_hint_block">ERKIN ulangan paytda tarmoqqa kirish yoʻq</string>
+    <string name="apps_block_note">ERKIN ulangan paytda</string>
     <string name="apps_hint_ru_default">ru/vk/yandex ilovalari Toʻgʻridan-toʻgʻri kanalda boshlanadi</string>
     <string name="app_server_main">Asosiy · %1$s</string>
     <string name="dialog_error">Xato</string>

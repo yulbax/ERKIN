@@ -453,7 +453,7 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Bool
         Spacer(Modifier.height(12.dp))
     }
 
-    val canStart = c.ui.hasByedpiApps || (c.servers.selected != null && c.ui.hasRoutedApps)
+    val canStart = c.ui.runsWithoutServer || (c.servers.selected != null && c.ui.hasRoutedApps)
     val enabled = c.state != VpnState.Connecting && (c.connected || canStart)
 
     if (landscape) {

@@ -87,6 +87,9 @@
     <string name="apps_hint_direct">traffic goes directly, outside the tunnel</string>
     <string name="apps_hint_byedpi">traffic goes through ByeDPI</string>
     <string name="apps_hint_vpn">traffic goes through the VPN · pick a server with › in the channel menu</string>
+    <string name="connection_type_block">Block</string>
+    <string name="apps_hint_block">no network access while ERKIN is connected</string>
+    <string name="apps_block_note">While ERKIN is connected</string>
     <string name="apps_hint_ru_default">ru/vk/yandex apps start in Direct</string>
     <string name="app_server_main">Main · %1$s</string>
     <string name="dialog_error">Error</string>
