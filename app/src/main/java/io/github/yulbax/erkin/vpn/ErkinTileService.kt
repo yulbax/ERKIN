@@ -71,7 +71,6 @@ class ErkinTileService : TileService(), KoinComponent {
         get() = when (this) {
             VpnState.Connecting, VpnState.Verifying -> R.string.tile_connecting
             is VpnState.Connected -> R.string.tile_connected
-            VpnState.Paused -> R.string.tile_paused
             VpnState.Disconnected, is VpnState.Error -> R.string.tile_off
         }
 }

@@ -26,13 +26,9 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class VpnNotificationController(
     private val service: Service,
-    private val stats: StateFlow<ConnectionStats>,
-    private val allowsPause: () -> Boolean
+    private val stats: StateFlow<ConnectionStats>
 ) {
-    private var paused = false
-
     fun startForeground() {
-        paused = false
         service.createNotificationChannel(
             CHANNEL_ID,
             service.getString(R.string.vpn_notification_channel),
@@ -44,24 +40,19 @@ class VpnNotificationController(
         ServiceCompat.startForeground(service, NOTIFICATION_ID, build(), type)
     }
 
-    fun showPaused() {
-        paused = true
-        notifyCurrent()
-    }
-
+    
     @OptIn(FlowPreview::class)
     fun observe(scope: CoroutineScope): Job = scope.launch {
         stats
             .map { Triple(statusLine(it), speedLine(it), it.configName) }
             .distinctUntilChanged()
             .debounce(1000.milliseconds)
-            .collect { notifyCurrent() }
-    }
-
-    private fun notifyCurrent() {
-        runCatching {
-            service.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, build())
-        }
+            .collect {
+                runCatching {
+                    service.getSystemService(NotificationManager::class.java)
+                        .notify(NOTIFICATION_ID, build())
+                }
+            }
     }
 
     private fun build(): Notification {
@@ -70,15 +61,15 @@ class VpnNotificationController(
             Intent(service, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
+        val stopIntent = PendingIntent.getService(
+            service, 1,
+            Intent(service, ErkinVpnService::class.java).setAction(ErkinVpnService.ACTION_STOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
         val current = stats.value
         val title = current.configName.ifBlank { service.getString(R.string.app_name) }
-        val status = if (paused) service.getString(R.string.notification_paused) else statusLine(current)
-        val builder = NotificationCompat.Builder(service, CHANNEL_ID)
-        when {
-            paused -> builder.addAction(0, service.getString(R.string.vpn_notification_resume), actionIntent(ErkinVpnService.ACTION_START, 2))
-            allowsPause() -> builder.addAction(0, service.getString(R.string.vpn_notification_pause), actionIntent(ErkinVpnService.ACTION_PAUSE, 2))
-        }
-        return builder
+        val status = statusLine(current)
+        return NotificationCompat.Builder(service, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(status)
             .setSubText(speedLine(current))
@@ -87,16 +78,10 @@ class VpnNotificationController(
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(contentIntent)
-            .addAction(0, service.getString(R.string.vpn_notification_stop), actionIntent(ErkinVpnService.ACTION_STOP, 1))
+            .addAction(0, service.getString(R.string.vpn_notification_stop), stopIntent)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .build()
     }
-
-    private fun actionIntent(action: String, requestCode: Int): PendingIntent = PendingIntent.getService(
-        service, requestCode,
-        Intent(service, ErkinVpnService::class.java).setAction(action),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-    )
 
     private fun statusLine(stats: ConnectionStats): String {
         val vpn = service.getString(

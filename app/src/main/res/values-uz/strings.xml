@@ -3,13 +3,9 @@
     <string name="app_name">ERKIN</string>
     <string name="vpn_notification_channel">VPN holati</string>
     <string name="vpn_notification_stop">Toʻxtatish</string>
-    <string name="vpn_notification_pause">Pauza</string>
-    <string name="vpn_notification_resume">Davom ettirish</string>
-    <string name="notification_paused">Toʻxtatilgan · trafik toʻgʻridan-toʻgʻri boradi</string>
     <string name="tile_connected">Ulangan</string>
     <string name="tile_connecting">Ulanmoqda…</string>
     <string name="tile_off">Oʻchiq</string>
-    <string name="tile_paused">Pauza</string>
     <string name="notification_vpn_up">VPN ishlamoqda</string>
     <string name="notification_vpn_down">VPN mavjud emas</string>
     <string name="notification_byedpi_up">ByeDPI ishlamoqda</string>

@@ -27,14 +27,11 @@ interface VpnHost {
     fun allowsUserStop(): Boolean
 
     fun onSessionStopped(stopToken: Int?, stopHost: Boolean)
-
-    fun onSessionPaused() = Unit
 }
 
 private sealed interface ActorCommand {
     data class Start(val token: Int?, val systemInitiated: Boolean) : ActorCommand
     data class Stop(val token: Int?, val force: Boolean) : ActorCommand
-    data object Pause : ActorCommand
     data class ByeDpiExited(val run: Long, val code: Int) : ActorCommand
     data class Work(val command: Command, val generation: Long) : ActorCommand
 }
@@ -74,8 +71,6 @@ class VpnController(
 
     fun stop(token: Int?, force: Boolean) = enqueueControl(ActorCommand.Stop(token, force))
 
-    fun pause() = enqueueControl(ActorCommand.Pause)
-
     fun requestWork(command: Command) {
         val work = ActorCommand.Work(command, session.generation)
         if (workCommands.trySend(work).isFailure) {
@@ -108,7 +103,6 @@ class VpnController(
 
     private fun prepareShutdown(): VpnState? {
         val needsCleanup = !session.isIdle
-        if (stateRepository.state.value == VpnState.Paused) stateRepository.update(VpnState.Disconnected)
         val finalState = stateRepository.state.value.takeIf { it is VpnState.Error } ?: VpnState.Disconnected
         session.markStopping()
         controlCommands.close()
@@ -156,7 +150,6 @@ class VpnController(
                 command.token?.let { latestToken = it }
                 requestStop(command)
             }
-            ActorCommand.Pause -> pauseSession()
             is ActorCommand.ByeDpiExited -> session.onByeDpiExited(command.run, command.code)
             is ActorCommand.Work -> if (command.generation == session.generation) work(command.command)
         }
@@ -191,18 +184,10 @@ class VpnController(
         stopSession(VpnState.Disconnected, command.token ?: latestToken, stopHost = true)
     }
 
-    private fun pauseSession() {
-        if (session.isIdle || !host.allowsUserStop()) return
-        while (workCommands.tryReceive().isSuccess) continue
-        session.stop(VpnState.Paused)
-        host.onSessionPaused()
-    }
-
     private fun handleFailure(command: ActorCommand, error: Throwable) {
         val operation = when (command) {
             is ActorCommand.Start -> "start"
             is ActorCommand.Stop -> "stop"
-            ActorCommand.Pause -> "pause"
             is ActorCommand.ByeDpiExited -> "ByeDPI restart"
             is ActorCommand.Work -> command.command.toString()
         }

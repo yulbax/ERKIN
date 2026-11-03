@@ -100,8 +100,6 @@
     <string name="vpn_establishing_tunnel">در حال برقراری تونل</string>
     <string name="vpn_checking_connectivity">در حال بررسی اتصال</string>
     <string name="vpn_tap_to_disconnect">برای قطع بزنید</string>
-    <string name="vpn_paused">متوقف شده</string>
-    <string name="vpn_paused_hint">ترافیک مستقیم عبور می‌کند. برای ادامه بزنید</string>
     <string name="toggle_connection_cd">تغییر وضعیت اتصال</string>
     <string name="channel_status_off">خاموش</string>
     <string name="channel_status_online">آنلاین · %1$d میلی‌ثانیه</string>

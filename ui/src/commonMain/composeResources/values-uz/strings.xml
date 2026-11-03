@@ -100,8 +100,6 @@
     <string name="vpn_establishing_tunnel">Tunnel oʻrnatilmoqda</string>
     <string name="vpn_checking_connectivity">Ulanish tekshirilmoqda</string>
     <string name="vpn_tap_to_disconnect">Uzish uchun bosing</string>
-    <string name="vpn_paused">Toʻxtatilgan</string>
-    <string name="vpn_paused_hint">Trafik toʻgʻridan-toʻgʻri boradi. Davom ettirish uchun bosing</string>
     <string name="toggle_connection_cd">Ulanishni yoqish/oʻchirish</string>
     <string name="channel_status_off">oʻchiq</string>
     <string name="channel_status_online">onlayn · %1$d ms</string>

@@ -8,8 +8,6 @@
 
 **Uy tarmogʻidagi qurilmalar koʻrinmayapti.** «Sozlamalar → Tarmoq»da «Lokal tarmoqni chetlab oʻtish»ni yoqing.
 
-**Pauza.** Bildirishnomada «Pauza» tugmasi bor: ERKIN tunnelni toʻxtatadi va ilovalar tarmoqqa VPN, ByeDPI, qoidalar va bloklashsiz toʻgʻridan-toʻgʻri chiqadi. «Davom ettirish» qayta ulaydi.
-
-**Bloklangan ilova baribir tarmoqqa chiqyapti.** Bloklash faqat ERKIN ulangan paytda ishlaydi, pauzada yoki uzilganda ishlamaydi.
+**Bloklangan ilova baribir tarmoqqa chiqyapti.** Bloklash faqat ERKIN ulangan paytda ishlaydi.
 
 **Hisobot yuborish.** «Jurnal» → «Ulashish». Hisobotga ilova, yadro va ByeDPI jurnallari kiradi.

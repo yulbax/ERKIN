@@ -8,8 +8,6 @@
 
 **Home network devices are unreachable.** Turn on Bypass LAN in Settings → Network.
 
-**Pause.** The notification has Pause: ERKIN stops the tunnel and apps go online directly, without VPN, ByeDPI, rules or blocking. Resume connects again.
-
-**A blocked app still has network.** Blocking works only while ERKIN is connected, not while it is paused or off.
+**A blocked app still has network.** Blocking works only while ERKIN is connected.
 
 **Send a report.** Logs → Share. The report has the app, core and ByeDPI logs.

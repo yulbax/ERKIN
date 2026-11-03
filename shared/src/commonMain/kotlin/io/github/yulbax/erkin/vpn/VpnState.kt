@@ -7,8 +7,6 @@ sealed interface VpnState {
 
     data object Disconnected : VpnState
 
-    data object Paused : VpnState
-
     data object Connecting : VpnState
 
     data object Verifying : VpnState

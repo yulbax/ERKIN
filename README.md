@@ -34,8 +34,8 @@ Get the latest APKs, the Windows installer and the Linux packages from
   - **Block** — no network at all while ERKIN is connected.
 - **Routing rules.** Send domains, IP ranges and rule lists to Direct, ByeDPI, VPN or Block,
   each VPN rule through the main server or a server of its own.
-- **Pause from the notification.** On Android, pause the connection for a moment and resume
-  it from the notification without opening the app.
+- **Quick Settings tile.** On Android, turn ERKIN on or off from the notification shade
+  without opening the app.
 - **Wide protocol support.** Import servers from `vless`, `vmess`, `trojan`,
   `shadowsocks`, `hysteria2` and `wireguard` share links, AmneziaWG `vpn://` links,
   WireGuard / AmneziaWG `.conf` files, or a subscription URL.
