@@ -129,9 +129,9 @@ private const val DOC_SLUG = "slug"
 val primaryNavPages = listOf(
     Screen.Main,
     Screen.Apps,
-    Screen.ByeDpi,
     Screen.Rules,
     Screen.Chains,
+    Screen.ByeDpi,
     Screen.Settings,
     Screen.Logs
 )
