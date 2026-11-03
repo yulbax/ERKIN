@@ -13,6 +13,7 @@ import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.vpn.VpnStateRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,10 +37,11 @@ class AppsViewModel(
     private val appDao: AppDao,
     private val installedAppsRepository: InstalledAppsSource,
     private val settingsRepository: SettingsRepository,
-    profileRepository: ProfileRepository
+    profileRepository: ProfileRepository,
+    vpnStateRepository: VpnStateRepository
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices()
+    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServerChoices())
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings

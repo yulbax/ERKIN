@@ -282,7 +282,8 @@ class VpnSession(
                 probe = ProbeParams(
                     engine = engine,
                     byeDpiPort = byeDpiProbePort.takeIf { byeDpi.isRunning },
-                    vpnActive = config.vpnActive
+                    vpnActive = config.vpnActive,
+                    serverTags = config.engineConfig.serverTags
                 ),
                 onRefreshSubscription = { refreshSubscription() },
                 onRecoveryReload = { requestWork(Command.Recover) },

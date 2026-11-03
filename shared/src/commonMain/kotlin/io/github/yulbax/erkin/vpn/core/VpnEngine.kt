@@ -13,6 +13,8 @@ interface VpnEngine {
 
     suspend fun measureVpnDelay(): Int?
 
+    suspend fun measureDelay(tag: String): Int?
+
     fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiPort
 
     fun stop()

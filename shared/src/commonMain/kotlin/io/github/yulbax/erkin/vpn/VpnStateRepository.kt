@@ -17,7 +17,8 @@ data class ConnectionStats(
     val byedpiTotal: Int = 0,
     val byeDpiPort: Int = 0,
     val uplink: Long = 0,
-    val downlink: Long = 0
+    val downlink: Long = 0,
+    val unreachableServers: Set<Long> = emptySet()
 )
 
 class VpnStateRepository {
@@ -44,7 +45,8 @@ class VpnStateRepository {
                 byedpiUp = false,
                 byedpiChecking = false,
                 byedpiReachable = 0,
-                byedpiTotal = 0
+                byedpiTotal = 0,
+                unreachableServers = emptySet()
             )
         }
     }

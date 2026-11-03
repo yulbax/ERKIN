@@ -208,8 +208,14 @@ class ProfileRepository(
         }
     }
 
-    private suspend fun clearServers(profiles: List<ProfileEntity>) {
-        val ids = profiles.map { it.id }
+    suspend fun unbindServers(ids: Collection<Long>) {
+        if (ids.isEmpty()) return
+        database.transaction { clearServerIds(ids.toList()) }
+    }
+
+    private suspend fun clearServers(profiles: List<ProfileEntity>) = clearServerIds(profiles.map { it.id })
+
+    private suspend fun clearServerIds(ids: List<Long>) {
         database.appDao().clearServers(ids)
         database.routingRuleDao().clearServers(ids)
     }

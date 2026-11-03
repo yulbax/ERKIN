@@ -168,6 +168,10 @@
     <string name="apps_server_title">Server</string>
     <string name="apps_server_search">Serverlarni qidirish</string>
     <string name="apps_choose_server_cd">Serverni tanlash</string>
+    <string name="apps_server_unreachable_cd">Server javob bermayapti</string>
+    <string name="apps_server_unreachable">Javob bermayapti</string>
+    <string name="servers_unreachable_message">Baʼzi ilovalar yoki qoidalar serveri javob bermayapti</string>
+    <string name="servers_use_main">Asosiyga</string>
     <string name="clear_search_cd">Qidiruvni tozalash</string>
     <string name="loading_apps">Ilovalar yuklanmoqda…</string>
     <string name="error_loading_apps">Ilovalarni yuklab boʻlmadi</string>

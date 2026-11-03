@@ -6,15 +6,18 @@ import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.vpn.VpnStateRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 
-internal fun ProfileRepository.serverChoices(): Flow<ServerChoices> =
-    combine(profiles, subscriptions) { servers, subscriptions ->
-        ServerChoices(servers, subscriptions.associateBy { it.id })
+internal fun ProfileRepository.serverChoices(states: VpnStateRepository): Flow<ServerChoices> =
+    combine(profiles, subscriptions, states.stats.map { it.unreachableServers }.distinctUntilChanged()) { servers, subscriptions, down ->
+        ServerChoices(servers, subscriptions.associateBy { it.id }, down)
     }
 
-data class ServerLabel(val name: String, val isChain: Boolean)
+data class ServerLabel(val name: String, val isChain: Boolean, val unreachable: Boolean = false)
 
 sealed interface CurrentServer {
     data object None : CurrentServer
@@ -24,7 +27,8 @@ sealed interface CurrentServer {
 
 class ServerChoices(
     val servers: List<ProfileEntity> = emptyList(),
-    val subscriptions: Map<Long, SubscriptionEntity> = emptyMap()
+    val subscriptions: Map<Long, SubscriptionEntity> = emptyMap(),
+    private val unreachable: Set<Long> = emptySet()
 ) {
     private val byId = servers.associateBy { it.id }
     private val labels = servers.associate { it.id to labelOf(it) }
@@ -41,7 +45,9 @@ class ServerChoices(
     fun current(app: AppInfo): CurrentServer = current(app.connectionType, app.serverId)
 
     fun label(channel: ConnectionType, serverId: Long?): ServerLabel? =
-        (current(channel, serverId) as? CurrentServer.Bound)?.let { labels[it.serverId] }
+        (current(channel, serverId) as? CurrentServer.Bound)?.let { bound ->
+            labels[bound.serverId]?.copy(unreachable = bound.serverId in unreachable)
+        }
 
     fun labelFor(app: AppInfo): ServerLabel? = label(app.connectionType, app.serverId)
 

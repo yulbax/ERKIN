@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.vpn.VpnCommandBus
+import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.vpn.core.RuleListSource
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
@@ -23,10 +24,11 @@ class RuleSetsViewModel(
     private val ruleListDatabase: RuleListDatabase,
     private val ruleRepository: RoutingRuleRepository,
     private val commandBus: VpnCommandBus,
-    profileRepository: ProfileRepository
+    profileRepository: ProfileRepository,
+    vpnStateRepository: VpnStateRepository
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices()
+    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServerChoices())
 
     val states: StateFlow<Map<String, RuleListState>> =

@@ -155,7 +155,7 @@ private fun AppRow(
                 expanded = menuOpen && browsing,
                 current = app.connectionType,
                 vpnEnabled = choices.vpnEnabled,
-                serverName = choices.menuServerName(app.connectionType, app.serverId),
+                server = choices.menuServer(app.connectionType, app.serverId),
                 onDismiss = { menuOpen = false },
                 onSelect = { type ->
                     menuOpen = false

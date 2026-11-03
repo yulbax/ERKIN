@@ -131,6 +131,34 @@ class ConfigBackupRepositoryTest {
     }
 
     @Test
+    fun unbindingServersMovesTheirAppsAndRulesToTheMainServer() = runBlocking {
+        val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        profiles.add("vless://id@main.example:443?security=tls#Main")
+        profiles.add("vless://id@down.example:443?security=tls#Down")
+        profiles.add("vless://id@up.example:443?security=tls#Up")
+        val byName = database.profileDao().getAll().associateBy { it.name }
+        val down = byName.getValue("Down").id
+        val up = byName.getValue("Up").id
+        database.appDao().upsertApps(
+            listOf(
+                App("org.down", "Down", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = down),
+                App("org.up", "Up", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = up)
+            )
+        )
+        database.routingRuleDao().append(
+            RoutingRuleEntity(type = RuleMatch.DOMAIN_SUFFIX.wire, value = "ru", target = RuleTarget.VPN.wire, serverId = down)
+        )
+
+        profiles.unbindServers(setOf(down))
+
+        val apps = database.appDao().getAllAppsSnapshot().associateBy { it.packageName }
+        assertNull(apps.getValue("org.down").serverId)
+        assertEquals(ConnectionType.VPN, apps.getValue("org.down").connectionType)
+        assertEquals(up, apps.getValue("org.up").serverId)
+        assertNull(database.routingRuleDao().getAll().single().serverId)
+    }
+
+    @Test
     fun chainsRoundTripWithTheirHopsRenumbered() = runBlocking {
         val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
         profiles.add("vless://id@entry.example:443?security=tls#Entry")

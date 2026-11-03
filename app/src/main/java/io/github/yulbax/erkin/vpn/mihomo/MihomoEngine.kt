@@ -81,11 +81,10 @@ class MihomoEngine(
         runCatching { Mihomocore.stop() }.onFailure { log.w(TAG, "mihomo stop failed", it) }
     }
 
-    override suspend fun measureVpnDelay(): Int? {
-        val tag = activeProxyTag.takeIf { it.isNotEmpty() } ?: return null
-        return withContext(Dispatchers.IO) {
-            Mihomocore.urlTest(tag, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS).takeIf { it > 0 }
-        }
+    override suspend fun measureVpnDelay(): Int? = activeProxyTag.takeIf { it.isNotEmpty() }?.let { measureDelay(it) }
+
+    override suspend fun measureDelay(tag: String): Int? = withContext(Dispatchers.IO) {
+        Mihomocore.urlTest(tag, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS).takeIf { it > 0 }
     }
 
     private fun launch(config: EngineConfig) {

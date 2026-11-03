@@ -51,7 +51,7 @@ import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ServerChoiceText
 import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
-import io.github.yulbax.erkin.ui.screens.apps.menuServerName
+import io.github.yulbax.erkin.ui.screens.apps.menuServer
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -243,7 +243,7 @@ internal fun RuleDialog(
             modifier = Modifier.fillMaxWidth()
         )
         if (target == RuleTarget.VPN) {
-            choices.menuServerName(target.channel, serverId)?.let { name ->
+            choices.menuServer(target.channel, serverId)?.let { server ->
                 Surface(
                     onClick = { pickingServer = true },
                     shape = RoundedCornerShape(12.dp),
@@ -254,7 +254,7 @@ internal fun RuleDialog(
                         modifier = Modifier.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        ServerChoiceText(name, Modifier.weight(1f))
+                        ServerChoiceText(server, Modifier.weight(1f))
                         Icon(
                             Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = stringResource(Res.string.apps_choose_server_cd),

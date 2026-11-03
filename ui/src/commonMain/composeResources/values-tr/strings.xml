@@ -168,6 +168,10 @@
     <string name="apps_server_title">Sunucu</string>
     <string name="apps_server_search">Sunucu ara</string>
     <string name="apps_choose_server_cd">Sunucu seç</string>
+    <string name="apps_server_unreachable_cd">Sunucu yanıt vermiyor</string>
+    <string name="apps_server_unreachable">Yanıt vermiyor</string>
+    <string name="servers_unreachable_message">Bazı uygulamaların veya kuralların sunucusu yanıt vermiyor</string>
+    <string name="servers_use_main">Ana sunucu</string>
     <string name="clear_search_cd">Aramayı temizle</string>
     <string name="loading_apps">Uygulamalar yükleniyor…</string>
     <string name="error_loading_apps">Uygulamalar yüklenemedi</string>

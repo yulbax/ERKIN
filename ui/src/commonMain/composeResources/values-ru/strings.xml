@@ -172,6 +172,10 @@
     <string name="apps_server_title">Сервер</string>
     <string name="apps_server_search">Поиск серверов</string>
     <string name="apps_choose_server_cd">Выбрать сервер</string>
+    <string name="apps_server_unreachable_cd">Сервер не отвечает</string>
+    <string name="apps_server_unreachable">Не отвечает</string>
+    <string name="servers_unreachable_message">Сервер некоторых приложений или правил не отвечает</string>
+    <string name="servers_use_main">На основной</string>
     <string name="clear_search_cd">Очистить поиск</string>
     <string name="loading_apps">Загрузка приложений…</string>
     <string name="error_loading_apps">Ошибка загрузки приложений</string>

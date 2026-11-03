@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedToggleButton
@@ -41,6 +43,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
+import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.ui
@@ -70,6 +73,12 @@ private val ConnectionType.accent: ChannelAccent?
         ConnectionType.VPN -> ChannelAccent(dark = Color(0xFF2BAE5A), light = Color(0xFF15803D))
     }
 
+private val WARNING = ChannelAccent(dark = Color(0xFFF9A825), light = Color(0xFFB26A00))
+private val WARNING_BORDER = 1.5.dp
+
+@Composable
+internal fun warningColor(): Color = if (LocalDarkTheme.current) WARNING.dark else WARNING.light
+
 private class ChannelColors(val container: Color, val icon: Color)
 
 @Composable
@@ -89,6 +98,7 @@ internal fun ChannelButton(
     onClick: () -> Unit
 ) {
     val colors = type.colors()
+    val warning = warningColor().takeIf { server?.unreachable == true }
     val width = if (server != null) {
         Modifier.widthIn(min = CHANNEL_WIDTH, max = CHANNEL_MAX_WIDTH)
     } else {
@@ -100,16 +110,21 @@ internal fun ChannelButton(
         shape = RoundedCornerShape(12.dp),
         color = colors.container,
         contentColor = MaterialTheme.colorScheme.onSurface,
+        border = warning?.let { BorderStroke(WARNING_BORDER, it) },
         modifier = width.height(CHANNEL_HEIGHT).alpha(if (enabled) 1f else DISABLED_ALPHA)
     ) {
         Row(
             modifier = Modifier.width(IntrinsicSize.Max).padding(start = 10.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CompositionLocalProvider(LocalContentColor provides colors.icon) {
+            CompositionLocalProvider(LocalContentColor provides (warning ?: colors.icon)) {
                 SourceIcon(
-                    source = if (server?.isChain == true) ChainIcon else type.ui.icon,
-                    contentDescription = type.label(),
+                    source = when {
+                        warning != null -> IconSource.Vector(Icons.Filled.Warning)
+                        server?.isChain == true -> ChainIcon
+                        else -> type.ui.icon
+                    },
+                    contentDescription = if (warning != null) stringResource(Res.string.apps_server_unreachable_cd) else type.label(),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -131,7 +146,7 @@ internal fun ChannelMenu(
     expanded: Boolean,
     current: ConnectionType?,
     vpnEnabled: Boolean,
-    serverName: String?,
+    server: ServerLabel?,
     onDismiss: () -> Unit,
     onSelect: (ConnectionType) -> Unit,
     onChooseServer: () -> Unit
@@ -161,16 +176,22 @@ internal fun ChannelMenu(
                 enabled = vpnEnabled || !type.needsServer,
                 onClick = { onSelect(type) }
             )
-            if (type == ConnectionType.VPN && serverName != null) ServerMenuItem(serverName, onChooseServer)
+            if (type == ConnectionType.VPN && server != null) ServerMenuItem(server, onChooseServer)
         }
     }
 }
 
 @Composable
-private fun ServerMenuItem(serverName: String, onClick: () -> Unit) {
+private fun ServerMenuItem(server: ServerLabel, onClick: () -> Unit) {
     DropdownMenuItem(
-        text = { ServerChoiceText(serverName) },
-        leadingIcon = { Spacer(Modifier.size(20.dp)) },
+        text = { ServerChoiceText(server) },
+        leadingIcon = {
+            if (server.unreachable) {
+                Icon(Icons.Filled.Warning, contentDescription = null, tint = warningColor(), modifier = Modifier.size(20.dp))
+            } else {
+                Spacer(Modifier.size(20.dp))
+            }
+        },
         trailingIcon = {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -178,12 +199,14 @@ private fun ServerMenuItem(serverName: String, onClick: () -> Unit) {
                 tint = MaterialTheme.colorScheme.primary
             )
         },
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
         onClick = onClick
     )
 }
 
 @Composable
-internal fun ServerChoiceText(serverName: String, modifier: Modifier = Modifier) {
+internal fun ServerChoiceText(server: ServerLabel, modifier: Modifier = Modifier) {
+    val warning = warningColor().takeIf { server.unreachable }
     Column(modifier = modifier) {
         Text(
             stringResource(Res.string.apps_server_title),
@@ -191,19 +214,26 @@ internal fun ServerChoiceText(serverName: String, modifier: Modifier = Modifier)
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            serverName,
+            server.name,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
+            color = warning ?: MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+        if (warning != null) {
+            Text(
+                stringResource(Res.string.apps_server_unreachable),
+                style = MaterialTheme.typography.labelSmall,
+                color = warning
+            )
+        }
     }
 }
 
 @Composable
-internal fun ServerChoices.menuServerName(channel: ConnectionType, serverId: Long?): String? {
+internal fun ServerChoices.menuServer(channel: ConnectionType, serverId: Long?): ServerLabel? {
     if (!canChoose) return null
-    return label(channel, serverId)?.name ?: main?.let { stringResource(Res.string.app_server_main, it.name) }
+    return label(channel, serverId) ?: main?.let { ServerLabel(stringResource(Res.string.app_server_main, it.name), isChain = false) }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

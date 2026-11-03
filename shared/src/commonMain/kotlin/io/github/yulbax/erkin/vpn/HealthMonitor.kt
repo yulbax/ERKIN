@@ -7,6 +7,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -18,7 +23,8 @@ import kotlinx.coroutines.flow.shareIn
 data class ProbeParams(
     val engine: VpnEngine,
     val byeDpiPort: Int?,
-    val vpnActive: Boolean
+    val vpnActive: Boolean,
+    val serverTags: Map<Long, String> = emptyMap()
 )
 
 data class HealthParams(
@@ -77,6 +83,8 @@ class HealthMonitor(
             .onEach { onByedpiTransition(it, params) }
             .launchIn(childScope)
 
+        if (params.probe.serverTags.isNotEmpty()) childScope.watchServers(params.probe)
+
         childScope.launch {
             var failures = 0
             vpnResults.collect { snapshot ->
@@ -89,6 +97,21 @@ class HealthMonitor(
     fun stop() {
         scope?.cancel()
         scope = null
+    }
+
+    private fun CoroutineScope.watchServers(probe: ProbeParams) = launch {
+        var previous = emptySet<Long>()
+        while (true) {
+            val down = coroutineScope {
+                probe.serverTags.map { (id, tag) -> async { id.takeIf { probe.engine.measureDelay(tag) == null } } }
+                    .awaitAll()
+                    .filterNotNullTo(HashSet())
+            }
+            if (down != previous) log.w(TAG, "servers not responding: ${down.sorted()}")
+            previous = down
+            stateRepository.updateStats { it.copy(unreachableServers = down) }
+            delay(SERVER_CHECK_INTERVAL_MS.milliseconds)
+        }
     }
 
     private fun publishStats(s: HealthSnapshot) {
@@ -134,5 +157,6 @@ class HealthMonitor(
         private const val TAG = "Health"
         private const val RELOAD_EVERY_N_FAILURES = 4
         private const val REFRESH_SUBSCRIPTION_AFTER_FAILURES = 3
+        private const val SERVER_CHECK_INTERVAL_MS = 60_000L
     }
 }

@@ -56,7 +56,7 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ChannelButton
 import io.github.yulbax.erkin.ui.screens.apps.ChannelMenu
 import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
-import io.github.yulbax.erkin.ui.screens.apps.menuServerName
+import io.github.yulbax.erkin.ui.screens.apps.menuServer
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleLists
@@ -325,7 +325,7 @@ private fun RuleRow(
                     expanded = menuOpen,
                     current = target.channel,
                     vpnEnabled = true,
-                    serverName = choices.menuServerName(target.channel, rule.serverId),
+                    server = choices.menuServer(target.channel, rule.serverId),
                     onDismiss = { menuOpen = false },
                     onSelect = { type ->
                         menuOpen = false

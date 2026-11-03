@@ -9,6 +9,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -32,6 +33,37 @@ class HealthMonitorTest {
         val (reloads, _) = run(vpnDelayMs = null, byedpiUp = true)
 
         assertTrue(reloads >= 1)
+    }
+
+    @Test
+    fun boundServersThatDoNotAnswerAreReportedWithoutReloadingTheVpn() = runBlocking {
+        val states = VpnStateRepository()
+        val reloads = AtomicInteger()
+        val engine = object : VpnEngine by FakeEngine {
+            override suspend fun measureDelay(tag: String): Int? = if (tag == "p2") null else 40
+        }
+        val probe = object : HealthProbe {
+            override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
+                emit(HealthSnapshot(true, 50, "", false, false, HealthChannel.VPN))
+            }
+        }
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val monitor = HealthMonitor(states, SilentLog, probe)
+        monitor.start(
+            scope,
+            HealthParams(
+                probe = ProbeParams(engine, byeDpiPort = null, vpnActive = true, serverTags = mapOf(2L to "p2", 3L to "p3")),
+                onRefreshSubscription = {},
+                onRecoveryReload = { reloads.incrementAndGet() },
+                onByedpiChanged = {}
+            )
+        )
+        val down = withTimeoutOrNull(2_000) { states.stats.first { it.unreachableServers.isNotEmpty() }.unreachableServers }
+        monitor.stop()
+        scope.cancel()
+
+        assertEquals(setOf(2L), down)
+        assertEquals(0, reloads.get())
     }
 
     private suspend fun run(vpnDelayMs: Int?, byedpiUp: Boolean): Pair<Int, Int> {
@@ -70,6 +102,7 @@ class HealthMonitorTest {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
         override suspend fun measureVpnDelay(): Int? = null
+        override suspend fun measureDelay(tag: String): Int? = null
         override fun stop() = Unit
     }
 

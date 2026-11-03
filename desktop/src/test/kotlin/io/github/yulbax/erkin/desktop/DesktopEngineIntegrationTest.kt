@@ -208,6 +208,7 @@ class DesktopEngineIntegrationTest {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
         override suspend fun measureVpnDelay(): Int? = measure()
+        override suspend fun measureDelay(tag: String): Int? = null
         override fun stop() = Unit
     }
 

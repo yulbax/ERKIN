@@ -45,11 +45,10 @@ class ServiceEngine(
         launch(config)
     }
 
-    override suspend fun measureVpnDelay(): Int? {
-        val tag = activeProxyTag.takeIf { it.isNotEmpty() } ?: return null
-        return withContext(Dispatchers.IO) {
-            client?.runCatching { delay(tag, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()
-        }
+    override suspend fun measureVpnDelay(): Int? = activeProxyTag.takeIf { it.isNotEmpty() }?.let { measureDelay(it) }
+
+    override suspend fun measureDelay(tag: String): Int? = withContext(Dispatchers.IO) {
+        client?.runCatching { delay(tag, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()
     }
 
     override fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiProbeSocksPort

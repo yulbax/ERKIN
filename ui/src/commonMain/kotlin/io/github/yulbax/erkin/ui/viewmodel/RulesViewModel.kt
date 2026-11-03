@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
@@ -21,10 +22,11 @@ class RulesViewModel(
     private val repository: RoutingRuleRepository,
     private val settingsRepository: SettingsRepository,
     ruleListDatabase: RuleListDatabase,
-    profileRepository: ProfileRepository
+    profileRepository: ProfileRepository,
+    vpnStateRepository: VpnStateRepository
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices()
+    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServerChoices())
 
     val rules: StateFlow<List<RoutingRuleEntity>> =

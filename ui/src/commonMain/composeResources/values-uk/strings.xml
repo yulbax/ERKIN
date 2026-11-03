@@ -172,6 +172,10 @@
     <string name="apps_server_title">Сервер</string>
     <string name="apps_server_search">Пошук серверів</string>
     <string name="apps_choose_server_cd">Вибрати сервер</string>
+    <string name="apps_server_unreachable_cd">Сервер не відповідає</string>
+    <string name="apps_server_unreachable">Не відповідає</string>
+    <string name="servers_unreachable_message">Сервер деяких застосунків або правил не відповідає</string>
+    <string name="servers_use_main">На основний</string>
     <string name="clear_search_cd">Очистити пошук</string>
     <string name="loading_apps">Завантаження застосунків…</string>
     <string name="error_loading_apps">Помилка завантаження застосунків</string>

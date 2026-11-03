@@ -60,6 +60,14 @@ import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
+import io.github.yulbax.erkin.data.profile.ProfileRepository
+import androidx.compose.material3.SnackbarResult
+import org.koin.compose.koinInject
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
+import io.github.yulbax.erkin.vpn.VpnStateRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,6 +89,7 @@ fun MainScreen(
     val showMessage: (String) -> Unit = { message ->
         scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
     }
+    UnreachableServersMessage(snackbarHostState)
 
     val appsViewModel: AppsViewModel = koinViewModel()
     val appsMode by appsViewModel.mode.collectAsStateWithLifecycle()
@@ -227,3 +236,21 @@ private fun DrawerItem(screen: Screen, selected: Boolean, onClick: () -> Unit) {
 }
 
 private const val REPOSITORY_URL = "https://github.com/yulbax/ERKIN"
+
+@Composable
+private fun UnreachableServersMessage(snackbarHostState: SnackbarHostState) {
+    val states = koinInject<VpnStateRepository>()
+    val profiles = koinInject<ProfileRepository>()
+    val message = stringResource(Res.string.servers_unreachable_message)
+    val useMain = stringResource(Res.string.servers_use_main)
+    LaunchedEffect(states, message, useMain) {
+        states.stats
+            .map { it.unreachableServers }
+            .distinctUntilChanged { old, new -> old.isNotEmpty() == new.isNotEmpty() }
+            .filter { it.isNotEmpty() }
+            .collectLatest { down ->
+                val result = snackbarHostState.showSnackbar(message, actionLabel = useMain, duration = SnackbarDuration.Long)
+                if (result == SnackbarResult.ActionPerformed) profiles.unbindServers(down)
+            }
+    }
+}

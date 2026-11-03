@@ -85,6 +85,14 @@ class AppsStateTest {
     }
 
     @Test
+    fun aServerThatDoesNotAnswerIsFlaggedOnItsLabel() {
+        val down = ServerChoices(choices.servers, choices.subscriptions, unreachable = setOf(helsinki.id))
+
+        assertEquals(ServerLabel("Helsinki", isChain = false, unreachable = true), down.labelFor(telegram.copy(serverId = helsinki.id)))
+        assertEquals(ServerLabel("Riga", isChain = false), down.labelFor(telegram.copy(serverId = riga.id)))
+    }
+
+    @Test
     fun serversCanBeChosenOnlyWhenThereIsMoreThanOne() {
         assertTrue(choices.canChoose)
         assertFalse(ServerChoices(listOf(main)).canChoose)

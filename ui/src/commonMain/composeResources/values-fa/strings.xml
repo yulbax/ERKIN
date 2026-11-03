@@ -168,6 +168,10 @@
     <string name="apps_server_title">سرور</string>
     <string name="apps_server_search">جستجوی سرورها</string>
     <string name="apps_choose_server_cd">انتخاب سرور</string>
+    <string name="apps_server_unreachable_cd">سرور پاسخ نمی‌دهد</string>
+    <string name="apps_server_unreachable">پاسخ نمی‌دهد</string>
+    <string name="servers_unreachable_message">سرور برخی برنامه‌ها یا قوانین پاسخ نمی‌دهد</string>
+    <string name="servers_use_main">سرور اصلی</string>
     <string name="clear_search_cd">پاک کردن جستجو</string>
     <string name="loading_apps">در حال بارگذاری برنامه‌ها…</string>
     <string name="error_loading_apps">خطا در بارگذاری برنامه‌ها</string>
