@@ -225,7 +225,6 @@
     <string name="rule_type_domain">Tam alan adı</string>
     <string name="rule_type_keyword">Alan adında geçen kelime</string>
     <string name="rule_type_ip">IP adresi veya alt ağ</string>
-    <string name="rule_target_block">Engelle</string>
     <string name="rule_invalid">Geçersiz biçim</string>
     <string name="rule_saved_as">%1$s olarak kaydedildi</string>
     <string name="new_rule">Yeni kural</string>

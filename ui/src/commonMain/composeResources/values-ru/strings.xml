@@ -229,7 +229,6 @@
     <string name="rule_type_domain">Точный домен</string>
     <string name="rule_type_keyword">Слово в домене</string>
     <string name="rule_type_ip">IP-адрес или подсеть</string>
-    <string name="rule_target_block">Блокировать</string>
     <string name="rule_invalid">Неверный формат</string>
     <string name="rule_saved_as">Сохранится как %1$s</string>
     <string name="new_rule">Новое правило</string>

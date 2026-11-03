@@ -225,7 +225,6 @@
     <string name="rule_type_domain">دامنه دقیق</string>
     <string name="rule_type_keyword">کلمه در دامنه</string>
     <string name="rule_type_ip">آدرس IP یا زیرشبکه</string>
-    <string name="rule_target_block">مسدود کردن</string>
     <string name="rule_invalid">قالب نامعتبر</string>
     <string name="rule_saved_as">ذخیره به صورت %1$s</string>
     <string name="new_rule">قانون جدید</string>

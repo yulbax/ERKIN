@@ -52,6 +52,8 @@ import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.screens.apps.ChannelButton
+import io.github.yulbax.erkin.ui.screens.apps.ChannelMenu
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
@@ -259,6 +261,7 @@ private fun RuleRow(
 ) {
     val match = RuleMatch.fromWire(rule.type)
     val target = RuleTarget.fromWire(rule.target)
+    var menuOpen by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -290,11 +293,26 @@ private fun RuleRow(
         if (selecting) {
             Checkbox(checked = checked, onCheckedChange = null)
         } else if (target != null) {
-            RuleTargetGroup(
-                selected = target,
-                onSelect = onTargetChange,
-                modifier = Modifier.width(ROW_TARGET_WIDTH)
-            )
+            Box {
+                ChannelButton(
+                    type = target.channel,
+                    server = null,
+                    enabled = true,
+                    onClick = { menuOpen = true }
+                )
+                ChannelMenu(
+                    expanded = menuOpen,
+                    current = target.channel,
+                    vpnEnabled = true,
+                    canChooseServer = false,
+                    onDismiss = { menuOpen = false },
+                    onSelect = { type ->
+                        menuOpen = false
+                        if (type != target.channel) onTargetChange(type.ruleTarget)
+                    },
+                    onChooseServer = {}
+                )
+            }
         }
     }
 }
@@ -309,4 +327,3 @@ private fun RoutingRuleEntity.displayValue(listState: RuleListState?): String {
 }
 
 private const val HINT_KEY = "hint"
-private val ROW_TARGET_WIDTH = 190.dp

@@ -223,7 +223,6 @@
     <string name="rule_type_domain">精确域名</string>
     <string name="rule_type_keyword">域名关键词</string>
     <string name="rule_type_ip">IP 地址或子网</string>
-    <string name="rule_target_block">阻止</string>
     <string name="rule_invalid">格式无效</string>
     <string name="rule_saved_as">将保存为 %1$s</string>
     <string name="new_rule">新规则</string>

@@ -11,12 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Block
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -300,10 +297,7 @@ private fun connectedShapes(index: Int, count: Int): ToggleButtonShapes = when (
 
 @Composable
 internal fun RuleTargetIcon(target: RuleTarget, modifier: Modifier = Modifier) {
-    when (val channel = target.channel) {
-        null -> Icon(Icons.Default.Block, contentDescription = target.label(), modifier = modifier)
-        else -> ConnectionTypeIcon(channel, modifier)
-    }
+    ConnectionTypeIcon(target.channel, modifier)
 }
 
 @Composable
@@ -350,12 +344,20 @@ private fun RuleMatch.shortLabel(): String = stringResource(ui.shortLabel)
 private fun RuleMatch.example(): String = stringResource(ui.example)
 
 @Composable
-private fun RuleTarget.label(): String = channel?.label() ?: stringResource(Res.string.rule_target_block)
+private fun RuleTarget.label(): String = channel.label()
 
-private val RuleTarget.channel: ConnectionType?
+internal val RuleTarget.channel: ConnectionType
     get() = when (this) {
         RuleTarget.VPN -> ConnectionType.VPN
         RuleTarget.BYEDPI -> ConnectionType.BYEDPI
         RuleTarget.DIRECT -> ConnectionType.DIRECT
-        RuleTarget.BLOCK -> null
+        RuleTarget.BLOCK -> ConnectionType.BLOCK
+    }
+
+internal val ConnectionType.ruleTarget: RuleTarget
+    get() = when (this) {
+        ConnectionType.VPN -> RuleTarget.VPN
+        ConnectionType.BYEDPI -> RuleTarget.BYEDPI
+        ConnectionType.DIRECT -> RuleTarget.DIRECT
+        ConnectionType.BLOCK -> RuleTarget.BLOCK
     }

@@ -234,7 +234,6 @@
     <string name="rule_type_domain">Exact domain</string>
     <string name="rule_type_keyword">Word in domain</string>
     <string name="rule_type_ip">IP address or subnet</string>
-    <string name="rule_target_block">Block</string>
     <string name="rule_invalid">Invalid format</string>
     <string name="rule_saved_as">Saved as %1$s</string>
     <string name="rule_example_suffix">ru, рф, youtube.com</string>

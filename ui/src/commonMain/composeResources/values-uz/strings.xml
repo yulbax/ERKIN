@@ -225,7 +225,6 @@
     <string name="rule_type_domain">Aniq domen</string>
     <string name="rule_type_keyword">Domendagi soʻz</string>
     <string name="rule_type_ip">IP manzil yoki tarmoq</string>
-    <string name="rule_target_block">Bloklash</string>
     <string name="rule_invalid">Notoʻgʻri format</string>
     <string name="rule_saved_as">%1$s sifatida saqlandi</string>
     <string name="new_rule">Yangi qoida</string>
