@@ -6,6 +6,10 @@
     <string name="vpn_notification_pause">Пауза</string>
     <string name="vpn_notification_resume">Відновити</string>
     <string name="notification_paused">Призупинено · трафік іде напряму</string>
+    <string name="tile_connected">Підключено</string>
+    <string name="tile_connecting">Підключення…</string>
+    <string name="tile_off">Вимкнено</string>
+    <string name="tile_paused">Пауза</string>
     <string name="notification_vpn_up">VPN працює</string>
     <string name="notification_vpn_down">VPN недоступний</string>
     <string name="notification_byedpi_up">ByeDPI працює</string>

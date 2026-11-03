@@ -6,6 +6,10 @@
     <string name="vpn_notification_pause">暂停</string>
     <string name="vpn_notification_resume">继续</string>
     <string name="notification_paused">已暂停 · 流量直连</string>
+    <string name="tile_connected">已连接</string>
+    <string name="tile_connecting">正在连接…</string>
+    <string name="tile_off">已关闭</string>
+    <string name="tile_paused">已暂停</string>
     <string name="notification_vpn_up">VPN 正常</string>
     <string name="notification_vpn_down">VPN 中断</string>
     <string name="notification_byedpi_up">ByeDPI 正常</string>
