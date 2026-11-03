@@ -11,6 +11,7 @@
     <string name="docs_language">tr</string>
     <string name="license_title">Lisans</string>
     <string name="about_title">Hakkında</string>
+    <string name="about_repository_cd">Depoyu aç</string>
     <string name="support_title">Projeyi destekle</string>
     <string name="support_ton">TON ve USDT (TON)</string>
     <string name="support_copied">Adres kopyalandı</string>

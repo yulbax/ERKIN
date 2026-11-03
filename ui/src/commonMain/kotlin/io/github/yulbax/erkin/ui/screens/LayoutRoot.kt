@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Checklist
@@ -38,6 +39,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -82,6 +85,7 @@ fun MainScreen(
     val appsViewModel: AppsViewModel = koinViewModel()
     val appsMode by appsViewModel.mode.collectAsStateWithLifecycle()
     val onAppsScreen = currentRoute == Screen.Apps.route
+    val uriHandler = LocalUriHandler.current
     LaunchedEffect(currentRoute) {
         if (currentRoute != null && !onAppsScreen) appsViewModel.stopSelecting()
     }
@@ -175,6 +179,15 @@ fun MainScreen(
                             }
                         },
                         actions = {
+                            if (currentScreen == Screen.About) {
+                                IconButton(onClick = { runCatching { uriHandler.openUri(REPOSITORY_URL) } }) {
+                                    Icon(
+                                        painter = painterResource(Res.drawable.ic_github),
+                                        contentDescription = stringResource(Res.string.about_repository_cd),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
                             if (currentScreen == Screen.Rules) {
                                 IconButton(onClick = { navController.navigate(Screen.RuleSets.route) }) {
                                     Icon(
@@ -212,3 +225,5 @@ private fun DrawerItem(screen: Screen, selected: Boolean, onClick: () -> Unit) {
         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
     )
 }
+
+private const val REPOSITORY_URL = "https://github.com/yulbax/ERKIN"

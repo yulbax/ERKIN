@@ -11,6 +11,7 @@
     <string name="docs_language">zh</string>
     <string name="license_title">许可证</string>
     <string name="about_title">关于</string>
+    <string name="about_repository_cd">打开代码仓库</string>
     <string name="support_title">支持项目</string>
     <string name="support_ton">TON 和 USDT (TON)</string>
     <string name="support_copied">地址已复制</string>

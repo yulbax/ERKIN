@@ -11,6 +11,7 @@
     <string name="docs_language">uk</string>
     <string name="license_title">Ліцензія</string>
     <string name="about_title">Про застосунок</string>
+    <string name="about_repository_cd">Відкрити репозиторій</string>
     <string name="support_title">Підтримати проєкт</string>
     <string name="support_ton">TON і USDT (TON)</string>
     <string name="support_copied">Адресу скопійовано</string>
