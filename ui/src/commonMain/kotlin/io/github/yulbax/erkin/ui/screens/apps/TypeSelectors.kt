@@ -169,22 +169,7 @@ internal fun ChannelMenu(
 @Composable
 private fun ServerMenuItem(serverName: String, onClick: () -> Unit) {
     DropdownMenuItem(
-        text = {
-            Column {
-                Text(
-                    stringResource(Res.string.apps_server_title),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    serverName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        },
+        text = { ServerChoiceText(serverName) },
         leadingIcon = { Spacer(Modifier.size(20.dp)) },
         trailingIcon = {
             Icon(
@@ -195,6 +180,24 @@ private fun ServerMenuItem(serverName: String, onClick: () -> Unit) {
         },
         onClick = onClick
     )
+}
+
+@Composable
+internal fun ServerChoiceText(serverName: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier) {
+        Text(
+            stringResource(Res.string.apps_server_title),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            serverName,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.primary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 @Composable

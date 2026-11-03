@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.rulelist.RuleListState
@@ -21,8 +22,12 @@ import kotlinx.coroutines.launch
 class RuleSetsViewModel(
     private val ruleListDatabase: RuleListDatabase,
     private val ruleRepository: RoutingRuleRepository,
-    private val commandBus: VpnCommandBus
+    private val commandBus: VpnCommandBus,
+    profileRepository: ProfileRepository
 ) : ViewModel() {
+
+    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServerChoices())
 
     val states: StateFlow<Map<String, RuleListState>> =
         ruleListDatabase.states.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
@@ -61,7 +66,7 @@ class RuleSetsViewModel(
         }
     }
 
-    fun createRule(match: RuleMatch, raw: String, target: RuleTarget) {
-        viewModelScope.launch(Dispatchers.IO) { ruleRepository.add(match, raw, target) }
+    fun createRule(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?) {
+        viewModelScope.launch(Dispatchers.IO) { ruleRepository.add(match, raw, target, serverId) }
     }
 }

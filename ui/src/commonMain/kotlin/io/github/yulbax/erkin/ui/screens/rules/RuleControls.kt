@@ -11,11 +11,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -44,6 +49,10 @@ import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.screens.apps.ServerChoiceText
+import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
+import io.github.yulbax.erkin.ui.screens.apps.menuServerName
+import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import java.text.DateFormat
@@ -131,8 +140,9 @@ private fun RuleMatchGroup(
 internal fun RuleDialog(
     initial: RoutingRuleEntity?,
     ruleSets: Map<String, RuleListState>,
+    choices: ServerChoices,
     onDismiss: () -> Unit,
-    onSave: (RuleMatch, String, RuleTarget) -> Unit,
+    onSave: (RuleMatch, String, RuleTarget, Long?) -> Unit,
     onDelete: (() -> Unit)?,
     onOpenRuleSets: () -> Unit,
     isNew: Boolean = initial == null
@@ -141,6 +151,8 @@ internal fun RuleDialog(
     var match by remember { mutableStateOf(initialMatch) }
     var text by remember { mutableStateOf(initial?.let { initialMatch.display(it.value) }.orEmpty()) }
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
+    var serverId by remember { mutableStateOf(initial?.serverId) }
+    var pickingServer by remember { mutableStateOf(false) }
     val normalized = match.normalize(text)
     val invalid = text.isNotBlank() && normalized == null
     val groupColors = ToggleButtonDefaults.toggleButtonColors(
@@ -159,7 +171,7 @@ internal fun RuleDialog(
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(match, text, target) }, enabled = normalized != null) {
+            TextButton(onClick = { onSave(match, text, target, serverId) }, enabled = normalized != null) {
                 Text(stringResource(Res.string.save))
             }
         }
@@ -222,10 +234,45 @@ internal fun RuleDialog(
         SectionLabel(stringResource(Res.string.rule_target))
         RuleTargetGroup(
             selected = target,
-            onSelect = { target = it },
+            onSelect = {
+                target = it
+                if (it != RuleTarget.VPN) serverId = null
+            },
             showLabel = true,
             colors = groupColors,
             modifier = Modifier.fillMaxWidth()
+        )
+        if (target == RuleTarget.VPN) {
+            choices.menuServerName(target.channel, serverId)?.let { name ->
+                Surface(
+                    onClick = { pickingServer = true },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 16.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        ServerChoiceText(name, Modifier.weight(1f))
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = stringResource(Res.string.apps_choose_server_cd),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (pickingServer) {
+        ServerPickerSheet(
+            subtitle = text.ifBlank { stringResource(if (isNew) Res.string.new_rule else Res.string.edit_rule) },
+            choices = choices,
+            current = choices.current(target.channel, serverId),
+            onPick = { serverId = it },
+            onDismiss = { pickingServer = false }
         )
     }
 }

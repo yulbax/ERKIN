@@ -10,27 +10,27 @@ class RoutingRuleRepository(database: AppDatabase) {
 
     val rules: Flow<List<RoutingRuleEntity>> = dao.observeAll()
 
-    suspend fun add(match: RuleMatch, raw: String, target: RuleTarget): Boolean {
+    suspend fun add(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long? = null): Boolean {
         val value = match.normalize(raw) ?: return false
-        dao.append(RoutingRuleEntity(type = match.wire, value = value, target = target.wire))
+        dao.append(RoutingRuleEntity(type = match.wire, value = value).retargeted(target, serverId))
         return true
     }
 
-    suspend fun update(rule: RoutingRuleEntity, match: RuleMatch, raw: String, target: RuleTarget): Boolean {
+    suspend fun update(rule: RoutingRuleEntity, match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?): Boolean {
         val value = match.normalize(raw) ?: return false
-        dao.update(rule.retargeted(target).copy(type = match.wire, value = value))
+        dao.update(rule.retargeted(target, serverId).copy(type = match.wire, value = value))
         return true
     }
 
     suspend fun setTarget(rule: RoutingRuleEntity, target: RuleTarget) {
-        dao.update(rule.retargeted(target))
+        dao.update(rule.retargeted(target, rule.serverId))
     }
 
     suspend fun setServer(rule: RoutingRuleEntity, serverId: Long?) {
-        dao.update(rule.copy(target = RuleTarget.VPN.wire, serverId = serverId))
+        dao.update(rule.retargeted(RuleTarget.VPN, serverId))
     }
 
-    private fun RoutingRuleEntity.retargeted(target: RuleTarget) =
+    private fun RoutingRuleEntity.retargeted(target: RuleTarget, serverId: Long?) =
         copy(target = target.wire, serverId = serverId.takeIf { target == RuleTarget.VPN })
 
     suspend fun delete(rules: List<RoutingRuleEntity>) {

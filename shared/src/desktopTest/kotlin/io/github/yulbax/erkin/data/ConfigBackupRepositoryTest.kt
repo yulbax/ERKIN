@@ -116,6 +116,21 @@ class ConfigBackupRepositoryTest {
     }
 
     @Test
+    fun aRuleKeepsItsServerOnlyWhileItGoesThroughTheVpn() = runBlocking {
+        val rules = RoutingRuleRepository(database)
+        val dao = database.routingRuleDao()
+
+        rules.add(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.VPN, serverId = 7)
+        assertEquals(7L, dao.getAll().single().serverId)
+        rules.update(dao.getAll().single(), RuleMatch.DOMAIN_SUFFIX, "by", RuleTarget.VPN, serverId = 8)
+        assertEquals(8L, dao.getAll().single().serverId)
+        rules.update(dao.getAll().single(), RuleMatch.DOMAIN_SUFFIX, "by", RuleTarget.DIRECT, serverId = 8)
+        assertNull(dao.getAll().single().serverId)
+        rules.add(RuleMatch.DOMAIN_SUFFIX, "kz", RuleTarget.BYEDPI, serverId = 7)
+        assertNull(dao.getAll().last().serverId)
+    }
+
+    @Test
     fun chainsRoundTripWithTheirHopsRenumbered() = runBlocking {
         val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
         profiles.add("vless://id@entry.example:443?security=tls#Entry")

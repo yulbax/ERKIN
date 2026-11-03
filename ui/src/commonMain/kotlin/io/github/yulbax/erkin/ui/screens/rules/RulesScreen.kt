@@ -206,8 +206,8 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                 adding = false
                 editing = null
             },
-            onSave = { match, raw, target ->
-                viewModel.save(existing, match, raw, target)
+            onSave = { match, raw, target, serverId ->
+                viewModel.save(existing, match, raw, target, serverId)
                 adding = false
                 editing = null
             },
@@ -218,6 +218,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                 }
             },
             ruleSets = listStates,
+            choices = choices,
             onOpenRuleSets = {
                 adding = false
                 editing = null

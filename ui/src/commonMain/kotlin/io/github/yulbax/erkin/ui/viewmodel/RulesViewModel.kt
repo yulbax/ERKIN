@@ -47,9 +47,13 @@ class RulesViewModel(
         }
     }
 
-    fun save(existing: RoutingRuleEntity?, match: RuleMatch, raw: String, target: RuleTarget) {
+    fun save(existing: RoutingRuleEntity?, match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?) {
         viewModelScope.launch(Dispatchers.IO) {
-            if (existing == null) repository.add(match, raw, target) else repository.update(existing, match, raw, target)
+            if (existing == null) {
+                repository.add(match, raw, target, serverId)
+            } else {
+                repository.update(existing, match, raw, target, serverId)
+            }
         }
     }
 
