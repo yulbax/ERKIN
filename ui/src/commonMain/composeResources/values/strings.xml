@@ -103,6 +103,8 @@
     <string name="vpn_establishing_tunnel">Establishing tunnel</string>
     <string name="vpn_checking_connectivity">Checking connectivity</string>
     <string name="vpn_tap_to_disconnect">Tap to disconnect</string>
+    <string name="vpn_paused">Paused</string>
+    <string name="vpn_paused_hint">Traffic goes directly. Tap to resume</string>
     <string name="toggle_connection_cd">Toggle connection</string>
     <string name="channel_status_off">off</string>
     <string name="channel_status_online">online · %1$d ms</string>

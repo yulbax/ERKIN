@@ -100,6 +100,8 @@
     <string name="vpn_establishing_tunnel">Встановлення тунелю</string>
     <string name="vpn_checking_connectivity">Перевірка з’єднання</string>
     <string name="vpn_tap_to_disconnect">Натисніть, щоб відключитися</string>
+    <string name="vpn_paused">Призупинено</string>
+    <string name="vpn_paused_hint">Трафік іде напряму. Натисніть, щоб відновити</string>
     <string name="toggle_connection_cd">Перемкнути підключення</string>
     <string name="channel_status_off">вимк</string>
     <string name="channel_status_online">онлайн · %1$d мс</string>

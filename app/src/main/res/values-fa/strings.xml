@@ -3,6 +3,9 @@
     <string name="app_name">ERKIN</string>
     <string name="vpn_notification_channel">وضعیت VPN</string>
     <string name="vpn_notification_stop">توقف</string>
+    <string name="vpn_notification_pause">توقف موقت</string>
+    <string name="vpn_notification_resume">ادامه</string>
+    <string name="notification_paused">متوقف شده · ترافیک مستقیم عبور می‌کند</string>
     <string name="notification_vpn_up">VPN فعال</string>
     <string name="notification_vpn_down">VPN قطع</string>
     <string name="notification_byedpi_up">ByeDPI فعال</string>

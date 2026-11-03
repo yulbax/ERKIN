@@ -3,6 +3,9 @@
     <string name="app_name">ERKIN</string>
     <string name="vpn_notification_channel">Статус VPN</string>
     <string name="vpn_notification_stop">Стоп</string>
+    <string name="vpn_notification_pause">Пауза</string>
+    <string name="vpn_notification_resume">Возобновить</string>
+    <string name="notification_paused">Приостановлено · трафик идёт напрямую</string>
     <string name="notification_vpn_up">VPN работает</string>
     <string name="notification_vpn_down">VPN недоступен</string>
     <string name="notification_byedpi_up">ByeDPI работает</string>

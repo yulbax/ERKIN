@@ -100,6 +100,8 @@
     <string name="vpn_establishing_tunnel">Tünel kuruluyor</string>
     <string name="vpn_checking_connectivity">Bağlantı kontrol ediliyor</string>
     <string name="vpn_tap_to_disconnect">Bağlantıyı kesmek için dokunun</string>
+    <string name="vpn_paused">Duraklatıldı</string>
+    <string name="vpn_paused_hint">Trafik doğrudan gidiyor. Sürdürmek için dokunun</string>
     <string name="toggle_connection_cd">Bağlantıyı aç/kapat</string>
     <string name="channel_status_off">kapalı</string>
     <string name="channel_status_online">çevrimiçi · %1$d ms</string>

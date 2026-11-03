@@ -43,7 +43,7 @@ class ErkinVpnService :
     override fun onCreate() {
         super.onCreate()
         tunSession = TunSession(this, networkMonitor, erkinLog)
-        notification = VpnNotificationController(this, vpnStateRepository.stats)
+        notification = VpnNotificationController(this, vpnStateRepository.stats, allowsPause = ::allowsUserStop)
         controller = VpnController(scope, commandBus, vpnStateRepository, host = this, log = erkinLog) { controller ->
             sessions.create(
                 controller = controller,
@@ -65,11 +65,13 @@ class ErkinVpnService :
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            controller.stop(startId, force = false)
-        } else {
-            notification.startForeground()
-            controller.start(startId, systemInitiated = intent?.action != ACTION_START)
+        when (intent?.action) {
+            ACTION_STOP -> controller.stop(startId, force = false)
+            ACTION_PAUSE -> controller.pause()
+            else -> {
+                notification.startForeground()
+                controller.start(startId, systemInitiated = intent?.action != ACTION_START)
+            }
         }
         return START_NOT_STICKY
     }
@@ -84,11 +86,13 @@ class ErkinVpnService :
 
     override fun allowsUserStop(): Boolean = !isAlwaysOn
 
+    override fun onSessionPaused() {
+        releaseTunnel()
+        notification.showPaused()
+    }
+
     override fun onSessionStopped(stopToken: Int?, stopHost: Boolean) {
-        runCatching { notificationJob?.cancel() }
-        notificationJob = null
-        runCatching { tunSession.close() }
-            .onFailure { erkinLog.w(TAG, "failed to close TUN", it) }
+        releaseTunnel()
         runCatching {
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         }.onFailure { erkinLog.w(TAG, "failed to remove foreground notification", it) }
@@ -97,6 +101,13 @@ class ErkinVpnService :
                 if (stopToken != null) stopSelfResult(stopToken) else stopSelf()
             }.onFailure { erkinLog.w(TAG, "failed to stop VPN service", it) }
         }
+    }
+
+    private fun releaseTunnel() {
+        runCatching { notificationJob?.cancel() }
+        notificationJob = null
+        runCatching { tunSession.close() }
+            .onFailure { erkinLog.w(TAG, "failed to close TUN", it) }
     }
 
     override fun openTun(config: TunConfig): Int = tunSession.open(config)
@@ -132,6 +143,7 @@ class ErkinVpnService :
     companion object {
         const val ACTION_START = "io.github.yulbax.erkin.action.START"
         const val ACTION_STOP = "io.github.yulbax.erkin.action.STOP"
+        const val ACTION_PAUSE = "io.github.yulbax.erkin.action.PAUSE"
 
         private const val TAG = "ErkinVpnService"
 

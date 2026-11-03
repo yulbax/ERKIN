@@ -80,6 +80,7 @@ internal fun ConnectionCard(
 
     val title = when (state) {
         VpnState.Disconnected -> stringResource(Res.string.vpn_disconnected)
+        VpnState.Paused -> stringResource(Res.string.vpn_paused)
         VpnState.Connecting -> stringResource(Res.string.vpn_connecting)
         VpnState.Verifying -> stringResource(Res.string.vpn_verifying)
         is VpnState.Connected -> stringResource(Res.string.vpn_connected)
@@ -87,6 +88,7 @@ internal fun ConnectionCard(
     }
     val subtitle = when (state) {
         VpnState.Disconnected -> stringResource(Res.string.vpn_tap_to_connect)
+        VpnState.Paused -> stringResource(Res.string.vpn_paused_hint)
         VpnState.Connecting -> stringResource(Res.string.vpn_establishing_tunnel)
         VpnState.Verifying -> stringResource(Res.string.vpn_checking_connectivity)
         is VpnState.Connected -> stringResource(Res.string.vpn_tap_to_disconnect)
