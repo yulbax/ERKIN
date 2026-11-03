@@ -32,7 +32,7 @@ val buildHash = runCatching {
 
 val baseVersionCode = 10800
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
-val playVersionCodeSuffix = 9
+val playVersionCodeSuffix = 90
 
 val releaseStoreFile = providers.environmentVariable("KEYSTORE_FILE").orNull
 val releaseStorePassword = providers.environmentVariable("KEYSTORE_PASSWORD").orNull
@@ -191,7 +191,7 @@ androidComponents {
             val play = variant.flavorName == "play"
             val abiCode = if (play) playVersionCodeSuffix else updateAbis.indexOf(abi)
             check(abiCode >= 0) { "No update ABI code for $abi" }
-            output.versionCode.set(baseVersionCode * 10 + abiCode)
+            output.versionCode.set(baseVersionCode * 100 + abiCode)
             if (variant.buildType == "release" && !play) {
                 (output as VariantOutputImpl).outputFileName.set(output.versionName.map { "ERKIN-$it-android-$abi.apk" })
             }
