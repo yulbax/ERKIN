@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenu
@@ -22,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.ui.components.ChainIcon
+import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import org.jetbrains.compose.resources.StringResource
@@ -61,8 +62,8 @@ internal fun ServerRow(
         onLongClick = onLongClick,
         modifier = modifier,
         titleIcon = when {
-            chainLabel != null -> RowIcon(Icons.Default.Link, Res.string.chain)
-            fromSubscription -> RowIcon(Icons.Default.Cloud, Res.string.subscription)
+            chainLabel != null -> RowIcon(ChainIcon, Res.string.chain)
+            fromSubscription -> RowIcon(IconSource.Vector(Icons.Default.Cloud), Res.string.subscription)
             else -> null
         },
         menu = { ServerMenu(actions) }

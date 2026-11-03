@@ -1,67 +1,211 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedToggleButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.ToggleButtonShapes
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
+import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.components.label
+import io.github.yulbax.erkin.ui.components.ui
+import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.theme.LocalDarkTheme
+import io.github.yulbax.erkin.ui.viewmodel.ServerLabel
+import org.jetbrains.compose.resources.stringResource
 
-private val TYPE_ORDER = ConnectionType.entries
-private val SELECTOR_HEIGHT = 48.dp
-private val APP_SELECTOR_HEIGHT = 48.dp
-private val APP_SELECTOR_WIDTH = 150.dp
-private val SELECTOR_ICON_WIDTH = 48.dp
+private val SERVER_ARROW_SHIFT = 16.dp
+private val CHANNEL_WIDTH = 112.dp
+private val CHANNEL_MAX_WIDTH = 140.dp
+private val CHANNEL_HEIGHT = 40.dp
+private val BULK_HEIGHT = 40.dp
+private val BULK_SERVER_WIDTH = 40.dp
+
+private const val TINT_ALPHA_DARK = 0.2f
+private const val TINT_ALPHA_LIGHT = 0.14f
+
+private class ChannelAccent(val dark: Color, val light: Color)
+
+private val ConnectionType.accent: ChannelAccent?
+    get() = when (this) {
+        ConnectionType.DIRECT -> null
+        ConnectionType.BYEDPI -> ChannelAccent(dark = Color(0xFF1FA3CF), light = Color(0xFF0E7490))
+        ConnectionType.VPN -> ChannelAccent(dark = Color(0xFF2BAE5A), light = Color(0xFF15803D))
+    }
+
+private class ChannelColors(val container: Color, val icon: Color)
+
+@Composable
+private fun ConnectionType.colors(): ChannelColors {
+    val scheme = MaterialTheme.colorScheme
+    val dark = LocalDarkTheme.current
+    val color = accent?.let { if (dark) it.dark else it.light }
+        ?: return ChannelColors(scheme.surfaceContainerHigh, scheme.onSurfaceVariant)
+    return ChannelColors(color.copy(alpha = if (dark) TINT_ALPHA_DARK else TINT_ALPHA_LIGHT), color)
+}
+
+@Composable
+internal fun ChannelButton(
+    type: ConnectionType,
+    server: ServerLabel?,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    val colors = type.colors()
+    val width = if (server != null) {
+        Modifier.widthIn(min = CHANNEL_WIDTH, max = CHANNEL_MAX_WIDTH)
+    } else {
+        Modifier.width(CHANNEL_WIDTH)
+    }
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(12.dp),
+        color = colors.container,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        modifier = width.height(CHANNEL_HEIGHT).alpha(if (enabled) 1f else DISABLED_ALPHA)
+    ) {
+        Row(
+            modifier = Modifier.width(IntrinsicSize.Max).padding(start = 10.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CompositionLocalProvider(LocalContentColor provides colors.icon) {
+                SourceIcon(
+                    source = if (server?.isChain == true) ChainIcon else type.ui.icon,
+                    contentDescription = type.label(),
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Text(
+                text = server?.name ?: type.label(),
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(horizontal = 4.dp)
+            )
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+@Composable
+internal fun ChannelMenu(
+    expanded: Boolean,
+    current: ConnectionType?,
+    vpnEnabled: Boolean,
+    canChooseServer: Boolean,
+    onDismiss: () -> Unit,
+    onSelect: (ConnectionType) -> Unit,
+    onChooseServer: () -> Unit
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, shape = RoundedCornerShape(16.dp)) {
+        ConnectionType.entries.forEach { type ->
+            DropdownMenuItem(
+                text = { Text(type.label()) },
+                leadingIcon = { ConnectionTypeIcon(type, Modifier.size(20.dp)) },
+                trailingIcon = {
+                    val serverButton = type == ConnectionType.VPN && canChooseServer
+                    Row(
+                        modifier = Modifier.offset(x = if (serverButton) SERVER_ARROW_SHIFT else 0.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (type == current) Icon(Icons.Filled.Check, contentDescription = null)
+                        if (serverButton) {
+                            IconButton(onClick = onChooseServer) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = stringResource(Res.string.apps_choose_server_cd)
+                                )
+                            }
+                        }
+                    }
+                },
+                enabled = vpnEnabled || !type.needsServer,
+                onClick = { onSelect(type) }
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun GlobalTypeConnectedGroup(
+internal fun BulkChannelBar(
+    enabled: Boolean,
     vpnEnabled: Boolean,
+    canChooseServer: Boolean,
     onSelect: (ConnectionType) -> Unit,
+    onChooseServer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val types = ConnectionType.entries
+    val lastIndex = if (canChooseServer) types.size else types.lastIndex
     Row(
-        modifier = modifier.height(SELECTOR_HEIGHT),
+        modifier = modifier.height(BULK_HEIGHT),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        TYPE_ORDER.forEachIndexed { index, type ->
+        types.forEachIndexed { index, type ->
             ElevatedToggleButton(
                 checked = false,
                 onCheckedChange = { onSelect(type) },
-                enabled = vpnEnabled || !type.needsServer,
-                shapes = shapes(index),
-                colors = ToggleButtonDefaults.toggleButtonColors(
-                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    disabledContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                contentPadding = PaddingValues(horizontal = 4.dp),
-                modifier = Modifier
-                    .weight(1f)
+                enabled = enabled && (vpnEnabled || !type.needsServer),
+                shapes = shapes(index, lastIndex),
+                contentPadding = PaddingValues(horizontal = 6.dp),
+                modifier = Modifier.weight(1f).fillMaxHeight()
             ) {
                 ConnectionTypeIcon(type, Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
-                Text(
-                    text = type.label(),
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    softWrap = false
+                Text(type.label(), style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
+            }
+        }
+        if (canChooseServer) {
+            ElevatedToggleButton(
+                checked = false,
+                onCheckedChange = { onChooseServer() },
+                enabled = enabled && vpnEnabled,
+                shapes = shapes(lastIndex, lastIndex),
+                contentPadding = PaddingValues(0.dp),
+                modifier = Modifier.width(BULK_SERVER_WIDTH).fillMaxHeight()
+            ) {
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = stringResource(Res.string.apps_choose_server_cd),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -70,46 +214,10 @@ internal fun GlobalTypeConnectedGroup(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun AppRowConnectedGroup(
-    selected: ConnectionType?,
-    vpnEnabled: Boolean,
-    onSelect: (ConnectionType) -> Unit,
-    modifier: Modifier = Modifier,
-    onReselect: ((ConnectionType) -> Unit)? = null
-) {
-    Row(
-        modifier = modifier
-            .height(APP_SELECTOR_HEIGHT)
-            .width(APP_SELECTOR_WIDTH),
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        TYPE_ORDER.forEachIndexed { index, type ->
-            val isSelected = type == selected
-
-            ToggleButton(
-                checked = isSelected,
-                onCheckedChange = { if (it) onSelect(type) else onReselect?.invoke(type) },
-                enabled = vpnEnabled || !type.needsServer,
-                shapes = shapes(index),
-                modifier = Modifier
-                    .then(if (isSelected) Modifier.weight(1f) else Modifier.width(SELECTOR_ICON_WIDTH))
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    ConnectionTypeIcon(type, Modifier.size(16.dp))
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun shapes(index: Int): ToggleButtonShapes = when (index) {
+private fun shapes(index: Int, lastIndex: Int): ToggleButtonShapes = when (index) {
     0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-    TYPE_ORDER.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+    lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
     else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
 }
+
+private const val DISABLED_ALPHA = 0.6f

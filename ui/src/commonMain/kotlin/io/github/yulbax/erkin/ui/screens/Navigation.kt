@@ -13,10 +13,10 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.components.IconSource
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -35,6 +35,7 @@ import io.github.yulbax.erkin.ui.screens.erkin.ErkinScreen
 import io.github.yulbax.erkin.ui.screens.rules.RuleSets
 import io.github.yulbax.erkin.ui.screens.rules.Rules
 import io.github.yulbax.erkin.ui.screens.settings.Settings
+import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 
 sealed class Screen(
@@ -75,7 +76,7 @@ sealed class Screen(
     object Chains : Screen(
         route = "chains",
         title = Res.string.chains_title,
-        icon = IconSource.Vector(Icons.Filled.Link)
+        icon = ChainIcon
     )
 
     object Settings : Screen(
@@ -159,7 +160,7 @@ fun NavController.navigateToScreen(screen: Screen) {
 @Composable
 fun ErkinNavHost(
     navController: NavHostController,
-    appsQuery: String,
+    appsViewModel: AppsViewModel,
     updates: UpdateViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -176,7 +177,7 @@ fun ErkinNavHost(
                 onNavigateToByeDpi = { navController.navigateToScreen(Screen.ByeDpi) }
             )
         }
-        composable(Screen.Apps.route) { Apps(query = appsQuery) }
+        composable(Screen.Apps.route) { Apps(viewModel = appsViewModel) }
         composable(Screen.ByeDpi.route) { ByeDpi() }
         composable(Screen.Rules.route) { Rules(onOpenRuleSets = { navController.navigate(Screen.RuleSets.route) }) }
         composable(Screen.RuleSets.route) { RuleSets() }

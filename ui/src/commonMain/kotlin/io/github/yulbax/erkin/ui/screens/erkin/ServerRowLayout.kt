@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SplitButtonDefaults
 import androidx.compose.material3.SplitButtonShapes
@@ -32,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +49,8 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.yulbax.erkin.ui.components.IconSource
+import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.theme.StatusAmber
 import io.github.yulbax.erkin.ui.theme.StatusGreen
@@ -56,7 +60,7 @@ import kotlin.math.sin
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
-internal class RowIcon(val vector: ImageVector, val description: StringResource)
+internal class RowIcon(val source: IconSource, val description: StringResource)
 
 internal sealed interface RowMode {
     data object Normal : RowMode
@@ -147,12 +151,9 @@ internal fun ServerRowLayout(
 
 @Composable
 private fun LeadingIcon(icon: RowIcon, size: Dp, gap: Dp) {
-    Icon(
-        imageVector = icon.vector,
-        contentDescription = stringResource(icon.description),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.size(size)
-    )
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
+        SourceIcon(icon.source, contentDescription = stringResource(icon.description), modifier = Modifier.size(size))
+    }
     Spacer(Modifier.width(gap))
 }
 

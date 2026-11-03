@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionUsage
+import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
@@ -96,7 +97,7 @@ internal fun SubscriptionRow(
         onClick = onClick,
         onLongClick = onLongClick,
         modifier = modifier,
-        subtitleIcon = RowIcon(Icons.Default.Cloud, Res.string.subscription),
+        subtitleIcon = RowIcon(IconSource.Vector(Icons.Default.Cloud), Res.string.subscription),
         menu = {
             var menuExpanded by remember { mutableStateOf(false) }
             SplitButtonLayout(

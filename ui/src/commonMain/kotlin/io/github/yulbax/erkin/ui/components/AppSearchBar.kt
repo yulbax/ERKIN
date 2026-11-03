@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -28,7 +29,9 @@ import io.github.yulbax.erkin.ui.res.*
 fun AppSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    placeholder: String = stringResource(Res.string.search_hint),
+    trailing: @Composable () -> Unit = {}
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val colors = TextFieldDefaults.colors(
@@ -58,13 +61,16 @@ fun AppSearchBar(
             singleLine = true,
             visualTransformation = VisualTransformation.None,
             interactionSource = interactionSource,
-            placeholder = { Text(stringResource(Res.string.search_hint)) },
+            placeholder = { Text(placeholder) },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.clear_search_cd))
+                Row {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.clear_search_cd))
+                        }
                     }
+                    trailing()
                 }
             },
             shape = RoundedCornerShape(28.dp),

@@ -84,7 +84,7 @@
     <string name="apps_hint_title">Как направляется трафик</string>
     <string name="apps_hint_direct">трафик идёт напрямую вне туннеля</string>
     <string name="apps_hint_byedpi">трафик идёт через ByeDPI</string>
-    <string name="apps_hint_vpn">трафик идёт через VPN · нажмите ещё раз, чтобы выбрать сервер</string>
+    <string name="apps_hint_vpn">трафик идёт через VPN · сервер выбирается кнопкой › в меню канала</string>
     <string name="apps_hint_ru_default">Приложения ru/vk/yandex сразу попадают в Direct</string>
     <string name="app_server_main">Основной · %1$s</string>
     <string name="dialog_error">Ошибка</string>
@@ -164,7 +164,11 @@
     </plurals>
     <string name="undo">Отменить</string>
     <string name="search_hint">Поиск приложений</string>
-    <string name="apply_to_all">Применить ко всем</string>
+    <string name="apps_filter_all">Все</string>
+    <string name="apps_select_cd">Выбрать приложения</string>
+    <string name="apps_server_title">Сервер</string>
+    <string name="apps_server_search">Поиск серверов</string>
+    <string name="apps_choose_server_cd">Выбрать сервер</string>
     <string name="clear_search_cd">Очистить поиск</string>
     <string name="loading_apps">Загрузка приложений…</string>
     <string name="error_loading_apps">Ошибка загрузки приложений</string>

@@ -84,7 +84,7 @@
     <string name="apps_hint_title">Як спрямовується трафік</string>
     <string name="apps_hint_direct">трафік іде напряму поза тунелем</string>
     <string name="apps_hint_byedpi">трафік іде через ByeDPI</string>
-    <string name="apps_hint_vpn">трафік іде через VPN · натисніть ще раз, щоб вибрати сервер</string>
+    <string name="apps_hint_vpn">трафік іде через VPN · сервер вибирається кнопкою › у меню каналу</string>
     <string name="apps_hint_ru_default">Застосунки ru/vk/yandex одразу потрапляють у Direct</string>
     <string name="app_server_main">Основний · %1$s</string>
     <string name="dialog_error">Помилка</string>
@@ -164,7 +164,11 @@
     </plurals>
     <string name="undo">Скасувати</string>
     <string name="search_hint">Пошук застосунків</string>
-    <string name="apply_to_all">Застосувати до всіх</string>
+    <string name="apps_filter_all">Усі</string>
+    <string name="apps_select_cd">Вибрати застосунки</string>
+    <string name="apps_server_title">Сервер</string>
+    <string name="apps_server_search">Пошук серверів</string>
+    <string name="apps_choose_server_cd">Вибрати сервер</string>
     <string name="clear_search_cd">Очистити пошук</string>
     <string name="loading_apps">Завантаження застосунків…</string>
     <string name="error_loading_apps">Помилка завантаження застосунків</string>

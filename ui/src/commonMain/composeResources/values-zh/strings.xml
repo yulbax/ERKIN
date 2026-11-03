@@ -84,7 +84,7 @@
     <string name="apps_hint_title">流量如何分流</string>
     <string name="apps_hint_direct">流量直连，不经过隧道</string>
     <string name="apps_hint_byedpi">流量经由 ByeDPI</string>
-    <string name="apps_hint_vpn">流量经由 VPN · 再次点击可选择服务器</string>
+    <string name="apps_hint_vpn">流量经由 VPN · 在通道菜单中点 › 选择服务器</string>
     <string name="apps_hint_ru_default">ru/vk/yandex 应用默认归入 Direct</string>
     <string name="app_server_main">主服务器 · %1$s</string>
     <string name="dialog_error">错误</string>
@@ -158,7 +158,11 @@
     </plurals>
     <string name="undo">撤销</string>
     <string name="search_hint">搜索应用</string>
-    <string name="apply_to_all">应用到全部</string>
+    <string name="apps_filter_all">全部</string>
+    <string name="apps_select_cd">选择应用</string>
+    <string name="apps_server_title">服务器</string>
+    <string name="apps_server_search">搜索服务器</string>
+    <string name="apps_choose_server_cd">选择服务器</string>
     <string name="clear_search_cd">清除搜索</string>
     <string name="loading_apps">正在加载应用…</string>
     <string name="error_loading_apps">加载应用出错</string>

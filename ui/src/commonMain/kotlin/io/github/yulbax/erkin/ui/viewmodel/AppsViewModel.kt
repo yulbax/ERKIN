@@ -1,5 +1,9 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.App
@@ -8,13 +12,14 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
-import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class AppInfo(
@@ -34,12 +39,12 @@ class AppsViewModel(
     profileRepository: ProfileRepository
 ) : ViewModel() {
 
-    val hasServers: StateFlow<Boolean> = profileRepository.profiles
-        .map { it.isNotEmpty() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-
-    val servers: StateFlow<List<ProfileEntity>> = profileRepository.profiles
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val serverChoices: StateFlow<ServerChoices> = combine(
+        profileRepository.profiles,
+        profileRepository.subscriptions
+    ) { servers, subscriptions ->
+        ServerChoices(servers, subscriptions.associateBy { it.id })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServerChoices())
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.appsHintSeen }
@@ -66,12 +71,45 @@ class AppsViewModel(
         mergeSaved(installed.filter { showSystem || !it.isSystemApp || it.isLaunchable }, saved)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val allApps: StateFlow<List<AppInfo>> = combine(
-        installedAppInfos,
-        appDao.getAllApps()
-    ) { installed, saved ->
-        mergeSaved(installed, saved)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    var query by mutableStateOf("")
+        private set
+
+    private val _filter = MutableStateFlow<ConnectionType?>(null)
+    val filter: StateFlow<ConnectionType?> = _filter
+
+    private val _mode = MutableStateFlow<AppsMode>(AppsMode.Browsing)
+    val mode: StateFlow<AppsMode> = _mode
+
+    val visibleApps: StateFlow<List<AppInfo>> = combine(
+        apps,
+        snapshotFlow { query },
+        filter,
+        ::filterApps
+    ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun updateQuery(value: String) {
+        query = value
+    }
+
+    fun selectFilter(channel: ConnectionType?) {
+        _filter.value = channel
+    }
+
+    fun startSelecting(packageName: String? = null) {
+        _mode.value = AppsMode.Selecting(setOfNotNull(packageName))
+    }
+
+    fun toggleSelected(packageName: String) {
+        _mode.update { mode -> (mode as? AppsMode.Selecting)?.toggled(packageName) ?: mode }
+    }
+
+    fun selectAllVisible() {
+        _mode.value = AppsMode.Selecting(visibleApps.value.mapTo(HashSet()) { it.packageName })
+    }
+
+    fun stopSelecting() {
+        _mode.value = AppsMode.Browsing
+    }
 
     fun setConnectionType(app: AppInfo, type: ConnectionType) {
         viewModelScope.launch {
@@ -85,18 +123,27 @@ class AppsViewModel(
         }
     }
 
-    fun setAllConnectionTypes(targets: List<AppInfo>, type: ConnectionType) {
-        if (targets.isEmpty()) return
-        viewModelScope.launch {
-            appDao.setConnectionTypes(targets.map { it.stored(type) })
-        }
-    }
+    fun setConnectionTypeForSelection(type: ConnectionType): List<AppInfo> =
+        changeSelection { it.stored(type) }
+
+    fun setServerForSelection(serverId: Long?): List<AppInfo> =
+        changeSelection { it.stored(ConnectionType.VPN, serverId) }
 
     fun restoreConnectionTypes(snapshot: List<AppInfo>) {
         if (snapshot.isEmpty()) return
         viewModelScope.launch {
             appDao.setConnectionTypes(snapshot.map { it.stored(it.connectionType) })
         }
+    }
+
+    private fun changeSelection(change: (AppInfo) -> App): List<AppInfo> {
+        val packages = (_mode.value as? AppsMode.Selecting)?.packages.orEmpty()
+        val snapshot = apps.value.filter { it.packageName in packages }
+        stopSelecting()
+        viewModelScope.launch {
+            appDao.setConnectionTypes(snapshot.map(change))
+        }
+        return snapshot
     }
 
     private fun AppInfo.stored(

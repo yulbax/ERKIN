@@ -84,7 +84,7 @@
     <string name="apps_hint_title">Trafik nasıl yönlendirilir</string>
     <string name="apps_hint_direct">trafik tünel dışında, doğrudan gider</string>
     <string name="apps_hint_byedpi">trafik ByeDPI üzerinden gider</string>
-    <string name="apps_hint_vpn">trafik VPN üzerinden gider · sunucu seçmek için tekrar dokunun</string>
+    <string name="apps_hint_vpn">trafik VPN üzerinden gider · sunucuyu kanal menüsündeki › ile seçin</string>
     <string name="apps_hint_ru_default">ru/vk/yandex uygulamaları Doğrudan kanalda başlar</string>
     <string name="app_server_main">Ana · %1$s</string>
     <string name="dialog_error">Hata</string>
@@ -160,7 +160,11 @@
     </plurals>
     <string name="undo">Geri al</string>
     <string name="search_hint">Uygulama ara</string>
-    <string name="apply_to_all">Tümüne uygula</string>
+    <string name="apps_filter_all">Tümü</string>
+    <string name="apps_select_cd">Uygulamaları seç</string>
+    <string name="apps_server_title">Sunucu</string>
+    <string name="apps_server_search">Sunucu ara</string>
+    <string name="apps_choose_server_cd">Sunucu seç</string>
     <string name="clear_search_cd">Aramayı temizle</string>
     <string name="loading_apps">Uygulamalar yükleniyor…</string>
     <string name="error_loading_apps">Uygulamalar yüklenemedi</string>

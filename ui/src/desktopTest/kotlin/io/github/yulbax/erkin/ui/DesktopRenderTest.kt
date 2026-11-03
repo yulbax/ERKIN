@@ -15,6 +15,13 @@ import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import java.nio.file.Files
 import androidx.compose.runtime.Composable
+import org.koin.compose.viewmodel.koinViewModel
+import org.junit.Assert.assertEquals
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
+import io.github.yulbax.erkin.ui.viewmodel.AppsMode
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
@@ -197,7 +204,7 @@ class DesktopRenderTest {
     fun rendersEveryScreenOnDesktop() {
         render("main", width = 420, height = 860) { MainScreen() }
         render("main-wide", width = 1100, height = 700) { MainScreen() }
-        render("apps", width = 420, height = 860) { Apps(query = "") }
+        render("apps", width = 420, height = 860) { Apps() }
         render("byedpi", width = 420, height = 860) { ByeDpi() }
         render("settings", width = 420, height = 1400) { Settings() }
         render("logs", width = 420, height = 600) { Logs() }
@@ -209,6 +216,32 @@ class DesktopRenderTest {
         render("docs", width = 420, height = 600) { Docs(onOpen = {}) }
         render("doc-byedpi", width = 420, height = 2000) { DocPage(DocArticle.BYEDPI) }
         render("doc-channels", width = 420, height = 1400) { DocPage(DocArticle.CHANNELS) }
+    }
+
+    @Test
+    fun rendersAppsInSelectionMode() {
+        render("apps-selecting", width = 420, height = 600) {
+            val viewModel = koinViewModel<AppsViewModel>()
+            LaunchedEffect(Unit) { viewModel.startSelecting("discord.exe") }
+            Apps(viewModel)
+        }
+    }
+
+    @Test
+    fun pickingAServerForASingleSelectedAppEndsSelection() = runBlocking {
+        val viewModel = AppsViewModel(get(), get(), get(), get())
+        val server = get<ProfileRepository>().profiles.first().first()
+        val collector = launch(Dispatchers.Main) { viewModel.visibleApps.collect {} }
+        viewModel.visibleApps.first { it.isNotEmpty() }
+        viewModel.startSelecting("discord.exe")
+
+        val changed = viewModel.setServerForSelection(server.id)
+
+        assertEquals(listOf("discord.exe"), changed.map { it.packageName })
+        assertEquals(AppsMode.Browsing, viewModel.mode.value)
+        val stored = database.appDao().getAllApps().first { apps -> apps.any { it.packageName == "discord.exe" && it.serverId == server.id } }
+        assertEquals(ConnectionType.VPN, stored.first { it.packageName == "discord.exe" }.connectionType)
+        collector.cancel()
     }
 
     @Test
@@ -227,7 +260,7 @@ class DesktopRenderTest {
                 val dir = File(DOC_IMAGES, language).apply { mkdirs() }
                 val screens = mapOf<String, Pair<Int, @Composable () -> Unit>>(
                     "main" to (600 to { MainScreen() }),
-                    "apps" to (300 to { Surface { Apps(query = "") } }),
+                    "apps" to (300 to { Surface { Apps() } }),
                     "byedpi" to (420 to { Surface { ByeDpi() } })
                 )
                 screens.forEach { (name, screen) ->

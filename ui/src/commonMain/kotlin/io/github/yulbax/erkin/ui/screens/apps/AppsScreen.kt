@@ -1,12 +1,23 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
@@ -14,106 +25,130 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.pluralStringResource
-import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.yulbax.erkin.ui.res.*
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.label
+import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.viewmodel.AppInfo
+import io.github.yulbax.erkin.ui.viewmodel.AppsMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
+import io.github.yulbax.erkin.ui.viewmodel.CurrentServer
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
+private sealed interface ServerPickTarget {
+    data class App(val app: AppInfo) : ServerPickTarget
+    data object Selection : ServerPickTarget
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Apps(
-    query: String,
-    viewModel: AppsViewModel = koinViewModel()
+fun AppsSelectionBar(
+    count: Int,
+    onCancel: () -> Unit,
+    onSelectAll: () -> Unit,
+    actions: @Composable RowScope.() -> Unit
 ) {
+    TopAppBar(
+        title = { Text(stringResource(Res.string.servers_selected, count), fontWeight = FontWeight.Bold) },
+        navigationIcon = {
+            IconButton(onClick = onCancel) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(Res.string.cancel))
+            }
+        },
+        actions = {
+            IconButton(onClick = onSelectAll) {
+                Icon(Icons.Filled.SelectAll, contentDescription = stringResource(Res.string.select_all))
+            }
+            actions()
+        }
+    )
+}
+
+@Composable
+fun Apps(viewModel: AppsViewModel = koinViewModel()) {
     val apps by viewModel.apps.collectAsStateWithLifecycle()
-    val allApps by viewModel.allApps.collectAsStateWithLifecycle()
+    val visible by viewModel.visibleApps.collectAsStateWithLifecycle()
+    val filter by viewModel.filter.collectAsStateWithLifecycle()
+    val mode by viewModel.mode.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
     val appsHintSeen by viewModel.appsHintSeen.collectAsStateWithLifecycle()
-    val hasServers by viewModel.hasServers.collectAsStateWithLifecycle()
-    val servers by viewModel.servers.collectAsStateWithLifecycle()
+    val choices by viewModel.serverChoices.collectAsStateWithLifecycle()
+    var picking by remember { mutableStateOf<ServerPickTarget?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val selectedCount = (mode as? AppsMode.Selecting)?.packages?.size ?: 0
+
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = mode is AppsMode.Selecting,
+        onBackCompleted = viewModel::stopSelecting
+    )
 
     when {
         isLoading -> LoadingContent()
         error != null -> ErrorContent(error = error ?: "", onRetry = viewModel::retry)
         else -> {
-            val filtered = remember(apps, query) {
-                if (query.isBlank()) apps
-                else apps.filter { app ->
-                    app.name.contains(query, ignoreCase = true) ||
-                            app.packageName.contains(query, ignoreCase = true)
+            val snackbarPattern = pluralStringResource(Res.plurals.set_apps_snackbar, selectedCount)
+            val undoLabel = stringResource(Res.string.undo)
+            val typeLabels = ConnectionType.entries.associateWith { it.label() }
+            val offerUndo: (ConnectionType, List<AppInfo>) -> Unit = { type, snapshot ->
+                val message = snackbarPattern.format(snapshot.size, typeLabels.getValue(type))
+                scope.launch {
+                    snackbarHostState.currentSnackbarData?.dismiss()
+                    val result = snackbarHostState.showSnackbar(
+                        message = message,
+                        actionLabel = undoLabel,
+                        duration = SnackbarDuration.Short
+                    )
+                    if (result == SnackbarResult.ActionPerformed) viewModel.restoreConnectionTypes(snapshot)
                 }
             }
-            val bulkTargets = if (query.isBlank()) allApps else filtered
 
             Box(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     if (!appsHintSeen) AppsHint(onDismiss = viewModel::dismissAppsHint)
-                    val snackbarPattern = pluralStringResource(
-                        Res.plurals.set_apps_snackbar,
-                        bulkTargets.size
-                    )
-                    val undoLabel = stringResource(Res.string.undo)
-                    val typeLabels = ConnectionType.entries.associateWith { it.label() }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.apply_to_all),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                    when (mode) {
+                        is AppsMode.Selecting -> BulkChannelBar(
+                            enabled = selectedCount > 0,
+                            vpnEnabled = choices.vpnEnabled,
+                            canChooseServer = choices.canChoose,
+                            onSelect = { type -> offerUndo(type, viewModel.setConnectionTypeForSelection(type)) },
+                            onChooseServer = { picking = ServerPickTarget.Selection },
+                            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                         )
-
-                        GlobalTypeConnectedGroup(
-                            vpnEnabled = hasServers,
-                            modifier = Modifier.weight(1f),
-                            onSelect = { type ->
-                                val snackMsg = snackbarPattern.format(bulkTargets.size, typeLabels.getValue(type))
-                                viewModel.setAllConnectionTypes(bulkTargets, type)
-                                scope.launch {
-                                    snackbarHostState.currentSnackbarData?.dismiss()
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = snackMsg,
-                                        actionLabel = undoLabel,
-                                        duration = SnackbarDuration.Short
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        viewModel.restoreConnectionTypes(bulkTargets)
-                                    }
-                                }
-                            }
-                        )
+                        AppsMode.Browsing -> ChannelFilter(apps = apps, selected = filter, onSelect = viewModel::selectFilter)
                     }
-                    Box(modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         when {
-                            query.isNotBlank() && filtered.isEmpty() -> NoResultsContent(query = query)
-                            filtered.isEmpty() -> EmptyContent()
+                            visible.isEmpty() && viewModel.query.isNotBlank() -> NoResultsContent(query = viewModel.query)
+                            visible.isEmpty() -> EmptyContent()
                             else -> AppsList(
-                                apps = filtered,
-                                vpnEnabled = hasServers,
-                                servers = servers,
+                                apps = visible,
+                                mode = mode,
+                                choices = choices,
                                 onConnectionTypeChange = viewModel::setConnectionType,
-                                onServerChange = viewModel::setServer
+                                onChooseServer = { app -> picking = ServerPickTarget.App(app) },
+                                onToggle = viewModel::toggleSelected,
+                                onStartSelecting = viewModel::startSelecting
                             )
                         }
                     }
@@ -130,6 +165,50 @@ fun Apps(
                     )
                 }
             }
+
+            when (val target = picking) {
+                null -> Unit
+                is ServerPickTarget.App -> ServerPickerSheet(
+                    subtitle = target.app.name,
+                    choices = choices,
+                    current = choices.current(target.app),
+                    onPick = { serverId -> viewModel.setServer(target.app, serverId) },
+                    onDismiss = { picking = null }
+                )
+                ServerPickTarget.Selection -> ServerPickerSheet(
+                    subtitle = stringResource(Res.string.servers_selected, selectedCount),
+                    choices = choices,
+                    current = CurrentServer.None,
+                    onPick = { serverId -> offerUndo(ConnectionType.VPN, viewModel.setServerForSelection(serverId)) },
+                    onDismiss = { picking = null }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChannelFilter(apps: List<AppInfo>, selected: ConnectionType?, onSelect: (ConnectionType?) -> Unit) {
+    val counts = apps.groupingBy { it.connectionType }.eachCount()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = selected == null,
+            onClick = { onSelect(null) },
+            label = { Text("${stringResource(Res.string.apps_filter_all)} ${apps.size}") }
+        )
+        ConnectionType.entries.forEach { type ->
+            FilterChip(
+                selected = selected == type,
+                onClick = { onSelect(if (selected == type) null else type) },
+                label = { Text("${type.label()} ${counts[type] ?: 0}") },
+                leadingIcon = { ConnectionTypeIcon(type, Modifier.size(16.dp)) }
+            )
         }
     }
 }

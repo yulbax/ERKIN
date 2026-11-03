@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.yulbax.erkin.ui.platform.platformColorScheme
 
 private val DarkColorScheme = darkColorScheme(
@@ -21,6 +23,8 @@ private val LightColorScheme = lightColorScheme(
     
 )
 
+val LocalDarkTheme = staticCompositionLocalOf { false }
+
 @Composable
 fun ERKINTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -30,9 +34,11 @@ fun ERKINTheme(
     val colorScheme = platformColorScheme(darkTheme)?.takeIf { dynamicColor }
         ?: if (darkTheme) DarkColorScheme else LightColorScheme
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = erkinTypography(),
-        content = content
-    )
+    CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = erkinTypography(),
+            content = content
+        )
+    }
 }

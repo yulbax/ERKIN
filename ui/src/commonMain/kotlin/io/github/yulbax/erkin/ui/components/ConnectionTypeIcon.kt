@@ -19,6 +19,8 @@ sealed interface IconSource {
     data class Drawable(val resource: DrawableResource) : IconSource
 }
 
+val ChainIcon: IconSource = IconSource.Drawable(Res.drawable.ic_chain)
+
 class ConnectionTypeUi(val label: StringResource, val hint: StringResource, val icon: IconSource)
 
 val ConnectionType.ui: ConnectionTypeUi

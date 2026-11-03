@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
@@ -29,6 +30,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +41,7 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import io.github.yulbax.erkin.ui.res.*
@@ -47,6 +50,9 @@ import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.components.UpdatePrompt
 import io.github.yulbax.erkin.ui.platform.LocalMessages
 import io.github.yulbax.erkin.ui.platform.drawerSwipeToOpen
+import io.github.yulbax.erkin.ui.screens.apps.AppsSelectionBar
+import io.github.yulbax.erkin.ui.viewmodel.AppsMode
+import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -73,8 +79,12 @@ fun MainScreen(
         scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
     }
 
-    var appsQuery by rememberSaveable { mutableStateOf("") }
+    val appsViewModel: AppsViewModel = koinViewModel()
+    val appsMode by appsViewModel.mode.collectAsStateWithLifecycle()
     val onAppsScreen = currentRoute == Screen.Apps.route
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != null && !onAppsScreen) appsViewModel.stopSelecting()
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -114,15 +124,31 @@ fun MainScreen(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
                 topBarFrame {
-                    TopAppBar(
+                    val selecting = (appsMode as? AppsMode.Selecting)?.takeIf { onAppsScreen }
+                    if (selecting != null) {
+                        AppsSelectionBar(
+                            count = selecting.packages.size,
+                            onCancel = appsViewModel::stopSelecting,
+                            onSelectAll = appsViewModel::selectAllVisible,
+                            actions = topBarActions
+                        )
+                    } else TopAppBar(
                         title = {
                             if (onAppsScreen) {
                                 AppSearchBar(
-                                    query = appsQuery,
-                                    onQueryChange = { appsQuery = it },
+                                    query = appsViewModel.query,
+                                    onQueryChange = appsViewModel::updateQuery,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(48.dp)
+                                        .height(48.dp),
+                                    trailing = {
+                                        IconButton(
+                                            onClick = { appsViewModel.startSelecting() },
+                                            modifier = Modifier.padding(end = 1.5.dp)
+                                        ) {
+                                            Icon(Icons.Filled.Checklist, contentDescription = stringResource(Res.string.apps_select_cd))
+                                        }
+                                    }
                                 )
                             } else {
                                 Text(
@@ -166,7 +192,7 @@ fun MainScreen(
             CompositionLocalProvider(LocalMessages provides showMessage) {
                 ErkinNavHost(
                     navController = navController,
-                    appsQuery = appsQuery,
+                    appsViewModel = appsViewModel,
                     updates = updates,
                     modifier = Modifier.padding(innerPadding)
                 )

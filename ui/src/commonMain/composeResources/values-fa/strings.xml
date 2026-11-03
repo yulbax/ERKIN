@@ -84,7 +84,7 @@
     <string name="apps_hint_title">نحوهٔ مسیریابی ترافیک</string>
     <string name="apps_hint_direct">ترافیک مستقیم و خارج از تونل می‌رود</string>
     <string name="apps_hint_byedpi">ترافیک از ByeDPI عبور می‌کند</string>
-    <string name="apps_hint_vpn">ترافیک از VPN عبور می‌کند · برای انتخاب سرور دوباره بزنید</string>
+    <string name="apps_hint_vpn">ترافیک از VPN عبور می‌کند · سرور را با › در منوی کانال انتخاب کنید</string>
     <string name="apps_hint_ru_default">برنامه‌های ru/vk/yandex از ابتدا در Direct هستند</string>
     <string name="app_server_main">اصلی · %1$s</string>
     <string name="dialog_error">خطا</string>
@@ -160,7 +160,11 @@
     </plurals>
     <string name="undo">واگرد</string>
     <string name="search_hint">جستجوی برنامه‌ها</string>
-    <string name="apply_to_all">اعمال به همه</string>
+    <string name="apps_filter_all">همه</string>
+    <string name="apps_select_cd">انتخاب برنامه‌ها</string>
+    <string name="apps_server_title">سرور</string>
+    <string name="apps_server_search">جستجوی سرورها</string>
+    <string name="apps_choose_server_cd">انتخاب سرور</string>
     <string name="clear_search_cd">پاک کردن جستجو</string>
     <string name="loading_apps">در حال بارگذاری برنامه‌ها…</string>
     <string name="error_loading_apps">خطا در بارگذاری برنامه‌ها</string>

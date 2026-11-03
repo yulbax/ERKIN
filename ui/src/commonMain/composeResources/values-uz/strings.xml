@@ -84,7 +84,7 @@
     <string name="apps_hint_title">Trafik qanday yoʻnaltiriladi</string>
     <string name="apps_hint_direct">trafik tunneldan tashqarida, toʻgʻridan-toʻgʻri boradi</string>
     <string name="apps_hint_byedpi">trafik ByeDPI orqali boradi</string>
-    <string name="apps_hint_vpn">trafik VPN orqali boradi · server tanlash uchun yana bosing</string>
+    <string name="apps_hint_vpn">trafik VPN orqali boradi · server kanal menyusidagi › tugmasi bilan tanlanadi</string>
     <string name="apps_hint_ru_default">ru/vk/yandex ilovalari Toʻgʻridan-toʻgʻri kanalda boshlanadi</string>
     <string name="app_server_main">Asosiy · %1$s</string>
     <string name="dialog_error">Xato</string>
@@ -160,7 +160,11 @@
     </plurals>
     <string name="undo">Bekor qilish</string>
     <string name="search_hint">Ilovalarni qidirish</string>
-    <string name="apply_to_all">Hammasiga qoʻllash</string>
+    <string name="apps_filter_all">Barchasi</string>
+    <string name="apps_select_cd">Ilovalarni tanlash</string>
+    <string name="apps_server_title">Server</string>
+    <string name="apps_server_search">Serverlarni qidirish</string>
+    <string name="apps_choose_server_cd">Serverni tanlash</string>
     <string name="clear_search_cd">Qidiruvni tozalash</string>
     <string name="loading_apps">Ilovalar yuklanmoqda…</string>
     <string name="error_loading_apps">Ilovalarni yuklab boʻlmadi</string>

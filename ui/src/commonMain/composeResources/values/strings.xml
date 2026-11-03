@@ -86,7 +86,7 @@
     <string name="apps_hint_title">How traffic is routed</string>
     <string name="apps_hint_direct">traffic goes directly, outside the tunnel</string>
     <string name="apps_hint_byedpi">traffic goes through ByeDPI</string>
-    <string name="apps_hint_vpn">traffic goes through the VPN · tap again to pick a server</string>
+    <string name="apps_hint_vpn">traffic goes through the VPN · pick a server with › in the channel menu</string>
     <string name="apps_hint_ru_default">ru/vk/yandex apps start in Direct</string>
     <string name="app_server_main">Main · %1$s</string>
     <string name="dialog_error">Error</string>
@@ -165,7 +165,11 @@
     </plurals>
     <string name="undo">Undo</string>
     <string name="search_hint">Search apps</string>
-    <string name="apply_to_all">Apply to all</string>
+    <string name="apps_filter_all">All</string>
+    <string name="apps_select_cd">Select apps</string>
+    <string name="apps_server_title">Server</string>
+    <string name="apps_server_search">Search servers</string>
+    <string name="apps_choose_server_cd">Choose server</string>
     <string name="clear_search_cd">Clear search</string>
     <string name="loading_apps">Loading apps…</string>
     <string name="error_loading_apps">Error loading apps</string>

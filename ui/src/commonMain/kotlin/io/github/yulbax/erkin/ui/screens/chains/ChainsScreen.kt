@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Link
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -42,6 +41,8 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.ui.components.ChainIcon
+import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.EmptyAction
 import io.github.yulbax.erkin.ui.components.EmptyState
@@ -195,7 +196,7 @@ private fun ChainRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.Link, contentDescription = null, modifier = Modifier.size(24.dp))
+        SourceIcon(ChainIcon, contentDescription = null, modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
