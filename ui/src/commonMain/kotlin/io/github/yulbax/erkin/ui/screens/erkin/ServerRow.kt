@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -21,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.res.*
@@ -80,7 +80,7 @@ private fun ServerMenu(actions: ServerActions) {
             shapes = STANDALONE_MENU_SHAPES,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        AppDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             val close = { expanded = false }
             ServerMenuItem(Res.string.edit, Icons.Default.Edit, actions.onEdit, close)
             actions.onShare?.let { ServerMenuItem(Res.string.share, Icons.Default.Share, it, close) }

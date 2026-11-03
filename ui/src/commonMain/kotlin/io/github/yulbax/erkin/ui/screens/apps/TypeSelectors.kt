@@ -19,7 +19,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ButtonGroupDefaults
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedToggleButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.SourceIcon
@@ -138,7 +138,7 @@ internal fun ChannelMenu(
     onSelect: (ConnectionType) -> Unit,
     onChooseServer: () -> Unit
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, shape = RoundedCornerShape(16.dp)) {
+    AppDropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
         MENU_ORDER.forEach { type ->
             if (type == ConnectionType.BLOCK) HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             DropdownMenuItem(

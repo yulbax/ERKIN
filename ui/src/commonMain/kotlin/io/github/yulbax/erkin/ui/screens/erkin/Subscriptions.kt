@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -49,6 +48,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionUsage
+import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
@@ -113,7 +113,7 @@ internal fun SubscriptionRow(
                 trailingButton = {
                     Box {
                         MenuTrailingButton(expanded = menuExpanded, onExpandedChange = { menuExpanded = it })
-                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        AppDropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                             SubscriptionMenuItems(item.id, actions, withRefresh = true) { menuExpanded = false }
                         }
                     }
@@ -208,7 +208,7 @@ private fun SubscriptionMenuButton(item: ServerListItem.Subscription, actions: S
         IconButton(onClick = { expanded = true }) {
             Icon(Icons.Filled.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        AppDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             SubscriptionMenuItems(item.id, actions, withRefresh = false) { expanded = false }
         }
     }

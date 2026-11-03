@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.yulbax.erkin.ui.components.AppExposedDropdownMenu
 import io.github.yulbax.erkin.ui.components.CountryFlag
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
@@ -59,7 +60,7 @@ internal fun CountryPicker(code: String, onSelect: (String) -> Unit, modifier: M
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
                 .fillMaxWidth()
         )
-        ExposedDropdownMenu(
+        AppExposedDropdownMenu(
             expanded = expanded && matches.isNotEmpty(),
             onDismissRequest = { expanded = false },
             modifier = Modifier.heightIn(max = 320.dp)
