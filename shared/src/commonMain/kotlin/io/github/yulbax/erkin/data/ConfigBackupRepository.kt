@@ -68,7 +68,7 @@ class ConfigBackupRepository(
                     null
                 },
                 rules = if (selection.rules) {
-                    database.routingRuleDao().getAll()
+                    database.routingRuleDao().getAll().map { rule -> if (selection.profiles) rule else rule.copy(serverId = null) }
                 } else {
                     null
                 }
@@ -108,7 +108,7 @@ class ConfigBackupRepository(
         val settings = backup.settings?.takeIf { selection.settings }
         settings?.let { database.settingsDao().upsertSettings(it) }
         val added = profiles?.result?.takeIf { selection.profiles }
-        val rules = backup.rules?.takeIf { selection.rules }?.let { applyRules(it) }
+        val rules = backup.rules?.takeIf { selection.rules }?.let { applyRules(it, profiles?.ids.orEmpty()) }
         return ImportResult(
             applied = apps?.applied ?: 0,
             deferred = apps?.skipped ?: 0,
@@ -144,7 +144,7 @@ class ConfigBackupRepository(
         return SectionResult(applied, pending.size)
     }
 
-    private suspend fun applyRules(rules: List<RoutingRuleEntity>): SectionResult {
+    private suspend fun applyRules(rules: List<RoutingRuleEntity>, ids: Map<Long, Long>): SectionResult {
         val dao = database.routingRuleDao()
         val existing = dao.getAll().mapTo(HashSet()) { it.identity() }
         var added = 0
@@ -154,7 +154,7 @@ class ConfigBackupRepository(
                 skipped++
                 continue
             }
-            dao.append(rule.copy(id = 0))
+            dao.append(rule.copy(id = 0, serverId = rule.serverId?.let(ids::get)))
             rule.toRule()?.let(RuleLists::url)?.let { url ->
                 val kind = RuleLists.countryOf(url)?.let { RuleSetKind.IPCIDR.behavior }
                 database.ruleListDao().insertIfAbsent(RuleListEntity(source = url, kind = kind))

@@ -10,6 +10,7 @@ import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
+import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -17,6 +18,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ConfigBackupRepositoryTest {
@@ -63,6 +65,54 @@ class ConfigBackupRepositoryTest {
         assertEquals(listOf("1.1.1.1/32", "ru"), dao.getAll().map { it.value })
         val broken = exported.copy(rules = listOf(RoutingRuleEntity(type = RuleMatch.DOMAIN_SUFFIX.wire, value = "a,b", target = RuleTarget.DIRECT.wire)))
         assertFalse(BackupCodec.isValid(broken))
+    }
+
+    @Test
+    fun aRuleServerIsRenumberedOnRestoreAndDroppedWithoutProfiles() = runBlocking {
+        val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        profiles.add("vless://id@home.example:443?security=tls#Home")
+        val homeId = database.profileDao().getAll().single().id
+        database.routingRuleDao().append(
+            RoutingRuleEntity(type = RuleMatch.DOMAIN_SUFFIX.wire, value = "ru", target = RuleTarget.VPN.wire, serverId = homeId)
+        )
+        val withProfiles = BackupSelection(settings = false, apps = false, profiles = true, rules = true)
+        val rulesOnly = withProfiles.copy(profiles = false)
+
+        assertEquals(homeId, requireNotNull(BackupCodec.decode(repository.export(withProfiles))).rules?.single()?.serverId)
+        assertNull(requireNotNull(BackupCodec.decode(repository.export(rulesOnly))).rules?.single()?.serverId)
+
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        try {
+            fresh.profileDao().append(ProfileEntity(name = "Other", type = "vless", link = "vless://id@other.example:443?security=tls#Other", outboundJson = "{}"))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog))
+            target.apply(requireNotNull(BackupCodec.decode(repository.export(withProfiles))), withProfiles)
+
+            val home = fresh.profileDao().getAll().first { it.name == "Home" }
+            assertEquals(home.id, fresh.routingRuleDao().getAll().single().serverId)
+        } finally {
+            fresh.close()
+        }
+    }
+
+    @Test
+    fun deletingAServerClearsItFromRulesAndChangingTheChannelForgetsIt() = runBlocking {
+        val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        profiles.add("vless://id@main.example:443?security=tls#Main")
+        profiles.add("vless://id@home.example:443?security=tls#Home")
+        val home = database.profileDao().getAll().first { it.name == "Home" }
+        val rules = RoutingRuleRepository(database)
+        rules.add(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.VPN)
+        val stored = { runBlocking { database.routingRuleDao().getAll().single() } }
+
+        rules.setServer(stored(), home.id)
+        assertEquals(home.id, stored().serverId)
+        rules.setTarget(stored(), RuleTarget.DIRECT)
+        assertNull(stored().serverId)
+
+        rules.setServer(stored(), home.id)
+        assertEquals(RuleTarget.VPN.wire, stored().target)
+        profiles.delete(listOf(home))
+        assertNull(stored().serverId)
     }
 
     @Test

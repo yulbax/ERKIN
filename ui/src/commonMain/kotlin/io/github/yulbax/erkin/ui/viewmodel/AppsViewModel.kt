@@ -39,12 +39,8 @@ class AppsViewModel(
     profileRepository: ProfileRepository
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = combine(
-        profileRepository.profiles,
-        profileRepository.subscriptions
-    ) { servers, subscriptions ->
-        ServerChoices(servers, subscriptions.associateBy { it.id })
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServerChoices())
+    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServerChoices())
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.appsHintSeen }

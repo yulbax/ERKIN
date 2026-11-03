@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
+import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AddFab
@@ -54,7 +55,9 @@ import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ChannelButton
 import io.github.yulbax.erkin.ui.screens.apps.ChannelMenu
+import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
+import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -69,6 +72,8 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
     val tunnelDirectApps by viewModel.tunnelDirectApps.collectAsStateWithLifecycle()
     val listStates by viewModel.listStates.collectAsStateWithLifecycle()
+    val choices by viewModel.serverChoices.collectAsStateWithLifecycle()
+    var pickingServer by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     val stateOf = { rule: RoutingRuleEntity ->
         rule.toRule()?.let(RuleLists::url)?.let { listStates[it] ?: RuleListState() }
     }
@@ -144,7 +149,9 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                             checked = isChecked,
                             onClick = { if (selecting) toggle(rule) else editing = rule },
                             onLongClick = { toggle(rule) },
+                            choices = choices,
                             onTargetChange = { viewModel.setTarget(rule, it) },
+                            onChooseServer = { pickingServer = rule },
                             handle = {
                                 IconButton(
                                     onClick = {},
@@ -218,6 +225,16 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
         )
     }
 
+    pickingServer?.let { rule ->
+        ServerPickerSheet(
+            subtitle = rule.displayValue(stateOf(rule)),
+            choices = choices,
+            current = choices.current(ConnectionType.fromWire(rule.target) ?: ConnectionType.VPN, rule.serverId),
+            onPick = { serverId -> viewModel.setServer(rule, serverId) },
+            onDismiss = { pickingServer = null }
+        )
+    }
+
     deleting?.let { targets ->
         AlertDialog(
             onDismissRequest = { deleting = null },
@@ -256,7 +273,9 @@ private fun RuleRow(
     checked: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    choices: ServerChoices,
     onTargetChange: (RuleTarget) -> Unit,
+    onChooseServer: () -> Unit,
     handle: @Composable () -> Unit
 ) {
     val match = RuleMatch.fromWire(rule.type)
@@ -296,7 +315,7 @@ private fun RuleRow(
             Box {
                 ChannelButton(
                     type = target.channel,
-                    server = null,
+                    server = choices.label(target.channel, rule.serverId),
                     enabled = true,
                     onClick = { menuOpen = true }
                 )
@@ -304,13 +323,16 @@ private fun RuleRow(
                     expanded = menuOpen,
                     current = target.channel,
                     vpnEnabled = true,
-                    canChooseServer = false,
+                    canChooseServer = choices.canChoose,
                     onDismiss = { menuOpen = false },
                     onSelect = { type ->
                         menuOpen = false
                         if (type != target.channel) onTargetChange(type.ruleTarget)
                     },
-                    onChooseServer = {}
+                    onChooseServer = {
+                        menuOpen = false
+                        onChooseServer()
+                    }
                 )
             }
         }

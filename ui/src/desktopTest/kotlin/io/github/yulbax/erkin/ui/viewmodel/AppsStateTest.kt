@@ -77,6 +77,14 @@ class AppsStateTest {
     }
 
     @Test
+    fun aRuleUsesTheSameServerLabelsAsAnApp() {
+        assertEquals(ServerLabel("Helsinki", isChain = true), choices.label(ConnectionType.VPN, chain.id))
+        assertNull(choices.label(ConnectionType.VPN, serverId = 99))
+        assertNull(choices.label(ConnectionType.DIRECT, helsinki.id))
+        assertEquals(CurrentServer.Bound(helsinki.id), choices.current(ConnectionType.VPN, helsinki.id))
+    }
+
+    @Test
     fun serversCanBeChosenOnlyWhenThereIsMoreThanOne() {
         assertTrue(choices.canChoose)
         assertFalse(ServerChoices(listOf(main)).canChoose)

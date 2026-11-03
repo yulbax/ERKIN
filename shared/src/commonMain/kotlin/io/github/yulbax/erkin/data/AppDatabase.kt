@@ -29,7 +29,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class],
-    version = 22,
+    version = 23,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -229,6 +229,11 @@ abstract class AppDatabase : RoomDatabase() {
             object : Migration(21, 22) {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE settings ADD COLUMN tunnelDirectApps INTEGER NOT NULL DEFAULT 0")
+                }
+            },
+            object : Migration(22, 23) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL("ALTER TABLE routing_rules ADD COLUMN serverId INTEGER DEFAULT NULL")
                 }
             }
         )

@@ -121,7 +121,7 @@ class ProfileRepository(
         val chained = all.mapNotNull { (it.kind as? ServerKind.Chain)?.chain }
         val (kept, stale) = unmatched.partition { profile -> profile.selected || chained.any { it.uses(profile.id) } }
         profileDao.deleteMany(stale)
-        database.appDao().clearServers(stale.map { it.id })
+        clearServers(stale)
 
         val listed = orderedIds + kept.map { it.id }
         val groupIds = if (keepsOwnOrder()) {
@@ -199,13 +199,19 @@ class ProfileRepository(
                 profile.id !in ids && (profile.kind as? ServerKind.Chain)?.chain?.let { chain -> ids.any(chain::uses) } == true
             }
             profileDao.deleteMany(profiles + orphanedChains)
-            database.appDao().clearServers((profiles + orphanedChains).map { it.id })
+            clearServers(profiles + orphanedChains)
             database.subscriptionDao().deleteEmpty()
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {
                 database.appDao().reassignConnectionType(ConnectionType.VPN, ConnectionType.DIRECT)
             }
         }
+    }
+
+    private suspend fun clearServers(profiles: List<ProfileEntity>) {
+        val ids = profiles.map { it.id }
+        database.appDao().clearServers(ids)
+        database.routingRuleDao().clearServers(ids)
     }
 
     suspend fun refreshDescriptors() {

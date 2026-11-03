@@ -18,13 +18,20 @@ class RoutingRuleRepository(database: AppDatabase) {
 
     suspend fun update(rule: RoutingRuleEntity, match: RuleMatch, raw: String, target: RuleTarget): Boolean {
         val value = match.normalize(raw) ?: return false
-        dao.update(rule.copy(type = match.wire, value = value, target = target.wire))
+        dao.update(rule.retargeted(target).copy(type = match.wire, value = value))
         return true
     }
 
     suspend fun setTarget(rule: RoutingRuleEntity, target: RuleTarget) {
-        dao.update(rule.copy(target = target.wire))
+        dao.update(rule.retargeted(target))
     }
+
+    suspend fun setServer(rule: RoutingRuleEntity, serverId: Long?) {
+        dao.update(rule.copy(target = RuleTarget.VPN.wire, serverId = serverId))
+    }
+
+    private fun RoutingRuleEntity.retargeted(target: RuleTarget) =
+        copy(target = target.wire, serverId = serverId.takeIf { target == RuleTarget.VPN })
 
     suspend fun delete(rules: List<RoutingRuleEntity>) {
         dao.deleteMany(rules)

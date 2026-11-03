@@ -32,6 +32,9 @@ interface RoutingRuleDao {
     @Query("DELETE FROM routing_rules WHERE type = :type AND value = :value")
     suspend fun deleteMatching(type: String, value: String)
 
+    @Query("UPDATE routing_rules SET serverId = NULL WHERE serverId IN (:serverIds)")
+    suspend fun clearServers(serverIds: List<Long>)
+
     @Query("SELECT COALESCE(MAX(position), 0) FROM routing_rules")
     suspend fun lastPosition(): Int
 

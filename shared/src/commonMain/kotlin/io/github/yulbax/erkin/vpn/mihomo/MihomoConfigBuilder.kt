@@ -74,7 +74,7 @@ object MihomoConfigBuilder {
         val probePass = probe.password
         val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
         val vpnTarget = active?.tag ?: DIRECT
-        val exits = proxies.filter { it.tag == vpnTarget || it.tag in engine.vpnTargets.values }
+        val exits = proxies.filter { it.tag == vpnTarget || it.tag in engine.vpnTargets.values || it.tag in engine.serverTags.values }
         val ipv6 = options.ipv6Mode.ipv6Enabled && exits.none { EngineRequirement.IPV4_ONLY in it.sessionRequirements }
         val vpnTargetOf = { app: String -> engine.vpnTargets[app] ?: vpnTarget }
         val desktop = platform as? MihomoPlatform.Desktop
@@ -197,7 +197,7 @@ object MihomoConfigBuilder {
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
                 rules.forEach { rule ->
                     val target = when (rule.target) {
-                        RuleTarget.VPN -> active?.tag ?: REJECT
+                        RuleTarget.VPN -> rule.serverId?.let(engine.serverTags::get) ?: active?.tag ?: REJECT
                         RuleTarget.BYEDPI -> BYEDPI_PROXY
                         RuleTarget.DIRECT -> DIRECT
                         RuleTarget.BLOCK -> REJECT

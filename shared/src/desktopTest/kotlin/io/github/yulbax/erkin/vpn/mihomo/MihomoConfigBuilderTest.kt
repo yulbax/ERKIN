@@ -64,6 +64,24 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun aRuleBoundToAnotherServerIsRoutedToItAndAnUnknownServerFallsBackToTheMain() {
+        val other = vless.copy(tag = "p2")
+        val engine = engine(
+            listOf(vless, other), "p1", emptyList(), emptyList(),
+            rules = listOf(
+                RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN, serverId = 2),
+                RoutingRule(RuleMatch.DOMAIN, "b.example", RuleTarget.VPN, serverId = 9),
+                RoutingRule(RuleMatch.DOMAIN, "c.example", RuleTarget.VPN)
+            )
+        ).copy(serverTags = mapOf(2L to "p2"))
+        val rules = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject.rules()
+
+        assertTrue("DOMAIN,a.example,p2" in rules)
+        assertTrue("DOMAIN,b.example,p1" in rules)
+        assertTrue("DOMAIN,c.example,p1" in rules)
+    }
+
+    @Test
     fun blockedAppsAreRejectedBeforeUserRules() {
         val engine = engine(
             listOf(vless), "p1", emptyList(), listOf("org.vpn"),

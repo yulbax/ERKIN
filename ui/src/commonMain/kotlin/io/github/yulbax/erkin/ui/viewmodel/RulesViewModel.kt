@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.SettingsRepository
+import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
@@ -19,8 +20,12 @@ import kotlinx.coroutines.launch
 class RulesViewModel(
     private val repository: RoutingRuleRepository,
     private val settingsRepository: SettingsRepository,
-    ruleListDatabase: RuleListDatabase
+    ruleListDatabase: RuleListDatabase,
+    profileRepository: ProfileRepository
 ) : ViewModel() {
+
+    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServerChoices())
 
     val rules: StateFlow<List<RoutingRuleEntity>> =
         repository.rules.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -50,6 +55,10 @@ class RulesViewModel(
 
     fun setTarget(rule: RoutingRuleEntity, target: RuleTarget) {
         viewModelScope.launch(Dispatchers.IO) { repository.setTarget(rule, target) }
+    }
+
+    fun setServer(rule: RoutingRuleEntity, serverId: Long?) {
+        viewModelScope.launch(Dispatchers.IO) { repository.setServer(rule, serverId) }
     }
 
     fun delete(rules: List<RoutingRuleEntity>) {

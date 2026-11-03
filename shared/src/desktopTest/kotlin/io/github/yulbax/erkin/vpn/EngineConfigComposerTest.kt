@@ -42,6 +42,23 @@ class EngineConfigComposerTest {
     }
 
     @Test
+    fun aRuleBoundToAnotherServerAddsItsProxyAndChangesTheRouting() {
+        val app = App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN)
+        val base = inputs(listOf(app))
+        val other = base.profiles.single().copy(id = 2, selected = false, link = "$VLESS-other")
+        val free = base.copy(profiles = base.profiles + other, rules = listOf(RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN)))
+        val bound = free.copy(rules = listOf(RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN, serverId = 2)))
+
+        val before = EngineConfigComposer.compose(free, OWN, BYEDPI_PORT)
+        val after = EngineConfigComposer.compose(bound, OWN, BYEDPI_PORT)
+
+        assertEquals(listOf("p1"), before.engineConfig.proxies.map { it.tag })
+        assertEquals(listOf("p1", "p2"), after.engineConfig.proxies.map { it.tag })
+        assertEquals(mapOf(2L to "p2"), after.engineConfig.serverTags)
+        assertTrue(after.isStructuralChangeFrom(before))
+    }
+
+    @Test
     fun blockedAppsEnterTheTunAndChangeTheRouting() {
         val vpn = App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN)
         val blocked = App("org.example.ads", "Ads", isSystemApp = false, connectionType = ConnectionType.BLOCK)

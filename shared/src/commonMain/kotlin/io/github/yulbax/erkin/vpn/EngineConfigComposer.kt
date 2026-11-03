@@ -67,7 +67,9 @@ object EngineConfigComposer {
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
         val rules = inputs.rules.filter { rule -> RuleLists.url(rule)?.let { it in lists } ?: true }
         val active = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
-        val bound = boundServers(foreignApps, selected, inputs.profiles)
+        val boundIds = foreignApps.filter { it.connectionType == ConnectionType.VPN }.mapNotNull { it.serverId } +
+            rules.filter { it.target == RuleTarget.VPN }.mapNotNull { it.serverId }
+        val bound = boundServers(boundIds, selected, inputs.profiles)
         val proxies = (active + bound.values.flatten()).distinctBy { it.tag }
         val vpnTargets = foreignApps.mapNotNull { app ->
             app.serverId?.takeIf { it in bound }?.let { app.packageName to ProxyTag.of(it) }
@@ -87,7 +89,8 @@ object EngineConfigComposer {
                 ruleLists = lists.mapValues { it.value.kinds },
                 vpnTargets = vpnTargets,
                 directPackages = routed.directPackages,
-                blockedPackages = routed.blockedPackages
+                blockedPackages = routed.blockedPackages,
+                serverTags = bound.keys.associateWith(ProxyTag::of)
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: if (routed.hasByeDpi) "(ByeDPI only)" else "(Block only)",
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
@@ -96,7 +99,7 @@ object EngineConfigComposer {
             },
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
-                rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}" } +
+                rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" } +
                 "#${inputs.settings.tunnelDirectApps}",
             vpnActive = routed.hasVpn
@@ -106,14 +109,12 @@ object EngineConfigComposer {
     const val NO_SERVERS_NO_BYEDPI = "Add a server, or assign apps to ByeDPI to run without one"
 
     private fun boundServers(
-        apps: List<App>,
+        serverIds: List<Long>,
         selected: ProfileEntity?,
         profiles: List<ProfileEntity>
     ): Map<Long, List<EngineProxy>> {
         if (selected == null) return emptyMap()
-        return apps.asSequence()
-            .filter { it.connectionType == ConnectionType.VPN }
-            .mapNotNull { it.serverId }
+        return serverIds.asSequence()
             .filter { it != selected.id }
             .distinct()
             .mapNotNull { id -> profiles.firstOrNull { it.id == id } }
