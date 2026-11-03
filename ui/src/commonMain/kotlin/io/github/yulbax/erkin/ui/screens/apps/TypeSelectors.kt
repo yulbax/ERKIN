@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,7 +23,6 @@ import androidx.compose.material3.ElevatedToggleButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -48,10 +46,10 @@ import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.ui
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.theme.LocalDarkTheme
+import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.ui.viewmodel.ServerLabel
 import org.jetbrains.compose.resources.stringResource
 
-private val SERVER_ARROW_SHIFT = 16.dp
 private val MENU_ORDER = listOf(ConnectionType.DIRECT, ConnectionType.BYEDPI, ConnectionType.VPN, ConnectionType.BLOCK)
 private val CHANNEL_WIDTH = 112.dp
 private val CHANNEL_MAX_WIDTH = 140.dp
@@ -133,7 +131,7 @@ internal fun ChannelMenu(
     expanded: Boolean,
     current: ConnectionType?,
     vpnEnabled: Boolean,
-    canChooseServer: Boolean,
+    serverName: String?,
     onDismiss: () -> Unit,
     onSelect: (ConnectionType) -> Unit,
     onChooseServer: () -> Unit
@@ -155,28 +153,54 @@ internal fun ChannelMenu(
                     }
                 },
                 leadingIcon = { ConnectionTypeIcon(type, Modifier.size(20.dp)) },
-                trailingIcon = {
-                    val serverButton = type == ConnectionType.VPN && canChooseServer
-                    Row(
-                        modifier = Modifier.offset(x = if (serverButton) SERVER_ARROW_SHIFT else 0.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (type == current) Icon(Icons.Filled.Check, contentDescription = null)
-                        if (serverButton) {
-                            IconButton(onClick = onChooseServer) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = stringResource(Res.string.apps_choose_server_cd)
-                                )
-                            }
-                        }
-                    }
+                trailingIcon = if (type == current) {
+                    { Icon(Icons.Filled.Check, contentDescription = null) }
+                } else {
+                    null
                 },
                 enabled = vpnEnabled || !type.needsServer,
                 onClick = { onSelect(type) }
             )
+            if (type == ConnectionType.VPN && serverName != null) ServerMenuItem(serverName, onChooseServer)
         }
     }
+}
+
+@Composable
+private fun ServerMenuItem(serverName: String, onClick: () -> Unit) {
+    DropdownMenuItem(
+        text = {
+            Column {
+                Text(
+                    stringResource(Res.string.apps_server_title),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    serverName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        },
+        leadingIcon = { Spacer(Modifier.size(20.dp)) },
+        trailingIcon = {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = stringResource(Res.string.apps_choose_server_cd),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        onClick = onClick
+    )
+}
+
+@Composable
+internal fun ServerChoices.menuServerName(channel: ConnectionType, serverId: Long?): String? {
+    if (!canChoose) return null
+    return label(channel, serverId)?.name ?: main?.let { stringResource(Res.string.app_server_main, it.name) }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
