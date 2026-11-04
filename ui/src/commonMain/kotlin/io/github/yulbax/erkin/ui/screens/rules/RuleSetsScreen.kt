@@ -66,6 +66,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
     val choices by viewModel.serverChoices.collectAsStateWithLifecycle()
     val states by viewModel.states.collectAsStateWithLifecycle()
+    val apps by viewModel.apps.collectAsStateWithLifecycle()
     val usage by viewModel.usage.collectAsStateWithLifecycle()
     val showMessage = rememberShowMessage()
     var error by remember { mutableStateOf<RuleListError?>(null) }
@@ -205,9 +206,10 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
             initial = rule,
             ruleSets = states,
             choices = choices,
+            apps = apps,
             onDismiss = { draft = null },
-            onSave = { match, raw, target, serverId ->
-                viewModel.createRule(match, raw, target, serverId)
+            onSave = { match, raw, target, serverId, app ->
+                viewModel.createRule(match, raw, target, serverId, app)
                 draft = null
             },
             onDelete = null,

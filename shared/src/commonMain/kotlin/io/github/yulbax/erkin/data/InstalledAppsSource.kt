@@ -8,7 +8,9 @@ data class InstalledApp(
     val isSystemApp: Boolean,
     val isLaunchable: Boolean,
     val path: String? = null
-)
+) {
+    val isRegular: Boolean get() = !isSystemApp || isLaunchable
+}
 
 interface InstalledAppsSource {
     val installedApps: StateFlow<List<InstalledApp>>

@@ -1,11 +1,13 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -50,6 +52,19 @@ class ServerChoices(
         }
 
     fun labelFor(app: AppInfo): ServerLabel? = label(app.connectionType, app.serverId)
+
+    fun labelOf(server: ProxyRef): ServerLabel? {
+        val id = when (server) {
+            is ProxyRef.Profile -> server.id
+            is ProxyRef.Hop -> hopServer(server) ?: return null
+        }
+        return labels[id]?.copy(unreachable = id in unreachable)
+    }
+
+    private fun hopServer(hop: ProxyRef.Hop): Long? {
+        val chain = (byId[hop.chainId]?.kind as? ServerKind.Chain)?.chain ?: return null
+        return (chain.hops.getOrNull(hop.index) as? ChainEntry.Server)?.profileId
+    }
 
     fun subscriptionOf(serverId: Long): Long? = byId[serverId]?.subscriptionId
 

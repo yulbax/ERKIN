@@ -331,4 +331,39 @@
     <string name="subscription_expired">expired</string>
     <string name="subscription_show_servers">Show servers</string>
     <string name="subscription_hide_servers">Hide servers</string>
+    <string name="connections_title">Connections</string>
+    <string name="connections_off">Connect ERKIN to see where your apps go</string>
+    <string name="connections_empty">No connections yet</string>
+    <string name="connections_summary">%1$d apps · %2$d active connections</string>
+    <string name="connections_app_line">%1$d active · %2$s</string>
+    <string name="connections_blocked_badge">%1$d blocked</string>
+    <string name="connections_session">this session</string>
+    <string name="connections_tab_hosts">Addresses · %1$d</string>
+    <string name="connections_tab_rules">Rules · %1$d</string>
+    <plurals name="connections_attempts">
+        <item quantity="one">%1$d attempt</item>
+        <item quantity="other">%1$d attempts</item>
+    </plurals>
+    <string name="connections_by_rule">rule</string>
+    <string name="connections_by_app_rule">app rule</string>
+    <string name="connections_unknown_app">Unknown app</string>
+    <string name="connections_channel">Channel: %1$s</string>
+    <string name="connections_rule_menu">Rule for this address</string>
+    <string name="connections_copy">Copy address</string>
+    <string name="connections_copied">Address copied</string>
+    <string name="connections_no_rules">This app has no rules of its own. Create one from the ⋮ menu of an address.</string>
+    <string name="connections_more_cd">Address actions</string>
+    <string name="connections_service_subtitle">ERKIN\'s own connections</string>
+    <string name="connections_purpose_request">Checks and downloads</string>
+    <string name="rule_app">App</string>
+    <string name="rule_app_all">All apps</string>
+    <string name="rule_app_search">Search apps</string>
+    <string name="rule_app_direct_hint">Direct now: with its own rule it goes through ERKIN</string>
+    <string name="rule_app_system">System apps</string>
+    <string name="connections_rule_site">Rule for the whole site (*.%1$s)</string>
+    <string name="connections_copy_site">Copy site name</string>
+    <plurals name="connections_addresses">
+        <item quantity="one">%1$d address</item>
+        <item quantity="other">%1$d addresses</item>
+    </plurals>
 </resources>

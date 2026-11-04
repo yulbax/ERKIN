@@ -40,13 +40,13 @@ data class RoutedApps(
     val runsWithoutServer: Boolean get() = hasByeDpi || hasBlocked
 
     companion object {
-        fun from(apps: List<App>, hasServers: Boolean = true, tunnelDirectApps: Boolean = false): RoutedApps {
+        fun from(apps: List<App>, hasServers: Boolean = true, tunnelDirectApps: Boolean = false, ruleApps: Set<String> = emptySet()): RoutedApps {
             val direct = if (hasServers) apps.packagesOf(ConnectionType.DIRECT) else apps.packagesOf(ConnectionType.DIRECT) + apps.packagesOf(ConnectionType.VPN)
             return RoutedApps(
                 byeDpiPackages = apps.packagesOf(ConnectionType.BYEDPI),
                 vpnPackages = if (hasServers) apps.packagesOf(ConnectionType.VPN) else emptyList(),
                 directPaths = direct.filter(::isExecutablePath),
-                directPackages = if (tunnelDirectApps) direct.filterNot(::isExecutablePath) else emptyList(),
+                directPackages = direct.filterNot(::isExecutablePath).filter { tunnelDirectApps || it in ruleApps },
                 blockedPackages = apps.packagesOf(ConnectionType.BLOCK)
             )
         }

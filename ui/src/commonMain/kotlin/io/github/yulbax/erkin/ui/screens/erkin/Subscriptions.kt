@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.util.formatBytes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -264,16 +265,4 @@ private fun usageText(usage: SubscriptionUsage): String? {
     return listOfNotNull(traffic, expiry).joinToString(" · ").takeIf { it.isNotEmpty() }
 }
 
-private fun formatBytes(bytes: Long): String {
-    if (bytes < 1024) return "$bytes B"
-    var value = bytes.toDouble()
-    var unit = 0
-    while (value >= 1024 && unit < BYTE_UNITS.lastIndex) {
-        value /= 1024
-        unit++
-    }
-    return String.format(Locale.getDefault(), if (value < 10) "%.1f %s" else "%.0f %s", value, BYTE_UNITS[unit])
-}
-
-private val BYTE_UNITS = listOf("B", "KB", "MB", "GB", "TB", "PB")
 private const val SHORT_LIST = 6

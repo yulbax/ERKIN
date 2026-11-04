@@ -2,6 +2,8 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.yulbax.erkin.data.AppDao
+import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
@@ -25,8 +27,13 @@ class RuleSetsViewModel(
     private val ruleRepository: RoutingRuleRepository,
     private val commandBus: VpnCommandBus,
     profileRepository: ProfileRepository,
-    vpnStateRepository: VpnStateRepository
+    vpnStateRepository: VpnStateRepository,
+    appDao: AppDao,
+    installedApps: InstalledAppsSource
 ) : ViewModel() {
+
+    val apps: StateFlow<List<RuleAppChoice>> = ruleAppChoices(installedApps, appDao)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServerChoices())
@@ -68,7 +75,7 @@ class RuleSetsViewModel(
         }
     }
 
-    fun createRule(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?) {
-        viewModelScope.launch(Dispatchers.IO) { ruleRepository.add(match, raw, target, serverId) }
+    fun createRule(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?, app: String?) {
+        viewModelScope.launch(Dispatchers.IO) { ruleRepository.add(match, raw, target, serverId, app) }
     }
 }

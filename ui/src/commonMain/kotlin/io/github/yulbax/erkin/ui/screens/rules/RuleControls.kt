@@ -52,6 +52,7 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ServerChoiceText
 import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.screens.apps.menuServer
+import io.github.yulbax.erkin.ui.viewmodel.RuleAppChoice
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleTarget
@@ -141,8 +142,9 @@ internal fun RuleDialog(
     initial: RoutingRuleEntity?,
     ruleSets: Map<String, RuleListState>,
     choices: ServerChoices,
+    apps: List<RuleAppChoice>,
     onDismiss: () -> Unit,
-    onSave: (RuleMatch, String, RuleTarget, Long?) -> Unit,
+    onSave: (RuleMatch, String, RuleTarget, Long?, String?) -> Unit,
     onDelete: (() -> Unit)?,
     onOpenRuleSets: () -> Unit,
     isNew: Boolean = initial == null
@@ -153,6 +155,8 @@ internal fun RuleDialog(
     var target by remember { mutableStateOf(initial?.let { RuleTarget.fromWire(it.target) } ?: RuleTarget.DIRECT) }
     var serverId by remember { mutableStateOf(initial?.serverId) }
     var pickingServer by remember { mutableStateOf(false) }
+    var app by remember { mutableStateOf(initial?.app) }
+    var pickingApp by remember { mutableStateOf(false) }
     val normalized = match.normalize(text)
     val invalid = text.isNotBlank() && normalized == null
     val groupColors = ToggleButtonDefaults.toggleButtonColors(
@@ -171,7 +175,7 @@ internal fun RuleDialog(
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(match, text, target, serverId) }, enabled = normalized != null) {
+            TextButton(onClick = { onSave(match, text, target, serverId, app) }, enabled = normalized != null) {
                 Text(stringResource(Res.string.save))
             }
         }
@@ -264,6 +268,33 @@ internal fun RuleDialog(
                 }
             }
         }
+        SectionLabel(stringResource(Res.string.rule_app))
+        val chosen = app?.let { id -> apps.firstOrNull { it.packageName == id } }
+        Surface(
+            onClick = { pickingApp = true },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val name = app?.let { chosen?.name ?: it.appLabel() } ?: stringResource(Res.string.rule_app_all)
+                if (app == null) AllAppsIcon(32.dp) else RuleAppIcon(app.orEmpty(), chosen?.path, name, 32.dp)
+                Spacer(Modifier.width(12.dp))
+                Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Icon(
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(Res.string.rule_app),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+    }
+
+    if (pickingApp) {
+        RuleAppPickerSheet(apps = apps, current = app, onPick = { app = it }, onDismiss = { pickingApp = false })
     }
 
     if (pickingServer) {
@@ -276,6 +307,8 @@ internal fun RuleDialog(
         )
     }
 }
+
+internal fun String.appLabel(): String = substringAfterLast('/').substringAfterLast('\\')
 
 @Composable
 private fun RuleSetChoice(

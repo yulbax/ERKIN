@@ -115,6 +115,11 @@ class ServiceClient private constructor(
         Traffic(reply["up"]?.jsonPrimitive?.longOrNull ?: 0, reply["down"]?.jsonPrimitive?.longOrNull ?: 0)
     }
 
+    fun connections(): String = call("connections").let { reply ->
+        reply.throwIfFailed()
+        checkNotNull(reply["table"]) { "ERKIN service returned no connection table" }.toString()
+    }
+
     override fun close() {
         isOpen = false
         runCatching { channel.close() }

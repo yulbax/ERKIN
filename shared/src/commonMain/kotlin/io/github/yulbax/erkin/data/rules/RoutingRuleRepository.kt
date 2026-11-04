@@ -10,15 +10,15 @@ class RoutingRuleRepository(database: AppDatabase) {
 
     val rules: Flow<List<RoutingRuleEntity>> = dao.observeAll()
 
-    suspend fun add(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long? = null): Boolean {
+    suspend fun add(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long? = null, app: String? = null): Boolean {
         val value = match.normalize(raw) ?: return false
-        dao.append(RoutingRuleEntity(type = match.wire, value = value).retargeted(target, serverId))
+        dao.append(RoutingRuleEntity(type = match.wire, value = value, app = app).retargeted(target, serverId))
         return true
     }
 
-    suspend fun update(rule: RoutingRuleEntity, match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?): Boolean {
+    suspend fun update(rule: RoutingRuleEntity, match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?, app: String?): Boolean {
         val value = match.normalize(raw) ?: return false
-        dao.update(rule.retargeted(target, serverId).copy(type = match.wire, value = value))
+        dao.update(rule.retargeted(target, serverId).copy(type = match.wire, value = value, app = app))
         return true
     }
 

@@ -29,6 +29,16 @@ data class EngineProxy(
 
 const val BYEDPI_PROXY_TAG = "byedpi"
 
+enum class BuiltInOutbound(val tag: String) {
+    DIRECT("DIRECT"),
+    REJECT("REJECT"),
+    BYEDPI(BYEDPI_PROXY_TAG);
+
+    companion object {
+        fun fromTag(tag: String): BuiltInOutbound? = entries.firstOrNull { it.tag == tag }
+    }
+}
+
 enum class EngineRequirement(val sessionWide: Boolean) {
     TLS_FINGERPRINT(sessionWide = false),
     IPV4_ONLY(sessionWide = true)

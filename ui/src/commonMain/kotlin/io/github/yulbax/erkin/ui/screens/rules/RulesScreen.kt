@@ -58,6 +58,7 @@ import io.github.yulbax.erkin.ui.screens.apps.ChannelMenu
 import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.screens.apps.menuServer
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
+import io.github.yulbax.erkin.ui.viewmodel.RuleAppChoice
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
@@ -74,6 +75,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
     val tunnelDirectApps by viewModel.tunnelDirectApps.collectAsStateWithLifecycle()
     val listStates by viewModel.listStates.collectAsStateWithLifecycle()
     val choices by viewModel.serverChoices.collectAsStateWithLifecycle()
+    val apps by viewModel.apps.collectAsStateWithLifecycle()
     var pickingServer by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     val stateOf = { rule: RoutingRuleEntity ->
         rule.toRule()?.let(RuleLists::url)?.let { listStates[it] ?: RuleListState() }
@@ -151,6 +153,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                             onClick = { if (selecting) toggle(rule) else editing = rule },
                             onLongClick = { toggle(rule) },
                             choices = choices,
+                            app = rule.app?.let { id -> apps.firstOrNull { it.packageName == id } ?: RuleAppChoice(id, id.appLabel(), null, regular = true, channel = null) },
                             onTargetChange = { viewModel.setTarget(rule, it) },
                             onChooseServer = { pickingServer = rule },
                             handle = {
@@ -206,8 +209,8 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                 adding = false
                 editing = null
             },
-            onSave = { match, raw, target, serverId ->
-                viewModel.save(existing, match, raw, target, serverId)
+            onSave = { match, raw, target, serverId, app ->
+                viewModel.save(existing, match, raw, target, serverId, app)
                 adding = false
                 editing = null
             },
@@ -219,6 +222,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
             },
             ruleSets = listStates,
             choices = choices,
+            apps = apps,
             onOpenRuleSets = {
                 adding = false
                 editing = null
@@ -276,6 +280,7 @@ private fun RuleRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     choices: ServerChoices,
+    app: RuleAppChoice?,
     onTargetChange: (RuleTarget) -> Unit,
     onChooseServer: () -> Unit,
     handle: @Composable () -> Unit
@@ -308,6 +313,19 @@ private fun RuleRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (app != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        RuleAppIcon(app.packageName, app.path, app.name, 16.dp)
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = app.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
         }
         Spacer(Modifier.width(8.dp))

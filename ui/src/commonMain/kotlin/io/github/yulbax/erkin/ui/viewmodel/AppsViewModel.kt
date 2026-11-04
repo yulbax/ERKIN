@@ -57,16 +57,12 @@ class AppsViewModel(
     val isLoading: StateFlow<Boolean> = installedAppsRepository.isLoading
     val error: StateFlow<String?> = installedAppsRepository.error
 
-    private val installedAppInfos = installedAppsRepository.installedApps.map { installed ->
-        installed.map { it.toAppInfo() }
-    }
-
     val apps: StateFlow<List<AppInfo>> = combine(
-        installedAppInfos,
+        installedAppsRepository.installedApps,
         appDao.getAllApps(),
         settingsRepository.settings.map { it.showSystemApps }
     ) { installed, saved, showSystem ->
-        mergeSaved(installed.filter { showSystem || !it.isSystemApp || it.isLaunchable }, saved)
+        mergeSaved(installed.filter { showSystem || it.isRegular }.map { it.toAppInfo() }, saved)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     var query by mutableStateOf("")

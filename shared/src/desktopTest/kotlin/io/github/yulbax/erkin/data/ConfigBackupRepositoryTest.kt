@@ -122,9 +122,9 @@ class ConfigBackupRepositoryTest {
 
         rules.add(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.VPN, serverId = 7)
         assertEquals(7L, dao.getAll().single().serverId)
-        rules.update(dao.getAll().single(), RuleMatch.DOMAIN_SUFFIX, "by", RuleTarget.VPN, serverId = 8)
+        rules.update(dao.getAll().single(), RuleMatch.DOMAIN_SUFFIX, "by", RuleTarget.VPN, serverId = 8, app = null)
         assertEquals(8L, dao.getAll().single().serverId)
-        rules.update(dao.getAll().single(), RuleMatch.DOMAIN_SUFFIX, "by", RuleTarget.DIRECT, serverId = 8)
+        rules.update(dao.getAll().single(), RuleMatch.DOMAIN_SUFFIX, "by", RuleTarget.DIRECT, serverId = 8, app = null)
         assertNull(dao.getAll().single().serverId)
         rules.add(RuleMatch.DOMAIN_SUFFIX, "kz", RuleTarget.BYEDPI, serverId = 7)
         assertNull(dao.getAll().last().serverId)

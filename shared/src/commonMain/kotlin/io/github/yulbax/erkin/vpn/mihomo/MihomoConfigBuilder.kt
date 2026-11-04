@@ -2,13 +2,16 @@ package io.github.yulbax.erkin.vpn.mihomo
 
 import io.github.yulbax.erkin.data.isExecutablePath
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
+import io.github.yulbax.erkin.vpn.core.BuiltInOutbound
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.PrivateNetworks
 import io.github.yulbax.erkin.vpn.core.RemoteDns
+import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -44,10 +47,10 @@ object MihomoConfigBuilder {
     const val BYEDPI_PROXY = BYEDPI_PROXY_TAG
     const val DESKTOP_INTERFACE_NAME = "ERKIN"
     private const val TUN_STACK = "gvisor"
-    private const val DIRECT = "DIRECT"
-    private const val REJECT = "REJECT"
-    private const val PROBE_LISTENER = "probe-in"
-    private const val BYEDPI_PROBE_LISTENER = "byedpi-probe-in"
+    private val DIRECT = BuiltInOutbound.DIRECT.tag
+    private val REJECT = BuiltInOutbound.REJECT.tag
+    const val PROBE_LISTENER = "probe-in"
+    const val BYEDPI_PROBE_LISTENER = "byedpi-probe-in"
     private const val PROCESS_NAME = "PROCESS-NAME"
     private const val PROCESS_PATH = "PROCESS-PATH"
     private const val FAKE_IP_RANGE = "198.18.0.1/16"
@@ -55,7 +58,7 @@ object MihomoConfigBuilder {
     private const val DESKTOP_TUN_INET6 = "fdfe:dcba:9876::1/126"
     private const val SYSTEM_NAMESERVER = "system://"
     private const val RULE_LIST_FORMAT = "mrs"
-    private const val BLOCK_QUIC_RULE = "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT"
+    private val BLOCK_QUIC_RULE = "AND,((NETWORK,UDP),(DST-PORT,443)),$REJECT"
     private val LOCAL_DOMAINS = listOf("+.lan", "+.local", "+.localdomain", "+.home.arpa", "+.internal", "localhost")
 
     private val json = Json { prettyPrint = false }
@@ -78,6 +81,14 @@ object MihomoConfigBuilder {
         val ipv6 = options.ipv6Mode.ipv6Enabled && exits.none { EngineRequirement.IPV4_ONLY in it.sessionRequirements }
         val vpnTargetOf = { app: String -> engine.vpnTargets[app] ?: vpnTarget }
         val desktop = platform as? MihomoPlatform.Desktop
+        val ruleTarget = { rule: RoutingRule ->
+            when (rule.target) {
+                RuleTarget.VPN -> rule.serverId?.let(engine.serverTags::get) ?: active?.tag ?: REJECT
+                RuleTarget.BYEDPI -> BYEDPI_PROXY
+                RuleTarget.DIRECT -> DIRECT
+                RuleTarget.BLOCK -> REJECT
+            }
+        }
         val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { byeDpiPackages.isNotEmpty() }
         val defaultTarget = if (desktop != null) DIRECT else REJECT
         val systemDns = when (platform) {
@@ -95,7 +106,7 @@ object MihomoConfigBuilder {
             put("mode", "rule")
             put("log-level", "warning")
             put("ipv6", ipv6)
-            put("find-process-mode", "strict")
+            put("find-process-mode", "always")
             put("unified-delay", true)
             if (desktop != null) {
                 putJsonObject("tun") {
@@ -191,24 +202,13 @@ object MihomoConfigBuilder {
                 add("IN-NAME,$PROBE_LISTENER,$vpnTarget")
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
                 desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
+                val (appRules, sharedRules) = rules.partition { it.app != null }
+                appRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
                 processRules(PROCESS_PATH, engine.blockedPackages.filter(::isExecutablePath)) { REJECT }
                 processRules(PROCESS_NAME, engine.blockedPackages.filterNot(::isExecutablePath)) { REJECT }
                 if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
-                rules.forEach { rule ->
-                    val target = when (rule.target) {
-                        RuleTarget.VPN -> rule.serverId?.let(engine.serverTags::get) ?: active?.tag ?: REJECT
-                        RuleTarget.BYEDPI -> BYEDPI_PROXY
-                        RuleTarget.DIRECT -> DIRECT
-                        RuleTarget.BLOCK -> REJECT
-                    }
-                    when (val url = RuleLists.url(rule)) {
-                        null -> add("${rule.match.mihomo},${rule.value},$target")
-                        else -> engine.ruleLists[url].orEmpty().forEach { kind ->
-                            add("${rule.match.mihomo},${RuleLists.providerName(url, kind)},$target")
-                        }
-                    }
-                }
+                sharedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
                 if (desktop != null) {
                     val channels = listOf<Pair<List<String>, (String) -> String>>(
                         byeDpiPackages to { BYEDPI_PROXY },
@@ -226,6 +226,22 @@ object MihomoConfigBuilder {
             }
         }
         return json.encodeToString(JsonObject.serializer(), config)
+    }
+
+    private fun JsonArrayBuilder.addRule(rule: RoutingRule, target: String, ruleLists: Map<String, Set<RuleSetKind>>) {
+        val conditions = when (val url = RuleLists.url(rule)) {
+            null -> listOf("${rule.match.mihomo},${rule.value}")
+            else -> ruleLists[url].orEmpty().map { kind -> "${rule.match.mihomo},${RuleLists.providerName(url, kind)}" }
+        }
+        val app = rule.app
+        conditions.forEach { condition ->
+            if (app == null) {
+                add("$condition,$target")
+            } else {
+                val process = if (isExecutablePath(app)) PROCESS_PATH else PROCESS_NAME
+                add("AND,(($process,$app),($condition)),$target")
+            }
+        }
     }
 
     fun proxiesForTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions()): String =

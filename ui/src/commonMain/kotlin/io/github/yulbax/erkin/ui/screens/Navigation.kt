@@ -14,6 +14,10 @@ import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapVert
+import io.github.yulbax.erkin.ui.screens.connections.AppConnections
+import io.github.yulbax.erkin.ui.screens.connections.Connections
+import java.util.Base64
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import io.github.yulbax.erkin.ui.components.ChainIcon
@@ -54,6 +58,25 @@ sealed class Screen(
         title = Res.string.applications,
         icon = IconSource.Vector(Icons.AutoMirrored.Filled.List)
     )
+
+    object Connections : Screen(
+        route = "connections",
+        title = Res.string.connections_title,
+        icon = IconSource.Vector(Icons.Filled.SwapVert)
+    )
+
+    object ConnectionApp : Screen(
+        route = "connections/{$CONNECTION_APP}",
+        title = Res.string.connections_title,
+        icon = IconSource.Vector(Icons.Filled.SwapVert)
+    ) {
+        fun routeOf(app: String): String = "connections/${ENCODER.encodeToString(app.encodeToByteArray())}"
+
+        fun appOf(argument: String?): String? = argument?.let { runCatching { DECODER.decode(it).decodeToString() }.getOrNull() }
+
+        private val ENCODER = Base64.getUrlEncoder().withoutPadding()
+        private val DECODER = Base64.getUrlDecoder()
+    }
 
     object ByeDpi : Screen(
         route = "byedpi",
@@ -125,10 +148,12 @@ sealed class Screen(
 }
 
 private const val DOC_SLUG = "slug"
+private const val CONNECTION_APP = "app"
 
 val primaryNavPages = listOf(
     Screen.Main,
     Screen.Apps,
+    Screen.Connections,
     Screen.Rules,
     Screen.Chains,
     Screen.ByeDpi,
@@ -143,7 +168,7 @@ val secondaryNavPages = listOf(
     Screen.About
 )
 
-val subPages = listOf(Screen.RuleSets, Screen.DocPage)
+val subPages = listOf(Screen.RuleSets, Screen.DocPage, Screen.ConnectionApp)
 
 val navPages = primaryNavPages + secondaryNavPages
 
@@ -178,6 +203,10 @@ fun ErkinNavHost(
             )
         }
         composable(Screen.Apps.route) { Apps(viewModel = appsViewModel) }
+        composable(Screen.Connections.route) { Connections(onOpenApp = { navController.navigate(Screen.ConnectionApp.routeOf(it)) }) }
+        composable(Screen.ConnectionApp.route) { entry ->
+            Screen.ConnectionApp.appOf(entry.savedStateHandle.get<String>(CONNECTION_APP))?.let { AppConnections(it) }
+        }
         composable(Screen.ByeDpi.route) { ByeDpi() }
         composable(Screen.Rules.route) { Rules(onOpenRuleSets = { navController.navigate(Screen.RuleSets.route) }) }
         composable(Screen.RuleSets.route) { RuleSets() }

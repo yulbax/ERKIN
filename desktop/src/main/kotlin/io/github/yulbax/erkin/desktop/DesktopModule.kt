@@ -30,6 +30,7 @@ import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
+import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnController
 import io.github.yulbax.erkin.vpn.VpnSessionFactory
@@ -86,6 +87,7 @@ val desktopModule = module {
     single<VersionInfo> { DesktopVersionInfo(get()) }
     single { RuleListDatabase(DesktopRuleListStore(get()), get<AppDatabase>().ruleListDao(), get()) }
     single { ServerLatencyProbe(get(), ServiceLatencyTester(get())) }
+    single { ConnectionMonitor(ServiceConnectionTable(get()), get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     single<InstalledAppsSource>(createdAtStart = true) {
         val settings = get<SettingsRepository>()
         ProcessInstalledApps(get(), DesktopPaths.ownExecutable, CoroutineScope(SupervisorJob() + Dispatchers.IO)) {

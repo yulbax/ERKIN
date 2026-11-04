@@ -95,11 +95,13 @@ func Apply(content string, keepTun bool, resolvedProxy string, resolverAddress s
 	if server != nil {
 		resolveBeforeDial(resolvedProxy, *server, parsed.DNS, parsed.General.IPv6)
 	}
+	countTraffic()
 	return nil
 }
 
 func Shutdown() {
 	applied.Store(false)
+	traffic.clear()
 	closeConnections()
 	executor.Shutdown()
 	listener.ReCreateTun(LC.Tun{}, tunnel.Tunnel)

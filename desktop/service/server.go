@@ -43,6 +43,7 @@ type response struct {
 	Delay   int             `json:"delay,omitempty"`
 	Delays  json.RawMessage `json:"delays,omitempty"`
 	Sites   json.RawMessage `json:"sites,omitempty"`
+	Table   json.RawMessage `json:"table,omitempty"`
 	Up      int64           `json:"up,omitempty"`
 	Down    int64           `json:"down,omitempty"`
 	Kind    string          `json:"kind,omitempty"`
@@ -222,6 +223,13 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 		result.Kind, result.Count, result.OK = set.Behavior, set.Count, true
 	case "rulelistRemove":
 		return fail(removeRuleList(s.workDir, message.Name))
+	case "connections":
+		table, err := mihomocore.Connections()
+		if err != nil {
+			return fail(err)
+		}
+		result.Table = json.RawMessage(table)
+		result.OK = true
 	case "traffic":
 		result.Up, result.Down, result.OK = s.engine.traffic()
 	default:

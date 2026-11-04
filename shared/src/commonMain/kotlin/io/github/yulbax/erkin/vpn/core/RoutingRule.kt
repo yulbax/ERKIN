@@ -38,7 +38,7 @@ enum class RuleTarget(val wire: String) {
     }
 }
 
-data class RoutingRule(val match: RuleMatch, val value: String, val target: RuleTarget, val serverId: Long? = null)
+data class RoutingRule(val match: RuleMatch, val value: String, val target: RuleTarget, val serverId: Long? = null, val app: String? = null)
 
 object RuleValues {
     private const val MAX_DOMAIN_LENGTH = 253

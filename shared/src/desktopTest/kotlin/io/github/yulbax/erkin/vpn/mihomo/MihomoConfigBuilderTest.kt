@@ -101,6 +101,31 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun rulesOfOneAppComeFirstSoTheyCanOpenABlockedApp() {
+        val engine = engine(
+            listOf(vless), "p1", emptyList(), listOf("org.vpn"),
+            rules = listOf(
+                RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.DIRECT),
+                RoutingRule(RuleMatch.DOMAIN_SUFFIX, "game.io", RuleTarget.DIRECT, app = "org.blocked"),
+                RoutingRule(RuleMatch.IP_CIDR, "1.2.3.4/32", RuleTarget.VPN, app = "C:\\Games\\game.exe")
+            )
+        ).copy(blockedPackages = listOf("org.blocked"))
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject
+        assertEquals(
+            listOf(
+                "IN-NAME,probe-in,p1",
+                "AND,((PROCESS-NAME,org.blocked),(DOMAIN-SUFFIX,game.io)),DIRECT",
+                "AND,((PROCESS-PATH,C:\\Games\\game.exe),(IP-CIDR,1.2.3.4/32)),p1",
+                "PROCESS-NAME,org.blocked,REJECT",
+                "DOMAIN-SUFFIX,example.org,DIRECT",
+                "PROCESS-NAME,org.vpn,p1",
+                "MATCH,REJECT"
+            ),
+            config.rules()
+        )
+    }
+
+    @Test
     fun blockedExecutablePathsAreMatchedByPath() {
         val engine = engine(listOf(vless), "p1", emptyList(), emptyList())
             .copy(blockedPackages = listOf("C:\\Games\\ads.exe", "tracker.exe"))

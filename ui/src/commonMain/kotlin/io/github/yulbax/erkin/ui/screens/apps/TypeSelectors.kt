@@ -77,6 +77,9 @@ private val WARNING = ChannelAccent(dark = Color(0xFFF9A825), light = Color(0xFF
 private val WARNING_BORDER = 1.5.dp
 
 @Composable
+internal fun channelColor(type: ConnectionType): Color = type.colors().icon
+
+@Composable
 internal fun warningColor(): Color = if (LocalDarkTheme.current) WARNING.dark else WARNING.light
 
 private class ChannelColors(val container: Color, val icon: Color)

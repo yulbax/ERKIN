@@ -24,6 +24,8 @@ import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
 import io.github.yulbax.erkin.vpn.DownloadRoute
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
+import io.github.yulbax.erkin.vpn.mihomo.MihomoConnectionTable
+import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor
 import io.github.yulbax.erkin.vpn.mihomo.MihomoLatencyTester
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnSessionFactory
@@ -143,6 +145,10 @@ class AppModule {
 
     @Single
     fun updateDownloader(route: DownloadRoute): UpdateDownloader = UpdateDownloader(route)
+
+    @Single
+    fun connectionMonitor(stateRepository: VpnStateRepository, log: AppLog): ConnectionMonitor =
+        ConnectionMonitor(MihomoConnectionTable(), stateRepository, log, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     @Single
     fun serverLatencyProbe(context: Context, store: VpnSessionStore, log: AppLog): ServerLatencyProbe =

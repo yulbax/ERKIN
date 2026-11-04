@@ -75,6 +75,11 @@ import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import io.github.yulbax.erkin.ui.screens.connections.Connections
+import io.github.yulbax.erkin.ui.screens.connections.AppConnections
+import io.github.yulbax.erkin.vpn.VpnState
+import io.github.yulbax.erkin.vpn.connections.ConnectionLedger
+import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -172,6 +177,7 @@ class DesktopRenderTest {
                     single<UpdatePlatform> { NoUpdatePlatform }
                     single { RoutingRuleRepository(get()) }
                     single { RuleListDatabase(ruleLists, database.ruleListDao()) }
+                    single { ConnectionMonitor({ CONNECTION_TABLE }, get(), SilentLog, CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
                 },
                 uiModule
             )
@@ -217,6 +223,17 @@ class DesktopRenderTest {
         render("docs", width = 420, height = 600) { Docs(onOpen = {}) }
         render("doc-byedpi", width = 420, height = 2000) { DocPage(DocArticle.BYEDPI) }
         render("doc-channels", width = 420, height = 1400) { DocPage(DocArticle.CHANNELS) }
+    }
+
+    @Test
+    fun rendersConnectionsOfTheSession() {
+        get<VpnStateRepository>().update(VpnState.Connected(80))
+        runBlocking { get<RoutingRuleRepository>().add(RuleMatch.DOMAIN_SUFFIX, "googlevideo.com", RuleTarget.BYEDPI, app = "chrome.exe") }
+        render("rules-with-app", width = 420, height = 700) { Surface { Rules(onOpenRuleSets = {}) } }
+        render("connections", width = 420, height = 600) { Surface { Connections(onOpenApp = {}) } }
+        render("connection-app", width = 420, height = 860) { Surface { AppConnections("chrome.exe") } }
+        render("connection-app-dark", width = 420, height = 860, dark = true) { Surface { AppConnections("chrome.exe") } }
+        render("connection-service", width = 420, height = 600, dark = true) { Surface { AppConnections(ConnectionLedger.SERVICE_APP) } }
     }
 
     @Test
@@ -365,6 +382,18 @@ class DesktopRenderTest {
     private companion object {
         const val DOC_SCREENSHOTS = "erkin.docScreenshots"
         const val WEBP_QUALITY = 90
+        const val CONNECTION_TABLE = """{"rows":[
+            {"process":"telegram.exe","host":"api.telegram.org","inbound":"Tun","route":"p1","rule":"ProcessName","up":12000,"down":540000,"active":1,"connections":2,"lastSeen":1},
+            {"process":"discord.exe","host":"gateway.discord.gg","inbound":"Tun","route":"byedpi","rule":"DomainSuffix","up":4000,"down":320000,"active":1,"connections":1,"lastSeen":1},
+            {"process":"chrome.exe","host":"rr3---sn-4g5e.googlevideo.com","inbound":"Tun","route":"byedpi","rule":"AND","up":90000,"down":14800000,"active":1,"connections":6,"lastSeen":1},
+            {"process":"chrome.exe","host":"rr5---sn-x2.googlevideo.com","inbound":"Tun","route":"byedpi","rule":"AND","up":9000,"down":2100000,"active":1,"connections":2,"lastSeen":1},
+            {"process":"chrome.exe","host":"www.google.com","inbound":"Tun","route":"p1","rule":"DomainSuffix","up":20000,"down":1200000,"active":1,"connections":3,"lastSeen":1},
+            {"process":"chrome.exe","host":"esia.gosuslugi.ru","inbound":"Tun","route":"DIRECT","rule":"RuleSet","up":3000,"down":56000,"active":0,"connections":1,"lastSeen":1},
+            {"process":"chrome.exe","host":"ads.doubleclick.net","inbound":"Tun","route":"REJECT","connections":2,"lastSeen":1},
+            {"process":"chrome.exe","host":"track.adnetwork.com","inbound":"Tun","route":"REJECT","connections":1,"lastSeen":1},
+            {"host":"1.1.1.1","inbound":"Inner","route":"p1","up":5000,"down":17000,"active":1,"connections":4,"lastSeen":1},
+            {"host":"www.cloudflare.com","inbound":"Socks5","inName":"probe-in","rule":"InName","payload":"probe-in","route":"p1","up":800,"down":2400,"active":0,"connections":1,"lastSeen":1}
+        ]}"""
         val DOC_IMAGES = File("src/commonMain/composeResources/files/docs/img")
         val DOC_STRATEGIES = listOf<Pair<String, Int?>>(
             "-o1 -d1 -a1 -At,r,s -s1 -d1 -s5+s -s10+s -s15+s -s20+s -r1+s -S -a1" to 32,

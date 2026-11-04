@@ -17,15 +17,29 @@ import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleTarget
 
+sealed interface ProxyRef {
+    data class Profile(val id: Long) : ProxyRef
+
+    data class Hop(val chainId: Long, val index: Int) : ProxyRef
+}
+
 object ProxyTag {
     private const val PREFIX = "p"
+    private const val HOP = 'h'
 
     fun of(profileId: Long): String = "$PREFIX$profileId"
 
-    fun hop(chainId: Long, index: Int): String = "${of(chainId)}h$index"
+    fun hop(chainId: Long, index: Int): String = "${of(chainId)}$HOP$index"
 
-    fun profileId(tag: String): Long? =
-        tag.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX)?.toLongOrNull()
+    fun parse(tag: String): ProxyRef? {
+        val body = tag.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX) ?: return null
+        if (HOP !in body) return body.toLongOrNull()?.let(ProxyRef::Profile)
+        val chainId = body.substringBefore(HOP).toLongOrNull() ?: return null
+        val index = body.substringAfter(HOP).toIntOrNull() ?: return null
+        return ProxyRef.Hop(chainId, index)
+    }
+
+    fun profileId(tag: String): Long? = (parse(tag) as? ProxyRef.Profile)?.id
 }
 
 data class AppliedConfig(
@@ -59,7 +73,12 @@ object EngineConfigComposer {
         val selected = inputs.selected
         check(selected != null || inputs.profiles.isEmpty()) { "No server selected" }
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
-        val routed = RoutedApps.from(foreignApps, hasServers = selected != null, tunnelDirectApps = inputs.settings.tunnelDirectApps)
+        val routed = RoutedApps.from(
+            foreignApps,
+            hasServers = selected != null,
+            tunnelDirectApps = inputs.settings.tunnelDirectApps,
+            ruleApps = inputs.rules.mapNotNullTo(HashSet()) { it.app }
+        )
         check(!routed.isEmpty) {
             if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN, ByeDPI or Block"
         }
@@ -99,7 +118,7 @@ object EngineConfigComposer {
             },
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
-                rules.joinToString("|", prefix = "#") { "${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
+                rules.joinToString("|", prefix = "#") { "${it.app?.let { app -> "$app~" }.orEmpty()}${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" } +
                 "#${inputs.settings.tunnelDirectApps}",
             vpnActive = routed.hasVpn

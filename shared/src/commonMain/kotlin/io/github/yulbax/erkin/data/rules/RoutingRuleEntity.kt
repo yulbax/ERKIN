@@ -17,12 +17,13 @@ data class RoutingRuleEntity(
     val value: String = "",
     val target: String = "",
     @Transient val position: Int = 0,
-    val serverId: Long? = null
+    val serverId: Long? = null,
+    val app: String? = null
 ) {
     fun toRule(): RoutingRule? {
         val match = RuleMatch.fromWire(type) ?: return null
         val target = RuleTarget.fromWire(target) ?: return null
-        return RoutingRule(match, value, target, serverId.takeIf { target == RuleTarget.VPN })
+        return RoutingRule(match, value, target, serverId.takeIf { target == RuleTarget.VPN }, app)
     }
 
     fun upgraded(): RoutingRuleEntity = when (type) {
