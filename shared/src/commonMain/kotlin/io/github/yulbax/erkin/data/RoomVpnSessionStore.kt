@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
@@ -49,4 +50,6 @@ class RoomVpnSessionStore(
 
     override suspend fun refreshSubscription(url: String): ProfileOperationResult =
         profileRepository.refreshSubscription(url)
+
+    override suspend fun select(profile: ProfileEntity) = profileRepository.select(profile)
 }

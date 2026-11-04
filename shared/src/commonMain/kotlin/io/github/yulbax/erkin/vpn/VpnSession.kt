@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.vpn
 
-import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
@@ -28,6 +27,7 @@ class VpnSession(
     private val store: VpnSessionStore,
     private val stateRepository: VpnStateRepository,
     private val health: HealthMonitor,
+    private val failover: ServerFailover,
     private val quality: ByeDpiQualityCheck,
     private val log: AppLog,
     private val ownPackage: String,
@@ -51,6 +51,7 @@ class VpnSession(
     private var rapidByeDpiExits = 0
     private var routeWatchJob: Job? = null
     private var byeDpiCheckJob: Job? = null
+    private val recovery = RecoveryLadder()
 
     val isIdle: Boolean get() = phase == Phase.Idle
     val configName: String get() = appliedConfig?.configName.orEmpty()
@@ -63,6 +64,7 @@ class VpnSession(
         phase = Phase.Starting
         generation++
         rapidByeDpiExits = 0
+        recovery.reset()
         log.i(TAG, "start requested system=$systemInitiated")
         stateRepository.update(VpnState.Connecting)
         appliedConfig = null
@@ -105,6 +107,7 @@ class VpnSession(
             return ReloadOutcome.Done
         }
 
+        if (serverSwitched) recovery.reset()
         resetChannels()
         applyReload(desired)
         startHealth()
@@ -113,10 +116,27 @@ class VpnSession(
 
     suspend fun recover() {
         if (!isRunning) return
-        log.i(TAG, "vpn channel down; reloading service")
+        when (recovery.next()) {
+            RecoveryStep.RECONNECT -> log.i(TAG, "vpn channel down; reloading service")
+            RecoveryStep.SWITCH_SERVER -> {
+                log.i(TAG, "vpn channel still down after ${RecoveryLadder.RECONNECTS_BEFORE_SWITCH} reloads; looking for another server")
+                switchServer()
+            }
+        }
+        if (!isRunning) return
         resetChannels()
         applyReload(EngineConfigComposer.compose(store.load(), ownPackage, byeDpiPort, ruleLists))
         startHealth()
+    }
+
+    private suspend fun switchServer() {
+        try {
+            failover.switchToFastest()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (t: Throwable) {
+            log.w(TAG, "server switch failed", t)
+        }
     }
 
     fun checkByeDpi() {
@@ -285,33 +305,11 @@ class VpnSession(
                     vpnActive = config.vpnActive,
                     serverTags = config.engineConfig.serverTags
                 ),
-                onRefreshSubscription = { refreshSubscription() },
-                onRecoveryReload = { requestWork(Command.Recover) },
+                onVpnDown = { requestWork(Command.Recover) },
+                onVpnUp = recovery::reset,
                 onByedpiChanged = { requestWork(Command.CheckByeDpi) }
             )
         )
-    }
-
-    private suspend fun refreshSubscription() {
-        val subscription = store.selectedSubscription() ?: return
-        log.i(TAG, "reconnect threshold reached; refreshing subscription ${subscription.id}")
-        when (val result = store.refreshSubscription(subscription.url)) {
-            is ProfileOperationResult.SubscriptionSynced ->
-                if (result.selectedDropped) {
-                    log.w(TAG, "subscription no longer lists this server; keeping it unchanged")
-                } else {
-                    log.i(TAG, "subscription refreshed: +${result.added} ~${result.updated} -${result.removed}")
-                }
-            is ProfileOperationResult.Success -> Unit
-            ProfileOperationResult.EmptySubscription ->
-                log.i(TAG, "subscription refresh returned no servers")
-            is ProfileOperationResult.FetchFailed ->
-                log.e(TAG, "subscription refresh failed", result.cause)
-            ProfileOperationResult.InvalidLink ->
-                log.w(TAG, "subscription refresh rejected an invalid link")
-            is ProfileOperationResult.Refused ->
-                log.w(TAG, "subscription refused this device: ${result.refusal}")
-        }
     }
 
     private companion object {

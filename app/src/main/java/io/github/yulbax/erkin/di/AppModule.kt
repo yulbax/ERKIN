@@ -115,8 +115,9 @@ class AppModule {
         ruleLists: RuleListDatabase,
         route: DownloadRoute,
         siteCheck: ByeDpiSiteCheck,
-        log: AppLog
-    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log)
+        log: AppLog,
+        latency: ServerLatencyProbe
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log, latency)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =

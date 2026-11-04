@@ -93,7 +93,7 @@ val desktopModule = module {
         }
     }
 
-    single { VpnSessionFactory(get(), get(), get(), get(), get<ByeDpiSiteCheck>(), get()) }
+    single { VpnSessionFactory(get(), get(), get(), get(), get<ByeDpiSiteCheck>(), get(), get()) }
     single {
         val log = get<AppLog>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -62,8 +62,8 @@ class HealthMonitorTest {
             scope,
             HealthParams(
                 probe = ProbeParams(engine, byeDpiPort = null, vpnActive = true, serverTags = mapOf(2L to "p2", 3L to "p3")),
-                onRefreshSubscription = {},
-                onRecoveryReload = { reloads.incrementAndGet() },
+                onVpnDown = { reloads.incrementAndGet() },
+                onVpnUp = {},
                 onByedpiChanged = {}
             )
         )
@@ -93,8 +93,8 @@ class HealthMonitorTest {
             scope,
             HealthParams(
                 probe = ProbeParams(FakeEngine, byeDpiPort = 1, vpnActive = true),
-                onRefreshSubscription = {},
-                onRecoveryReload = { reloads.incrementAndGet() },
+                onVpnDown = { reloads.incrementAndGet() },
+                onVpnUp = {},
                 onByedpiChanged = { byedpiChecks.incrementAndGet() }
             )
         )

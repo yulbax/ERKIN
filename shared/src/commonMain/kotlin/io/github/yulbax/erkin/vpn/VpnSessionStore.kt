@@ -28,4 +28,6 @@ interface VpnSessionStore {
     suspend fun selectedSubscription(): SubscriptionEntity?
 
     suspend fun refreshSubscription(url: String): ProfileOperationResult
+
+    suspend fun select(profile: ProfileEntity)
 }

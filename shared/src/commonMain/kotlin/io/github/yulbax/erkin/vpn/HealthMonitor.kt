@@ -29,8 +29,8 @@ data class ProbeParams(
 
 data class HealthParams(
     val probe: ProbeParams,
-    val onRefreshSubscription: suspend () -> Unit,
-    val onRecoveryReload: suspend () -> Unit,
+    val onVpnDown: suspend () -> Unit,
+    val onVpnUp: () -> Unit,
     val onByedpiChanged: suspend () -> Unit
 )
 
@@ -95,8 +95,13 @@ class HealthMonitor(
         childScope.launch {
             var failures = 0
             vpnResults.collect { snapshot ->
-                failures = if (snapshot.vpnHealthy) 0 else failures + 1
-                if (!snapshot.vpnHealthy) recover(failures, snapshot, params)
+                if (snapshot.vpnHealthy) {
+                    failures = 0
+                    params.onVpnUp()
+                } else {
+                    failures++
+                    if (failures % RECOVER_EVERY_N_FAILURES == 0) params.onVpnDown()
+                }
             }
         }
     }
@@ -152,15 +157,9 @@ class HealthMonitor(
         params.onByedpiChanged()
     }
 
-    private suspend fun recover(failures: Int, s: HealthSnapshot, params: HealthParams) {
-        if (failures % REFRESH_SUBSCRIPTION_AFTER_FAILURES == 0) params.onRefreshSubscription()
-        if (failures % RELOAD_EVERY_N_FAILURES == 0) params.onRecoveryReload()
-    }
-
     companion object {
         private const val TAG = "Health"
-        private const val RELOAD_EVERY_N_FAILURES = 4
-        private const val REFRESH_SUBSCRIPTION_AFTER_FAILURES = 3
+        private const val RECOVER_EVERY_N_FAILURES = 4
         private const val SERVER_CHECK_INTERVAL_MS = 60_000L
     }
 }
