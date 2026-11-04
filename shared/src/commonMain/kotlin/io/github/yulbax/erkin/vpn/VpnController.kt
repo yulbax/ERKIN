@@ -199,7 +199,7 @@ class VpnController(
         if (!stopsSession) return
         runCatching {
             stopSession(
-                finalState = VpnState.Error(error.message ?: "VPN $operation failed"),
+                finalState = VpnState.Error(VpnFailure.of(error)),
                 stopToken = latestToken,
                 stopHost = true
             )

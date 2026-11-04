@@ -199,6 +199,14 @@
     <string name="servers_selected">已选择：%1$d</string>
     <string name="select_all">全选</string>
     <string name="error_process_lookup">无法按应用分流：内核模块 inet_diag、tcp_diag 和 udp_diag 未加载。这通常发生在内核更新之后——请重启电脑。</string>
+    <string name="error_no_server_selected">请选择要连接的服务器</string>
+    <string name="error_no_servers">请添加服务器，或将应用分配到 ByeDPI 以在无服务器时运行</string>
+    <string name="error_no_routed_apps">没有应用被分配到 VPN、ByeDPI 或 Block</string>
+    <string name="error_broken_chain">链路“%1$s”已损坏</string>
+    <string name="error_chain_server_removed">链路“%1$s”中的服务器已被删除</string>
+    <string name="error_byedpi_crashed">ByeDPI 反复退出（代码 %1$d）</string>
+    <string name="error_vpn_permission">请允许 ERKIN 建立 VPN 连接</string>
+    <string name="error_tun_unavailable">Android 未允许 ERKIN 创建隧道，可能有其他 VPN 正在运行</string>
     <string name="channel_status_byedpi_blocked">网站无法打开——请更换策略</string>
     <string name="new_apps_channel">新应用的默认通道</string>
     <string name="logs_clear">清除</string>

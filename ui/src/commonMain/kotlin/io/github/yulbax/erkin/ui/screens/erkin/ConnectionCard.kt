@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.yulbax.erkin.ui.components.text
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.theme.StatusOrange
 import io.github.yulbax.erkin.util.formatRate
@@ -93,7 +94,7 @@ internal fun ConnectionCard(
         VpnState.Verifying -> stringResource(Res.string.vpn_checking_connectivity)
         is VpnState.Connected -> stringResource(Res.string.vpn_tap_to_disconnect)
         VpnState.VpnDown -> stringResource(Res.string.vpn_server_down_hint)
-        is VpnState.Error -> if (state.isProcessLookupUnavailable) stringResource(Res.string.error_process_lookup) else state.message
+        is VpnState.Error -> state.failure.text()
     }
     Box(
         modifier = modifier

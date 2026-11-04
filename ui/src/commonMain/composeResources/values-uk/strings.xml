@@ -205,6 +205,14 @@
     <string name="servers_selected">Вибрано: %1$d</string>
     <string name="select_all">Вибрати всі</string>
     <string name="error_process_lookup">Маршрутизація за застосунками недоступна: не завантажено модулі ядра inet_diag, tcp_diag і udp_diag. Зазвичай так буває після оновлення ядра — перезавантажте комп’ютер.</string>
+    <string name="error_no_server_selected">Виберіть сервер для підключення</string>
+    <string name="error_no_servers">Додайте сервер або призначте застосункам ByeDPI, щоб працювати без сервера</string>
+    <string name="error_no_routed_apps">Жоден застосунок не призначено на VPN, ByeDPI або Block</string>
+    <string name="error_broken_chain">Ланцюжок «%1$s» пошкоджено</string>
+    <string name="error_chain_server_removed">Сервер із ланцюжка «%1$s» видалено</string>
+    <string name="error_byedpi_crashed">ByeDPI постійно завершується (код %1$d)</string>
+    <string name="error_vpn_permission">Дозвольте ERKIN створити VPN-підключення</string>
+    <string name="error_tun_unavailable">Android не дозволив ERKIN створити тунель. Можливо, увімкнено інший VPN</string>
     <string name="channel_status_byedpi_blocked">сайти не відкриваються — змініть стратегію</string>
     <string name="new_apps_channel">Канал для нових застосунків</string>
     <string name="logs_clear">Очистити</string>

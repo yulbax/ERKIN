@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.VpnFailure
+import io.github.yulbax.erkin.vpn.fail
 import android.net.ConnectivityManager
 import android.net.VpnService
 import android.os.Process
@@ -17,7 +19,7 @@ class TunSession(
     private var signature: String? = null
 
     fun open(config: TunConfig): Int {
-        if (VpnService.prepare(service) != null) error("android: missing vpn permission")
+        if (VpnService.prepare(service) != null) fail(VpnFailure.MissingVpnPermission)
 
         val newSignature = signatureOf(config)
         val existing = tunInterface
@@ -34,7 +36,7 @@ class TunSession(
             config.excludePackages.forEach { builder.addDisallowedApplication(it) }
         }
 
-        val pfd = builder.establish() ?: error("android: establish() failed")
+        val pfd = builder.establish() ?: fail(VpnFailure.TunUnavailable)
         log.i(TAG, "tun established mtu=${config.mtu} include=${config.includePackages.size} exclude=${config.excludePackages.size}")
         runCatching { tunInterface?.close() }
         tunInterface = pfd

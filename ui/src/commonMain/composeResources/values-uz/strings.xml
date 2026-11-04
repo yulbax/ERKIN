@@ -201,6 +201,14 @@
     <string name="servers_selected">Tanlangan: %1$d</string>
     <string name="select_all">Hammasini tanlash</string>
     <string name="error_process_lookup">Ilovalar boʻyicha yoʻnaltirish mavjud emas: inet_diag, tcp_diag va udp_diag yadro modullari yuklanmagan. Bu odatda yadro yangilangandan keyin sodir boʻladi — kompyuterni qayta ishga tushiring.</string>
+    <string name="error_no_server_selected">Ulanish uchun serverni tanlang</string>
+    <string name="error_no_servers">Server qoʻshing yoki serversiz ishlash uchun ilovalarga ByeDPI tayinlang</string>
+    <string name="error_no_routed_apps">VPN, ByeDPI yoki Block ga birorta ham ilova tayinlanmagan</string>
+    <string name="error_broken_chain">“%1$s” zanjiri buzilgan</string>
+    <string name="error_chain_server_removed">“%1$s” zanjiridagi server oʻchirilgan</string>
+    <string name="error_byedpi_crashed">ByeDPI toʻxtab qolyapti (kod %1$d)</string>
+    <string name="error_vpn_permission">ERKIN ga VPN ulanishini yaratishga ruxsat bering</string>
+    <string name="error_tun_unavailable">Android ERKIN ga tunnel yaratishga ruxsat bermadi. Boshqa VPN yoqilgan boʻlishi mumkin</string>
     <string name="channel_status_byedpi_blocked">saytlar ochilmayapti — boshqa strategiyani sinab koʻring</string>
     <string name="new_apps_channel">Yangi ilovalar uchun kanal</string>
     <string name="logs_clear">Tozalash</string>

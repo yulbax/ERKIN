@@ -201,6 +201,14 @@
     <string name="servers_selected">انتخاب‌شده: %1$d</string>
     <string name="select_all">انتخاب همه</string>
     <string name="error_process_lookup">مسیریابی برای هر برنامه در دسترس نیست: ماژول‌های هسته inet_diag، tcp_diag و udp_diag بارگذاری نشده‌اند. معمولاً این پس از به‌روزرسانی هسته رخ می‌دهد — رایانه را دوباره راه‌اندازی کنید.</string>
+    <string name="error_no_server_selected">یک سرور برای اتصال انتخاب کنید</string>
+    <string name="error_no_servers">یک سرور اضافه کنید یا برای کار بدون سرور، برنامه‌ها را به ByeDPI بسپارید</string>
+    <string name="error_no_routed_apps">هیچ برنامه‌ای به VPN، ByeDPI یا Block اختصاص داده نشده است</string>
+    <string name="error_broken_chain">زنجیره «%1$s» خراب است</string>
+    <string name="error_chain_server_removed">یک سرور از زنجیره «%1$s» حذف شده است</string>
+    <string name="error_byedpi_crashed">ByeDPI مدام متوقف می‌شود (کد %1$d)</string>
+    <string name="error_vpn_permission">به ERKIN اجازه دهید اتصال VPN بسازد</string>
+    <string name="error_tun_unavailable">اندروید اجازه نداد ERKIN تونل بسازد. شاید VPN دیگری فعال باشد</string>
     <string name="channel_status_byedpi_blocked">سایت‌ها باز نمی‌شوند — راهبرد دیگری را امتحان کنید</string>
     <string name="new_apps_channel">کانال برنامه‌های جدید</string>
     <string name="logs_clear">پاک کردن</string>

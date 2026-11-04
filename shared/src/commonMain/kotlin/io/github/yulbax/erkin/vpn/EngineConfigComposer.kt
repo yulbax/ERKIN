@@ -71,7 +71,7 @@ object EngineConfigComposer {
         ruleLists: (String) -> InstalledRuleList? = { null }
     ): AppliedConfig {
         val selected = inputs.selected
-        check(selected != null || inputs.profiles.isEmpty()) { "No server selected" }
+        if (selected == null && inputs.profiles.isNotEmpty()) fail(VpnFailure.NoServerSelected)
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
         val routed = RoutedApps.from(
             foreignApps,
@@ -79,9 +79,7 @@ object EngineConfigComposer {
             tunnelDirectApps = inputs.settings.tunnelDirectApps,
             ruleApps = inputs.rules.mapNotNullTo(HashSet()) { it.app }
         )
-        check(!routed.isEmpty) {
-            if (selected == null) NO_SERVERS_NO_BYEDPI else "No apps assigned to VPN, ByeDPI or Block"
-        }
+        if (routed.isEmpty) fail(if (selected == null) VpnFailure.NoServers else VpnFailure.NoRoutedApps)
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
         val rules = inputs.rules.filter { rule -> RuleLists.url(rule)?.let { it in lists } ?: true }
@@ -125,8 +123,6 @@ object EngineConfigComposer {
         )
     }
 
-    const val NO_SERVERS_NO_BYEDPI = "Add a server, or assign apps to ByeDPI to run without one"
-
     private fun boundServers(
         serverIds: List<Long>,
         selected: ProfileEntity?,
@@ -144,14 +140,12 @@ object EngineConfigComposer {
     fun proxiesFor(selected: ProfileEntity, profiles: List<ProfileEntity>): List<EngineProxy> =
         when (val kind = selected.kind) {
             is ServerKind.Link -> listOf(selected.engineProxy())
-            is ServerKind.Chain -> chainProxies(selected, checkNotNull(kind.chain) { "Chain '${selected.name}' is broken" }, profiles)
+            is ServerKind.Chain -> chainProxies(selected, kind.chain ?: fail(VpnFailure.BrokenChain(selected.name)), profiles)
         }
 
     private fun chainProxies(selected: ProfileEntity, chain: ProxyChain, profiles: List<ProfileEntity>): List<EngineProxy> {
-        check(chain.isValid) { "Chain '${selected.name}' is broken" }
-        fun server(id: Long) = checkNotNull(profiles.firstOrNull { it.id == id && it.isLink }) {
-            "A server of chain '${selected.name}' was removed"
-        }
+        if (!chain.isValid) fail(VpnFailure.BrokenChain(selected.name))
+        fun server(id: Long) = profiles.firstOrNull { it.id == id && it.isLink } ?: fail(VpnFailure.ChainServerRemoved(selected.name))
         val proxies = mutableListOf<EngineProxy>()
         var dialer: String? = null
         chain.hops.forEachIndexed { index, hop ->

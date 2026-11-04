@@ -201,6 +201,14 @@
     <string name="servers_selected">Seçilen: %1$d</string>
     <string name="select_all">Tümünü seç</string>
     <string name="error_process_lookup">Uygulama bazlı yönlendirme kullanılamıyor: inet_diag, tcp_diag ve udp_diag çekirdek modülleri yüklü değil. Bu genellikle bir çekirdek güncellemesinden sonra olur — bilgisayarı yeniden başlatın.</string>
+    <string name="error_no_server_selected">Bağlanmak için bir sunucu seçin</string>
+    <string name="error_no_servers">Bir sunucu ekleyin veya sunucusuz çalışmak için uygulamalara ByeDPI atayın</string>
+    <string name="error_no_routed_apps">VPN, ByeDPI veya Block için hiçbir uygulama atanmadı</string>
+    <string name="error_broken_chain">“%1$s” zinciri bozuk</string>
+    <string name="error_chain_server_removed">“%1$s” zincirindeki bir sunucu silindi</string>
+    <string name="error_byedpi_crashed">ByeDPI sürekli duruyor (kod %1$d)</string>
+    <string name="error_vpn_permission">ERKIN’in VPN bağlantısı kurmasına izin verin</string>
+    <string name="error_tun_unavailable">Android, ERKIN’in tünel oluşturmasına izin vermedi. Başka bir VPN etkin olabilir</string>
     <string name="channel_status_byedpi_blocked">siteler açılmıyor — başka bir strateji deneyin</string>
     <string name="new_apps_channel">Yeni uygulamalar için kanal</string>
     <string name="logs_clear">Temizle</string>

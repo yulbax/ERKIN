@@ -193,7 +193,7 @@ class VpnSession(
         if (!isRunning || !config.needsByeDpi) return
         val stable = (byeDpiStartedAt?.elapsedNow() ?: 0.seconds) >= BYEDPI_STABLE_RUNTIME
         rapidByeDpiExits = if (stable) 1 else rapidByeDpiExits + 1
-        check(rapidByeDpiExits <= MAX_RAPID_BYEDPI_EXITS) { "ByeDPI repeatedly exited with code $code" }
+        if (rapidByeDpiExits > MAX_RAPID_BYEDPI_EXITS) fail(VpnFailure.ByeDpiCrashed(code))
         startByeDpi()
         startHealth()
     }

@@ -15,11 +15,6 @@ sealed interface VpnState {
 
     data object VpnDown : VpnState
 
-    data class Error(val message: String) : VpnState {
-        val isProcessLookupUnavailable: Boolean get() = message.contains(PROCESS_LOOKUP_UNAVAILABLE)
-    }
+    data class Error(val failure: VpnFailure) : VpnState
 
-    companion object {
-        const val PROCESS_LOOKUP_UNAVAILABLE = "process-lookup-unavailable"
-    }
 }

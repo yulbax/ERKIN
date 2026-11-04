@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.vpn.ProbeParams
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.SocksHealthProbe
+import io.github.yulbax.erkin.vpn.VpnFailure
 import io.github.yulbax.erkin.vpn.VpnState
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
@@ -110,7 +111,7 @@ class DesktopEngineIntegrationTest {
         val firstStart = runCatching { client.start(config, "", "") }.exceptionOrNull()
         assumeTrue(
             "this kernel cannot report socket owners (inet_diag/tcp_diag/udp_diag not loaded)",
-            firstStart?.message?.contains(VpnState.PROCESS_LOOKUP_UNAVAILABLE) != true
+            firstStart?.message?.contains(VpnFailure.PROCESS_LOOKUP_UNAVAILABLE) != true
         )
         firstStart?.let { throw it }
         client.stop()
