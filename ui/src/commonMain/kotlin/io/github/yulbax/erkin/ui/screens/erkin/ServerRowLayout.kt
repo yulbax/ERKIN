@@ -206,6 +206,7 @@ private fun DelaySuffix(delay: ProxyDelay?, testing: Boolean) {
         Text(
             text = when (delay) {
                 ProxyDelay.Failed -> stringResource(Res.string.server_ping_timeout)
+                ProxyDelay.NeedsConnection -> stringResource(Res.string.server_ping_needs_connection)
                 is ProxyDelay.Measured -> "${delay.ms} ms"
             },
             style = MaterialTheme.typography.bodySmall,
@@ -252,6 +253,7 @@ private val WAVE_LIFT = 4.dp
 
 private fun pingColor(delay: ProxyDelay): Color = when (delay) {
     ProxyDelay.Failed -> PING_RED
+    ProxyDelay.NeedsConnection -> StatusAmber
     is ProxyDelay.Measured -> when {
         delay.ms <= 100 -> StatusGreen
         delay.ms < 450 -> lerp(StatusGreen, StatusAmber, (delay.ms - 100) / 350f)

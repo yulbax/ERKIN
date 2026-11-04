@@ -86,7 +86,7 @@ val desktopModule = module {
     }
     single<VersionInfo> { DesktopVersionInfo(get()) }
     single { RuleListDatabase(DesktopRuleListStore(get()), get<AppDatabase>().ruleListDao(), get()) }
-    single { ServerLatencyProbe(get(), ServiceLatencyTester(get())) }
+    single { ServerLatencyProbe(get(), { get<VpnStateRepository>().stats.value.byeDpiPort }, ServiceLatencyTester(get())) }
     single { ConnectionMonitor(ServiceConnectionTable(get()), get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     single<InstalledAppsSource>(createdAtStart = true) {
         val settings = get<SettingsRepository>()

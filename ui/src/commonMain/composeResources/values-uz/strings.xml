@@ -79,6 +79,7 @@
     <string name="servers_empty">Hozircha serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshing.</string>
     <string name="server_test_latency">Kechikishni tekshirish</string>
     <string name="server_ping_timeout">vaqt tugadi</string>
+    <string name="server_ping_needs_connection">ulanish kerak</string>
     <string name="ok">OK</string>
     <string name="dismiss">Yopish</string>
     <string name="got_it">Tushunarli</string>

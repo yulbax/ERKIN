@@ -88,7 +88,7 @@ class ProfileViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
 
     fun testAll() {
-        test(uiState.value.profiles.filter { it.isLink }.map { it.id }.toSet(), subscription = false)
+        test(uiState.value.profiles.map { it.id }.toSet(), subscription = false)
     }
 
     fun testSubscription(id: Long) {
@@ -207,7 +207,7 @@ class ProfileViewModel(
 
         fun ProxyDelay?.rank(): Int = when (this) {
             is ProxyDelay.Measured -> ms
-            null -> Int.MAX_VALUE - 1
+            null, ProxyDelay.NeedsConnection -> Int.MAX_VALUE - 1
             ProxyDelay.Failed -> Int.MAX_VALUE
         }
     }

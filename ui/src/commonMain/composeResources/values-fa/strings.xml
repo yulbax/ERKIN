@@ -79,6 +79,7 @@
     <string name="servers_empty">هنوز سروری نیست. لینک پیکربندی یا اشتراک اضافه کنید.</string>
     <string name="server_test_latency">آزمایش تأخیر</string>
     <string name="server_ping_timeout">مهلت تمام شد</string>
+    <string name="server_ping_needs_connection">نیاز به اتصال</string>
     <string name="ok">تأیید</string>
     <string name="dismiss">بستن</string>
     <string name="got_it">متوجه شدم</string>

@@ -81,6 +81,7 @@
     <string name="servers_empty">No servers yet. Add a config link or a subscription.</string>
     <string name="server_test_latency">Test latency</string>
     <string name="server_ping_timeout">timeout</string>
+    <string name="server_ping_needs_connection">needs connection</string>
     <string name="ok">OK</string>
     <string name="dismiss">Dismiss</string>
     <string name="got_it">Got it</string>

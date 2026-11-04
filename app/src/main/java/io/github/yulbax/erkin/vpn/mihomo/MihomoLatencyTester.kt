@@ -11,9 +11,9 @@ import kotlinx.coroutines.runInterruptible
 import mihomocore.Mihomocore
 
 class MihomoLatencyTester(private val appContext: Context, private val log: AppLog) : ProxyLatencyTester {
-    override suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int): String =
+    override suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int, byeDpiPort: Int?): String =
         runInterruptible(Dispatchers.IO) {
             MihomoRuntime.ensureSetup(appContext, log)
-            Mihomocore.testProxies(MihomoConfigBuilder.proxiesForTest(proxies, options), url, timeoutMs, options.ipv6Mode.ipv6Enabled)
+            Mihomocore.testProxies(MihomoConfigBuilder.proxiesForTest(proxies, options, byeDpiPort), url, timeoutMs, options.ipv6Mode.ipv6Enabled)
         }
 }

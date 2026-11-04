@@ -141,7 +141,7 @@ object EngineConfigComposer {
             .toMap()
     }
 
-    private fun proxiesFor(selected: ProfileEntity, profiles: List<ProfileEntity>): List<EngineProxy> =
+    fun proxiesFor(selected: ProfileEntity, profiles: List<ProfileEntity>): List<EngineProxy> =
         when (val kind = selected.kind) {
             is ServerKind.Link -> listOf(selected.engineProxy())
             is ServerKind.Chain -> chainProxies(selected, checkNotNull(kind.chain) { "Chain '${selected.name}' is broken" }, profiles)

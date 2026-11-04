@@ -151,6 +151,6 @@ class AppModule {
         ConnectionMonitor(MihomoConnectionTable(), stateRepository, log, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     @Single
-    fun serverLatencyProbe(context: Context, store: VpnSessionStore, log: AppLog): ServerLatencyProbe =
-        ServerLatencyProbe(store, MihomoLatencyTester(context.applicationContext, log))
+    fun serverLatencyProbe(context: Context, store: VpnSessionStore, log: AppLog, states: VpnStateRepository): ServerLatencyProbe =
+        ServerLatencyProbe(store, { states.stats.value.byeDpiPort }, MihomoLatencyTester(context.applicationContext, log))
 }

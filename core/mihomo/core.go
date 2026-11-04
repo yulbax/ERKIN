@@ -115,6 +115,18 @@ func URLTest(proxyName string, url string, timeoutMs int32) int32 {
 	return measure(proxy, url, timeoutMs)
 }
 
+type testTunnel struct {
+	proxies map[string]C.Proxy
+}
+
+func (t *testTunnel) HandleTCPConn(conn net.Conn, _ *C.Metadata) { _ = conn.Close() }
+
+func (t *testTunnel) HandleUDPPacket(packet C.UDPPacket, _ *C.Metadata) { packet.Drop() }
+
+func (t *testTunnel) NatTable() C.NatTable { return nil }
+
+func (t *testTunnel) Proxies() map[string]C.Proxy { return t.proxies }
+
 func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string, error) {
 	if !applied.Load() {
 		resolver.DisableIPv6 = !ipv6
@@ -124,31 +136,35 @@ func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string
 		return "", err
 	}
 	results := make(map[string]int32, len(mappings))
+	table := &testTunnel{proxies: make(map[string]C.Proxy, len(mappings))}
+	for _, mapping := range mappings {
+		name, _ := mapping["name"].(string)
+		proxy, err := adapter.ParseProxy(mapping, adapter.WithTunnelForAPI(table))
+		if err != nil {
+			results[name] = -1
+			continue
+		}
+		table.proxies[name] = proxy
+	}
 	var resultsAccess sync.Mutex
 	var group sync.WaitGroup
 	slots := make(chan struct{}, testConcurrency)
-	for _, mapping := range mappings {
-		name, _ := mapping["name"].(string)
-		proxy, err := adapter.ParseProxy(mapping)
-		if err != nil {
-			resultsAccess.Lock()
-			results[name] = -1
-			resultsAccess.Unlock()
-			continue
-		}
+	for name, proxy := range table.proxies {
 		group.Add(1)
 		go func() {
 			defer group.Done()
 			slots <- struct{}{}
 			defer func() { <-slots }()
 			delay := measure(proxy, url, timeoutMs)
-			_ = proxy.Close()
 			resultsAccess.Lock()
 			results[name] = delay
 			resultsAccess.Unlock()
 		}()
 	}
 	group.Wait()
+	for _, proxy := range table.proxies {
+		_ = proxy.Close()
+	}
 	encoded, err := json.Marshal(results)
 	return string(encoded), err
 }

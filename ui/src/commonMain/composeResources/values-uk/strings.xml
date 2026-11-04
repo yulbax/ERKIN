@@ -79,6 +79,7 @@
     <string name="servers_empty">Серверів поки немає. Додайте посилання-конфіг або підписку.</string>
     <string name="server_test_latency">Перевірити затримку</string>
     <string name="server_ping_timeout">тайм-аут</string>
+    <string name="server_ping_needs_connection">потрібне підключення</string>
     <string name="ok">ОК</string>
     <string name="dismiss">Закрити</string>
     <string name="got_it">Зрозуміло</string>

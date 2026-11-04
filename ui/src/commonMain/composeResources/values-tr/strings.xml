@@ -79,6 +79,7 @@
     <string name="servers_empty">Henüz sunucu yok. Bir yapılandırma bağlantısı veya abonelik ekleyin.</string>
     <string name="server_test_latency">Gecikmeyi test et</string>
     <string name="server_ping_timeout">zaman aşımı</string>
+    <string name="server_ping_needs_connection">bağlantı gerekli</string>
     <string name="ok">Tamam</string>
     <string name="dismiss">Kapat</string>
     <string name="got_it">Anladım</string>

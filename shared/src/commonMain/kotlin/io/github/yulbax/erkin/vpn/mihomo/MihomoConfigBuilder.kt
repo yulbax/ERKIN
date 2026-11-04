@@ -176,13 +176,7 @@ object MihomoConfigBuilder {
             }
             putJsonArray("proxies") {
                 proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) }.forEach { add(it) }
-                add(buildJsonObject {
-                    put("name", BYEDPI_PROXY)
-                    put("type", "socks5")
-                    put("server", "127.0.0.1")
-                    put("port", byeDpiPort)
-                    put("udp", true)
-                })
+                add(byeDpiProxy(byeDpiPort))
             }
             val lists = rules.mapNotNull(RuleLists::url).distinct()
                 .flatMap { url -> engine.ruleLists[url].orEmpty().map { url to it } }
@@ -244,8 +238,19 @@ object MihomoConfigBuilder {
         }
     }
 
-    fun proxiesForTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions()): String =
-        json.encodeToString(JsonArray.serializer(), JsonArray(proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) }))
+    fun proxiesForTest(proxies: List<EngineProxy>, options: NetworkOptions = NetworkOptions(), byeDpiPort: Int? = null): String =
+        json.encodeToString(
+            JsonArray.serializer(),
+            JsonArray(proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) } + listOfNotNull(byeDpiPort?.let(::byeDpiProxy)))
+        )
+
+    private fun byeDpiProxy(port: Int) = buildJsonObject {
+        put("name", BYEDPI_PROXY)
+        put("type", "socks5")
+        put("server", "127.0.0.1")
+        put("port", port)
+        put("udp", true)
+    }
 
     private fun JsonArrayBuilder.processRules(type: String, apps: List<String>, target: (String) -> String) {
         apps.forEach { add("$type,$it,${target(it)}") }

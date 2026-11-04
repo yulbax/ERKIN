@@ -3,8 +3,11 @@ package mihomocore
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/netip"
 	"testing"
 	"time"
@@ -114,5 +117,43 @@ func TestACountedProxyReportsTheBytesOfARealConnection(t *testing.T) {
 	rows := traffic.snapshot(time.Now()).Rows
 	if len(rows) != 1 || rows[0].Up != 5 || rows[0].Down != 64_000 || rows[0].Active != 0 || rows[0].Route != "DIRECT" {
 		t.Fatalf("unexpected rows %+v", rows)
+	}
+}
+
+func TestALatencyTestFindsTheHopsOfAChainAmongTheTestedProxies(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }))
+	defer target.Close()
+	tunnelProxy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		destination, err := net.Dial("tcp", r.Host)
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		client, _, err := w.(http.Hijacker).Hijack()
+		if err != nil {
+			_ = destination.Close()
+			return
+		}
+		go func() { _, _ = io.Copy(destination, client); _ = destination.Close() }()
+		_, _ = io.Copy(client, destination)
+		_ = client.Close()
+	}))
+	defer tunnelProxy.Close()
+	port := tunnelProxy.Listener.Addr().(*net.TCPAddr).Port
+	proxies := fmt.Sprintf(`[{"name":"p1h0","type":"direct"},`+
+		`{"name":"p1","type":"http","server":"127.0.0.1","port":%d,"dialer-proxy":"p1h0"},`+
+		`{"name":"p2","type":"http","server":"127.0.0.1","port":%d,"dialer-proxy":"missing"}]`, port, port)
+
+	encoded, err := TestProxies(proxies, target.URL, 2000, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var delays map[string]int32
+	if err = json.Unmarshal([]byte(encoded), &delays); err != nil {
+		t.Fatal(err)
+	}
+	if delays["p1"] <= 0 || delays["p2"] > 0 {
+		t.Fatalf("the chain should answer through its hop and a chain without one should fail, got %v", delays)
 	}
 }

@@ -79,6 +79,7 @@
     <string name="servers_empty">暂无服务器。请添加配置链接或订阅。</string>
     <string name="server_test_latency">测试延迟</string>
     <string name="server_ping_timeout">超时</string>
+    <string name="server_ping_needs_connection">需要连接</string>
     <string name="ok">确定</string>
     <string name="dismiss">关闭</string>
     <string name="got_it">知道了</string>

@@ -32,4 +32,5 @@ fun interface DefaultInterfaceListener {
 sealed interface ProxyDelay {
     data class Measured(val ms: Int) : ProxyDelay
     data object Failed : ProxyDelay
+    data object NeedsConnection : ProxyDelay
 }
