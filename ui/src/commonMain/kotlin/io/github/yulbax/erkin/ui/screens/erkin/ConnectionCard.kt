@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.ui.screens.erkin
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.theme.StatusOrange
@@ -113,16 +113,16 @@ internal fun ConnectionCard(
                     title,
                     style = MaterialTheme.typography.headlineMedium,
                     color = content,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     subtitle,
                     style = MaterialTheme.typography.bodyMedium,
                     color = content.copy(alpha = 0.85f),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    maxLines = 1,
+                    modifier = Modifier.basicMarquee(iterations = Int.MAX_VALUE)
                 )
                 val showSpeed = connected && (stats.vpnUp || stats.byedpiUp)
                 Spacer(Modifier.height(6.dp))
