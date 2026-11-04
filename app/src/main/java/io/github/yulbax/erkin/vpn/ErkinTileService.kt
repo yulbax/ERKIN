@@ -70,7 +70,7 @@ class ErkinTileService : TileService(), KoinComponent {
     private val VpnState.tileSubtitle: Int
         get() = when (this) {
             VpnState.Connecting, VpnState.Verifying -> R.string.tile_connecting
-            is VpnState.Connected -> R.string.tile_connected
+            is VpnState.Connected, VpnState.VpnDown -> R.string.tile_connected
             VpnState.Disconnected, is VpnState.Error -> R.string.tile_off
         }
 }

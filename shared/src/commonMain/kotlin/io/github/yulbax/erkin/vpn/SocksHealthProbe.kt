@@ -19,6 +19,7 @@ class SocksHealthProbe(
         var latest = HealthSnapshot(
             vpnActive = params.vpnActive,
             vpnDelayMs = null,
+            vpnChecked = false,
             vpnCountry = "",
             byedpiActive = params.byeDpiPort != null,
             byedpiUp = false,
@@ -35,7 +36,7 @@ class SocksHealthProbe(
                 if (vpnDelay != null && country.isEmpty()) {
                     country = resolveCountry(engine.probeSocksPort, credentials) ?: country
                 }
-                publish { it.copy(vpnDelayMs = vpnDelay, vpnCountry = country, measured = HealthChannel.VPN) }
+                publish { it.copy(vpnDelayMs = vpnDelay, vpnChecked = true, vpnCountry = country, measured = HealthChannel.VPN) }
                 delay((if (vpnDelay != null) HEALTH_INTERVAL_MS else HEALTH_RETRY_MS).milliseconds)
             }
         }

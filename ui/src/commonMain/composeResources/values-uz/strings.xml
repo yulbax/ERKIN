@@ -95,6 +95,8 @@
     <string name="vpn_connecting">Ulanmoqda…</string>
     <string name="vpn_verifying">Tekshirilmoqda…</string>
     <string name="vpn_connected">Ulangan</string>
+    <string name="vpn_server_down">Javob yoʻq</string>
+    <string name="vpn_server_down_hint">VPN server javob bermayapti, qayta ulanish…</string>
     <string name="vpn_not_connected">Ulanmagan</string>
     <string name="vpn_tap_to_connect">Ulanish uchun bosing</string>
     <string name="vpn_establishing_tunnel">Tunnel oʻrnatilmoqda</string>

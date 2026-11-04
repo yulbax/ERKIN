@@ -95,6 +95,8 @@
     <string name="vpn_connecting">Підключення…</string>
     <string name="vpn_verifying">Перевірка…</string>
     <string name="vpn_connected">Підключено</string>
+    <string name="vpn_server_down">Немає відповіді</string>
+    <string name="vpn_server_down_hint">VPN-сервер не відповідає, перепідключення…</string>
     <string name="vpn_not_connected">Не підключено</string>
     <string name="vpn_tap_to_connect">Натисніть, щоб підключитися</string>
     <string name="vpn_establishing_tunnel">Встановлення тунелю</string>

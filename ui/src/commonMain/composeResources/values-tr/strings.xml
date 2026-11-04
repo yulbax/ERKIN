@@ -95,6 +95,8 @@
     <string name="vpn_connecting">Bağlanıyor…</string>
     <string name="vpn_verifying">Doğrulanıyor…</string>
     <string name="vpn_connected">Bağlandı</string>
+    <string name="vpn_server_down">Yanıt yok</string>
+    <string name="vpn_server_down_hint">VPN sunucusu yanıt vermiyor, yeniden bağlanılıyor</string>
     <string name="vpn_not_connected">Bağlı değil</string>
     <string name="vpn_tap_to_connect">Bağlanmak için dokunun</string>
     <string name="vpn_establishing_tunnel">Tünel kuruluyor</string>

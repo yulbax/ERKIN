@@ -39,6 +39,7 @@ enum class HealthChannel { VPN, BYEDPI }
 data class HealthSnapshot(
     val vpnActive: Boolean,
     val vpnDelayMs: Int?,
+    val vpnChecked: Boolean,
     val vpnCountry: String,
     val byedpiActive: Boolean,
     val byedpiUp: Boolean,
@@ -48,6 +49,12 @@ data class HealthSnapshot(
     val anyUp get() = vpnUp || byedpiUp
     val allActiveUp get() = (!vpnActive || vpnUp) && (!byedpiActive || byedpiUp)
     val vpnHealthy get() = !vpnActive || vpnUp
+    val vpnDown get() = vpnActive && vpnChecked && !vpnUp
+    val state: VpnState get() = when {
+        vpnDown -> VpnState.VpnDown
+        anyUp -> VpnState.Connected(vpnDelayMs ?: 0)
+        else -> VpnState.Verifying
+    }
 }
 
 interface HealthProbe {
@@ -124,10 +131,7 @@ class HealthMonitor(
                 byedpiUp = s.byedpiUp
             )
         }
-        stateRepository.update(
-            if (s.anyUp) VpnState.Connected(s.vpnDelayMs ?: 0)
-            else VpnState.Verifying
-        )
+        stateRepository.update(s.state)
     }
 
     private fun logVpnTransition(s: HealthSnapshot) {

@@ -52,17 +52,18 @@ internal fun ConnectionCard(
     val scheme = MaterialTheme.colorScheme
     val busy = state.isBusy
     val isError = state is VpnState.Error
+    val warning = busy || state is VpnState.VpnDown
     val vivid = isError || connected || busy
 
     val targetTop = when {
         isError -> Color(0xFFB3261E)
-        busy -> StatusOrange
+        warning -> StatusOrange
         connected -> Color(0xFF2E7D32)
         else -> scheme.surfaceVariant
     }
     val targetBottom = when {
         isError -> Color(0xFF8C1D18)
-        busy -> Color(0xFFF57F17)
+        warning -> Color(0xFFF57F17)
         connected -> Color(0xFF1B5E20)
         else -> scheme.surface
     }
@@ -70,7 +71,7 @@ internal fun ConnectionCard(
     val bottom by animateColorAsState(targetBottom, tween(500), label = "bottom")
     val content by animateColorAsState(
         when {
-            busy -> Color(0xFF211A00)
+            warning -> Color(0xFF211A00)
             vivid -> Color.White
             else -> scheme.onSurfaceVariant
         },
@@ -83,6 +84,7 @@ internal fun ConnectionCard(
         VpnState.Connecting -> stringResource(Res.string.vpn_connecting)
         VpnState.Verifying -> stringResource(Res.string.vpn_verifying)
         is VpnState.Connected -> stringResource(Res.string.vpn_connected)
+        VpnState.VpnDown -> stringResource(Res.string.vpn_server_down)
         is VpnState.Error -> stringResource(Res.string.vpn_not_connected)
     }
     val subtitle = when (state) {
@@ -90,6 +92,7 @@ internal fun ConnectionCard(
         VpnState.Connecting -> stringResource(Res.string.vpn_establishing_tunnel)
         VpnState.Verifying -> stringResource(Res.string.vpn_checking_connectivity)
         is VpnState.Connected -> stringResource(Res.string.vpn_tap_to_disconnect)
+        VpnState.VpnDown -> stringResource(Res.string.vpn_server_down_hint)
         is VpnState.Error -> if (state.isProcessLookupUnavailable) stringResource(Res.string.error_process_lookup) else state.message
     }
     Box(

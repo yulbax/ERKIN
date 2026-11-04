@@ -1,7 +1,7 @@
 package io.github.yulbax.erkin.vpn
 
 sealed interface VpnState {
-    val isActive: Boolean get() = this is Verifying || this is Connected
+    val isActive: Boolean get() = this is Verifying || this is Connected || this is VpnDown
 
     val isBusy: Boolean get() = this is Connecting || this is Verifying
 
@@ -12,6 +12,8 @@ sealed interface VpnState {
     data object Verifying : VpnState
 
     data class Connected(val latencyMs: Int) : VpnState
+
+    data object VpnDown : VpnState
 
     data class Error(val message: String) : VpnState {
         val isProcessLookupUnavailable: Boolean get() = message.contains(PROCESS_LOOKUP_UNAVAILABLE)
