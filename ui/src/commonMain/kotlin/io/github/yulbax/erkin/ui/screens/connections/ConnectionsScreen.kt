@@ -52,11 +52,13 @@ import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
+import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.platform.rememberCopyText
@@ -72,7 +74,6 @@ import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.connections.ConnectionHosts
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
-import io.github.yulbax.erkin.ui.screens.rules.RuleAppIcon
 import io.github.yulbax.erkin.ui.screens.rules.RuleDialog
 import io.github.yulbax.erkin.util.formatBytes
 import io.github.yulbax.erkin.vpn.connections.ConnectionRoute
@@ -221,8 +222,7 @@ private fun AppRow(app: ConnectionApp, servers: ServerChoices, index: Int, lastI
             Modifier.clickable(onClick = onClick).padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AppIcon(app, 40)
-            Spacer(Modifier.width(12.dp))
+            ConnectionAppIcon(app, 40.dp, Modifier.padding(end = 12.dp))
             Column(Modifier.weight(1f)) {
                 Text(app.displayName(), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -250,8 +250,7 @@ private fun AppRow(app: ConnectionApp, servers: ServerChoices, index: Int, lastI
 @Composable
 private fun AppHeader(app: ConnectionApp, servers: ServerChoices) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        AppIcon(app, 48)
-        Spacer(Modifier.width(16.dp))
+        ConnectionAppIcon(app, 48.dp, Modifier.padding(end = 16.dp))
         Column(Modifier.weight(1f)) {
             Text(app.displayName(), style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (app.isService) {
@@ -485,22 +484,22 @@ private fun Badge(text: String, color: Color) {
 }
 
 @Composable
-private fun AppIcon(app: ConnectionApp, size: Int) {
+private fun ConnectionAppIcon(app: ConnectionApp, size: Dp, modifier: Modifier) {
     if (app.isService) {
-        ErkinIcon(size)
+        ErkinIcon(size, modifier)
         return
     }
-    RuleAppIcon(app.ruleApp, app.path, app.displayName(), size.dp)
+    AppIcon(app.ruleApp, app.path, app.displayName(), size, modifier)
 }
 
 @Composable
-private fun ErkinIcon(size: Int) {
+private fun ErkinIcon(size: Dp, modifier: Modifier) {
     Box(
-        Modifier.size(size.dp).clip(RoundedCornerShape((size / 4).dp))
+        modifier.size(size).clip(RoundedCornerShape(size / 4))
             .background(Brush.linearGradient(listOf(Color(0xFF30343B), Color(0xFF15171B)))),
         contentAlignment = Alignment.Center
     ) {
-        Image(painterResource(Res.drawable.ic_erkin), contentDescription = null, modifier = Modifier.fillMaxSize().padding((size / 6).dp))
+        Image(painterResource(Res.drawable.ic_erkin), contentDescription = null, modifier = Modifier.fillMaxSize().padding(size / 6))
     }
 }
 

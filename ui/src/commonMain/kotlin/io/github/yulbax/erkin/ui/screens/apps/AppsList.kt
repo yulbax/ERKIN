@@ -1,7 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -20,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.HorizontalDivider
@@ -36,18 +34,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.HoverHint
-import io.github.yulbax.erkin.ui.platform.rememberAppIcon
 import io.github.yulbax.erkin.ui.platform.revealInFolder
 import io.github.yulbax.erkin.ui.platform.scrollbarAlwaysVisible
-import io.github.yulbax.erkin.ui.platform.supportsAppIcons
 import io.github.yulbax.erkin.ui.viewmodel.AppInfo
 import io.github.yulbax.erkin.ui.viewmodel.AppRowMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsMode
@@ -172,33 +168,19 @@ private fun AppRow(
 
 @Composable
 private fun AppLeadingIcon(app: AppInfo, checked: Boolean) {
-    val imageBitmap = rememberAppIcon(app.packageName, app.path)
-    when {
-        checked -> Box(
-            modifier = Modifier
-                .padding(end = 12.dp)
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
-        }
-        supportsAppIcons -> Box(
-            modifier = Modifier
-                .padding(end = 12.dp)
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-        ) {
-            if (imageBitmap != null) {
-                Image(
-                    bitmap = imageBitmap,
-                    contentDescription = app.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
-        }
+    if (!checked) {
+        AppIcon(app.packageName, app.path, app.name, 40.dp, Modifier.padding(end = 12.dp))
+        return
+    }
+    Box(
+        modifier = Modifier
+            .padding(end = 12.dp)
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primary),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
     }
 }
 

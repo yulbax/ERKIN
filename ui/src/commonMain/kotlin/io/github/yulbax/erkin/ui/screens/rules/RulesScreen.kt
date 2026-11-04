@@ -45,6 +45,7 @@ import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListState
+import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.EmptyAction
 import io.github.yulbax.erkin.ui.components.EmptyState
@@ -315,8 +316,7 @@ private fun RuleRow(
                 )
                 if (app != null) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                        RuleAppIcon(app.packageName, app.path, app.name, 16.dp)
-                        Spacer(Modifier.width(6.dp))
+                        AppIcon(app.packageName, app.path, app.name, 16.dp, Modifier.padding(end = 6.dp))
                         Text(
                             text = app.name,
                             style = MaterialTheme.typography.labelMedium,

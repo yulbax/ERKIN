@@ -43,7 +43,9 @@ import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListError
 import io.github.yulbax.erkin.rulelist.RuleListFailure
 import io.github.yulbax.erkin.rulelist.RuleListState
+import io.github.yulbax.erkin.ui.components.AllAppsIcon
 import io.github.yulbax.erkin.ui.components.AppDialog
+import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.label
@@ -281,8 +283,11 @@ internal fun RuleDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val name = app?.let { chosen?.name ?: it.appLabel() } ?: stringResource(Res.string.rule_app_all)
-                if (app == null) AllAppsIcon(32.dp) else RuleAppIcon(app.orEmpty(), chosen?.path, name, 32.dp)
-                Spacer(Modifier.width(12.dp))
+                if (app == null) {
+                    AllAppsIcon(32.dp, Modifier.padding(end = 12.dp))
+                } else {
+                    AppIcon(app.orEmpty(), chosen?.path, name, 32.dp, Modifier.padding(end = 12.dp))
+                }
                 Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 Icon(
                     Icons.AutoMirrored.Filled.KeyboardArrowRight,

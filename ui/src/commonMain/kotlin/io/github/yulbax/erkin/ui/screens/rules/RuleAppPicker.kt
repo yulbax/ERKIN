@@ -1,14 +1,10 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -18,7 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,16 +31,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.components.AllAppsIcon
+import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.AppSearchBar
-import io.github.yulbax.erkin.ui.platform.rememberAppIcon
 import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.viewmodel.RuleAppChoice
@@ -97,7 +89,7 @@ internal fun RuleAppPickerSheet(
             if (query.isBlank()) {
                 item(key = ALL_APPS_KEY) {
                     AppChoiceRow(
-                        icon = { AllAppsIcon(40.dp) },
+                        icon = { AllAppsIcon(40.dp, Modifier.padding(end = 12.dp)) },
                         name = stringResource(Res.string.rule_app_all),
                         hint = null,
                         checked = current == null,
@@ -119,7 +111,7 @@ internal fun RuleAppPickerSheet(
                 }
                 items(section, key = { it.packageName }) { app ->
                     AppChoiceRow(
-                        icon = { RuleAppIcon(app.packageName, app.path, app.name, 40.dp) },
+                        icon = { AppIcon(app.packageName, app.path, app.name, 40.dp, Modifier.padding(end = 12.dp)) },
                         name = app.name,
                         hint = stringResource(Res.string.rule_app_direct_hint)
                             .takeIf { !rulesCoverAllApps && (app.channel ?: platformNewAppsConnectionType) == ConnectionType.DIRECT },
@@ -142,7 +134,6 @@ private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, hint: Strin
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             icon()
-            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (hint != null) {
@@ -154,35 +145,6 @@ private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, hint: Strin
                 Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
             }
         }
-    }
-}
-
-@Composable
-internal fun RuleAppIcon(packageName: String, path: String?, name: String, size: Dp) {
-    val bitmap = rememberAppIcon(packageName, path)
-    if (bitmap != null) {
-        Image(bitmap = bitmap, contentDescription = null, modifier = Modifier.size(size), contentScale = ContentScale.Fit)
-        return
-    }
-    Box(
-        Modifier.size(size).clip(RoundedCornerShape(size / 4)).background(MaterialTheme.colorScheme.surfaceContainerHighest),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            name.take(1).uppercase(),
-            style = if (size < 24.dp) MaterialTheme.typography.labelSmall else MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
-internal fun AllAppsIcon(size: Dp) {
-    Box(
-        Modifier.size(size).clip(RoundedCornerShape(size / 4)).background(MaterialTheme.colorScheme.surfaceContainerHighest),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(Icons.Filled.Apps, contentDescription = null, modifier = Modifier.size(size * 0.55f), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
