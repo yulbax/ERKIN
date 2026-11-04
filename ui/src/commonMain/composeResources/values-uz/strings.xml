@@ -260,6 +260,7 @@
     <string name="rule_sets_add_title">Yangi qoidalar toʻplami</string>
     <string name="rule_sets_formats">Domen roʻyxatlari, hosts fayllari, AdGuard filtrlari va mihomo toʻplamlari (matn, YAML, mrs) qoʻllab-quvvatlanadi.</string>
     <string name="rule_sets_group_ads">Reklama</string>
+    <string name="rule_sets_group_services">Xizmatlar</string>
     <string name="rule_sets_group_telemetry">Telemetriya</string>
     <string name="rule_sets_countries">Davlatlar</string>
     <string name="rule_sets_countries_description">Davlatning IP manzillari, MetaCubeX’dan.</string>

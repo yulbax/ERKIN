@@ -264,6 +264,7 @@
     <string name="rule_sets_add_title">Новий набір</string>
     <string name="rule_sets_formats">Підходять списки доменів, hosts-файли, фільтри AdGuard і набори mihomo (текст, YAML, mrs).</string>
     <string name="rule_sets_group_ads">Реклама</string>
+    <string name="rule_sets_group_services">Сервіси</string>
     <string name="rule_sets_group_telemetry">Телеметрія</string>
     <string name="rule_sets_countries">Країни</string>
     <string name="rule_sets_countries_description">IP-адреси країни, дані MetaCubeX.</string>

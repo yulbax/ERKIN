@@ -12,6 +12,7 @@ import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 internal enum class RuleSetGroup(val label: StringResource) {
+    SERVICES(Res.string.rule_sets_group_services),
     ADS(Res.string.rule_sets_group_ads),
     TELEMETRY(Res.string.rule_sets_group_telemetry)
 }
@@ -21,8 +22,15 @@ internal enum class RuleSetPreset(
     val label: StringResource,
     val url: String,
     val target: RuleTarget,
-    val kind: RuleSetKind? = null
+    val kind: RuleSetKind? = null,
+    val extra: List<RuleListSource> = emptyList()
 ) {
+    YOUTUBE(RuleSetGroup.SERVICES, Res.string.rule_set_youtube, "$GEOSITE/youtube.mrs", RuleTarget.BYEDPI, RuleSetKind.DOMAIN),
+    TELEGRAM(
+        RuleSetGroup.SERVICES, Res.string.rule_set_telegram, "$GEOSITE/telegram.mrs", RuleTarget.VPN, RuleSetKind.DOMAIN,
+        listOf(RuleListSource("$GEOIP/telegram.mrs", RuleSetKind.IPCIDR))
+    ),
+    DISCORD(RuleSetGroup.SERVICES, Res.string.rule_set_discord, "$GEOSITE/discord.mrs", RuleTarget.BYEDPI, RuleSetKind.DOMAIN),
     HAGEZI_LIGHT(RuleSetGroup.ADS, Res.string.rule_set_hagezi_light, "$HAGEZI/light-onlydomains.txt", RuleTarget.BLOCK),
     HAGEZI_NORMAL(RuleSetGroup.ADS, Res.string.rule_set_hagezi_normal, "$HAGEZI/multi-onlydomains.txt", RuleTarget.BLOCK),
     HAGEZI_PRO(RuleSetGroup.ADS, Res.string.rule_set_hagezi_pro, "$HAGEZI/pro-onlydomains.txt", RuleTarget.BLOCK),
@@ -31,21 +39,29 @@ internal enum class RuleSetPreset(
     SAMSUNG(RuleSetGroup.TELEMETRY, Res.string.rule_set_samsung, "$HAGEZI/native.samsung-onlydomains.txt", RuleTarget.BLOCK);
 
     val source: RuleListSource get() = RuleListSource(url, kind)
+    val sources: List<RuleListSource> get() = listOf(source) + extra
 
     companion object {
         fun of(url: String): RuleSetPreset? = entries.firstOrNull { it.url == url }
+
+        fun extraOf(url: String): RuleSetPreset? = entries.firstOrNull { preset -> preset.extra.any { it.url == url } }
     }
 }
 
 private const val HAGEZI = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard"
+private const val GEOSITE = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite"
+private const val GEOIP = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip"
 
 @Composable
 internal fun ruleSetName(url: String, state: RuleListState?): String {
     state?.name?.let { return it }
     RuleSetPreset.of(url)?.let { return stringResource(it.label) }
+    RuleSetPreset.extraOf(url)?.let { return "${stringResource(it.label)} ($IP_SUFFIX)" }
     RuleLists.countryOf(url)?.let { return stringResource(Res.string.rule_set_country, countryName(it)) }
     return state?.title ?: linkName(url)
 }
+
+private const val IP_SUFFIX = "IP"
 
 internal fun linkName(url: String): String {
     val uri = runCatching { URI(url) }.getOrNull() ?: return url

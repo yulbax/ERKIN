@@ -273,6 +273,7 @@
     <string name="rule_sets_add_title">New rule set</string>
     <string name="rule_sets_formats">Domain lists, hosts files, AdGuard filters and mihomo rule sets (text, YAML, mrs) are supported.</string>
     <string name="rule_sets_group_ads">Ads</string>
+    <string name="rule_sets_group_services">Services</string>
     <string name="rule_sets_group_telemetry">Telemetry</string>
     <string name="rule_sets_countries">Countries</string>
     <string name="rule_sets_countries_description">IP addresses of a country, from MetaCubeX.</string>
@@ -290,6 +291,9 @@
     <string name="rule_set_hagezi_pro">HaGeZi Pro</string>
     <string name="rule_set_oisd_small">OISD Small</string>
     <string name="rule_set_xiaomi">Xiaomi</string>
+    <string name="rule_set_youtube">YouTube</string>
+    <string name="rule_set_telegram">Telegram</string>
+    <string name="rule_set_discord">Discord</string>
     <string name="rule_set_samsung">Samsung</string>
     <string name="rule_set_link_example">https://example.com/list.txt</string>
     <string name="rule_list_entries">%1$s entries, updated %2$s</string>

@@ -260,6 +260,7 @@
     <string name="rule_sets_add_title">مجموعه جدید</string>
     <string name="rule_sets_formats">فهرست دامنه‌ها، فایل‌های hosts، فیلترهای AdGuard و مجموعه‌های mihomo (متن، YAML، mrs) پشتیبانی می‌شوند.</string>
     <string name="rule_sets_group_ads">تبلیغات</string>
+    <string name="rule_sets_group_services">سرویس‌ها</string>
     <string name="rule_sets_group_telemetry">تله‌متری</string>
     <string name="rule_sets_countries">کشورها</string>
     <string name="rule_sets_countries_description">آدرس‌های IP یک کشور، از MetaCubeX.</string>

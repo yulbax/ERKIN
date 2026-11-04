@@ -260,6 +260,7 @@
     <string name="rule_sets_add_title">Yeni kural seti</string>
     <string name="rule_sets_formats">Alan adı listeleri, hosts dosyaları, AdGuard filtreleri ve mihomo kural setleri (metin, YAML, mrs) desteklenir.</string>
     <string name="rule_sets_group_ads">Reklamlar</string>
+    <string name="rule_sets_group_services">Hizmetler</string>
     <string name="rule_sets_group_telemetry">Telemetri</string>
     <string name="rule_sets_countries">Ülkeler</string>
     <string name="rule_sets_countries_description">Bir ülkenin IP adresleri, MetaCubeX’ten.</string>

@@ -71,6 +71,7 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
     val showMessage = rememberShowMessage()
     var error by remember { mutableStateOf<RuleListError?>(null) }
     var draft by remember { mutableStateOf<RoutingRuleEntity?>(null) }
+    var draftCompanions by remember { mutableStateOf(emptyList<String>()) }
     var addingLink by remember { mutableStateOf(false) }
     var pickingCountry by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf<String?>(null) }
@@ -129,7 +130,15 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
                             name = stringResource(preset.label),
                             detail = linkHost(preset.url),
                             state = states[preset.url],
-                            onDownload = { download(preset.source, preset.target, null) }
+                            onDownload = {
+                                viewModel.addAll(preset.sources) { failure ->
+                                    report(failure)
+                                    if (failure == null) {
+                                        draft = RoutingRuleEntity(type = RuleMatch.RULE_SET.wire, value = preset.url, target = preset.target.wire)
+                                        draftCompanions = preset.extra.map { it.url }
+                                    }
+                                }
+                            }
                         )
                     }
                 }
@@ -207,9 +216,14 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
             ruleSets = states,
             choices = choices,
             apps = apps,
-            onDismiss = { draft = null },
+            onDismiss = {
+                draft = null
+                draftCompanions = emptyList()
+            },
             onSave = { match, raw, target, serverId, app ->
-                viewModel.createRule(match, raw, target, serverId, app)
+                val companions = draftCompanions.takeIf { match == RuleMatch.RULE_SET && raw == rule.value }.orEmpty()
+                viewModel.createRule(match, raw, target, serverId, app, companions)
+                draftCompanions = emptyList()
                 draft = null
             },
             onDelete = null,

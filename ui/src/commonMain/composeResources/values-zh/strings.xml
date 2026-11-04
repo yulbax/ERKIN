@@ -258,6 +258,7 @@
     <string name="rule_sets_add_title">新规则集</string>
     <string name="rule_sets_formats">支持域名列表、hosts 文件、AdGuard 过滤器和 mihomo 规则集（文本、YAML、mrs）。</string>
     <string name="rule_sets_group_ads">广告</string>
+    <string name="rule_sets_group_services">服务</string>
     <string name="rule_sets_group_telemetry">遥测</string>
     <string name="rule_sets_countries">国家</string>
     <string name="rule_sets_countries_description">国家的 IP 地址，数据来自 MetaCubeX。</string>

@@ -55,6 +55,14 @@ class RuleSetsViewModel(
         }
     }
 
+    fun addAll(sources: List<RuleListSource>, onResult: (Throwable?) -> Unit) {
+        viewModelScope.launch {
+            val failure = sources.firstNotNullOfOrNull { ruleListDatabase.add(it, null).exceptionOrNull() }
+            commandBus.reload()
+            onResult(failure)
+        }
+    }
+
     fun update(url: String, onResult: (Throwable?) -> Unit) {
         viewModelScope.launch {
             val result = ruleListDatabase.download(url)
@@ -75,7 +83,10 @@ class RuleSetsViewModel(
         }
     }
 
-    fun createRule(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?, app: String?) {
-        viewModelScope.launch(Dispatchers.IO) { ruleRepository.add(match, raw, target, serverId, app) }
+    fun createRule(match: RuleMatch, raw: String, target: RuleTarget, serverId: Long?, app: String?, companions: List<String> = emptyList()) {
+        viewModelScope.launch(Dispatchers.IO) {
+            ruleRepository.add(match, raw, target, serverId, app)
+            companions.forEach { url -> ruleRepository.add(RuleMatch.RULE_SET, url, target, serverId, app) }
+        }
     }
 }
