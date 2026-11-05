@@ -19,6 +19,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -49,8 +51,6 @@ import io.github.yulbax.erkin.ui.viewmodel.boundServers
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.ui.viewmodel.AppFilter
 import io.github.yulbax.erkin.ui.components.SourceIcon
-import io.github.yulbax.erkin.ui.components.ChainIcon
-import androidx.compose.material.icons.filled.Warning
 import io.github.yulbax.erkin.ui.viewmodel.AppsMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.CurrentServer
@@ -231,10 +231,8 @@ private fun ChannelFilter(apps: List<AppInfo>, choices: ServerChoices, selected:
                 onClick = { toggle(filter) },
                 label = { Text("${server.name} $count", maxLines = 1) },
                 leadingIcon = {
-                    when {
-                        server.unreachable -> Icon(Icons.Filled.Warning, contentDescription = null, tint = warningColor(), modifier = Modifier.size(16.dp))
-                        server.isChain -> SourceIcon(ChainIcon, contentDescription = null, modifier = Modifier.size(16.dp))
-                        else -> ConnectionTypeIcon(ConnectionType.VPN, Modifier.size(16.dp))
+                    CompositionLocalProvider(LocalContentColor provides if (server.unreachable) warningColor() else LocalContentColor.current) {
+                        SourceIcon(server.icon(ConnectionType.VPN), contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 }
             )

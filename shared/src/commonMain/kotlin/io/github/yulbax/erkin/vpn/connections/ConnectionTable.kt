@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.vpn.ProxyTag
 import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.vpn.core.BuiltInOutbound
+import io.github.yulbax.erkin.vpn.core.RuleValues
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -90,12 +91,10 @@ object ConnectionHosts {
     fun group(host: String, ip: String): String {
         val name = host.trim().trimEnd('.').lowercase()
         if (name.isEmpty()) return ip
-        if (name.all { it.isDigit() || it == '.' } || ':' in name) return name
+        if (RuleValues.isIpAddress(name)) return name
         val labels = name.split('.')
         if (labels.size <= 2) return name
         val keep = if (labels[labels.size - 2] in SECOND_LEVEL && labels.last().length == 2) 3 else 2
         return labels.takeLast(keep).joinToString(".")
     }
-
-    fun isAddress(value: String): Boolean = value.all { it.isDigit() || it == '.' } || ':' in value
 }

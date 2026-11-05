@@ -2,11 +2,7 @@ package io.github.yulbax.erkin.util
 
 import java.util.Locale
 
-fun formatRate(bytesPerSec: Long): String = when {
-    bytesPerSec >= 1_000_000 -> "%.1f MB/s".format(bytesPerSec / 1_000_000.0)
-    bytesPerSec >= 1_000 -> "%.0f KB/s".format(bytesPerSec / 1_000.0)
-    else -> "$bytesPerSec B/s"
-}
+fun formatRate(bytesPerSec: Long): String = "${formatBytes(bytesPerSec)}/s"
 
 fun formatBytes(bytes: Long): String {
     if (bytes < 1024) return "$bytes B"

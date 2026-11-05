@@ -12,7 +12,6 @@ import (
 	"github.com/metacubex/mihomo/common/buf"
 	N "github.com/metacubex/mihomo/common/net"
 	C "github.com/metacubex/mihomo/constant"
-	"github.com/metacubex/mihomo/tunnel"
 	"github.com/metacubex/mihomo/tunnel/statistic"
 )
 
@@ -309,16 +308,12 @@ func (c *countingPacketConn) Close() error {
 const rejectProxyName = "REJECT"
 
 func countTraffic() {
-	current := tunnel.Proxies()
-	next := make(map[string]C.Proxy, len(current))
-	for name, proxy := range current {
+	replaceProxies(func(_ string, proxy C.Proxy) C.Proxy {
 		if _, counted := proxy.(countingProxy); counted {
-			next[name] = proxy
-			continue
+			return proxy
 		}
-		next[name] = countingProxy{proxy}
-	}
-	tunnel.UpdateProxies(next, tunnel.Providers())
+		return countingProxy{proxy}
+	})
 }
 
 func Connections() (string, error) {

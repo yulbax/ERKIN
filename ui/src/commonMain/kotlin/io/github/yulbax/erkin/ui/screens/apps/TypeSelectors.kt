@@ -76,6 +76,12 @@ private val ConnectionType.accent: ChannelAccent?
 private val WARNING = ChannelAccent(dark = Color(0xFFF9A825), light = Color(0xFFB26A00))
 private val WARNING_BORDER = 1.5.dp
 
+internal fun ServerLabel?.icon(type: ConnectionType): IconSource = when {
+    this?.unreachable == true -> IconSource.Vector(Icons.Filled.Warning)
+    this?.isChain == true -> ChainIcon
+    else -> type.ui.icon
+}
+
 @Composable
 internal fun channelColor(type: ConnectionType): Color = type.colors().icon
 
@@ -122,11 +128,7 @@ internal fun ChannelButton(
         ) {
             CompositionLocalProvider(LocalContentColor provides (warning ?: colors.icon)) {
                 SourceIcon(
-                    source = when {
-                        warning != null -> IconSource.Vector(Icons.Filled.Warning)
-                        server?.isChain == true -> ChainIcon
-                        else -> type.ui.icon
-                    },
+                    source = server.icon(type),
                     contentDescription = if (warning != null) stringResource(Res.string.apps_server_unreachable_cd) else type.label(),
                     modifier = Modifier.size(18.dp)
                 )

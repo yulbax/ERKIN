@@ -301,12 +301,22 @@ func resolveBeforeDial(name string, server dns.NameServer, servers *config.DNS, 
 		Default: defaults,
 		IPv6:    ipv6,
 	})
-	updated := make(map[string]C.Proxy, len(current))
-	for key, value := range current {
-		updated[key] = value
+	wrapped := &resolvingProxy{Proxy: proxy, resolver: resolvers.Resolver, ipv6: ipv6}
+	replaceProxies(func(proxyName string, original C.Proxy) C.Proxy {
+		if proxyName == name {
+			return wrapped
+		}
+		return original
+	})
+}
+
+func replaceProxies(replace func(name string, proxy C.Proxy) C.Proxy) {
+	current := tunnel.Proxies()
+	next := make(map[string]C.Proxy, len(current))
+	for name, proxy := range current {
+		next[name] = replace(name, proxy)
 	}
-	updated[name] = &resolvingProxy{Proxy: proxy, resolver: resolvers.Resolver, ipv6: ipv6}
-	tunnel.UpdateProxies(updated, tunnel.Providers())
+	tunnel.UpdateProxies(next, tunnel.Providers())
 }
 
 func parseConfig(content string, keepTun bool) (*config.Config, error) {

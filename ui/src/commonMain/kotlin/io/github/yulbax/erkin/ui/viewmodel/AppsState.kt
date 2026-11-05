@@ -41,10 +41,8 @@ internal fun ServerChoices.boundServers(apps: List<AppInfo>): List<Pair<Long, In
         .toList()
         .sortedWith(compareByDescending<Pair<Long, Int>> { it.second }.thenBy { it.first })
 
+internal fun matchesAppQuery(name: String, packageName: String, query: String): Boolean =
+    query.isBlank() || name.contains(query, ignoreCase = true) || packageName.contains(query, ignoreCase = true)
+
 internal fun filterApps(apps: List<AppInfo>, query: String, filter: AppFilter?): List<AppInfo> =
-    apps.filter { app ->
-        (filter == null || filter.matches(app)) &&
-            (query.isBlank() ||
-                app.name.contains(query, ignoreCase = true) ||
-                app.packageName.contains(query, ignoreCase = true))
-    }
+    apps.filter { app -> (filter == null || filter.matches(app)) && matchesAppQuery(app.name, app.packageName, query) }

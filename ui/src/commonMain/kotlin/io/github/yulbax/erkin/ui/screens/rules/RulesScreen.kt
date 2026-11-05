@@ -43,6 +43,7 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.executableName
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AppIcon
@@ -154,7 +155,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                             onClick = { if (selecting) toggle(rule) else editing = rule },
                             onLongClick = { toggle(rule) },
                             choices = choices,
-                            app = rule.app?.let { id -> apps.firstOrNull { it.packageName == id } ?: RuleAppChoice(id, id.appLabel(), null, regular = true, channel = null) },
+                            app = rule.app?.let { id -> apps.firstOrNull { it.packageName == id } ?: RuleAppChoice(id, executableName(id), null, regular = true, channel = null) },
                             onTargetChange = { viewModel.setTarget(rule, it) },
                             onChooseServer = { pickingServer = rule },
                             handle = {

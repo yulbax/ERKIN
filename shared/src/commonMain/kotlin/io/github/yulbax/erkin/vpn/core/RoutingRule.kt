@@ -47,6 +47,11 @@ object RuleValues {
     private val IPV4 = Regex("^\\d{1,3}(\\.\\d{1,3}){3}$")
     private val IPV6 = Regex("^[0-9a-f:.]*:[0-9a-f:.]*$")
 
+    fun isIpAddress(value: String): Boolean {
+        val address = value.trim().lowercase()
+        return IPV4.matches(address) || (':' in address && IPV6.matches(address))
+    }
+
     object Domain : RuleValueFormat {
         override fun normalize(raw: String): String? {
             val input = raw.trim().lowercase()

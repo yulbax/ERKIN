@@ -15,6 +15,8 @@ data class App(
 
 fun isExecutablePath(id: String): Boolean = '/' in id || '\\' in id
 
+fun executableName(id: String): String = id.substringAfterLast('/').substringAfterLast('\\')
+
 enum class ConnectionType(val wire: String, val needsServer: Boolean = false) {
     BLOCK("BLOCK"), DIRECT("DIRECT"), BYEDPI("BYEDPI"), VPN("VPN", needsServer = true);
 

@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.executableName
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListError
 import io.github.yulbax.erkin.rulelist.RuleListFailure
@@ -282,7 +283,7 @@ internal fun RuleDialog(
                 modifier = Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val name = app?.let { chosen?.name ?: it.appLabel() } ?: stringResource(Res.string.rule_app_all)
+                val name = app?.let { chosen?.name ?: executableName(it) } ?: stringResource(Res.string.rule_app_all)
                 if (app == null) {
                     AllAppsIcon(32.dp, Modifier.padding(end = 12.dp))
                 } else {
@@ -312,8 +313,6 @@ internal fun RuleDialog(
         )
     }
 }
-
-internal fun String.appLabel(): String = substringAfterLast('/').substringAfterLast('\\')
 
 @Composable
 private fun RuleSetChoice(

@@ -56,8 +56,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.executableName
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
+import io.github.yulbax.erkin.vpn.core.RuleValues
+import io.github.yulbax.erkin.ui.components.groupItemShape
+import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.label
@@ -72,7 +76,6 @@ import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.ui.viewmodel.CurrentServer
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.vpn.core.RuleMatch
-import io.github.yulbax.erkin.vpn.connections.ConnectionHosts
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.ui.screens.rules.RuleDialog
 import io.github.yulbax.erkin.util.formatBytes
@@ -204,17 +207,15 @@ fun AppConnections(
 
 @Composable
 private fun Placeholder(text: String) {
-    Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-        Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        EmptyState(text)
     }
 }
 
 @Composable
 private fun AppRow(app: ConnectionApp, servers: ServerChoices, index: Int, lastIndex: Int, onClick: () -> Unit) {
-    val top = if (index == 0) 20.dp else 4.dp
-    val bottom = if (index == lastIndex) 20.dp else 4.dp
     Surface(
-        shape = RoundedCornerShape(topStart = top, topEnd = top, bottomStart = bottom, bottomEnd = bottom),
+        shape = groupItemShape(index, lastIndex + 1),
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
     ) {
@@ -392,7 +393,7 @@ private fun HostRow(
             }
             HostMenu(
                 address = single?.name,
-                site = host.host.takeUnless { ConnectionHosts.isAddress(it) || (single != null && single.name == it) },
+                site = host.host.takeUnless { RuleValues.isIpAddress(it) || (single != null && single.name == it) },
                 onRule = onRule,
                 onCopy = onCopy
             )
@@ -505,7 +506,7 @@ private fun ErkinIcon(size: Dp, modifier: Modifier) {
 
 private fun HostActivity.ruleDraft(scope: RuleScope, app: String): RoutingRuleEntity {
     val match = when {
-        ConnectionHosts.isAddress(scope.value) -> RuleMatch.IP_CIDR
+        RuleValues.isIpAddress(scope.value) -> RuleMatch.IP_CIDR
         scope is RuleScope.Site -> RuleMatch.DOMAIN_SUFFIX
         else -> RuleMatch.DOMAIN
     }
@@ -521,7 +522,7 @@ private fun HostActivity.ruleDraft(scope: RuleScope, app: String): RoutingRuleEn
 
 @Composable
 private fun ConnectionApp.displayName(): String =
-    if (isService) SERVICE_NAME else name ?: id.substringAfterLast('/').substringAfterLast('\\').ifEmpty { stringResource(Res.string.connections_unknown_app) }
+    if (isService) SERVICE_NAME else name ?: executableName(id).ifEmpty { stringResource(Res.string.connections_unknown_app) }
 
 private fun ConnectionApp.route(channel: ConnectionType, choices: ServerChoices): ConnectionRoute {
     val bound = choices.current(channel, serverId) as? CurrentServer.Bound
