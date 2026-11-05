@@ -17,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.milliseconds
 
 class HealthMonitorTest {
 
@@ -57,7 +58,7 @@ class HealthMonitorTest {
             }
         }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val monitor = HealthMonitor(states, SilentLog, probe)
+        val monitor = HealthMonitor(states, SilentLog, probe, serverCheckInterval = 50.milliseconds, serverRecheckDelay = 10.milliseconds)
         monitor.start(
             scope,
             HealthParams(
@@ -73,6 +74,37 @@ class HealthMonitorTest {
 
         assertEquals(setOf(2L), down)
         assertEquals(0, reloads.get())
+    }
+
+    @Test
+    fun aSingleMissedCheckDoesNotMarkAServerAsDown() = runBlocking {
+        val states = VpnStateRepository()
+        val checks = AtomicInteger()
+        val engine = object : VpnEngine by FakeEngine {
+            override suspend fun measureDelay(tag: String): Int? = if (checks.incrementAndGet() == 1) null else 40
+        }
+        val probe = object : HealthProbe {
+            override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
+                emit(HealthSnapshot(true, 50, true, "", false, false, HealthChannel.VPN))
+            }
+        }
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val monitor = HealthMonitor(states, SilentLog, probe, serverCheckInterval = 50.milliseconds, serverRecheckDelay = 10.milliseconds)
+        monitor.start(
+            scope,
+            HealthParams(
+                probe = ProbeParams(engine, byeDpiPort = null, vpnActive = true, serverTags = mapOf(2L to "p2")),
+                onVpnDown = {},
+                onVpnUp = {},
+                onByedpiChanged = {}
+            )
+        )
+        val down = withTimeoutOrNull(500) { states.stats.first { it.unreachableServers.isNotEmpty() } }
+        monitor.stop()
+        scope.cancel()
+
+        assertEquals(null, down)
+        assertTrue(checks.get() >= 2)
     }
 
     private suspend fun run(vpnDelayMs: Int?, byedpiUp: Boolean): Pair<Int, Int> {

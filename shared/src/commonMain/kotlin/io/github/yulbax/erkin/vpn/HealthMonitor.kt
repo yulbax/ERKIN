@@ -7,7 +7,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
@@ -64,7 +66,9 @@ interface HealthProbe {
 class HealthMonitor(
     private val stateRepository: VpnStateRepository,
     private val log: AppLog,
-    private val probe: HealthProbe
+    private val probe: HealthProbe,
+    private val serverCheckInterval: Duration = SERVER_CHECK_INTERVAL,
+    private val serverRecheckDelay: Duration = SERVER_RECHECK_DELAY
 ) {
     private var scope: CoroutineScope? = null
 
@@ -112,17 +116,21 @@ class HealthMonitor(
     }
 
     private fun CoroutineScope.watchServers(probe: ProbeParams) = launch {
+        val misses = HashMap<Long, Int>()
         var previous = emptySet<Long>()
         while (true) {
-            val down = coroutineScope {
+            val failed = coroutineScope {
                 probe.serverTags.map { (id, tag) -> async { id.takeIf { probe.engine.measureDelay(tag) == null } } }
                     .awaitAll()
                     .filterNotNullTo(HashSet())
             }
+            probe.serverTags.keys.forEach { id -> misses[id] = if (id in failed) (misses[id] ?: 0) + 1 else 0 }
+            val down = misses.filterValues { it >= SERVER_MISSES_TO_DOWN }.keys
             if (down != previous) log.w(TAG, "servers not responding: ${down.sorted()}")
             previous = down
             stateRepository.updateStats { it.copy(unreachableServers = down) }
-            delay(SERVER_CHECK_INTERVAL_MS.milliseconds)
+            val suspect = failed.any { id -> id !in down }
+            delay(if (suspect) serverRecheckDelay else serverCheckInterval)
         }
     }
 
@@ -160,6 +168,8 @@ class HealthMonitor(
     companion object {
         private const val TAG = "Health"
         private const val RECOVER_EVERY_N_FAILURES = 4
-        private const val SERVER_CHECK_INTERVAL_MS = 60_000L
+        private const val SERVER_MISSES_TO_DOWN = 2
+        private val SERVER_CHECK_INTERVAL = 60.seconds
+        private val SERVER_RECHECK_DELAY = 10.seconds
     }
 }
