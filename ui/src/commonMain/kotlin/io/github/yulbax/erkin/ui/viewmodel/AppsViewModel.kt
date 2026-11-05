@@ -68,8 +68,8 @@ class AppsViewModel(
     var query by mutableStateOf("")
         private set
 
-    private val _filter = MutableStateFlow<ConnectionType?>(null)
-    val filter: StateFlow<ConnectionType?> = _filter
+    private val _filter = MutableStateFlow<AppFilter?>(null)
+    val filter: StateFlow<AppFilter?> = _filter
 
     private val _mode = MutableStateFlow<AppsMode>(AppsMode.Browsing)
     val mode: StateFlow<AppsMode> = _mode
@@ -85,8 +85,8 @@ class AppsViewModel(
         query = value
     }
 
-    fun selectFilter(channel: ConnectionType?) {
-        _filter.value = channel
+    fun selectFilter(filter: AppFilter?) {
+        _filter.value = filter
     }
 
     fun startSelecting(packageName: String? = null) {

@@ -45,6 +45,12 @@ import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.AppInfo
+import io.github.yulbax.erkin.ui.viewmodel.boundServers
+import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
+import io.github.yulbax.erkin.ui.viewmodel.AppFilter
+import io.github.yulbax.erkin.ui.components.SourceIcon
+import io.github.yulbax.erkin.ui.components.ChainIcon
+import androidx.compose.material.icons.filled.Warning
 import io.github.yulbax.erkin.ui.viewmodel.AppsMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.CurrentServer
@@ -136,7 +142,7 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
                             onChooseServer = { picking = ServerPickTarget.Selection },
                             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                         )
-                        AppsMode.Browsing -> ChannelFilter(apps = apps, selected = filter, onSelect = viewModel::selectFilter)
+                        AppsMode.Browsing -> ChannelFilter(apps = apps, choices = choices, selected = filter, onSelect = viewModel::selectFilter)
                     }
                     Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                         when {
@@ -189,8 +195,13 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
 }
 
 @Composable
-private fun ChannelFilter(apps: List<AppInfo>, selected: ConnectionType?, onSelect: (ConnectionType?) -> Unit) {
+private fun ChannelFilter(apps: List<AppInfo>, choices: ServerChoices, selected: AppFilter?, onSelect: (AppFilter?) -> Unit) {
     val counts = apps.groupingBy { it.connectionType }.eachCount()
+    val servers = choices.boundServers(apps).let { bound ->
+        val chosen = (selected as? AppFilter.Server)?.serverId
+        if (chosen == null || bound.any { it.first == chosen }) bound else bound + (chosen to 0)
+    }
+    val toggle = { filter: AppFilter -> onSelect(if (selected == filter) null else filter) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -204,11 +215,28 @@ private fun ChannelFilter(apps: List<AppInfo>, selected: ConnectionType?, onSele
             label = { Text("${stringResource(Res.string.apps_filter_all)} ${apps.size}") }
         )
         ConnectionType.entries.forEach { type ->
+            val filter = AppFilter.Channel(type)
             FilterChip(
-                selected = selected == type,
-                onClick = { onSelect(if (selected == type) null else type) },
+                selected = selected == filter,
+                onClick = { toggle(filter) },
                 label = { Text("${type.label()} ${counts[type] ?: 0}") },
                 leadingIcon = { ConnectionTypeIcon(type, Modifier.size(16.dp)) }
+            )
+        }
+        servers.forEach { (serverId, count) ->
+            val server = choices.label(ConnectionType.VPN, serverId) ?: return@forEach
+            val filter = AppFilter.Server(serverId)
+            FilterChip(
+                selected = selected == filter,
+                onClick = { toggle(filter) },
+                label = { Text("${server.name} $count", maxLines = 1) },
+                leadingIcon = {
+                    when {
+                        server.unreachable -> Icon(Icons.Filled.Warning, contentDescription = null, tint = warningColor(), modifier = Modifier.size(16.dp))
+                        server.isChain -> SourceIcon(ChainIcon, contentDescription = null, modifier = Modifier.size(16.dp))
+                        else -> ConnectionTypeIcon(ConnectionType.VPN, Modifier.size(16.dp))
+                    }
+                }
             )
         }
     }

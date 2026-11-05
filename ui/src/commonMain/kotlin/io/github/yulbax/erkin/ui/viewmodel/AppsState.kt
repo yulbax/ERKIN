@@ -22,9 +22,28 @@ sealed interface AppRowMode {
     data class Selecting(val checked: Boolean) : AppRowMode
 }
 
-internal fun filterApps(apps: List<AppInfo>, query: String, channel: ConnectionType?): List<AppInfo> =
+sealed interface AppFilter {
+    fun matches(app: AppInfo): Boolean
+
+    data class Channel(val type: ConnectionType) : AppFilter {
+        override fun matches(app: AppInfo): Boolean = app.connectionType == type
+    }
+
+    data class Server(val serverId: Long) : AppFilter {
+        override fun matches(app: AppInfo): Boolean = app.connectionType == ConnectionType.VPN && app.serverId == serverId
+    }
+}
+
+internal fun ServerChoices.boundServers(apps: List<AppInfo>): List<Pair<Long, Int>> =
+    apps.mapNotNull { app -> (current(app) as? CurrentServer.Bound)?.serverId }
+        .groupingBy { it }
+        .eachCount()
+        .toList()
+        .sortedWith(compareByDescending<Pair<Long, Int>> { it.second }.thenBy { it.first })
+
+internal fun filterApps(apps: List<AppInfo>, query: String, filter: AppFilter?): List<AppInfo> =
     apps.filter { app ->
-        (channel == null || app.connectionType == channel) &&
+        (filter == null || filter.matches(app)) &&
             (query.isBlank() ||
                 app.name.contains(query, ignoreCase = true) ||
                 app.packageName.contains(query, ignoreCase = true))

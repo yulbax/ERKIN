@@ -33,10 +33,10 @@ class AppsStateTest {
     fun filtersByChannelAndQueryTogether() {
         val apps = listOf(telegram, discord)
 
-        assertEquals(apps, filterApps(apps, query = " ", channel = null))
-        assertEquals(listOf(discord), filterApps(apps, query = "", channel = ConnectionType.BYEDPI))
-        assertEquals(listOf(telegram), filterApps(apps, query = "org.tele", channel = null))
-        assertEquals(emptyList<AppInfo>(), filterApps(apps, query = "telegram", channel = ConnectionType.BYEDPI))
+        assertEquals(apps, filterApps(apps, query = " ", filter = null))
+        assertEquals(listOf(discord), filterApps(apps, query = "", filter = AppFilter.Channel(ConnectionType.BYEDPI)))
+        assertEquals(listOf(telegram), filterApps(apps, query = "org.tele", filter = null))
+        assertEquals(emptyList<AppInfo>(), filterApps(apps, query = "telegram", filter = AppFilter.Channel(ConnectionType.BYEDPI)))
     }
 
     @Test
@@ -55,6 +55,17 @@ class AppsStateTest {
 
         assertTrue(selecting.canBlock(totalApps = 2))
         assertFalse(selecting.canBlock(totalApps = 1))
+    }
+
+    @Test
+    fun aServerFilterShowsOnlyTheAppsBoundToThatServer() {
+        val bound = telegram.copy(packageName = "org.bound", serverId = helsinki.id)
+        val alsoBound = telegram.copy(packageName = "org.also", serverId = helsinki.id)
+        val onChain = telegram.copy(packageName = "org.chain", serverId = chain.id)
+        val apps = listOf(telegram, discord, bound, alsoBound, onChain, discord.copy(packageName = "org.dpi", serverId = helsinki.id))
+
+        assertEquals(listOf(bound, alsoBound), filterApps(apps, query = "", filter = AppFilter.Server(helsinki.id)))
+        assertEquals(listOf(helsinki.id to 2, chain.id to 1), choices.boundServers(apps))
     }
 
     @Test
