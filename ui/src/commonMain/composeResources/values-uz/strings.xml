@@ -309,6 +309,7 @@
     <string name="chain_via">Keyin orqali</string>
     <string name="chain_add_hop">Bosqich qoʻshish</string>
     <string name="chain_remove_hop">Bosqichni olib tashlash</string>
+    <string name="chain_move_hop">Boʻgʻinni koʻchirish</string>
     <string name="delete_chains_title">Zanjirlar oʻchirilsinmi?</string>
     <string name="delete_chains_message">Tanlangan %1$d ta zanjir oʻchirilsinmi?</string>
     <plurals name="subscription_servers">

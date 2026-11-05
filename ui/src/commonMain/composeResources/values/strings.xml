@@ -332,6 +332,7 @@
     <string name="chain_via">Then through</string>
     <string name="chain_add_hop">Add hop</string>
     <string name="chain_remove_hop">Remove hop</string>
+    <string name="chain_move_hop">Move the hop</string>
     <string name="delete_chains_title">Delete chains?</string>
     <string name="delete_chains_message">Delete %1$d selected chains?</string>
     <plurals name="subscription_servers">

@@ -1,6 +1,17 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import sh.calvin.reorderable.ReorderableColumn
+import io.github.yulbax.erkin.ui.components.groupItemShape
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.layout
+import androidx.compose.runtime.key
+import androidx.compose.material3.Surface
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,46 +56,18 @@ internal fun ChainDialog(
     onDelete: (() -> Unit)?
 ) {
     val servers = profiles.filter { it.isLink }
-    val start = (initial?.kind as? ServerKind.Chain)?.chain
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
-    var hops by remember { mutableStateOf(start?.hops ?: listOf(ChainEntry.ByeDpi)) }
-    var exitId by remember { mutableStateOf(start?.exitId ?: servers.firstOrNull()?.id) }
+    var draft by remember { mutableStateOf(ChainDraft.of((initial?.kind as? ServerKind.Chain)?.chain, servers.firstOrNull()?.id)) }
     val byeDpiLabel = stringResource(Res.string.chain_byedpi)
     val unnamed = stringResource(Res.string.unnamed_profile)
-    fun serverName(id: Long?): String = servers.firstOrNull { it.id == id }?.name?.ifEmpty { unnamed } ?: "—"
-    fun hopLabel(hop: ChainEntry): String = when (hop) {
+    fun nodeLabel(node: ChainEntry): String = when (node) {
         ChainEntry.ByeDpi -> byeDpiLabel
-        is ChainEntry.Server -> serverName(hop.profileId)
+        is ChainEntry.Server -> servers.firstOrNull { it.id == node.profileId }?.name?.ifEmpty { unnamed } ?: "—"
     }
-    val chain = exitId?.let { ProxyChain(hops, it) }
+    val chain = draft.chain
     val valid = chain != null && chain.isValid && chain.serverIds.all { id -> servers.any { it.id == id } }
-    val unused = servers.firstOrNull { server -> chain?.uses(server.id) != true }
-    fun hopServers(except: Int? = null): Set<Long> =
-        hops.filterIndexed { i, _ -> i != except }.mapNotNullTo(HashSet()) { (it as? ChainEntry.Server)?.profileId }
-    val swappable = hops.size == 1
-    fun hopOptions(index: Int): List<ChainEntry> {
-        val noOtherExit = hops[index] is ChainEntry.ByeDpi && servers.size == 1
-        val taken = when {
-            swappable && !noOtherExit -> emptySet()
-            swappable -> setOfNotNull(exitId)
-            else -> hopServers(except = index) + listOfNotNull(exitId)
-        }
-        return servers.filter { it.id !in taken }.map { ChainEntry.Server(it.id) }
-    }
-    fun selectHop(index: Int, selected: ChainEntry) {
-        val previous = hops[index]
-        if (swappable && selected is ChainEntry.Server && selected.profileId == exitId) {
-            exitId = (previous as? ChainEntry.Server)?.profileId ?: servers.firstOrNull { it.id != selected.profileId }?.id
-        }
-        hops = hops.toMutableList().also { it[index] = selected }
-    }
-    fun selectExit(id: Long) {
-        val entry = hops[0]
-        if (swappable && entry is ChainEntry.Server && entry.profileId == id) {
-            exitId?.let { hops = listOf(ChainEntry.Server(it)) }
-        }
-        exitId = id
-    }
+    val unused = servers.firstOrNull { !draft.uses(it.id) }
+    val serverIds = servers.map { it.id }
 
     AppDialog(
         title = stringResource(if (initial == null) Res.string.new_chain else Res.string.edit_chain),
@@ -105,57 +88,92 @@ internal fun ChainDialog(
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            items = buildList {
-                add {
-                    TextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(stringResource(Res.string.name_label)) },
-                        placeholder = { Text(stringResource(Res.string.chain_name_hint)) },
-                        singleLine = true,
-                        colors = transparentFieldColors(),
+            items = listOf {
+                TextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(Res.string.name_label)) },
+                    placeholder = { Text(stringResource(Res.string.chain_name_hint)) },
+                    singleLine = true,
+                    colors = transparentFieldColors(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        )
+        Spacer(Modifier.height(12.dp))
+        ReorderableColumn(
+            list = draft.nodes,
+            onSettle = { from, to -> draft = draft.move(from, to) },
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) { index, node, dragging ->
+            key(node) {
+                ReorderableItem {
+                    Surface(
+                        shape = groupItemShape(index, draft.nodes.size),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        shadowElevation = if (dragging) 6.dp else 0.dp,
                         modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                hops.forEachIndexed { index, hop ->
-                    add {
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.weight(1f)) {
-                                DropdownSetting(
-                                    label = stringResource(if (index == 0) Res.string.chain_entry else Res.string.chain_via),
-                                    options = if (index == 0) listOf<ChainEntry>(ChainEntry.ByeDpi) + hopOptions(index) else hopOptions(index),
-                                    selected = hop,
-                                    optionLabel = ::hopLabel,
-                                    onSelect = { selected -> selectHop(index, selected) }
+                            if (!draft.isMovable(index)) {
+                                Spacer(Modifier.width(HANDLE_START + HANDLE_SIZE))
+                            } else {
+                                Icon(
+                                    Icons.Default.DragHandle,
+                                    contentDescription = stringResource(Res.string.chain_move_hop),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .padding(start = HANDLE_START)
+                                        .draggableHandle()
+                                        .padding(vertical = HANDLE_VERTICAL)
+                                        .size(HANDLE_SIZE)
                                 )
                             }
-                            if (index > 0) {
-                                IconButton(onClick = { hops = hops.filterIndexed { i, _ -> i != index } }) {
+                            Box(modifier = Modifier.weight(1f).pullStart(FIELD_PULL)) {
+                                DropdownSetting(
+                                    label = stringResource(
+                                        when (index) {
+                                            0 -> Res.string.chain_entry
+                                            draft.lastIndex -> Res.string.chain_exit
+                                            else -> Res.string.chain_via
+                                        }
+                                    ),
+                                    options = draft.options(index, serverIds),
+                                    selected = node,
+                                    optionLabel = ::nodeLabel,
+                                    onSelect = { selected -> draft = draft.select(index, selected) }
+                                )
+                            }
+                            if (draft.isRemovable(index)) {
+                                IconButton(onClick = { draft = draft.remove(index) }) {
                                     Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.chain_remove_hop))
                                 }
                             }
                         }
                     }
                 }
-                add {
-                    DropdownSetting(
-                        label = stringResource(Res.string.chain_exit),
-                        options = servers.map { it.id }.filterNot { !swappable && it in hopServers() },
-                        selected = exitId ?: -1L,
-                        optionLabel = ::serverName,
-                        onSelect = ::selectExit
-                    )
-                }
             }
-        )
+        }
         if (unused != null) {
-            TextButton(onClick = { hops = hops + ChainEntry.Server(unused.id) }) {
+            TextButton(onClick = { draft = draft.add(unused.id) }) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
                 Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                 Text(stringResource(Res.string.chain_add_hop))
             }
         }
     }
+}
+
+private val HANDLE_START = 8.dp
+private val HANDLE_SIZE = 24.dp
+private val HANDLE_VERTICAL = 16.dp
+private val FIELD_PULL = 8.dp
+
+private fun Modifier.pullStart(pull: Dp): Modifier = layout { measurable, constraints ->
+    val extra = pull.roundToPx()
+    val widened = if (constraints.hasBoundedWidth) constraints.copy(maxWidth = constraints.maxWidth + extra, minWidth = constraints.minWidth + extra) else constraints
+    val placeable = measurable.measure(widened)
+    layout(placeable.width - extra, placeable.height) { placeable.place(-extra, 0) }
 }
 
 @Composable

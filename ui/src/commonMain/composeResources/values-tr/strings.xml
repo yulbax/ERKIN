@@ -309,6 +309,7 @@
     <string name="chain_via">Sonra şunun üzerinden</string>
     <string name="chain_add_hop">Adım ekle</string>
     <string name="chain_remove_hop">Adımı kaldır</string>
+    <string name="chain_move_hop">Halkayı taşı</string>
     <string name="delete_chains_title">Zincirler silinsin mi?</string>
     <string name="delete_chains_message">Seçilen %1$d zincir silinsin mi?</string>
     <plurals name="subscription_servers">

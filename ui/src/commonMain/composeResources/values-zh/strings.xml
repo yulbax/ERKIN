@@ -307,6 +307,7 @@
     <string name="chain_via">再经由</string>
     <string name="chain_add_hop">添加节点</string>
     <string name="chain_remove_hop">移除节点</string>
+    <string name="chain_move_hop">移动节点</string>
     <string name="delete_chains_title">删除代理链？</string>
     <string name="delete_chains_message">删除选中的 %1$d 条代理链吗？</string>
     <plurals name="subscription_servers">
