@@ -41,7 +41,7 @@ class ServerChoices(
 
     fun current(channel: ConnectionType, serverId: Long?): CurrentServer = when {
         channel != ConnectionType.VPN -> CurrentServer.None
-        else -> byId[serverId]?.takeUnless { it.selected }?.let { CurrentServer.Bound(it.id) } ?: CurrentServer.Main
+        else -> byId[serverId]?.let { CurrentServer.Bound(it.id) } ?: CurrentServer.Main
     }
 
     fun current(app: AppInfo): CurrentServer = current(app.connectionType, app.serverId)

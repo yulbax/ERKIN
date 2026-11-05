@@ -60,8 +60,13 @@ class AppsStateTest {
     @Test
     fun anAppFollowingTheMainServerHasNoCustomLabel() {
         assertEquals(CurrentServer.Main, choices.current(telegram))
-        assertEquals(CurrentServer.Main, choices.current(telegram.copy(serverId = main.id)))
-        assertNull(choices.labelFor(telegram.copy(serverId = main.id)))
+        assertNull(choices.labelFor(telegram))
+    }
+
+    @Test
+    fun anAppBoundToTheMainServerOnPurposeShowsItsName() {
+        assertEquals(CurrentServer.Bound(main.id), choices.current(telegram.copy(serverId = main.id)))
+        assertEquals(main.name, choices.labelFor(telegram.copy(serverId = main.id))?.name)
     }
 
     @Test
