@@ -155,7 +155,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                             onClick = { if (selecting) toggle(rule) else editing = rule },
                             onLongClick = { toggle(rule) },
                             choices = choices,
-                            app = rule.app?.let { id -> apps.firstOrNull { it.packageName == id } ?: RuleAppChoice(id, executableName(id), null, regular = true, channel = null) },
+                            app = rule.app?.let { id -> apps.firstOrNull { it.packageName == id } ?: RuleAppChoice(id, executableName(id), null, regular = true) },
                             onTargetChange = { viewModel.setTarget(rule, it) },
                             onChooseServer = { pickingServer = rule },
                             handle = {

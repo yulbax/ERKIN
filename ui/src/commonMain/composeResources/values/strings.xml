@@ -372,7 +372,6 @@
     <string name="rule_app">App</string>
     <string name="rule_app_all">All apps</string>
     <string name="rule_app_search">Search apps</string>
-    <string name="rule_app_direct_hint">Direct now: with its own rule it goes through ERKIN</string>
     <string name="rule_app_system">System apps</string>
     <string name="connections_rule_site">Rule for the whole site (*.%1$s)</string>
     <string name="connections_copy_site">Copy site name</string>

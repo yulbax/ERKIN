@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,12 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.AllAppsIcon
 import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.PickerSheet
-import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
-import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import io.github.yulbax.erkin.ui.viewmodel.RuleAppChoice
 import io.github.yulbax.erkin.ui.viewmodel.matchesAppQuery
 import io.github.yulbax.erkin.ui.res.*
@@ -61,7 +57,6 @@ internal fun RuleAppPickerSheet(
                 AppChoiceRow(
                     icon = { AllAppsIcon(40.dp, Modifier.padding(end = 12.dp)) },
                     name = stringResource(Res.string.rule_app_all),
-                    hint = null,
                     checked = current == null,
                     onClick = { close { onPick(null) } }
                 )
@@ -83,8 +78,6 @@ internal fun RuleAppPickerSheet(
                 AppChoiceRow(
                     icon = { AppIcon(app.packageName, app.path, app.name, 40.dp, Modifier.padding(end = 12.dp)) },
                     name = app.name,
-                    hint = stringResource(Res.string.rule_app_direct_hint)
-                        .takeIf { !rulesCoverAllApps && (app.channel ?: platformNewAppsConnectionType) == ConnectionType.DIRECT },
                     checked = current == app.packageName,
                     onClick = { close { onPick(app.packageName) } }
                 )
@@ -94,7 +87,7 @@ internal fun RuleAppPickerSheet(
 }
 
 @Composable
-private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, hint: String?, checked: Boolean, onClick: () -> Unit) {
+private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, checked: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -103,12 +96,7 @@ private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, hint: Strin
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             icon()
-            Column(Modifier.weight(1f)) {
-                Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (hint != null) {
-                    Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
+            Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
             if (checked) {
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))

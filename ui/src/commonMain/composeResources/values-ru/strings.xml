@@ -357,7 +357,6 @@
     <string name="rule_app">Приложение</string>
     <string name="rule_app_all">Все приложения</string>
     <string name="rule_app_search">Поиск приложения</string>
-    <string name="rule_app_direct_hint">Сейчас Direct: со своим правилом пойдёт через ERKIN</string>
     <string name="rule_app_system">Системные приложения</string>
     <string name="connections_rule_site">Правило для всего сайта (*.%1$s)</string>
     <string name="connections_copy_site">Копировать имя сайта</string>
