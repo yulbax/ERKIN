@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.byedpi
 
+import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,7 +35,6 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularWavyProgressIndicator
@@ -188,20 +188,12 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
     }
 
     deleting?.let { targets ->
-        AlertDialog(
-            onDismissRequest = { deleting = null },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.delete(targets)
-                        checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
-                        deleting = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(Res.string.delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleting = null }) { Text(stringResource(Res.string.cancel)) }
+        DestructiveConfirmDialog(
+            onDismiss = { deleting = null },
+            onConfirm = {
+                viewModel.delete(targets)
+                checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
+                deleting = null
             },
             title = { Text(stringResource(Res.string.byedpi_delete_title)) },
             text = { Text(stringResource(Res.string.byedpi_delete_message, targets.size)) }

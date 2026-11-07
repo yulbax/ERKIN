@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -17,15 +18,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -240,20 +238,12 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
     }
 
     deleting?.let { targets ->
-        AlertDialog(
-            onDismissRequest = { deleting = null },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.delete(targets)
-                        checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
-                        deleting = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(Res.string.delete)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleting = null }) { Text(stringResource(Res.string.cancel)) }
+        DestructiveConfirmDialog(
+            onDismiss = { deleting = null },
+            onConfirm = {
+                viewModel.delete(targets)
+                checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
+                deleting = null
             },
             title = { Text(stringResource(Res.string.delete_rules_title)) },
             text = {

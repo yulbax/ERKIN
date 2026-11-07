@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,8 +22,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -190,18 +189,12 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
 
     deleting?.let { url ->
         val used = usage[url] ?: 0
-        AlertDialog(
-            onDismissRequest = { deleting = null },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.delete(url)
-                        deleting = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(Res.string.delete)) }
+        DestructiveConfirmDialog(
+            onDismiss = { deleting = null },
+            onConfirm = {
+                viewModel.delete(url)
+                deleting = null
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(Res.string.cancel)) } },
             title = { Text(stringResource(Res.string.rule_set_delete_title)) },
             text = {
                 val message = stringResource(Res.string.rule_set_delete_message, ruleSetName(url, states[url]))

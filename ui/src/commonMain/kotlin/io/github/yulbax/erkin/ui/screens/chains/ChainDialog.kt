@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
+import io.github.yulbax.erkin.ui.components.DestructiveButton
 import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -75,10 +76,7 @@ internal fun ChainDialog(
         onDismiss = onDismiss,
         buttons = {
             if (onDelete != null) {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(Res.string.delete)) }
+                DestructiveButton(onDelete)
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }

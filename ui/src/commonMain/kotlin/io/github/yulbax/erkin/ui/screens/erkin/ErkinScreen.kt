@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Arrangement
@@ -272,24 +273,12 @@ fun ErkinScreen(
     }
 
     deleting?.let { profiles ->
-        AlertDialog(
-            onDismissRequest = { deleting = null },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        profileViewModel.delete(profiles)
-                        checkedIds = checkedIds - profiles.mapTo(HashSet()) { it.id }
-                        deleting = null
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text(stringResource(Res.string.delete))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deleting = null }) { Text(stringResource(Res.string.cancel)) }
+        DestructiveConfirmDialog(
+            onDismiss = { deleting = null },
+            onConfirm = {
+                profileViewModel.delete(profiles)
+                checkedIds = checkedIds - profiles.mapTo(HashSet()) { it.id }
+                deleting = null
             },
             title = {
                 val title = if (profiles.size == 1) Res.string.delete_server_title else Res.string.delete_servers_title

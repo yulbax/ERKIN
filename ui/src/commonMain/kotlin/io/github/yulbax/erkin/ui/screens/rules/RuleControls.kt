@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.DestructiveButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -171,10 +171,7 @@ internal fun RuleDialog(
         onDismiss = onDismiss,
         buttons = {
             if (onDelete != null) {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(Res.string.delete)) }
+                DestructiveButton(onDelete)
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }

@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.byedpi
 
+import io.github.yulbax.erkin.ui.components.DestructiveButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -145,10 +146,7 @@ private fun SiteListEditor(
         onDismiss = onDismiss,
         buttons = {
             if (onDelete != null) {
-                TextButton(
-                    onClick = onDelete,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) { Text(stringResource(Res.string.delete)) }
+                DestructiveButton(onDelete)
             }
             if (onReset != null) {
                 TextButton(onClick = onReset) { Text(stringResource(Res.string.byedpi_site_list_reset)) }

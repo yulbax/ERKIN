@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens
 
+import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -17,7 +18,6 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -142,22 +141,13 @@ fun Logs() {
     }
 
     if (confirmClear) {
-        AlertDialog(
-            onDismissRequest = { confirmClear = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmClear = false
-                        scope.launch { diagnostics.clear() }
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(Res.string.logs_clear))
-                }
+        DestructiveConfirmDialog(
+            onDismiss = { confirmClear = false },
+            onConfirm = {
+                confirmClear = false
+                scope.launch { diagnostics.clear() }
             },
-            dismissButton = {
-                TextButton(onClick = { confirmClear = false }) { Text(stringResource(Res.string.cancel)) }
-            },
+            confirmLabel = stringResource(Res.string.logs_clear),
             title = { Text(stringResource(Res.string.logs_clear_title)) },
             text = { Text(stringResource(Res.string.logs_clear_message)) }
         )
