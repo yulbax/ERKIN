@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetState
@@ -33,10 +34,7 @@ fun PickerSheet(
     onDismiss: () -> Unit,
     content: LazyListScope.(close: (then: () -> Unit) -> Unit) -> Unit
 ) {
-    val sheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-    )
+    val sheetState = expandedSheetState()
     val scope = rememberCoroutineScope()
     val close: (() -> Unit) -> Unit = { then ->
         scope.launch { sheetState.hide() }.invokeOnCompletion {
@@ -71,3 +69,10 @@ fun PickerSheet(
         ) { content(close) }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun expandedSheetState(): SheetState = rememberBottomSheetState(
+    initialValue = SheetValue.Hidden,
+    enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
+)

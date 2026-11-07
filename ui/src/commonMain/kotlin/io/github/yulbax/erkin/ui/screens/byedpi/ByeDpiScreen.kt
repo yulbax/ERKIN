@@ -1,14 +1,11 @@
 package io.github.yulbax.erkin.ui.screens.byedpi
 
+import io.github.yulbax.erkin.ui.components.FloatingVisibility
+import io.github.yulbax.erkin.ui.components.expandedSheetState
 import io.github.yulbax.erkin.ui.components.EditorDialog
 import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -59,9 +56,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -246,10 +240,8 @@ private fun BoxScope.ActionMenu(
         isBackEnabled = open,
         onBackCompleted = { expanded = false }
     )
-    AnimatedVisibility(
+    FloatingVisibility(
         visible = visible,
-        enter = slideInVertically { it * 2 } + fadeIn(),
-        exit = slideOutVertically { it * 2 } + fadeOut(),
         modifier = Modifier.align(Alignment.BottomEnd)
     ) {
         FloatingActionButtonMenu(
@@ -621,13 +613,6 @@ private fun SearchSheet(
         }
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun expandedSheetState(): SheetState = rememberBottomSheetState(
-    initialValue = SheetValue.Hidden,
-    enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded)
-)
 
 @Composable
 private fun TestNetwork.label(): String = when (this) {

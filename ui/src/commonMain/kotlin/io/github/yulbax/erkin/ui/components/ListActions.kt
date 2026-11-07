@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -37,10 +38,8 @@ fun BoxScope.SelectionBar(
     onSelectAll: () -> Unit,
     onDelete: () -> Unit
 ) {
-    AnimatedVisibility(
+    FloatingVisibility(
         visible = visible,
-        enter = slideInVertically { it * 2 } + fadeIn(),
-        exit = slideOutVertically { it * 2 } + fadeOut(),
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = 12.dp)
@@ -98,4 +97,15 @@ fun AddFab(
             )
         }
     }
+}
+
+@Composable
+fun FloatingVisibility(visible: Boolean, modifier: Modifier = Modifier, content: @Composable AnimatedVisibilityScope.() -> Unit) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = slideInVertically { it * 2 } + fadeIn(),
+        exit = slideOutVertically { it * 2 } + fadeOut(),
+        content = content
+    )
 }

@@ -1,15 +1,11 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.FloatingVisibility
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -659,10 +655,8 @@ private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
 
 @Composable
 private fun BoxScope.AnimatedSpeedometerButton(visible: Boolean, testing: Boolean, onClick: () -> Unit) {
-    AnimatedVisibility(
+    FloatingVisibility(
         visible = visible,
-        enter = slideInVertically { it * 2 } + fadeIn(),
-        exit = slideOutVertically { it * 2 } + fadeOut(),
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = 12.dp)
