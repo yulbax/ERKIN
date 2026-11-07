@@ -16,7 +16,20 @@ interface ByeDpiProcess : AutoCloseable {
 
 data class ByeDpiReachability(val reachable: Int, val total: Int) {
     val percent: Int get() = if (total > 0) reachable * 100 / total else 0
+    val ratio: Float get() = if (total > 0) reachable.toFloat() / total else 0f
+    val quality: ByeDpiQuality get() = when {
+        ratio >= GOOD_RATIO -> ByeDpiQuality.GOOD
+        ratio >= FAIR_RATIO -> ByeDpiQuality.FAIR
+        else -> ByeDpiQuality.POOR
+    }
+
+    private companion object {
+        const val GOOD_RATIO = 0.8f
+        const val FAIR_RATIO = 0.4f
+    }
 }
+
+enum class ByeDpiQuality { GOOD, FAIR, POOR }
 
 fun interface ByeDpiQualityCheck {
     suspend fun check(socksPort: Int, network: NetworkOptions): ByeDpiReachability

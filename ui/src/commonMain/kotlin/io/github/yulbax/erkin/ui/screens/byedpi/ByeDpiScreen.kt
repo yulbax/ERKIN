@@ -79,6 +79,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.AppDialog
+import io.github.yulbax.erkin.ui.components.color
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.EmptyAction
 import io.github.yulbax.erkin.ui.components.EmptyState
@@ -87,7 +88,6 @@ import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.SwitchRow
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.ui.theme.StatusAmber
 import io.github.yulbax.erkin.ui.theme.StatusGreen
 import io.github.yulbax.erkin.ui.viewmodel.ByeDpiViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ByeDpiViewModel.NetworkResult
@@ -407,7 +407,7 @@ private fun StrategyRow(
 @Composable
 private fun ScoreBadge(score: ByeDpiReachability) {
     if (score.total == 0) return
-    val color = scoreColor(score)
+    val color = score.quality.color()
     Surface(shape = RoundedCornerShape(8.dp), color = color.copy(alpha = 0.15f)) {
         Text(
             text = "${score.percent}%",
@@ -531,7 +531,7 @@ private fun NetworkSummary(result: NetworkResult) {
                     Text(
                         text = "● ${score.group} ${score.reachability.reachable}/${score.reachability.total}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = scoreColor(score.reachability)
+                        color = score.reachability.quality.color()
                     )
                 }
             }
@@ -659,9 +659,3 @@ private fun TestNetwork.label(): String = when (this) {
     TestNetwork.Unknown -> stringResource(Res.string.network_unknown)
 }
 
-@Composable
-private fun scoreColor(score: ByeDpiReachability): Color = when {
-    score.total > 0 && score.reachable == score.total -> StatusGreen
-    score.reachable == 0 -> MaterialTheme.colorScheme.error
-    else -> StatusAmber
-}

@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.color
+import io.github.yulbax.erkin.vpn.core.ByeDpiReachability
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -38,7 +40,6 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.CountryFlag
 import io.github.yulbax.erkin.ui.components.label
-import io.github.yulbax.erkin.ui.theme.StatusAmber
 import io.github.yulbax.erkin.ui.theme.StatusGreen
 import io.github.yulbax.erkin.ui.theme.StatusOrange
 import kotlin.math.abs
@@ -148,13 +149,9 @@ private fun SignalBars(reachable: Int, total: Int, checking: Boolean) {
     ) {
         Box(modifier = Modifier.padding(6.dp), contentAlignment = Alignment.Center) {
             val inactive = MaterialTheme.colorScheme.outlineVariant
-            val ratio = if (total > 0) reachable.toFloat() / total else 0f
-            val activeBars = ceil(ratio * SIGNAL_SEGMENTS).toInt().coerceIn(0, SIGNAL_SEGMENTS)
-            val fillColor = when {
-                ratio >= 0.8f -> StatusGreen
-                ratio >= 0.4f -> StatusAmber
-                else -> MaterialTheme.colorScheme.error
-            }
+            val score = ByeDpiReachability(reachable, total)
+            val activeBars = ceil(score.ratio * SIGNAL_SEGMENTS).toInt().coerceIn(0, SIGNAL_SEGMENTS)
+            val fillColor = score.quality.color()
 
             val wave = if (checking) {
                 val highlight = MaterialTheme.colorScheme.onSurfaceVariant
