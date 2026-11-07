@@ -8,12 +8,14 @@ import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
-import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +34,17 @@ sealed interface ServerError {
     data object EmptySubscription : ServerError
     data class FetchFailed(val reason: String) : ServerError
     data class Refused(val refusal: SubscriptionRefusal) : ServerError
+}
+
+fun List<ProfileEntity>.sortedByDelay(ids: Set<Long>, delays: Map<Long, ProxyDelay>): List<ProfileEntity> {
+    val ranked = filter { it.id in ids }.sortedBy { delays[it.id].rank() }.iterator()
+    return map { if (it.id in ids) ranked.next() else it }
+}
+
+private fun ProxyDelay?.rank(): Int = when (this) {
+    is ProxyDelay.Measured -> ms
+    null, ProxyDelay.NeedsConnection -> Int.MAX_VALUE - 1
+    ProxyDelay.Failed -> Int.MAX_VALUE
 }
 
 data class ServersUiState(
@@ -87,39 +100,28 @@ class ProfileViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
 
-    fun testAll() {
-        test(uiState.value.profiles.map { it.id }.toSet(), subscription = false)
-    }
-
-    fun testSubscription(id: Long) {
-        test(uiState.value.profiles.filter { it.isLink && it.subscriptionId == id }.map { it.id }.toSet(), subscription = true)
-    }
-
-    private fun test(ids: Set<Long>, subscription: Boolean) {
-        if (_testingIds.value.isNotEmpty()) return
-        if (ids.isEmpty()) return
+    fun test(servers: List<Long>): Deferred<List<Long>?> {
+        val ids = servers.toSet()
+        if (_testingIds.value.isNotEmpty() || ids.isEmpty()) return CompletableDeferred(null)
         _delays.value -= ids
         _testingIds.value = ids
-        viewModelScope.launch(Dispatchers.IO) {
+        return viewModelScope.async(Dispatchers.IO) {
             try {
-                val delays = latencyProbe.measure(ids.takeIf { subscription })
-                _delays.value = if (subscription) _delays.value + delays else delays
-                if (settingsRepository.settings.first().sortServersByPing) {
-                    val profiles = uiState.value.profiles
-                    val order = if (subscription) {
-                        val sorted = profiles.filter { it.id in ids }.sortedBy { delays[it.id].rank() }.iterator()
-                        profiles.map { if (it.id in ids) sorted.next() else it }
-                    } else {
-                        profiles.sortedBy { delays[it.id].rank() }
-                    }
-                    profileRepository.reorder(order.map { it.id })
+                val delays = latencyProbe.measure(ids)
+                _delays.value += delays
+                val order = if (settingsRepository.settings.first().sortServersByPing) {
+                    uiState.value.profiles.sortedByDelay(ids, delays).map { it.id }.also { profileRepository.reorder(it) }
+                } else {
+                    null
                 }
                 ids.filter { delays[it] == ProxyDelay.Failed }.takeIf { it.isNotEmpty() }?.let(_unreachable::tryEmit)
+                order
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
                 log.w(TAG, "latency test failed", t)
                 _delays.value = ids.associateWith { ProxyDelay.Failed }
+                null
             } finally {
                 _testingIds.value = emptySet()
             }
@@ -204,11 +206,5 @@ class ProfileViewModel(
 
     private companion object {
         const val TAG = "Servers"
-
-        fun ProxyDelay?.rank(): Int = when (this) {
-            is ProxyDelay.Measured -> ms
-            null, ProxyDelay.NeedsConnection -> Int.MAX_VALUE - 1
-            ProxyDelay.Failed -> Int.MAX_VALUE
-        }
     }
 }

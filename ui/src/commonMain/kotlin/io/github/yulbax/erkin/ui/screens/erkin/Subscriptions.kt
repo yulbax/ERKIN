@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.Deferred
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Cloud
@@ -66,7 +68,7 @@ internal class SubscriptionActions(
     val refreshing: Set<Long>,
     val testing: Boolean,
     val onOpen: (Long) -> Unit,
-    val onTest: (Long) -> Unit,
+    val onTest: (servers: List<Long>) -> Deferred<List<Long>?>,
     val onRefresh: (Long) -> Unit,
     val onRename: (Long) -> Unit,
     val onShare: (Long) -> Unit,
@@ -140,6 +142,8 @@ internal fun SubscriptionSheet(
     val scope = rememberCoroutineScope()
     val close: () -> Unit = { scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() } }
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
+        val listState = rememberLazyListState()
+        val scrollAfterSort = rememberScrollToTopAfterSort(listState, item.members.map { it.id })
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -166,12 +170,13 @@ internal fun SubscriptionSheet(
                     Icon(Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh_subscription))
                 }
             }
-            TestSubscriptionButton(item.id, actions)
+            TestSubscriptionButton(testing = actions.testing) { scrollAfterSort(actions.onTest(item.members.map { it.id })) }
             SubscriptionMenuButton(item, actions)
         }
         item.usage?.let { UsageBlock(it) }
         Spacer(Modifier.height(8.dp))
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -196,8 +201,8 @@ private fun UsageBlock(usage: SubscriptionUsage) {
 }
 
 @Composable
-private fun TestSubscriptionButton(id: Long, actions: SubscriptionActions) {
-    IconButton(onClick = { actions.onTest(id) }, enabled = !actions.testing) {
+private fun TestSubscriptionButton(testing: Boolean, onClick: () -> Unit) {
+    IconButton(onClick = onClick, enabled = !testing) {
         Icon(Icons.Default.Speed, contentDescription = stringResource(Res.string.test_subscription))
     }
 }

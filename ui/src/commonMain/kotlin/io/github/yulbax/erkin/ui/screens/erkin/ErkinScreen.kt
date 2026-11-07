@@ -88,6 +88,7 @@ import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.Deferred
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.graphics.Color
@@ -166,7 +167,7 @@ fun ErkinScreen(
         onNavigateToApps = onNavigateToApps,
         onByedpiClick = onNavigateToByeDpi,
         onAddServerClick = { showAddDialog = true },
-        onTestClick = { profileViewModel.testAll() },
+        onTest = profileViewModel::test,
         onReorder = profileViewModel::reorder,
         onSelect = { profileViewModel.select(it) },
         onEdit = { profile ->
@@ -181,7 +182,7 @@ fun ErkinScreen(
             refreshing = servers.refreshing,
             testing = servers.testing,
             onOpen = { sheetId = it },
-            onTest = profileViewModel::testSubscription,
+            onTest = profileViewModel::test,
             onRefresh = profileViewModel::refreshSubscription,
             onRename = { renamingId = it },
             onShare = { id -> servers.subscriptions[id]?.let { sharer.shareText(it.url, shareChooserTitle) } },
@@ -353,7 +354,7 @@ private class ErkinScreenContent(
     val onNavigateToApps: () -> Unit,
     val onByedpiClick: () -> Unit,
     val onAddServerClick: () -> Unit,
-    val onTestClick: () -> Unit,
+    val onTest: (servers: List<Long>) -> Deferred<List<Long>?>,
     val onReorder: (List<Long>) -> Unit,
     val onSelect: (ProfileEntity) -> Unit,
     val onEdit: (ProfileEntity) -> Unit,
@@ -578,6 +579,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
         var order by remember { mutableStateOf(c.servers.items) }
         LaunchedEffect(c.servers.items) { order = c.servers.items }
         val listState = rememberLazyListState()
+        val scrollAfterSort = rememberScrollToTopAfterSort(listState, c.servers.profiles.map { it.id })
         val reorderState = rememberReorderableLazyListState(listState) { from, to ->
             val fromIndex = order.indexOfFirst { it.key == from.key }
             val toIndex = order.indexOfFirst { it.key == to.key }
@@ -630,7 +632,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 }
             }
             val notifying = c.snackbarHostState.currentSnackbarData != null
-            AnimatedSpeedometerButton(visible = showTest && !c.selecting && !notifying, testing = c.servers.testing, onClick = c.onTestClick)
+            AnimatedSpeedometerButton(visible = showTest && !c.selecting && !notifying, testing = c.servers.testing, onClick = { scrollAfterSort(c.onTest(c.servers.profiles.map { it.id })) })
             SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked)
             SnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
             if (!showHeader && !c.selecting) {
