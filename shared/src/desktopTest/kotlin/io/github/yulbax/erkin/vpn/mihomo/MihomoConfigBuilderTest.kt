@@ -101,7 +101,30 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
-    fun rulesOfOneAppComeFirstSoTheyCanOpenABlockedApp() {
+    fun appRulesFollowTheQuicBlockAndKeepTheirPlaceInTheList() {
+        val rules = listOf(
+            RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.DIRECT),
+            RoutingRule(RuleMatch.DOMAIN_SUFFIX, "youtube.com", RuleTarget.VPN, app = "org.vpn"),
+            RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT)
+        )
+        val config = build(byeDpi = emptyList(), vpn = listOf("org.vpn"), options = NetworkOptions(blockQuic = true), rules = rules)
+
+        assertEquals(
+            listOf(
+                "IN-NAME,probe-in,p1",
+                "AND,((NETWORK,UDP),(DST-PORT,443)),REJECT",
+                "DOMAIN-SUFFIX,example.org,DIRECT",
+                "AND,((PROCESS-NAME,org.vpn),(DOMAIN-SUFFIX,youtube.com)),p1",
+                "DOMAIN-SUFFIX,ru,DIRECT",
+                "PROCESS-NAME,org.vpn,p1",
+                "MATCH,REJECT"
+            ),
+            config.rules()
+        )
+    }
+
+    @Test
+    fun onlyItsOwnRulesOpenABlockedAppAndOtherRulesKeepTheListOrder() {
         val engine = engine(
             listOf(vless), "p1", emptyList(), listOf("org.vpn"),
             rules = listOf(
@@ -115,9 +138,9 @@ class MihomoConfigBuilderTest {
             listOf(
                 "IN-NAME,probe-in,p1",
                 "AND,((PROCESS-NAME,org.blocked),(DOMAIN-SUFFIX,game.io)),DIRECT",
-                "AND,((PROCESS-PATH,C:\\Games\\game.exe),(IP-CIDR,1.2.3.4/32)),p1",
                 "PROCESS-NAME,org.blocked,REJECT",
                 "DOMAIN-SUFFIX,example.org,DIRECT",
+                "AND,((PROCESS-PATH,C:\\Games\\game.exe),(IP-CIDR,1.2.3.4/32)),p1",
                 "PROCESS-NAME,org.vpn,p1",
                 "MATCH,REJECT"
             ),

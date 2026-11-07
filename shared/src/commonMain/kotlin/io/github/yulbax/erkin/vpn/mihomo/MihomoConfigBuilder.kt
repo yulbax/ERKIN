@@ -196,13 +196,15 @@ object MihomoConfigBuilder {
                 add("IN-NAME,$PROBE_LISTENER,$vpnTarget")
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
                 desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
-                val (appRules, sharedRules) = rules.partition { it.app != null }
-                appRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
-                processRules(PROCESS_PATH, engine.blockedPackages.filter(::isExecutablePath)) { REJECT }
-                processRules(PROCESS_NAME, engine.blockedPackages.filterNot(::isExecutablePath)) { REJECT }
+                val blocked = engine.blockedPackages.toSet()
+                val (blockedAppRules, listedRules) = rules.partition { it.app in blocked }
+                engine.blockedPackages.forEach { app ->
+                    blockedAppRules.filter { it.app == app }.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
+                    add("${processMatch(app)},$app,$REJECT")
+                }
                 if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
-                sharedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
+                listedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
                 if (desktop != null) {
                     val channels = listOf<Pair<List<String>, (String) -> String>>(
                         byeDpiPackages to { BYEDPI_PROXY },
@@ -232,8 +234,7 @@ object MihomoConfigBuilder {
             if (app == null) {
                 add("$condition,$target")
             } else {
-                val process = if (isExecutablePath(app)) PROCESS_PATH else PROCESS_NAME
-                add("AND,(($process,$app),($condition)),$target")
+                add("AND,((${processMatch(app)},$app),($condition)),$target")
             }
         }
     }
@@ -251,6 +252,8 @@ object MihomoConfigBuilder {
         put("port", port)
         put("udp", true)
     }
+
+    private fun processMatch(app: String): String = if (isExecutablePath(app)) PROCESS_PATH else PROCESS_NAME
 
     private fun JsonArrayBuilder.processRules(type: String, apps: List<String>, target: (String) -> String) {
         apps.forEach { add("$type,$it,${target(it)}") }
