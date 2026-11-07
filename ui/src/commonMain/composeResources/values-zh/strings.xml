@@ -83,12 +83,12 @@
     <string name="got_it">知道了</string>
     <string name="apps_hint_title">流量如何分流</string>
     <string name="apps_hint_direct">流量经 ERKIN 直连，规则生效</string>
-    <string name="apps_hint_bypass">流量绕过 ERKIN，应用看不到 VPN</string>
+    <string name="apps_hint_bypass">流量绕过 ERKIN，应用在隧道之外</string>
     <string name="apps_hint_byedpi">流量经由 ByeDPI</string>
     <string name="apps_hint_vpn">流量经由 VPN · 在通道菜单中点 › 选择服务器</string>
     <string name="apps_hint_block">ERKIN 连接期间无法访问网络</string>
     <string name="apps_block_note">ERKIN 连接期间</string>
-    <string name="apps_bypass_note">应用看不到 VPN</string>
+    <string name="apps_bypass_note">应用在隧道之外</string>
     <string name="apps_direct_note">规则和「连接」</string>
     <string name="apps_hint_ru_default">ru/vk/yandex 应用默认归入 Bypass</string>
     <string name="app_server_main">主服务器 · %1$s</string>

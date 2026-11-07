@@ -2,7 +2,7 @@
 
 Every app uses one channel:
 
-- **Bypass** — around ERKIN, as without it. The app does not see the VPN and rules do not apply to it. Android only.
+- **Bypass** — around ERKIN, as without it. The app is outside the tunnel and rules do not apply to it. Android only.
 - **Direct** — through ERKIN straight out, no server needed. Rules apply and the app shows up in Connections, but it sees the VPN.
 - **ByeDPI** — through ByeDPI on the device, no server needed.
 - **VPN** — through a server.

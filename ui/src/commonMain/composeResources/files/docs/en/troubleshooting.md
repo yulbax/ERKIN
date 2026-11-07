@@ -10,7 +10,7 @@
 
 **Rules do not apply to an app.** An app in Bypass goes around ERKIN. Move it to Direct if rules should apply to it.
 
-**A banking app notices the VPN.** Move it to Bypass: then it does not see the VPN.
+**A banking app notices the VPN.** Move it to Bypass: then it works outside the tunnel.
 
 **Home network devices are unreachable.** Turn on Bypass LAN in Settings → Network.
 

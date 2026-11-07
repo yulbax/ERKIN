@@ -83,12 +83,12 @@
     <string name="got_it">Anladım</string>
     <string name="apps_hint_title">Trafik nasıl yönlendirilir</string>
     <string name="apps_hint_direct">trafik ERKIN üzerinden doğrudan gider, kurallar çalışır</string>
-    <string name="apps_hint_bypass">trafik ERKIN’i atlar, uygulama VPN’i görmez</string>
+    <string name="apps_hint_bypass">trafik ERKIN’i atlar, uygulama tünelin dışında</string>
     <string name="apps_hint_byedpi">trafik ByeDPI üzerinden gider</string>
     <string name="apps_hint_vpn">trafik VPN üzerinden gider · sunucuyu kanal menüsündeki › ile seçin</string>
     <string name="apps_hint_block">ERKIN bağlıyken ağ erişimi yok</string>
     <string name="apps_block_note">ERKIN bağlıyken</string>
-    <string name="apps_bypass_note">Uygulama VPN’i görmez</string>
+    <string name="apps_bypass_note">Uygulama tünelin dışında</string>
     <string name="apps_direct_note">Kurallar ve «Bağlantılar»</string>
     <string name="apps_hint_ru_default">ru/vk/yandex uygulamaları Bypass kanalında başlar</string>
     <string name="app_server_main">Ana · %1$s</string>

@@ -2,7 +2,7 @@
 
 每个应用使用一个通道：
 
-- **Bypass** — 绕过 ERKIN，与没有 ERKIN 时相同。应用看不到 VPN，规则对它不生效。仅限 Android。
+- **Bypass** — 绕过 ERKIN，与没有 ERKIN 时相同。应用在隧道之外，规则对它不生效。仅限 Android。
 - **Direct** — 经 ERKIN 直连，无需服务器。规则生效，应用会显示在“连接”中，但它能看到 VPN。
 - **ByeDPI** — 经由设备上的 ByeDPI，无需服务器。
 - **VPN** — 经由服务器。

@@ -10,7 +10,7 @@
 
 **Qoidalar ilovaga taʼsir qilmaydi.** Bypass kanalidagi ilova ERKIN’ni chetlab oʻtadi. Qoidalar unga taʼsir qilishi kerak boʻlsa, uni Direct’ga oʻtkazing.
 
-**Bank ilovasi VPN’ni payqaydi.** Uni Bypass’ga oʻtkazing: shunda u VPN’ni koʻrmaydi.
+**Bank ilovasi VPN’ni payqaydi.** Uni Bypass’ga oʻtkazing: shunda u tunneldan tashqarida ishlaydi.
 
 **Uy tarmogʻidagi qurilmalar koʻrinmayapti.** «Sozlamalar → Tarmoq»da «Lokal tarmoqni chetlab oʻtish»ni yoqing.
 

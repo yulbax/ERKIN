@@ -83,12 +83,12 @@
     <string name="got_it">Tushunarli</string>
     <string name="apps_hint_title">Trafik qanday yoʻnaltiriladi</string>
     <string name="apps_hint_direct">trafik ERKIN orqali toʻgʻridan-toʻgʻri boradi, qoidalar ishlaydi</string>
-    <string name="apps_hint_bypass">trafik ERKIN’ni chetlab oʻtadi, ilova VPN’ni koʻrmaydi</string>
+    <string name="apps_hint_bypass">trafik ERKIN’ni chetlab oʻtadi, ilova tunneldan tashqarida</string>
     <string name="apps_hint_byedpi">trafik ByeDPI orqali boradi</string>
     <string name="apps_hint_vpn">trafik VPN orqali boradi · server kanal menyusidagi › tugmasi bilan tanlanadi</string>
     <string name="apps_hint_block">ERKIN ulangan paytda tarmoqqa kirish yoʻq</string>
     <string name="apps_block_note">ERKIN ulangan paytda</string>
-    <string name="apps_bypass_note">Ilova VPN’ni koʻrmaydi</string>
+    <string name="apps_bypass_note">Ilova tunneldan tashqarida</string>
     <string name="apps_direct_note">Qoidalar va «Ulanishlar»</string>
     <string name="apps_hint_ru_default">ru/vk/yandex ilovalari Bypass kanalida boshlanadi</string>
     <string name="app_server_main">Asosiy · %1$s</string>

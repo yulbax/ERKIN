@@ -2,7 +2,7 @@
 
 Her uygulama bir kanal kullanır:
 
-- **Bypass** — ERKIN’in dışından, o yokmuş gibi. Uygulama VPN’i görmez, kurallar ona uygulanmaz. Yalnızca Android’de.
+- **Bypass** — ERKIN’in dışından, o yokmuş gibi. Uygulama tünelin dışında, kurallar ona uygulanmaz. Yalnızca Android’de.
 - **Direct** — ERKIN üzerinden doğrudan, sunucu gerekmez. Kurallar çalışır ve uygulama Bağlantılar’da görünür, ama VPN’i görür.
 - **ByeDPI** — cihazdaki ByeDPI üzerinden, sunucu gerekmez.
 - **VPN** — bir sunucu üzerinden.

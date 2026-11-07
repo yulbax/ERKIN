@@ -83,12 +83,12 @@
     <string name="got_it">متوجه شدم</string>
     <string name="apps_hint_title">نحوهٔ مسیریابی ترافیک</string>
     <string name="apps_hint_direct">ترافیک مستقیم از طریق ERKIN می‌رود و قوانین اعمال می‌شوند</string>
-    <string name="apps_hint_bypass">ترافیک از کنار ERKIN می‌گذرد و برنامه VPN را نمی‌بیند</string>
+    <string name="apps_hint_bypass">ترافیک از کنار ERKIN می‌گذرد و برنامه بیرون از تونل است</string>
     <string name="apps_hint_byedpi">ترافیک از ByeDPI عبور می‌کند</string>
     <string name="apps_hint_vpn">ترافیک از VPN عبور می‌کند · سرور را با › در منوی کانال انتخاب کنید</string>
     <string name="apps_hint_block">تا زمانی که ERKIN متصل است، دسترسی به شبکه وجود ندارد</string>
     <string name="apps_block_note">تا زمانی که ERKIN متصل است</string>
-    <string name="apps_bypass_note">برنامه VPN را نمی‌بیند</string>
+    <string name="apps_bypass_note">برنامه بیرون از تونل است</string>
     <string name="apps_direct_note">قوانین و «اتصال‌ها»</string>
     <string name="apps_hint_ru_default">برنامه‌های ru/vk/yandex از ابتدا در Bypass هستند</string>
     <string name="app_server_main">اصلی · %1$s</string>

@@ -83,12 +83,12 @@
     <string name="got_it">Понятно</string>
     <string name="apps_hint_title">Как направляется трафик</string>
     <string name="apps_hint_direct">трафик идёт через ERKIN напрямую, работают правила</string>
-    <string name="apps_hint_bypass">трафик идёт мимо ERKIN, приложение не видит VPN</string>
+    <string name="apps_hint_bypass">трафик идёт мимо ERKIN, приложение вне туннеля</string>
     <string name="apps_hint_byedpi">трафик идёт через ByeDPI</string>
     <string name="apps_hint_vpn">трафик идёт через VPN · сервер выбирается кнопкой › в меню канала</string>
     <string name="apps_hint_block">нет доступа к сети, пока ERKIN подключён</string>
     <string name="apps_block_note">Пока ERKIN подключён</string>
-    <string name="apps_bypass_note">Приложение не видит VPN</string>
+    <string name="apps_bypass_note">Приложение вне туннеля</string>
     <string name="apps_direct_note">Правила и «Соединения»</string>
     <string name="apps_hint_ru_default">Приложения ru/vk/yandex сразу попадают в Bypass</string>
     <string name="app_server_main">Основной · %1$s</string>

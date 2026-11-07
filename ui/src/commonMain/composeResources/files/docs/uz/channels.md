@@ -2,7 +2,7 @@
 
 Har bir ilova kanallardan biri orqali ishlaydi:
 
-- **Bypass** — ERKIN’ni chetlab, usiz holatdagidek. Ilova VPN’ni koʻrmaydi, qoidalar unga taʼsir qilmaydi. Faqat Android’da bor.
+- **Bypass** — ERKIN’ni chetlab, usiz holatdagidek. Ilova tunneldan tashqarida, qoidalar unga taʼsir qilmaydi. Faqat Android’da bor.
 - **Direct** — ERKIN orqali toʻgʻridan-toʻgʻri, serversiz. Qoidalar ishlaydi, ilova «Ulanishlar»da koʻrinadi, lekin VPN’ni koʻradi.
 - **ByeDPI** — qurilmadagi ByeDPI orqali, server kerak emas.
 - **VPN** — server orqali.

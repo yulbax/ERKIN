@@ -10,7 +10,7 @@
 
 **Kurallar bir uygulamaya uygulanmıyor.** Bypass kanalındaki uygulama ERKIN’i atlar. Kurallar uygulanmalıysa onu Direct’e taşıyın.
 
-**Bankacılık uygulaması VPN’i fark ediyor.** Onu Bypass’a taşıyın: o zaman VPN’i görmez.
+**Bankacılık uygulaması VPN’i fark ediyor.** Onu Bypass’a taşıyın: o zaman tünelin dışında çalışır.
 
 **Ev ağındaki cihazlara erişilemiyor.** Ayarlar → Ağ’da Yerel ağı atla’yı açın.
 
