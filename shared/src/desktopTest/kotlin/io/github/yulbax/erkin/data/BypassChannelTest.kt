@@ -46,6 +46,15 @@ class BypassChannelTest {
     }
 
     @Test
+    fun anOldBackupThatRoutedAllTrafficThroughErkinKeepsDirectApps() {
+        val text = """{"version":8,"apps":{"bank":"DIRECT"},"settings":{"newAppsConnectionType":"DIRECT","tunnelDirectApps":true}}"""
+        val backup = requireNotNull(BackupCodec.decode(text)).adaptedTo(appsCanBypass = true)
+
+        assertEquals(mapOf("bank" to "DIRECT"), backup.apps)
+        assertEquals("DIRECT", backup.settings?.newAppsConnectionType)
+    }
+
+    @Test
     fun theDesktopRestoresBypassAppsAsDirect() {
         val backup = AppConfigBackup(version = AppConfigBackup.CURRENT_VERSION, apps = mapOf("bank" to "BYPASS"))
 

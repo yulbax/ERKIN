@@ -22,6 +22,7 @@ import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 import java.io.InputStream
 import java.net.URI
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 object BackupCodec {
@@ -44,8 +45,17 @@ object BackupCodec {
     fun decode(text: String): AppConfigBackup? =
         runCatching { json.decodeFromString(AppConfigBackup.serializer(), text) }
             .getOrNull()
-            ?.let { it.copy(rules = it.rules?.map(RoutingRuleEntity::upgraded)) }
+            ?.let { it.copy(rules = it.rules?.map(RoutingRuleEntity::upgraded), directAppsTunneled = tunneledDirectApps(text)) }
             ?.takeIf(::isValid)
+
+    private fun tunneledDirectApps(text: String): Boolean =
+        runCatching { json.decodeFromString(LegacyBackup.serializer(), text).settings?.tunnelDirectApps == true }.getOrDefault(false)
+
+    @Serializable
+    private class LegacyBackup(val settings: LegacySettings? = null)
+
+    @Serializable
+    private class LegacySettings(val tunnelDirectApps: Boolean = false)
 
     fun read(input: InputStream): AppConfigBackup? =
         runCatching { input.readBounded(AppConfigBackup.MAX_IMPORT_BYTES).decodeToString() }

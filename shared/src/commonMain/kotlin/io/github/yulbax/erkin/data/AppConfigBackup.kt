@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.data
 import io.github.yulbax.erkin.data.byedpi.SiteListBackup
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @Serializable
 data class AppConfigBackup(
@@ -12,7 +13,8 @@ data class AppConfigBackup(
     val profiles: List<ProfileBackup>? = null,
     val rules: List<RoutingRuleEntity>? = null,
     val appServers: Map<String, Long>? = null,
-    val siteLists: List<SiteListBackup>? = null
+    val siteLists: List<SiteListBackup>? = null,
+    @Transient val directAppsTunneled: Boolean = false
 ) {
     fun adaptedTo(appsCanBypass: Boolean): AppConfigBackup {
         val ruleApps = rules.orEmpty().mapNotNullTo(HashSet()) { it.app }
@@ -20,7 +22,7 @@ data class AppConfigBackup(
         val direct = ConnectionType.DIRECT.wire
         fun channel(app: String?, wire: String): String = when {
             !appsCanBypass && wire == bypass -> direct
-            appsCanBypass && version < BYPASS_VERSION && wire == direct && app !in ruleApps -> bypass
+            appsCanBypass && version < BYPASS_VERSION && !directAppsTunneled && wire == direct && app !in ruleApps -> bypass
             else -> wire
         }
         return copy(
