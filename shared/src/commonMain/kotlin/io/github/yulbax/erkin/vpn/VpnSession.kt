@@ -51,6 +51,7 @@ class VpnSession(
     private var rapidByeDpiExits = 0
     private var routeWatchJob: Job? = null
     private var byeDpiCheckJob: Job? = null
+    private var failoverJob: Job? = null
     private val recovery = RecoveryLadder()
 
     val isIdle: Boolean get() = phase == Phase.Idle
@@ -115,27 +116,31 @@ class VpnSession(
     }
 
     suspend fun recover() {
-        if (!isRunning) return
+        if (!isRunning || failoverJob?.isActive == true) return
         when (recovery.next()) {
-            RecoveryStep.RECONNECT -> log.i(TAG, "vpn channel down; reloading service")
+            RecoveryStep.RECONNECT -> {
+                log.i(TAG, "vpn channel down; reloading service")
+                resetChannels()
+                applyReload(EngineConfigComposer.compose(store.load(), ownPackage, byeDpiPort, ruleLists))
+                startHealth()
+            }
             RecoveryStep.SWITCH_SERVER -> {
                 log.i(TAG, "vpn channel still down after ${RecoveryLadder.RECONNECTS_BEFORE_SWITCH} reloads; looking for another server")
                 switchServer()
             }
         }
-        if (!isRunning) return
-        resetChannels()
-        applyReload(EngineConfigComposer.compose(store.load(), ownPackage, byeDpiPort, ruleLists))
-        startHealth()
     }
 
-    private suspend fun switchServer() {
-        try {
-            failover.switchToFastest()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (t: Throwable) {
-            log.w(TAG, "server switch failed", t)
+    private fun switchServer() {
+        failoverJob = scope.launch {
+            try {
+                failover.switchToFastest()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (t: Throwable) {
+                log.w(TAG, "server switch failed", t)
+            }
+            requestWork(Command.Reload)
         }
     }
 
@@ -217,6 +222,8 @@ class VpnSession(
             runCatching { health.stop() }
             runCatching { byeDpiCheckJob?.cancel() }
             byeDpiCheckJob = null
+            runCatching { failoverJob?.cancel() }
+            failoverJob = null
             runCatching { engine.stop() }
                 .onFailure { log.w(TAG, "failed to stop engine", it) }
             runCatching { stopByeDpi() }
