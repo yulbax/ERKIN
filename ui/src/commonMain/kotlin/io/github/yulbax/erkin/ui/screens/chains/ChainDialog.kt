@@ -1,5 +1,8 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
+import io.github.yulbax.erkin.ui.components.NameField
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.DestructiveButton
 import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Box
@@ -29,7 +32,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,10 +44,8 @@ import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.DropdownSetting
 import io.github.yulbax.erkin.ui.components.GroupCard
-import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -71,32 +71,16 @@ internal fun ChainDialog(
     val unused = servers.firstOrNull { !draft.uses(it.id) }
     val serverIds = servers.map { it.id }
 
-    AppDialog(
+    EditorDialog(
         title = stringResource(if (initial == null) Res.string.new_chain else Res.string.edit_chain),
         onDismiss = onDismiss,
-        buttons = {
-            if (onDelete != null) {
-                DestructiveButton(onDelete)
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { chain?.let { onSave(name, it) } }, enabled = valid) {
-                Text(stringResource(Res.string.save))
-            }
-        }
+        confirm = DialogAction(stringResource(Res.string.save), enabled = valid) { chain?.let { onSave(name, it) } },
+        startActions = { if (onDelete != null) DestructiveButton(onDelete) }
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             items = listOf {
-                TextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(Res.string.name_label)) },
-                    placeholder = { Text(stringResource(Res.string.chain_name_hint)) },
-                    singleLine = true,
-                    colors = transparentFieldColors(),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                NameField(name, { name = it }, stringResource(Res.string.chain_name_hint))
             }
         )
         Spacer(Modifier.height(12.dp))

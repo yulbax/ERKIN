@@ -1,5 +1,8 @@
 package io.github.yulbax.erkin.ui.screens.byedpi
 
+import io.github.yulbax.erkin.ui.components.NameField
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.DestructiveButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.byedpi.SiteList
 import io.github.yulbax.erkin.data.byedpi.SiteListDraft
 import io.github.yulbax.erkin.data.byedpi.canDisable
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
@@ -141,33 +143,20 @@ private fun SiteListEditor(
     var name by remember { mutableStateOf(initial.name) }
     var text by remember { mutableStateOf(initial.text) }
     val draft = remember(name, text) { SiteListDraft(name, text) }
-    AppDialog(
+    EditorDialog(
         title = title,
         onDismiss = onDismiss,
-        buttons = {
-            if (onDelete != null) {
-                DestructiveButton(onDelete)
-            }
-            if (onReset != null) {
-                TextButton(onClick = onReset) { Text(stringResource(Res.string.byedpi_site_list_reset)) }
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(draft) }, enabled = draft.valid) { Text(stringResource(Res.string.save)) }
+        confirm = DialogAction(stringResource(Res.string.save), enabled = draft.valid) { onSave(draft) },
+        startActions = {
+            if (onDelete != null) DestructiveButton(onDelete)
+            if (onReset != null) TextButton(onClick = onReset) { Text(stringResource(Res.string.byedpi_site_list_reset)) }
         }
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             items = listOf(
                 {
-                    TextField(
-                        value = name,
-                        onValueChange = { name = it.take(SiteListDraft.MAX_NAME_LENGTH) },
-                        label = { Text(stringResource(Res.string.name_label)) },
-                        singleLine = true,
-                        colors = transparentFieldColors(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    NameField(name, { name = it.take(SiteListDraft.MAX_NAME_LENGTH) })
                 },
                 {
                     TextField(

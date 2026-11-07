@@ -16,6 +16,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Spacer
+import io.github.yulbax.erkin.ui.res.Res
+import io.github.yulbax.erkin.ui.res.cancel
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -61,6 +66,31 @@ fun AppDialog(
             }
         }
     }
+}
+
+class DialogAction(val label: String, val enabled: Boolean = true, val onClick: () -> Unit)
+
+@Composable
+fun EditorDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    confirm: DialogAction,
+    secondary: DialogAction? = null,
+    startActions: @Composable RowScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit
+) {
+    AppDialog(
+        title = title,
+        onDismiss = onDismiss,
+        buttons = {
+            startActions()
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
+            TextButton(onClick = confirm.onClick, enabled = confirm.enabled) { Text(confirm.label) }
+            secondary?.let { TextButton(onClick = it.onClick, enabled = it.enabled) { Text(it.label) } }
+        },
+        content = content
+    )
 }
 
 private val MAX_WIDTH = 560.dp

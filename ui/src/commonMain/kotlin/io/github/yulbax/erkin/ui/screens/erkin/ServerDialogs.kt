@@ -1,6 +1,8 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
-import androidx.compose.foundation.layout.Spacer
+import io.github.yulbax.erkin.ui.components.NameField
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -17,7 +19,6 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.data.profile.ProfileEntity
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.platform.PickedFile
@@ -33,26 +34,16 @@ internal fun EditServerDialog(
     var name by remember { mutableStateOf(profile.name) }
     var link by remember { mutableStateOf(profile.link) }
 
-    AppDialog(
+    EditorDialog(
         title = stringResource(Res.string.edit_server),
         onDismiss = onDismiss,
-        buttons = {
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(name, link) }) { Text(stringResource(Res.string.save)) }
-        }
+        confirm = DialogAction(stringResource(Res.string.save)) { onSave(name, link) }
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             items = listOf(
                 {
-                    TextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text(stringResource(Res.string.name_label)) },
-                        singleLine = true,
-                        colors = transparentFieldColors(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    NameField(name, { name = it })
                 },
                 {
                     TextField(
@@ -83,18 +74,11 @@ internal fun AddServerDialog(
         }
     }
 
-    AppDialog(
+    EditorDialog(
         title = stringResource(Res.string.add_server),
         onDismiss = onDismiss,
-        buttons = {
-            TextButton(onClick = pickFile) { Text(stringResource(Res.string.from_file)) }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(
-                onClick = { if (text.isNotBlank()) onAdd(text, null) },
-                enabled = text.isNotBlank()
-            ) { Text(stringResource(Res.string.add)) }
-        }
+        confirm = DialogAction(stringResource(Res.string.add), enabled = text.isNotBlank()) { onAdd(text, null) },
+        startActions = { TextButton(onClick = pickFile) { Text(stringResource(Res.string.from_file)) } }
     ) {
         Text(
             text = stringResource(Res.string.add_server_instructions),

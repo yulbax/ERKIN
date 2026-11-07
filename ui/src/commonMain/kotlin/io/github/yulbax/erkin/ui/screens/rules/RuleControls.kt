@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.DestructiveButton
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,7 +47,6 @@ import io.github.yulbax.erkin.rulelist.RuleListError
 import io.github.yulbax.erkin.rulelist.RuleListFailure
 import io.github.yulbax.erkin.rulelist.RuleListState
 import io.github.yulbax.erkin.ui.components.AllAppsIcon
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.ConnectionTypeIcon
 import io.github.yulbax.erkin.ui.components.GroupCard
@@ -166,19 +167,11 @@ internal fun RuleDialog(
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
     )
 
-    AppDialog(
+    EditorDialog(
         title = stringResource(if (isNew) Res.string.new_rule else Res.string.edit_rule),
         onDismiss = onDismiss,
-        buttons = {
-            if (onDelete != null) {
-                DestructiveButton(onDelete)
-            }
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(match, text, target, serverId, app) }, enabled = normalized != null) {
-                Text(stringResource(Res.string.save))
-            }
-        }
+        confirm = DialogAction(stringResource(Res.string.save), enabled = normalized != null) { onSave(match, text, target, serverId, app) },
+        startActions = { if (onDelete != null) DestructiveButton(onDelete) }
     ) {
         SectionLabel(stringResource(Res.string.rule_type))
         RuleMatchGroup(

@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.settings
 
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,10 +19,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,9 +27,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,13 +35,11 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.AppConfigBackup
 import io.github.yulbax.erkin.data.BackupSelection
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.ClickableRow
 import io.github.yulbax.erkin.ui.components.CommittedTextField
 import io.github.yulbax.erkin.ui.components.DropdownSetting
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.SwitchRow
-import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.viewmodel.SettingsUiState
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateCheckResult
@@ -274,15 +269,11 @@ private fun BackupSelectionDialog(
     var profiles by remember { mutableStateOf(profilesAvailable) }
     var rules by remember { mutableStateOf(rulesAvailable) }
 
-    AppDialog(
+    EditorDialog(
         title = title,
         onDismiss = onDismiss,
-        buttons = {
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(
-                enabled = settings || apps || profiles || rules,
-                onClick = { onConfirm(BackupSelection(settings, apps, profiles, rules)) }
-            ) { Text(confirmLabel) }
+        confirm = DialogAction(confirmLabel, enabled = settings || apps || profiles || rules) {
+            onConfirm(BackupSelection(settings, apps, profiles, rules))
         }
     ) {
         GroupCard(

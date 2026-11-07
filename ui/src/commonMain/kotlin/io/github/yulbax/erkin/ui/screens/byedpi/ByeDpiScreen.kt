@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.byedpi
 
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.animation.AnimatedVisibility
@@ -79,7 +81,6 @@ import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.color
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.EmptyAction
@@ -442,17 +443,11 @@ private fun StrategyMenu(
 @Composable
 private fun StrategyEditor(initial: String, onDismiss: () -> Unit, onSave: (String) -> Unit, onApply: ((String) -> Unit)?) {
     var text by remember { mutableStateOf(initial) }
-    AppDialog(
+    EditorDialog(
         title = stringResource(if (initial.isEmpty()) Res.string.byedpi_add_strategy else Res.string.byedpi_edit),
         onDismiss = onDismiss,
-        buttons = {
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(Res.string.save)) }
-            if (onApply != null) {
-                TextButton(onClick = { onApply(text) }, enabled = text.isNotBlank()) { Text(stringResource(Res.string.byedpi_apply)) }
-            }
-        }
+        confirm = DialogAction(stringResource(Res.string.save), enabled = text.isNotBlank()) { onSave(text) },
+        secondary = onApply?.let { apply -> DialogAction(stringResource(Res.string.byedpi_apply), enabled = text.isNotBlank()) { apply(text) } }
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,

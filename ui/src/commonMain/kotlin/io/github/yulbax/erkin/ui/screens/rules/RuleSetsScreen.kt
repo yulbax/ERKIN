@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.EditorDialog
+import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,7 +47,6 @@ import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.rulelist.RuleListError
 import io.github.yulbax.erkin.rulelist.RuleListException
 import io.github.yulbax.erkin.rulelist.RuleListState
-import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.components.RenameDialog
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
@@ -320,16 +320,10 @@ private fun AddLinkDialog(normalize: (String) -> String?, onDismiss: () -> Unit,
     var link by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     val url = normalize(link)
-    AppDialog(
+    EditorDialog(
         title = stringResource(Res.string.rule_sets_add_title),
         onDismiss = onDismiss,
-        buttons = {
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { url?.let { onAdd(it, name) } }, enabled = url != null) {
-                Text(stringResource(Res.string.rule_set_download))
-            }
-        }
+        confirm = DialogAction(stringResource(Res.string.rule_set_download), enabled = url != null) { url?.let { onAdd(it, name) } }
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -371,16 +365,10 @@ private fun AddLinkDialog(normalize: (String) -> String?, onDismiss: () -> Unit,
 private fun CountryDialog(onDismiss: () -> Unit, onPick: (String) -> Unit) {
     var code by remember { mutableStateOf("") }
     val valid = RuleValues.Country.normalize(code)
-    AppDialog(
+    EditorDialog(
         title = stringResource(Res.string.rule_sets_pick_country),
         onDismiss = onDismiss,
-        buttons = {
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-            TextButton(onClick = { valid?.let(onPick) }, enabled = valid != null) {
-                Text(stringResource(Res.string.rule_set_download))
-            }
-        }
+        confirm = DialogAction(stringResource(Res.string.rule_set_download), enabled = valid != null) { valid?.let(onPick) }
     ) {
         GroupCard(
             itemColor = MaterialTheme.colorScheme.surfaceContainerHighest,
