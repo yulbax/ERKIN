@@ -20,10 +20,23 @@ class DesktopService(
     fun connect(): ServiceClient {
         client?.takeIf { it.isOpen }?.let { return it }
         var connected = tryConnect()
-        if (connected == null || isOutdated(connected)) {
+        if (connected == null || isOutdated()) {
+            if (connected != null) log.i(TAG, "service ${hello?.version} is outdated, expected $expectedVersion")
             connected?.close()
             install()
             connected = awaitConnection() ?: error(NOT_RUNNING)
+        }
+        client = connected
+        return connected
+    }
+
+    @Synchronized
+    fun running(): ServiceClient? {
+        client?.takeIf { it.isOpen }?.let { return it }
+        val connected = tryConnect() ?: return null
+        if (isOutdated()) {
+            connected.close()
+            return null
         }
         client = connected
         return connected
@@ -50,11 +63,9 @@ class DesktopService(
         }
     }.getOrNull()
 
-    private fun isOutdated(connected: ServiceClient): Boolean {
+    private fun isOutdated(): Boolean {
         val running = hello?.version ?: return true
-        val outdated = expectedVersion != null && running != expectedVersion && bundled.isFile
-        if (outdated) log.i(TAG, "service $running is outdated, expected $expectedVersion")
-        return outdated
+        return expectedVersion != null && running != expectedVersion && bundled.isFile
     }
 
     private fun install() {

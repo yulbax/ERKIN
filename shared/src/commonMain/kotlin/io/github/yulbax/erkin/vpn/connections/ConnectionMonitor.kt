@@ -21,7 +21,8 @@ class ConnectionMonitor(
         while (true) {
             if (states.state.value.isActive) {
                 try {
-                    emit(ConnectionLedger.activity(ConnectionTable.parse(source.read())))
+                    val raw = source.read()
+                    emit(if (raw == null) emptyList() else ConnectionLedger.activity(ConnectionTable.parse(raw)))
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (t: Throwable) {

@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 fun interface ConnectionTableSource {
-    suspend fun read(): String
+    suspend fun read(): String?
 }
 
 @Serializable
