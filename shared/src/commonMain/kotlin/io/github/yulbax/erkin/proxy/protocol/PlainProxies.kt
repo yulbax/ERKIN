@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.ProtocolHandler
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.net.URI
@@ -19,10 +20,7 @@ object Socks : ProtocolHandler {
 
         val descriptor = buildJsonObject {
             proxy("socks5", uri.hostName, if (uri.port > 0) uri.port else DEFAULT_PORT)
-            credentials?.let {
-                put("username", it.username)
-                put("password", it.password)
-            }
+            credentials?.let { putCredentials(it.username, it.password) }
         }
         return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
@@ -52,10 +50,7 @@ object Https : ProtocolHandler {
             put("udp", false)
             put("tls", true)
             put("sni", uri.hostName)
-            credentials?.let {
-                put("username", it.username)
-                put("password", it.password)
-            }
+            credentials?.let { putCredentials(it.username, it.password) }
         }
         return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
     }
@@ -71,4 +66,9 @@ private data class Credentials(val username: String, val password: String) {
             return Credentials(plain.substringBefore(':'), plain.substringAfter(':', ""))
         }
     }
+}
+
+internal fun JsonObjectBuilder.putCredentials(username: String, password: String) {
+    put("username", username)
+    put("password", password)
 }

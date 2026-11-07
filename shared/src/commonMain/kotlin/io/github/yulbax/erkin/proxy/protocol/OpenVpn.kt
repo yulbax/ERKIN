@@ -51,10 +51,7 @@ object OpenVpn : ProtocolHandler {
             first("comp-lzo")?.let { put("comp-lzo", it.getOrNull(1) ?: "yes") }
             first("tun-mtu")?.getOrNull(1)?.toIntOrNull()?.let { put("mtu", it) }
             INLINE.forEach { name -> blocks[name]?.let { put(name, it) } }
-            credentials?.let {
-                put("username", it[0])
-                put("password", it[1])
-            }
+            credentials?.let { putCredentials(it[0], it[1]) }
         }
         return ParsedLink(host, descriptor)
     }
