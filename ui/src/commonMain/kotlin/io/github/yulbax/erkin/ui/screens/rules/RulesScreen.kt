@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.GroupListItem
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.animation.core.animateDpAsState
@@ -23,7 +24,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,7 +45,6 @@ import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.AddFab
 import io.github.yulbax.erkin.ui.components.EmptyAction
 import io.github.yulbax.erkin.ui.components.EmptyState
-import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.platform.appsCanBypass
@@ -120,15 +119,11 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
                 ReorderableItem(reorderState, key = rule.id) { dragging ->
                     val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
                     val isChecked = rule.id in checked
-                    Surface(
-                        shape = if (dragging) groupItemShape(0, 1) else groupItemShape(index, order.size),
-                        shadowElevation = elevation,
-                        color = if (isChecked) {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surfaceContainerHigh
-                        },
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp)
+                    GroupListItem(
+                        index = if (dragging) 0 else index,
+                        count = if (dragging) 1 else order.size,
+                        checked = isChecked,
+                        shadowElevation = elevation
                     ) {
                         RuleRow(
                             rule = rule,

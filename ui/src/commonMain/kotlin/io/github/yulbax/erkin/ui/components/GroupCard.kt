@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -63,6 +64,23 @@ fun GroupCard(
             }
         }
     }
+}
+
+@Composable
+fun GroupListItem(
+    index: Int,
+    count: Int,
+    checked: Boolean,
+    shadowElevation: Dp = 0.dp,
+    content: @Composable () -> Unit
+) {
+    Surface(
+        shape = groupItemShape(index, count),
+        shadowElevation = shadowElevation,
+        color = if (checked) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp),
+        content = content
+    )
 }
 
 @Composable

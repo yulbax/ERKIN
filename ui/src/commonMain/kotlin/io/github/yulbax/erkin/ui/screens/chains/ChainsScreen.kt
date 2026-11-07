@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
+import io.github.yulbax.erkin.ui.components.GroupListItem
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
@@ -17,11 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,7 +42,6 @@ import io.github.yulbax.erkin.ui.components.EmptyAction
 import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
-import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.ChainsViewModel
@@ -79,15 +76,7 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
             }
             itemsIndexed(chains, key = { _, chain -> chain.id }) { index, chain ->
                 val isChecked = chain.id in checked
-                Surface(
-                    shape = groupItemShape(index, chains.size),
-                    color = if (isChecked) {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    },
-                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 2.dp)
-                ) {
+                GroupListItem(index = index, count = chains.size, checked = isChecked) {
                     ChainRow(
                         chain = chain,
                         label = chainLabel(chain, profiles).orEmpty(),
