@@ -104,7 +104,11 @@ object EngineConfigComposer {
                 blockedPackages = routed.blockedPackages,
                 serverTags = bound.keys.associateWith(ProxyTag::of)
             ),
-            configName = selected?.name?.ifBlank { "(unnamed)" } ?: if (routed.hasByeDpi) "(ByeDPI only)" else "(Block only)",
+            configName = selected?.name?.ifBlank { "(unnamed)" } ?: when {
+                routed.hasByeDpi -> "(ByeDPI only)"
+                routed.hasBlocked -> "(Block only)"
+                else -> "(Direct only)"
+            },
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
             sessionRequirements = (listOf(active) + bound.values).flatMapTo(mutableSetOf()) {
                 it.lastOrNull()?.sessionRequirements.orEmpty()
@@ -113,7 +117,7 @@ object EngineConfigComposer {
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 rules.joinToString("|", prefix = "#") { "${it.app?.let { app -> "$app~" }.orEmpty()}${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
-            vpnActive = routed.hasVpn
+            vpnActive = routed.hasVpn || (selected != null && rules.any { it.target == RuleTarget.VPN })
         )
     }
 

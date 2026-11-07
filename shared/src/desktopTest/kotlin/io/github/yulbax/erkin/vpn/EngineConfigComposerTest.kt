@@ -230,6 +230,29 @@ class EngineConfigComposerTest {
         EngineConfigComposer.compose(inputs(apps).copy(selected = chain, profiles = listOf(chain)), OWN, BYEDPI_PORT)
     }
 
+    @Test
+    fun directAppsAloneStartWithoutAServer() {
+        val apps = listOf(App("org.example.direct", "Direct", isSystemApp = false, connectionType = ConnectionType.DIRECT))
+        val config = EngineConfigComposer.compose(noServers(apps), OWN, BYEDPI_PORT)
+
+        assertEquals(listOf("org.example.direct"), config.engineConfig.tunneledPackages)
+        assertFalse(config.vpnActive)
+    }
+
+    @Test
+    fun aRuleToTheVpnTurnsOnTheVpnCheckForDirectApps() {
+        val apps = listOf(App("org.example.direct", "Direct", isSystemApp = false, connectionType = ConnectionType.DIRECT))
+        val plain = EngineConfigComposer.compose(inputs(apps), OWN, BYEDPI_PORT)
+        val ruled = EngineConfigComposer.compose(
+            inputs(apps).copy(rules = listOf(RoutingRule(RuleMatch.DOMAIN, "a.example", RuleTarget.VPN, app = "org.example.direct"))),
+            OWN,
+            BYEDPI_PORT
+        )
+
+        assertFalse(plain.vpnActive)
+        assertTrue(ruled.vpnActive)
+    }
+
     @Test(expected = IllegalStateException::class)
     fun withoutServersVpnAppsAloneCannotStart() {
         val apps = listOf(App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN))

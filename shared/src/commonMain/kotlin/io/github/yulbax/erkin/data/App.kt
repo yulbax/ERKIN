@@ -38,8 +38,9 @@ data class RoutedApps(
     val hasByeDpi: Boolean get() = byeDpiPackages.isNotEmpty()
     val hasVpn: Boolean get() = vpnPackages.isNotEmpty()
     val hasBlocked: Boolean get() = blockedPackages.isNotEmpty()
-    val isEmpty: Boolean get() = !hasByeDpi && !hasVpn && !hasBlocked
-    val runsWithoutServer: Boolean get() = hasByeDpi || hasBlocked
+    val hasDirect: Boolean get() = directPackages.isNotEmpty()
+    val isEmpty: Boolean get() = !hasByeDpi && !hasVpn && !hasBlocked && !hasDirect
+    val runsWithoutServer: Boolean get() = hasByeDpi || hasBlocked || hasDirect
 
     companion object {
         fun from(apps: List<App>, hasServers: Boolean = true): RoutedApps {

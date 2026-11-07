@@ -15,7 +15,7 @@ class VpnFailureTest {
     fun startingWithoutServersOrAppsReportsWhatIsMissing() {
         assertEquals(VpnFailure.NoServers, failureOf(SessionInputs(null, emptyList(), SettingsEntity(), listOf(App("org.vpn", "Vpn", false, ConnectionType.VPN)))))
         val server = ProfileEntity(id = 1, name = "a", selected = true)
-        assertEquals(VpnFailure.NoRoutedApps, failureOf(SessionInputs(server, listOf(server), SettingsEntity(), listOf(App("org.direct", "Direct", false, ConnectionType.DIRECT)))))
+        assertEquals(VpnFailure.NoRoutedApps, failureOf(SessionInputs(server, listOf(server), SettingsEntity(), listOf(App("org.bank", "Bank", false, ConnectionType.BYPASS)))))
         assertEquals(VpnFailure.NoServerSelected, failureOf(SessionInputs(null, listOf(server), SettingsEntity(), emptyList())))
     }
 
