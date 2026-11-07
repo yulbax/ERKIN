@@ -35,6 +35,7 @@ import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.room.Room
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.AppDatabase
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.ConfigBackupRepository
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
@@ -100,7 +101,6 @@ import org.koin.dsl.module
 import io.github.yulbax.erkin.ui.screens.docs.DocArticle
 import io.github.yulbax.erkin.ui.screens.docs.DocPage
 import io.github.yulbax.erkin.ui.screens.docs.Docs
-import io.github.yulbax.erkin.vpn.ByeDpiSites
 import io.github.yulbax.erkin.vpn.SiteResult
 import java.util.Locale
 import org.junit.Assume.assumeTrue
@@ -140,18 +140,19 @@ class DesktopRenderTest {
                     single { database.profileDao() }
                     single { SettingsRepository(get(), get()) }
                     single { ByeDpiHistory(get(), get()) }
+                    single { ByeDpiSiteLists(get()) { "en" } }
                     single { TestNetworkSource.fixed(TestNetwork.Wifi) }
                     single {
                         ByeDpiStrategyRunner(
                             newProcess = { error("no ciadpi in render tests") },
-                            siteCheck = ByeDpiSiteCheck { _, _, _, _, _ -> emptyMap() },
+                            siteCheck = ByeDpiSiteCheck({ _, _, _, _, _ -> emptyMap() }) { emptyList() },
                             scope = CoroutineScope(SupervisorJob()),
                             log = SilentLog
                         )
                     }
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
-                    single { ConfigBackupRepository(get(), get()) }
+                    single { ConfigBackupRepository(get(), get(), get()) }
                     single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _, _ -> "{}" } }
                     single { VpnStateRepository() }
                     single { VpnCommandBus() }
@@ -297,7 +298,7 @@ class DesktopRenderTest {
 
     private suspend fun seedStrategies() {
         val history = get<ByeDpiHistory>()
-        val sites = ByeDpiSites.QUICK.flatMap { group -> group.sites.map { it to group.name } }
+        val sites = get<ByeDpiSiteLists>().active().flatMap { group -> group.sites.map { it to group.name } }
         DOC_STRATEGIES.reversed().forEach { (args, reachable) ->
             history.remember(args)
             reachable?.let { count ->

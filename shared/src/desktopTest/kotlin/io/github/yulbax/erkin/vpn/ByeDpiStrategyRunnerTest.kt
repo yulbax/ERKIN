@@ -26,12 +26,12 @@ class ByeDpiStrategyRunnerTest {
         val blocked = CountDownLatch(2)
         val runner = ByeDpiStrategyRunner(
             newProcess = { FakeProcess().also { synchronized(processes) { processes += it } } },
-            siteCheck = ByeDpiSiteCheck(BlockingTester(processes, blocked)),
+            siteCheck = ByeDpiSiteCheck(BlockingTester(processes, blocked)) { GROUPS },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
             log = SilentLog
         )
 
-        runner.start(StrategyRunKind.Saved, listOf("-a", "-b"), ByeDpiDns.DEFAULT, ipv6 = false)
+        runner.start(StrategyRunKind.Saved, listOf("-a", "-b"), GROUPS, ByeDpiDns.DEFAULT, ipv6 = false)
         assertTrue(blocked.await(5, TimeUnit.SECONDS))
         val stoppedAt = System.nanoTime()
         runner.stop()
@@ -46,12 +46,12 @@ class ByeDpiStrategyRunnerTest {
     fun aFinishedRunClearsItsState(): Unit = runBlocking {
         val runner = ByeDpiStrategyRunner(
             newProcess = { FakeProcess() },
-            siteCheck = ByeDpiSiteCheck { _, _, sites, _, _ -> sites.associateWith { true } },
+            siteCheck = ByeDpiSiteCheck({ _, _, sites, _, _ -> sites.associateWith { true } }) { GROUPS },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
             log = SilentLog
         )
 
-        runner.start(StrategyRunKind.Saved, listOf("-a", "-b"), ByeDpiDns.DEFAULT, ipv6 = false)
+        runner.start(StrategyRunKind.Saved, listOf("-a", "-b"), GROUPS, ByeDpiDns.DEFAULT, ipv6 = false)
         withTimeout(5_000) { runner.run.first { it == null } }
     }
 
@@ -95,5 +95,6 @@ class ByeDpiStrategyRunnerTest {
 
     private companion object {
         const val BLOCK_MS = 10_000L
+        val GROUPS = listOf(SiteGroup("test", listOf("example.com")))
     }
 }

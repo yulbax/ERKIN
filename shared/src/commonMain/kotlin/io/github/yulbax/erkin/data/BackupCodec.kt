@@ -1,5 +1,8 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.data.byedpi.SiteHosts
+import io.github.yulbax.erkin.data.byedpi.SiteListBackup
+import io.github.yulbax.erkin.data.byedpi.SiteListDraft
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
@@ -28,6 +31,7 @@ object BackupCodec {
     private const val MAX_OUTBOUND_LENGTH = 256 * 1024
     private const val MAX_BYEDPI_ARGS_LENGTH = 16 * 1024
     private const val MAX_DNS_LENGTH = 255
+    private const val MAX_SITE_LISTS = 200
 
     private val json = Json {
         prettyPrint = true
@@ -62,8 +66,13 @@ object BackupCodec {
         if (backup.settings?.let(::isValidSettingsBackup) == false) return false
         if (backup.profiles?.let(::isValidProfilesBackup) == false) return false
         if (backup.rules?.any { !isValidRuleBackup(it) } == true) return false
+        if ((backup.siteLists?.size ?: 0) > MAX_SITE_LISTS) return false
+        if (backup.siteLists?.any { !isValidSiteListBackup(it) } == true) return false
         return true
     }
+
+    private fun isValidSiteListBackup(list: SiteListBackup): Boolean =
+        (list.name?.length ?: 0) <= SiteListDraft.MAX_NAME_LENGTH && (list.sites?.size ?: 0) <= SiteHosts.MAX_SITES
 
     private fun isInvalidAppBackup(entry: Map.Entry<String, String>): Boolean {
         val packageName = entry.key

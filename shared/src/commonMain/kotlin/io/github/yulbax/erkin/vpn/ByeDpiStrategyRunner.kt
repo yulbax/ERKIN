@@ -51,14 +51,13 @@ class ByeDpiStrategyRunner(
     fun start(
         kind: StrategyRunKind,
         strategies: List<String>,
+        groups: List<SiteGroup>,
         dns: ByeDpiDns,
         ipv6: Boolean,
-        full: Boolean = false,
         onOutcome: suspend (Outcome) -> Unit = {}
     ) {
         val unique = strategies.distinct()
-        if (job?.isCompleted == false || unique.isEmpty()) return
-        val groups = if (full) ByeDpiSites.GROUPS else ByeDpiSites.QUICK
+        if (job?.isCompleted == false || unique.isEmpty() || groups.isEmpty()) return
         if (kind == StrategyRunKind.Search) _searchResults.value = emptyList()
         _run.value = Run(kind, unique.size, 0, emptySet())
         job = scope.launch {

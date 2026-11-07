@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
@@ -38,7 +39,8 @@ private data class ProfilesImport(val result: SectionResult, val ids: Map<Long, 
 
 class ConfigBackupRepository(
     private val database: AppDatabase,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val siteLists: ByeDpiSiteLists
 ) {
 
     suspend fun export(selection: BackupSelection): String = withContext(Dispatchers.IO) {
@@ -61,6 +63,7 @@ class ConfigBackupRepository(
                 } else {
                     null
                 },
+                siteLists = if (selection.settings) siteLists.backup() else null,
                 profiles = if (selection.profiles) {
                     val subscriptions = database.subscriptionDao().getAll().associateBy { it.id }
                     database.profileDao().getAll().map { ProfileBackup.of(it, it.subscriptionId?.let(subscriptions::get)) }
@@ -107,6 +110,7 @@ class ConfigBackupRepository(
         val apps = backup.apps?.takeIf { selection.apps }?.let { applyApps(it, backup.appServers.orEmpty(), profiles?.ids.orEmpty()) }
         val settings = backup.settings?.takeIf { selection.settings }
         settings?.let { database.settingsDao().upsertSettings(it) }
+        backup.siteLists?.takeIf { selection.settings }?.let { siteLists.restoreWithinTransaction(it) }
         val added = profiles?.result?.takeIf { selection.profiles }
         val rules = backup.rules?.takeIf { selection.rules }?.let { applyRules(it, profiles?.ids.orEmpty()) }
         return ImportResult(

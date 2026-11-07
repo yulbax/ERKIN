@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -194,6 +195,14 @@ fun MainScreen(
                                         painter = painterResource(Res.drawable.ic_github),
                                         contentDescription = stringResource(Res.string.about_repository_cd),
                                         modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            }
+                            if (currentScreen == Screen.ByeDpi) {
+                                IconButton(onClick = { navController.navigate(Screen.SiteLists.route) }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Settings,
+                                        contentDescription = stringResource(Res.string.byedpi_site_lists)
                                     )
                                 }
                             }

@@ -114,7 +114,17 @@
     <string name="channel_status_ready">local endpoint ready</string>
     <string name="channel_status_connecting">connecting…</string>
     <string name="channel_status_no_apps">no apps selected</string>
-    <string name="byedpi_test_full">Full test (%1$d)</string>
+    <string name="byedpi_site_lists">Site lists</string>
+    <string name="byedpi_site_lists_hint">Strategy tests and the ByeDPI indicator check the sites of the enabled lists</string>
+    <string name="byedpi_site_list_add">Add list</string>
+    <string name="byedpi_site_list_edit">Edit list</string>
+    <string name="byedpi_site_list_sites">Sites, one per line</string>
+    <string name="byedpi_site_list_modified">modified</string>
+    <string name="byedpi_site_list_reset">Reset</string>
+    <plurals name="byedpi_site_count">
+        <item quantity="one">%1$d site</item>
+        <item quantity="other">%1$d sites</item>
+    </plurals>
     <string name="byedpi_strategies_title">Strategies</string>
     <string name="byedpi_empty">No strategies yet</string>
     <string name="byedpi_test_all">Test all</string>

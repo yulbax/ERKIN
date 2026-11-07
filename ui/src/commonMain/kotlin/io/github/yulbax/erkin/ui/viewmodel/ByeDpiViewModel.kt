@@ -6,9 +6,9 @@ import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.byedpi.ByeDpiArgsEntity
 import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteResultEntity
 import io.github.yulbax.erkin.ui.res.Res
-import io.github.yulbax.erkin.vpn.ByeDpiSites
 import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.StrategyRunKind
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
@@ -27,7 +27,8 @@ class ByeDpiViewModel(
     private val settingsRepository: SettingsRepository,
     private val history: ByeDpiHistory,
     private val runner: ByeDpiStrategyRunner,
-    private val networkSource: TestNetworkSource
+    private val networkSource: TestNetworkSource,
+    private val siteLists: ByeDpiSiteLists
 ) : ViewModel() {
 
     data class GroupScore(val group: String, val reachability: ByeDpiReachability)
@@ -68,11 +69,12 @@ class ByeDpiViewModel(
         combine(runner.run, ranked, networkSource.network) { run, ranked, network ->
             Triple(run, ranked && run?.kind != StrategyRunKind.Saved, network)
         },
-        runner.searchResults
-    ) { settings, entries, results, (run, rank, network), search ->
+        combine(runner.searchResults, siteLists.lists) { search, lists -> search to lists }
+    ) { settings, entries, results, (run, rank, network), (search, lists) ->
         val active = ByeDpiArgs.effective(settings.byeDpiArgs)
         val resultsByArgs = results.groupBy { it.argsId }
-        val listed = entries.map { it.toCard(active, network, resultsByArgs[it.id].orEmpty()) }
+        val groupOrder = lists.map { it.name }
+        val listed = entries.map { it.toCard(active, network, resultsByArgs[it.id].orEmpty(), groupOrder) }
         val cards = if (rank) {
             listed.sortedWith(compareByDescending<StrategyCard> { it.pinned }.thenByDescending { it.current?.score?.percent ?: -1 })
         } else {
@@ -126,11 +128,11 @@ class ByeDpiViewModel(
         viewModelScope.launch { cards.filterNot { it.active }.forEach { history.delete(it.id) } }
     }
 
-    fun test(args: String, full: Boolean) = run(StrategyRunKind.Single, listOf(args), full, save = true)
+    fun test(args: String) = run(StrategyRunKind.Single, listOf(args), save = true)
 
     fun testAll() {
         ranked.value = true
-        run(StrategyRunKind.Saved, uiState.value.cards.map { it.args }, full = false, save = true)
+        run(StrategyRunKind.Saved, uiState.value.cards.map { it.args }, save = true)
     }
 
     fun search(sni: String, custom: String?) {
@@ -138,7 +140,7 @@ class ByeDpiViewModel(
             val source = custom ?: Res.readBytes(BUILT_IN_STRATEGIES).decodeToString()
             val quoted = "\"${sni.trim().ifBlank { DEFAULT_SNI }}\""
             val strategies = source.lines().map { it.trim().replace(SNI_PLACEHOLDER, quoted) }.filter { it.isNotEmpty() }
-            run(StrategyRunKind.Search, strategies, full = false, save = false)
+            run(StrategyRunKind.Search, strategies, save = false)
         }
     }
 
@@ -156,11 +158,11 @@ class ByeDpiViewModel(
 
     fun stop() = runner.stop()
 
-    private fun run(kind: StrategyRunKind, strategies: List<String>, full: Boolean, save: Boolean) {
+    private fun run(kind: StrategyRunKind, strategies: List<String>, save: Boolean) {
         viewModelScope.launch {
             val settings = settingsRepository.settings.first()
             val network = networkSource.network.first()
-            runner.start(kind, strategies, settings.byeDpiDns(), settings.ipv6(), full) { outcome ->
+            runner.start(kind, strategies, siteLists.active(), settings.byeDpiDns(), settings.ipv6()) { outcome ->
                 if (save) history.saveResults(outcome.args, network, outcome.results)
             }
         }
@@ -170,9 +172,14 @@ class ByeDpiViewModel(
 
     private fun SettingsEntity.ipv6() = networkOptions().ipv6Mode.ipv6Enabled
 
-    private fun ByeDpiArgsEntity.toCard(active: String, network: TestNetwork, results: List<ByeDpiSiteResultEntity>): StrategyCard {
+    private fun ByeDpiArgsEntity.toCard(
+        active: String,
+        network: TestNetwork,
+        results: List<ByeDpiSiteResultEntity>,
+        groupOrder: List<String>
+    ): StrategyCard {
         val byNetwork = results.groupBy { it.network }
-            .map { (wire, rows) -> rows.toNetworkResult(TestNetwork.fromWire(wire)) }
+            .map { (wire, rows) -> rows.toNetworkResult(TestNetwork.fromWire(wire), groupOrder) }
             .sortedByDescending { it.testedAt }
         return StrategyCard(
             id = id,
@@ -185,13 +192,13 @@ class ByeDpiViewModel(
         )
     }
 
-    private fun List<ByeDpiSiteResultEntity>.toNetworkResult(network: TestNetwork) = NetworkResult(
+    private fun List<ByeDpiSiteResultEntity>.toNetworkResult(network: TestNetwork, groupOrder: List<String>) = NetworkResult(
         network = network,
         testedAt = maxOf { it.testedAt },
-        score = filter { it.host in ByeDpiSites.QUICK_HOSTS }.reachability(),
+        score = reachability(),
         groups = groupBy { it.siteGroup }
             .map { (group, rows) -> GroupScore(group, rows.reachability()) }
-            .sortedBy { score -> GROUP_ORDER.indexOf(score.group).let { if (it < 0) Int.MAX_VALUE else it } },
+            .sortedBy { score -> groupOrder.indexOf(score.group).let { if (it < 0) Int.MAX_VALUE else it } },
         sites = this
     )
 
@@ -202,6 +209,5 @@ class ByeDpiViewModel(
         const val SNI_PLACEHOLDER = "{sni}"
         const val DEFAULT_SNI = "google.com"
         const val BEST_TO_ADD = 5
-        val GROUP_ORDER = ByeDpiSites.GROUPS.map { it.name }
     }
 }

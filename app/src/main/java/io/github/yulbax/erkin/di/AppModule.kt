@@ -9,6 +9,7 @@ import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsDao
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
@@ -78,8 +79,11 @@ class AppModule {
     fun testNetworkSource(context: Context): TestNetworkSource = AndroidTestNetworkSource(context.applicationContext)
 
     @Single
-    fun byeDpiSiteCheck(context: Context, log: AppLog): ByeDpiSiteCheck =
-        ByeDpiSiteCheck(MihomoSiteTester(context.applicationContext, log))
+    fun byeDpiSiteLists(database: AppDatabase): ByeDpiSiteLists = ByeDpiSiteLists(database)
+
+    @Single
+    fun byeDpiSiteCheck(context: Context, log: AppLog, siteLists: ByeDpiSiteLists): ByeDpiSiteCheck =
+        ByeDpiSiteCheck(MihomoSiteTester(context.applicationContext, log), siteLists::active)
 
     @Single
     fun byeDpiStrategyRunner(context: Context, siteCheck: ByeDpiSiteCheck, log: AppLog): ByeDpiStrategyRunner {
@@ -126,8 +130,11 @@ class AppModule {
         RoomVpnSessionStore(database, profileRepository)
 
     @Single
-    fun configBackupRepository(database: AppDatabase, profileRepository: ProfileRepository): ConfigBackupRepository =
-        ConfigBackupRepository(database, profileRepository)
+    fun configBackupRepository(
+        database: AppDatabase,
+        profileRepository: ProfileRepository,
+        siteLists: ByeDpiSiteLists
+    ): ConfigBackupRepository = ConfigBackupRepository(database, profileRepository, siteLists)
 
     @Single
     fun subscriptionProfileSource(context: Context, route: DownloadRoute): SubscriptionProfileSource =

@@ -111,7 +111,19 @@
     <string name="channel_status_ready">локальный канал готов</string>
     <string name="channel_status_connecting">подключение…</string>
     <string name="channel_status_no_apps">нет приложений</string>
-    <string name="byedpi_test_full">Полный тест (%1$d)</string>
+    <string name="byedpi_site_lists">Списки сайтов</string>
+    <string name="byedpi_site_lists_hint">Тесты стратегий и индикатор ByeDPI проверяют сайты из включённых списков</string>
+    <string name="byedpi_site_list_add">Добавить список</string>
+    <string name="byedpi_site_list_edit">Изменить список</string>
+    <string name="byedpi_site_list_sites">Сайты, по одному в строке</string>
+    <string name="byedpi_site_list_modified">изменён</string>
+    <string name="byedpi_site_list_reset">Сбросить</string>
+    <plurals name="byedpi_site_count">
+        <item quantity="one">%1$d сайт</item>
+        <item quantity="few">%1$d сайта</item>
+        <item quantity="many">%1$d сайтов</item>
+        <item quantity="other">%1$d сайта</item>
+    </plurals>
     <string name="byedpi_strategies_title">Стратегии</string>
     <string name="byedpi_empty">Стратегий пока нет</string>
     <string name="byedpi_test_all">Проверить все</string>

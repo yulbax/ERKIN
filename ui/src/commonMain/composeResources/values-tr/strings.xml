@@ -111,7 +111,17 @@
     <string name="channel_status_ready">yerel uç nokta hazır</string>
     <string name="channel_status_connecting">bağlanıyor…</string>
     <string name="channel_status_no_apps">uygulama seçilmedi</string>
-    <string name="byedpi_test_full">Tam test (%1$d)</string>
+    <string name="byedpi_site_lists">Site listeleri</string>
+    <string name="byedpi_site_lists_hint">Strateji testleri ve ByeDPI göstergesi etkin listelerdeki siteleri kontrol eder</string>
+    <string name="byedpi_site_list_add">Liste ekle</string>
+    <string name="byedpi_site_list_edit">Listeyi düzenle</string>
+    <string name="byedpi_site_list_sites">Siteler, her satıra bir tane</string>
+    <string name="byedpi_site_list_modified">değiştirildi</string>
+    <string name="byedpi_site_list_reset">Sıfırla</string>
+    <plurals name="byedpi_site_count">
+        <item quantity="one">%1$d site</item>
+        <item quantity="other">%1$d site</item>
+    </plurals>
     <string name="byedpi_strategies_title">Stratejiler</string>
     <string name="byedpi_empty">Henüz strateji yok</string>
     <string name="byedpi_test_all">Tümünü test et</string>

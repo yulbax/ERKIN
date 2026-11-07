@@ -11,17 +11,17 @@ import org.junit.Test
 class ByeDpiSiteCheckTest {
 
     @Test
-    fun theIndicatorChecksTheQuickSitesThroughTheByeDpiResolver() = runBlocking {
+    fun theIndicatorChecksTheSelectedListsThroughTheByeDpiResolver() = runBlocking {
         var asked: Triple<Int, String, List<String>>? = null
-        val reachableHost = ByeDpiSites.QUICK.first().sites.first()
-        val check = ByeDpiSiteCheck { port, resolver, sites, _, _ ->
+        val selected = listOf(SiteGroup("A", listOf("a.com", "shared.com")), SiteGroup("B", listOf("shared.com", "b.com")))
+        val check = ByeDpiSiteCheck({ port, resolver, sites, _, _ ->
             asked = Triple(port, resolver, sites)
-            mapOf(reachableHost to true)
-        }
+            mapOf("a.com" to true)
+        }) { selected }
 
         val result = check.check(1080, NetworkOptions(byeDpiDns = ByeDpiDns("9.9.9.9", DnsTransport.UDP)))
 
-        assertEquals(Triple(1080, "udp://9.9.9.9", ByeDpiSites.QUICK_HOSTS.toList().sorted()), asked?.let { it.copy(third = it.third.sorted()) })
-        assertEquals(ByeDpiReachability(1, ByeDpiSites.QUICK_HOSTS.size), result)
+        assertEquals(Triple(1080, "udp://9.9.9.9", listOf("a.com", "shared.com", "b.com")), asked)
+        assertEquals(ByeDpiReachability(1, 4), result)
     }
 }

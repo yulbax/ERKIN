@@ -111,7 +111,17 @@
     <string name="channel_status_ready">lokal nuqta tayyor</string>
     <string name="channel_status_connecting">ulanmoqda…</string>
     <string name="channel_status_no_apps">ilovalar tanlanmagan</string>
-    <string name="byedpi_test_full">Toʻliq test (%1$d)</string>
+    <string name="byedpi_site_lists">Saytlar roʻyxatlari</string>
+    <string name="byedpi_site_lists_hint">Strategiya testlari va ByeDPI koʻrsatkichi yoqilgan roʻyxatlardagi saytlarni tekshiradi</string>
+    <string name="byedpi_site_list_add">Roʻyxat qoʻshish</string>
+    <string name="byedpi_site_list_edit">Roʻyxatni tahrirlash</string>
+    <string name="byedpi_site_list_sites">Saytlar, har qatorda bittadan</string>
+    <string name="byedpi_site_list_modified">oʻzgartirilgan</string>
+    <string name="byedpi_site_list_reset">Tiklash</string>
+    <plurals name="byedpi_site_count">
+        <item quantity="one">%1$d ta sayt</item>
+        <item quantity="other">%1$d ta sayt</item>
+    </plurals>
     <string name="byedpi_strategies_title">Strategiyalar</string>
     <string name="byedpi_empty">Hozircha strategiyalar yoʻq</string>
     <string name="byedpi_test_all">Hammasini tekshirish</string>

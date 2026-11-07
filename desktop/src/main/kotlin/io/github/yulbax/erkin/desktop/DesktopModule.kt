@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.vpn.core.TestNetwork
 import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
@@ -53,7 +54,8 @@ val desktopModule = module {
     single { SettingsRepository(get(), get()) }
     single { ByeDpiHistory(get(), get()) }
     single { TestNetworkSource.fixed(TestNetwork.Unknown) }
-    single { ByeDpiSiteCheck(ServiceSiteTester(get())) }
+    single { ByeDpiSiteLists(get()) }
+    single { ByeDpiSiteCheck(ServiceSiteTester(get()), get<ByeDpiSiteLists>()::active) }
     single {
         val log = get<AppLog>()
         ByeDpiStrategyRunner(
@@ -68,7 +70,7 @@ val desktopModule = module {
     single { DownloadRoute() }
     single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get(), DesktopDeviceIdentity.load()) }
     single { ProfileRepository(get(), get(), get(), get()) }
-    single { ConfigBackupRepository(get(), get()) }
+    single { ConfigBackupRepository(get(), get(), get()) }
     single { RoutingRuleRepository(get()) }
     single<VpnSessionStore> { RoomVpnSessionStore(get(), get()) }
 

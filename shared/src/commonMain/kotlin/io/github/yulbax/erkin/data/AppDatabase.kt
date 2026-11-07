@@ -13,6 +13,8 @@ import androidx.sqlite.execSQL
 import io.github.yulbax.erkin.data.byedpi.ByeDpiArgsEntity
 import io.github.yulbax.erkin.data.byedpi.ByeDpiHistoryDao
 import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteResultEntity
+import io.github.yulbax.erkin.data.byedpi.SiteListDao
+import io.github.yulbax.erkin.data.byedpi.SiteListEntity
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionDao
@@ -21,6 +23,7 @@ import io.github.yulbax.erkin.data.rules.RoutingRuleDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RuleListDao
 import io.github.yulbax.erkin.data.rules.RuleListEntity
+import io.github.yulbax.erkin.vpn.SiteListPreset
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
@@ -28,8 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class],
-    version = 24,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
+    version = 25,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -42,6 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ruleListDao(): RuleListDao
     abstract fun subscriptionDao(): SubscriptionDao
     abstract fun byeDpiHistoryDao(): ByeDpiHistoryDao
+    abstract fun siteListDao(): SiteListDao
 
     suspend fun <R> transaction(block: suspend () -> R): R =
         useWriterConnection { connection -> connection.immediateTransaction { block() } }
@@ -239,6 +243,19 @@ abstract class AppDatabase : RoomDatabase() {
             object : Migration(23, 24) {
                 override fun migrate(connection: SQLiteConnection) {
                     connection.execSQL("ALTER TABLE routing_rules ADD COLUMN app TEXT DEFAULT NULL")
+                }
+            },
+            object : Migration(24, 25) {
+                override fun migrate(connection: SQLiteConnection) {
+                    connection.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `byedpi_site_lists` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "`preset` TEXT, `name` TEXT, `sites` TEXT, `active` INTEGER NOT NULL)"
+                    )
+                    connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_byedpi_site_lists_preset` ON `byedpi_site_lists` (`preset`)")
+                    SiteListPreset.entries.forEach { preset ->
+                        val active = if (preset in SiteListPreset.UPGRADE_DEFAULTS) 1 else 0
+                        connection.execSQL("INSERT OR IGNORE INTO byedpi_site_lists (preset, active) VALUES ('${preset.wire}', $active)")
+                    }
                 }
             }
         )

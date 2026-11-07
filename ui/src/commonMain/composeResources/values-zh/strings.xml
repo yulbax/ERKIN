@@ -111,7 +111,16 @@
     <string name="channel_status_ready">本地通道已就绪</string>
     <string name="channel_status_connecting">连接中…</string>
     <string name="channel_status_no_apps">未选择应用</string>
-    <string name="byedpi_test_full">完整测试 (%1$d)</string>
+    <string name="byedpi_site_lists">网站列表</string>
+    <string name="byedpi_site_lists_hint">策略测试和 ByeDPI 指示器会检测已启用列表中的网站</string>
+    <string name="byedpi_site_list_add">添加列表</string>
+    <string name="byedpi_site_list_edit">编辑列表</string>
+    <string name="byedpi_site_list_sites">网站，每行一个</string>
+    <string name="byedpi_site_list_modified">已修改</string>
+    <string name="byedpi_site_list_reset">重置</string>
+    <plurals name="byedpi_site_count">
+        <item quantity="other">%1$d 个网站</item>
+    </plurals>
     <string name="byedpi_strategies_title">策略</string>
     <string name="byedpi_empty">暂无策略</string>
     <string name="byedpi_test_all">全部测试</string>

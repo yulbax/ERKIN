@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.data
 
 import androidx.room.Room
+import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
@@ -25,7 +26,8 @@ class ConfigBackupRepositoryTest {
     private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
     private val repository = ConfigBackupRepository(
         database,
-        ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog),
+        ByeDpiSiteLists(database)
     )
 
     @After
@@ -84,7 +86,7 @@ class ConfigBackupRepositoryTest {
         val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
         try {
             fresh.profileDao().append(ProfileEntity(name = "Other", type = "vless", link = "vless://id@other.example:443?security=tls#Other", outboundJson = "{}"))
-            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh))
             target.apply(requireNotNull(BackupCodec.decode(repository.export(withProfiles))), withProfiles)
 
             val home = fresh.profileDao().getAll().first { it.name == "Home" }
@@ -171,7 +173,7 @@ class ConfigBackupRepositoryTest {
         val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
         try {
             fresh.profileDao().append(ProfileEntity(name = "Other", type = "vless", link = "vless://id@other.example:443?security=tls#Other", outboundJson = "{}"))
-            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh))
             val result = target.apply(exported, only)
             val imported = fresh.profileDao().getAll()
             val byName = imported.associateBy { it.name }
@@ -206,7 +208,7 @@ class ConfigBackupRepositoryTest {
         val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
         try {
             fresh.appDao().upsertApp(App("org.bound", "Bound", isSystemApp = false, connectionType = ConnectionType.DIRECT))
-            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh))
             val result = target.apply(exported, all)
             val home = fresh.profileDao().getAll().single { it.name == "Home" }
 

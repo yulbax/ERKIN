@@ -31,6 +31,7 @@ import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.screens.apps.Apps
 import io.github.yulbax.erkin.ui.screens.byedpi.ByeDpi
+import io.github.yulbax.erkin.ui.screens.byedpi.SiteLists
 import io.github.yulbax.erkin.ui.screens.chains.Chains
 import io.github.yulbax.erkin.ui.screens.docs.DocArticle
 import io.github.yulbax.erkin.ui.screens.docs.DocPage
@@ -94,6 +95,12 @@ sealed class Screen(
         route = "rulesets",
         title = Res.string.rule_sets_title,
         icon = IconSource.Vector(Icons.Filled.Download)
+    )
+
+    object SiteLists : Screen(
+        route = "byedpi-sites",
+        title = Res.string.byedpi_site_lists,
+        icon = IconSource.Vector(Icons.Filled.Settings)
     )
 
     object Chains : Screen(
@@ -168,7 +175,7 @@ val secondaryNavPages = listOf(
     Screen.About
 )
 
-val subPages = listOf(Screen.RuleSets, Screen.DocPage, Screen.ConnectionApp)
+val subPages = listOf(Screen.RuleSets, Screen.SiteLists, Screen.DocPage, Screen.ConnectionApp)
 
 val navPages = primaryNavPages + secondaryNavPages
 
@@ -208,6 +215,7 @@ fun ErkinNavHost(
             Screen.ConnectionApp.appOf(entry.savedStateHandle.get<String>(CONNECTION_APP))?.let { AppConnections(it) }
         }
         composable(Screen.ByeDpi.route) { ByeDpi() }
+        composable(Screen.SiteLists.route) { SiteLists() }
         composable(Screen.Rules.route) { Rules(onOpenRuleSets = { navController.navigate(Screen.RuleSets.route) }) }
         composable(Screen.RuleSets.route) { RuleSets() }
         composable(Screen.Chains.route) { Chains() }

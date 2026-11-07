@@ -111,7 +111,17 @@
     <string name="channel_status_ready">کانال محلی آماده است</string>
     <string name="channel_status_connecting">در حال اتصال…</string>
     <string name="channel_status_no_apps">برنامه‌ای انتخاب نشده</string>
-    <string name="byedpi_test_full">آزمایش کامل (%1$d)</string>
+    <string name="byedpi_site_lists">فهرست‌های سایت</string>
+    <string name="byedpi_site_lists_hint">آزمایش راهبردها و نشانگر ByeDPI سایت‌های فهرست‌های فعال را بررسی می‌کنند</string>
+    <string name="byedpi_site_list_add">افزودن فهرست</string>
+    <string name="byedpi_site_list_edit">ویرایش فهرست</string>
+    <string name="byedpi_site_list_sites">سایت‌ها، هر کدام در یک خط</string>
+    <string name="byedpi_site_list_modified">تغییر یافته</string>
+    <string name="byedpi_site_list_reset">بازنشانی</string>
+    <plurals name="byedpi_site_count">
+        <item quantity="one">%1$d سایت</item>
+        <item quantity="other">%1$d سایت</item>
+    </plurals>
     <string name="byedpi_strategies_title">استراتژی‌ها</string>
     <string name="byedpi_empty">هنوز استراتژی‌ای نیست</string>
     <string name="byedpi_test_all">تست همه</string>

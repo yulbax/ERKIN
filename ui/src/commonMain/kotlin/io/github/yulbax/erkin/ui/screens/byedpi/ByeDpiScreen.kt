@@ -92,7 +92,6 @@ import io.github.yulbax.erkin.ui.theme.StatusGreen
 import io.github.yulbax.erkin.ui.viewmodel.ByeDpiViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ByeDpiViewModel.NetworkResult
 import io.github.yulbax.erkin.ui.viewmodel.ByeDpiViewModel.StrategyCard
-import io.github.yulbax.erkin.vpn.ByeDpiSites
 import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.StrategyRunKind
 import io.github.yulbax.erkin.vpn.core.ByeDpiReachability
@@ -152,7 +151,7 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
                                 onClick = { if (selecting) toggle(card) else viewModel.apply(card.args) },
                                 onLongClick = { toggle(card) },
                                 onDetails = { dialog = StrategyDialog.Details(card.id) },
-                                onTest = { full -> viewModel.test(card.args, full) },
+                                onTest = { viewModel.test(card.args) },
                                 onEdit = { dialog = StrategyDialog.Edit(card) },
                                 onRename = { dialog = StrategyDialog.Rename(card) },
                                 onPin = { viewModel.setPinned(card.id, !card.pinned) },
@@ -352,7 +351,7 @@ private fun StrategyRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDetails: () -> Unit,
-    onTest: (full: Boolean) -> Unit,
+    onTest: () -> Unit,
     onEdit: () -> Unit,
     onRename: () -> Unit,
     onPin: () -> Unit,
@@ -424,7 +423,7 @@ private fun StrategyMenu(
     card: StrategyCard,
     idle: Boolean,
     onDetails: () -> Unit,
-    onTest: (full: Boolean) -> Unit,
+    onTest: () -> Unit,
     onEdit: () -> Unit,
     onRename: () -> Unit,
     onPin: () -> Unit,
@@ -440,12 +439,7 @@ private fun StrategyMenu(
             DropdownMenuItem(
                 text = { Text(stringResource(Res.string.byedpi_test)) },
                 enabled = idle,
-                onClick = { open = false; onTest(false) }
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.byedpi_test_full, ByeDpiSites.fullTotal)) },
-                enabled = idle,
-                onClick = { open = false; onTest(true) }
+                onClick = { open = false; onTest() }
             )
             DropdownMenuItem(text = { Text(stringResource(Res.string.byedpi_edit)) }, onClick = { open = false; onEdit() })
             DropdownMenuItem(text = { Text(stringResource(Res.string.rename)) }, onClick = { open = false; onRename() })
