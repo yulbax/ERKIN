@@ -1,29 +1,17 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
+import io.github.yulbax.erkin.ui.components.ChoiceRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.components.AllAppsIcon
 import io.github.yulbax.erkin.ui.components.AppIcon
@@ -55,12 +43,12 @@ internal fun RuleAppPickerSheet(
     ) { close ->
         if (query.isBlank()) {
             item(key = ALL_APPS_KEY) {
-                AppChoiceRow(
-                    icon = { AllAppsIcon(40.dp, Modifier.padding(end = 12.dp)) },
-                    name = stringResource(Res.string.rule_app_all),
-                    hint = null,
+                ChoiceRow(
+                    title = stringResource(Res.string.rule_app_all),
                     checked = current == null,
-                    onClick = { close { onPick(null) } }
+                    onClick = { close { onPick(null) } },
+                    padding = APP_ROW_PADDING,
+                    leading = { AllAppsIcon(40.dp, Modifier.padding(end = 12.dp)) }
                 )
             }
         }
@@ -77,41 +65,19 @@ internal fun RuleAppPickerSheet(
                 }
             }
             items(section, key = { it.packageName }) { app ->
-                AppChoiceRow(
-                    icon = { AppIcon(app.packageName, app.path, app.name, 40.dp, Modifier.padding(end = 12.dp)) },
-                    name = app.name,
-                    hint = stringResource(Res.string.rule_app_bypass_hint).takeIf { app.bypassed },
+                ChoiceRow(
+                    title = app.name,
                     checked = current == app.packageName,
-                    onClick = { close { onPick(app.packageName) } }
+                    onClick = { close { onPick(app.packageName) } },
+                    subtitle = stringResource(Res.string.rule_app_bypass_hint).takeIf { app.bypassed },
+                    padding = APP_ROW_PADDING,
+                    leading = { AppIcon(app.packageName, app.path, app.name, 40.dp, Modifier.padding(end = 12.dp)) }
                 )
             }
         }
     }
 }
 
-@Composable
-private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, hint: String?, checked: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = if (checked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            icon()
-            Column(Modifier.weight(1f)) {
-                Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (hint != null) {
-                    Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            if (checked) {
-                Spacer(Modifier.width(8.dp))
-                Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
-            }
-        }
-    }
-}
-
 private const val ALL_APPS_KEY = "all"
+private val APP_ROW_PADDING = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
 private const val SYSTEM_HEADER_KEY = "system"
