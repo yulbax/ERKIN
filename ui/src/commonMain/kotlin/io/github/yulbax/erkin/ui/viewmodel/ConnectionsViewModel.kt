@@ -49,8 +49,7 @@ class ConnectionsViewModel(
         activity.map { app -> app.resolve(byId[app.app] ?: byPath[app.path.ifEmpty { null }]) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServerChoices())
+    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository)
 
     fun rulesOf(app: String): Flow<List<RoutingRuleEntity>> = rules.rules.map { list -> list.filter { it.app == app } }
 

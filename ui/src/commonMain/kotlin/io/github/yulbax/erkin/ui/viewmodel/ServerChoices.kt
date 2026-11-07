@@ -9,12 +9,20 @@ import io.github.yulbax.erkin.data.profile.SubscriptionEntity
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-internal fun ProfileRepository.serverChoices(states: VpnStateRepository): Flow<ServerChoices> =
+internal fun ViewModel.serverChoicesOf(profiles: ProfileRepository, states: VpnStateRepository): StateFlow<ServerChoices> =
+    profiles.serverChoices(states).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ServerChoices())
+
+private fun ProfileRepository.serverChoices(states: VpnStateRepository): Flow<ServerChoices> =
     combine(profiles, subscriptions, states.stats.map { it.unreachableServers }.distinctUntilChanged()) { servers, subscriptions, down ->
         ServerChoices(servers, subscriptions.associateBy { it.id }, down)
     }
@@ -121,3 +129,5 @@ internal fun serverPickerRows(
         }
     }
 }
+
+private const val STOP_TIMEOUT_MS = 5_000L

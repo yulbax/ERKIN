@@ -41,8 +41,7 @@ class AppsViewModel(
     vpnStateRepository: VpnStateRepository
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ServerChoices())
+    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository)
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.appsHintSeen }
