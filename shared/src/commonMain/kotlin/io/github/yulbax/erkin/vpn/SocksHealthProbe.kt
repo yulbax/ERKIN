@@ -23,6 +23,7 @@ class SocksHealthProbe(
             vpnCountry = "",
             byedpiActive = params.byeDpiPort != null,
             byedpiUp = false,
+            byedpiChecked = false,
             measured = HealthChannel.VPN
         )
         suspend fun publish(update: (HealthSnapshot) -> HealthSnapshot) = access.withLock {
@@ -44,7 +45,7 @@ class SocksHealthProbe(
             launch {
                 while (true) {
                     val up = byeDpiReachable(port)
-                    publish { it.copy(byedpiUp = up, measured = HealthChannel.BYEDPI) }
+                    publish { it.copy(byedpiUp = up, byedpiChecked = true, measured = HealthChannel.BYEDPI) }
                     delay(HEALTH_INTERVAL_MS.milliseconds)
                 }
             }

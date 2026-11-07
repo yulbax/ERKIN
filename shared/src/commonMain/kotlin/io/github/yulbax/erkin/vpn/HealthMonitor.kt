@@ -45,6 +45,7 @@ data class HealthSnapshot(
     val vpnCountry: String,
     val byedpiActive: Boolean,
     val byedpiUp: Boolean,
+    val byedpiChecked: Boolean,
     val measured: HealthChannel
 ) {
     val vpnUp get() = vpnDelayMs != null
@@ -52,9 +53,11 @@ data class HealthSnapshot(
     val allActiveUp get() = (!vpnActive || vpnUp) && (!byedpiActive || byedpiUp)
     val vpnHealthy get() = !vpnActive || vpnUp
     val vpnDown get() = vpnActive && vpnChecked && !vpnUp
+    val byedpiDown get() = byedpiActive && byedpiChecked && !byedpiUp
     val state: VpnState get() = when {
-        vpnDown -> VpnState.VpnDown
-        anyUp -> VpnState.Connected(vpnDelayMs ?: 0)
+        vpnDown -> VpnState.ChannelDown(HealthChannel.VPN)
+        byedpiDown -> VpnState.ChannelDown(HealthChannel.BYEDPI)
+        allActiveUp -> VpnState.Connected(vpnDelayMs ?: 0)
         else -> VpnState.Verifying
     }
 }

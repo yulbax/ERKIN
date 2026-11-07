@@ -98,6 +98,7 @@
     <string name="vpn_connected">متصل شد</string>
     <string name="vpn_server_down">بدون پاسخ</string>
     <string name="vpn_server_down_hint">سرور VPN پاسخ نمی‌دهد، در حال اتصال دوباره</string>
+    <string name="byedpi_down_hint">ByeDPI پاسخ نمی‌دهد</string>
     <string name="vpn_not_connected">متصل نیست</string>
     <string name="vpn_tap_to_connect">برای اتصال بزنید</string>
     <string name="vpn_establishing_tunnel">در حال برقراری تونل</string>

@@ -101,6 +101,7 @@
     <string name="vpn_connected">Connected</string>
     <string name="vpn_server_down">No response</string>
     <string name="vpn_server_down_hint">VPN server is not responding, reconnecting</string>
+    <string name="byedpi_down_hint">ByeDPI is not responding</string>
     <string name="vpn_not_connected">Not connected</string>
     <string name="vpn_tap_to_connect">Tap to connect</string>
     <string name="vpn_establishing_tunnel">Establishing tunnel</string>

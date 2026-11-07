@@ -39,6 +39,7 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.theme.StatusOrange
 import io.github.yulbax.erkin.util.formatRate
 import io.github.yulbax.erkin.vpn.ConnectionStats
+import io.github.yulbax.erkin.vpn.HealthChannel
 import io.github.yulbax.erkin.vpn.VpnState
 
 @Composable
@@ -53,7 +54,7 @@ internal fun ConnectionCard(
     val scheme = MaterialTheme.colorScheme
     val busy = state.isBusy
     val isError = state is VpnState.Error
-    val warning = busy || state is VpnState.VpnDown
+    val warning = busy || state is VpnState.ChannelDown
     val vivid = isError || connected || busy
 
     val targetTop = when {
@@ -85,7 +86,7 @@ internal fun ConnectionCard(
         VpnState.Connecting -> stringResource(Res.string.vpn_connecting)
         VpnState.Verifying -> stringResource(Res.string.vpn_verifying)
         is VpnState.Connected -> stringResource(Res.string.vpn_connected)
-        VpnState.VpnDown -> stringResource(Res.string.vpn_server_down)
+        is VpnState.ChannelDown -> stringResource(Res.string.vpn_server_down)
         is VpnState.Error -> stringResource(Res.string.vpn_not_connected)
     }
     val subtitle = when (state) {
@@ -93,7 +94,10 @@ internal fun ConnectionCard(
         VpnState.Connecting -> stringResource(Res.string.vpn_establishing_tunnel)
         VpnState.Verifying -> stringResource(Res.string.vpn_checking_connectivity)
         is VpnState.Connected -> stringResource(Res.string.vpn_tap_to_disconnect)
-        VpnState.VpnDown -> stringResource(Res.string.vpn_server_down_hint)
+        is VpnState.ChannelDown -> when (state.channel) {
+            HealthChannel.VPN -> stringResource(Res.string.vpn_server_down_hint)
+            HealthChannel.BYEDPI -> stringResource(Res.string.byedpi_down_hint)
+        }
         is VpnState.Error -> state.failure.text()
     }
     Box(

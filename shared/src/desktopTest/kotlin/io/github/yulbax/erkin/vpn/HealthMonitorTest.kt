@@ -37,12 +37,15 @@ class HealthMonitorTest {
     }
 
     @Test
-    fun aDeadVpnIsReportedEvenWhileByeDpiStillWorks() {
-        assertEquals(VpnState.VpnDown, HealthSnapshot(true, null, true, "", true, true, HealthChannel.VPN).state)
-        assertEquals(VpnState.Connected(0), HealthSnapshot(true, null, false, "", true, true, HealthChannel.BYEDPI).state)
-        assertEquals(VpnState.Verifying, HealthSnapshot(true, null, false, "", false, false, HealthChannel.VPN).state)
-        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", true, false, HealthChannel.VPN).state)
-        assertEquals(VpnState.Connected(0), HealthSnapshot(false, null, false, "", true, true, HealthChannel.BYEDPI).state)
+    fun theCardIsConnectedOnlyWhenEveryChannelAnswers() {
+        val vpn = HealthChannel.VPN
+        assertEquals(VpnState.ChannelDown(vpn), HealthSnapshot(true, null, true, "", true, true, true, vpn).state)
+        assertEquals(VpnState.ChannelDown(HealthChannel.BYEDPI), HealthSnapshot(true, 80, true, "", true, false, true, vpn).state)
+        assertEquals(VpnState.Verifying, HealthSnapshot(true, 80, true, "", true, false, false, vpn).state)
+        assertEquals(VpnState.Verifying, HealthSnapshot(true, null, false, "", true, true, true, vpn).state)
+        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", true, true, true, vpn).state)
+        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", false, false, false, vpn).state)
+        assertEquals(VpnState.Connected(0), HealthSnapshot(false, null, false, "", true, true, true, HealthChannel.BYEDPI).state)
     }
 
     @Test
@@ -54,7 +57,7 @@ class HealthMonitorTest {
         }
         val probe = object : HealthProbe {
             override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
-                emit(HealthSnapshot(true, 50, true, "", false, false, HealthChannel.VPN))
+                emit(HealthSnapshot(true, 50, true, "", false, false, true, HealthChannel.VPN))
             }
         }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -85,7 +88,7 @@ class HealthMonitorTest {
         }
         val probe = object : HealthProbe {
             override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
-                emit(HealthSnapshot(true, 50, true, "", false, false, HealthChannel.VPN))
+                emit(HealthSnapshot(true, 50, true, "", false, false, true, HealthChannel.VPN))
             }
         }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -113,8 +116,8 @@ class HealthMonitorTest {
         val probe = object : HealthProbe {
             override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
                 repeat(SNAPSHOTS) {
-                    emit(HealthSnapshot(true, vpnDelayMs, true, "", true, byedpiUp, HealthChannel.VPN))
-                    emit(HealthSnapshot(true, vpnDelayMs, true, "", true, byedpiUp, HealthChannel.BYEDPI))
+                    emit(HealthSnapshot(true, vpnDelayMs, true, "", true, byedpiUp, true, HealthChannel.VPN))
+                    emit(HealthSnapshot(true, vpnDelayMs, true, "", true, byedpiUp, true, HealthChannel.BYEDPI))
                     delay(5)
                 }
             }
