@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.ui.components.serverNames
@@ -54,9 +55,6 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
@@ -126,16 +124,10 @@ fun ErkinScreen(
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
-    var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
     var sheetId by rememberSaveable { mutableStateOf<Long?>(null) }
     var renamingId by remember { mutableStateOf<Long?>(null) }
-    val checked = checkedIds.filterTo(HashSet()) { id -> servers.profiles.any { it.id == id } }
-
-    NavigationBackHandler(
-        state = rememberNavigationEventState(NavigationEventInfo.None),
-        isBackEnabled = checked.isNotEmpty(),
-        onBackCompleted = { checkedIds = emptyList() }
-    )
+    val selection = rememberSelection(servers.profiles.map { it.id })
+    val checked = selection.checked
 
     val startVpn = rememberVpnStartRequest(onGranted = viewModel::startVpn)
     val showMessage = rememberShowMessage()
@@ -193,15 +185,10 @@ fun ErkinScreen(
         ),
         snackbarHostState = snackbarHostState,
         checked = checked,
-        onToggleCheck = { profile ->
-            checkedIds = if (profile.id in checked) checked.minus(profile.id).toList() else checked.plus(profile.id).toList()
-        },
-        onToggleChecks = { profiles ->
-            val ids = profiles.map { it.id }
-            checkedIds = if (checked.containsAll(ids)) (checked - ids.toSet()).toList() else (checked + ids).toList()
-        },
-        onCheckAll = { checkedIds = servers.profiles.map { it.id } },
-        onClearChecks = { checkedIds = emptyList() },
+        onToggleCheck = { profile -> selection.toggle(profile.id) },
+        onToggleChecks = { profiles -> selection.toggleAll(profiles.map { it.id }) },
+        onCheckAll = selection::selectAll,
+        onClearChecks = selection::clear,
         onDeleteChecked = { deleting = servers.profiles.filter { it.id in checked } }
     )
 
@@ -277,7 +264,7 @@ fun ErkinScreen(
             onDismiss = { deleting = null },
             onConfirm = {
                 profileViewModel.delete(profiles)
-                checkedIds = checkedIds - profiles.mapTo(HashSet()) { it.id }
+                selection.forget(profiles.map { it.id })
                 deleting = null
             },
             title = {

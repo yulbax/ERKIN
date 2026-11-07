@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
+import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -26,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,9 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.kind
@@ -62,20 +59,12 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
-    var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
-    val checked = checkedIds.filterTo(HashSet()) { id -> chains.any { it.id == id } }
-    val selecting = checked.isNotEmpty()
-    val toggle = { chain: ProfileEntity ->
-        checkedIds = if (chain.id in checked) checked.minus(chain.id).toList() else checked.plus(chain.id).toList()
-    }
+    val selection = rememberSelection(chains.map { it.id })
+    val checked = selection.checked
+    val selecting = selection.active
+    val toggle = { chain: ProfileEntity -> selection.toggle(chain.id) }
     val showMessage = rememberShowMessage()
     val invalid = stringResource(Res.string.chain_invalid)
-
-    NavigationBackHandler(
-        state = rememberNavigationEventState(NavigationEventInfo.None),
-        isBackEnabled = selecting,
-        onBackCompleted = { checkedIds = emptyList() }
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp), modifier = Modifier.fillMaxSize()) {
@@ -120,8 +109,8 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
         SelectionBar(
             visible = selecting,
             count = checked.size,
-            onClear = { checkedIds = emptyList() },
-            onSelectAll = { checkedIds = chains.map { it.id } },
+            onClear = selection::clear,
+            onSelectAll = selection::selectAll,
             onDelete = { deleting = chains.filter { it.id in checked } }
         )
         if (!selecting && chains.isNotEmpty()) {
@@ -161,7 +150,7 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
             onDismiss = { deleting = null },
             onConfirm = {
                 viewModel.delete(targets)
-                checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
+                selection.forget(targets.map { it.id })
                 deleting = null
             },
             title = { Text(stringResource(Res.string.delete_chains_title)) },

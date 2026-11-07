@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -29,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,9 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigationevent.NavigationEventInfo
-import androidx.navigationevent.compose.NavigationBackHandler
-import androidx.navigationevent.compose.rememberNavigationEventState
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.executableName
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
@@ -83,18 +80,10 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
     var editing by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     var adding by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<List<RoutingRuleEntity>?>(null) }
-    var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
-    val checked = checkedIds.filterTo(HashSet()) { id -> rules.any { it.id == id } }
-    val selecting = checked.isNotEmpty()
-    val toggle = { rule: RoutingRuleEntity ->
-        checkedIds = if (rule.id in checked) checked.minus(rule.id).toList() else checked.plus(rule.id).toList()
-    }
-
-    NavigationBackHandler(
-        state = rememberNavigationEventState(NavigationEventInfo.None),
-        isBackEnabled = selecting,
-        onBackCompleted = { checkedIds = emptyList() }
-    )
+    val selection = rememberSelection(rules.map { it.id })
+    val checked = selection.checked
+    val selecting = selection.active
+    val toggle = { rule: RoutingRuleEntity -> selection.toggle(rule.id) }
 
     var order by remember { mutableStateOf(rules) }
     LaunchedEffect(rules) { order = rules }
@@ -181,8 +170,8 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
         SelectionBar(
             visible = selecting,
             count = checked.size,
-            onClear = { checkedIds = emptyList() },
-            onSelectAll = { checkedIds = rules.map { it.id } },
+            onClear = selection::clear,
+            onSelectAll = selection::selectAll,
             onDelete = { deleting = rules.filter { it.id in checked } }
         )
         if (!selecting && order.isNotEmpty()) {
@@ -242,7 +231,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
             onDismiss = { deleting = null },
             onConfirm = {
                 viewModel.delete(targets)
-                checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
+                selection.forget(targets.map { it.id })
                 deleting = null
             },
             title = { Text(stringResource(Res.string.delete_rules_title)) },

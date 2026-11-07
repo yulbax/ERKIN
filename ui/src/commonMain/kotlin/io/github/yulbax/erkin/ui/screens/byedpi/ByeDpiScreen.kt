@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.byedpi
 
+import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -114,20 +115,12 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     var dialog by remember { mutableStateOf<StrategyDialog?>(null) }
     var deleting by remember { mutableStateOf<List<StrategyCard>?>(null) }
-    var checkedIds by rememberSaveable { mutableStateOf(emptyList<Long>()) }
-    val checked = checkedIds.filterTo(HashSet()) { id -> ui.cards.any { it.id == id } }
-    val selecting = checked.isNotEmpty()
-    val toggle = { card: StrategyCard ->
-        checkedIds = if (card.id in checked) checked.minus(card.id).toList() else checked.plus(card.id).toList()
-    }
+    val selection = rememberSelection(ui.cards.map { it.id })
+    val checked = selection.checked
+    val selecting = selection.active
+    val toggle = { card: StrategyCard -> selection.toggle(card.id) }
     val run = ui.run
     val idle = run == null
-
-    NavigationBackHandler(
-        state = rememberNavigationEventState(NavigationEventInfo.None),
-        isBackEnabled = selecting,
-        onBackCompleted = { checkedIds = emptyList() }
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -181,8 +174,8 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
         SelectionBar(
             visible = selecting,
             count = checked.size,
-            onClear = { checkedIds = emptyList() },
-            onSelectAll = { checkedIds = ui.cards.map { it.id } },
+            onClear = selection::clear,
+            onSelectAll = selection::selectAll,
             onDelete = { deleting = ui.cards.filter { it.id in checked && !it.active }.ifEmpty { null } }
         )
     }
@@ -192,7 +185,7 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
             onDismiss = { deleting = null },
             onConfirm = {
                 viewModel.delete(targets)
-                checkedIds = checkedIds - targets.mapTo(HashSet()) { it.id }
+                selection.forget(targets.map { it.id })
                 deleting = null
             },
             title = { Text(stringResource(Res.string.byedpi_delete_title)) },
