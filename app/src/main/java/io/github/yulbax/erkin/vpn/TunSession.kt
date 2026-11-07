@@ -9,6 +9,7 @@ import android.os.ParcelFileDescriptor
 import io.github.yulbax.erkin.util.ErkinLog
 import io.github.yulbax.erkin.vpn.core.TunConfig
 import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
 
 class TunSession(
     private val service: VpnService,
@@ -17,6 +18,7 @@ class TunSession(
 ) {
     private var tunInterface: ParcelFileDescriptor? = null
     private var signature: String? = null
+    private val packageNames = ConcurrentHashMap<Int, String>()
 
     fun open(config: TunConfig): Int {
         if (VpnService.prepare(service) != null) fail(VpnFailure.MissingVpnPermission)
@@ -40,6 +42,7 @@ class TunSession(
         log.i(TAG, "tun established mtu=${config.mtu} include=${config.includePackages.size} exclude=${config.excludePackages.size}")
         runCatching { tunInterface?.close() }
         tunInterface = pfd
+        packageNames.clear()
         signature = newSignature
         networkMonitor.currentNetwork()?.let {
             runCatching { service.setUnderlyingNetworks(arrayOf(it)) }
@@ -54,8 +57,9 @@ class TunSession(
         return uid
     }
 
-    fun packageNameForUid(uid: Int): String =
+    fun packageNameForUid(uid: Int): String = packageNames.getOrPut(uid) {
         service.packageManager.getPackagesForUid(uid)?.firstOrNull() ?: error("no package for uid $uid")
+    }
 
     fun uidForPackageName(packageName: String): Int =
         service.packageManager.getApplicationInfo(packageName, 0).uid

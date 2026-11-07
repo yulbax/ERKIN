@@ -62,7 +62,7 @@ func Setup(homeDir string, timezone string, sink LogSink) {
 	process.DefaultPackageNameResolver = func(metadata *C.Metadata) (string, error) {
 		active := current.Load()
 		source, target := metadata.RawSrcAddr, metadata.RawDstAddr
-		if active == nil || source == nil || target == nil {
+		if active == nil || source == nil || target == nil || metadata.Type != C.TUN {
 			return "", process.ErrInvalidNetwork
 		}
 		name := active.packageName(source, target)
