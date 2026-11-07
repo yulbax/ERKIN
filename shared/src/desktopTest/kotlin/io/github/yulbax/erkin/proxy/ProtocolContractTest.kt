@@ -142,6 +142,9 @@ class ProtocolContractTest {
             Endpoint = awg.example.com:51820
         """.trimIndent()
 
+        val AMNEZIAWG_LINK = "amneziawg://" + Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(AMNEZIAWG.encodeToByteArray()) + "#Riga"
+
         val PLAIN_WIREGUARD_CONF = """
             [Interface]
             Address = 10.9.0.2/32
@@ -186,7 +189,7 @@ class ProtocolContractTest {
             ProxyProtocol.TROJAN to listOf("trojan://secret@tr.example.org:443#Frankfurt"),
             ProxyProtocol.SHADOWSOCKS to listOf(SHADOWSOCKS),
             ProxyProtocol.HYSTERIA2 to listOf("hysteria2://secret@hy.example.net:8443?sni=hy.example.net#Helsinki"),
-            ProxyProtocol.AMNEZIAWG to listOf(AMNEZIAWG),
+            ProxyProtocol.AMNEZIAWG to listOf(AMNEZIAWG, AMNEZIAWG_LINK),
             ProxyProtocol.WIREGUARD to listOf(
                 "wireguard://qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec%3D@wg.example.com:51820" +
                     "?publickey=7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ%3D&address=10.9.0.2%2F32&mtu=1280#Warsaw",

@@ -167,7 +167,7 @@
     <string name="cancel">İptal</string>
     <string name="save">Kaydet</string>
     <string name="add_server">Sunucu ekle</string>
-    <string name="add_server_instructions">Bir paylaşım bağlantısı (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https) veya abonelik adresi yapıştırın ya da bir yapılandırma dosyası seçin (WireGuard, AmneziaWG, OpenVPN).</string>
+    <string name="add_server_instructions">Bir paylaşım bağlantısı (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https, amneziawg) veya abonelik adresi yapıştırın ya da bir yapılandırma dosyası seçin (WireGuard, AmneziaWG, OpenVPN).</string>
     <string name="from_file">Dosyadan</string>
     <string name="link_or_subscription_url">Bağlantı veya abonelik adresi</string>
     <string name="add">Ekle</string>

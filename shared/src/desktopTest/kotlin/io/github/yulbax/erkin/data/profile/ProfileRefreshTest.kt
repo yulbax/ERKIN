@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.util.AppLog
+import java.util.Base64
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -390,6 +391,20 @@ class ProfileRefreshTest {
 
         val stored = database.profileDao().getAll()
         assertEquals(listOf("Netherlands", "Germany"), stored.map { it.name })
+        assertTrue(stored.all { it.subscriptionId == null })
+    }
+
+    @Test
+    fun addingSeveralPastedLinksImportsEachServer() = runBlocking {
+        val links = listOf("a.example", "b.example").mapIndexed { index, host ->
+            "vpn://" + Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(AWG_CONFIG.replace("vpn.example.com", host).encodeToByteArray()) + "#${index + 1}"
+        }
+
+        assertEquals(ProfileOperationResult.Success(affected = 2), repository.add(links.joinToString("\n")))
+
+        val stored = database.profileDao().getAll()
+        assertEquals(listOf("1", "2"), stored.map { it.name })
         assertTrue(stored.all { it.subscriptionId == null })
     }
 

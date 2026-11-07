@@ -167,7 +167,7 @@
     <string name="cancel">Bekor qilish</string>
     <string name="save">Saqlash</string>
     <string name="add_server">Server qoʻshish</string>
-    <string name="add_server_instructions">Ulashish havolasini (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https) yoki obuna manzilini qoʻying yoxud konfiguratsiya faylini tanlang (WireGuard, AmneziaWG, OpenVPN).</string>
+    <string name="add_server_instructions">Ulashish havolasini (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https, amneziawg) yoki obuna manzilini qoʻying yoxud konfiguratsiya faylini tanlang (WireGuard, AmneziaWG, OpenVPN).</string>
     <string name="from_file">Fayldan</string>
     <string name="link_or_subscription_url">Havola yoki obuna manzili</string>
     <string name="add">Qoʻshish</string>

@@ -171,7 +171,7 @@
     <string name="cancel">Скасувати</string>
     <string name="save">Зберегти</string>
     <string name="add_server">Додати сервер</string>
-    <string name="add_server_instructions">Вставте посилання (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https) або URL підписки чи виберіть файл конфігурації (WireGuard, AmneziaWG, OpenVPN).</string>
+    <string name="add_server_instructions">Вставте посилання (vmess, vless, ss, trojan, hysteria2, tuic, anytls, socks5, https, amneziawg) або URL підписки чи виберіть файл конфігурації (WireGuard, AmneziaWG, OpenVPN).</string>
     <string name="from_file">З файлу</string>
     <string name="link_or_subscription_url">Посилання або URL підписки</string>
     <string name="add">Додати</string>

@@ -59,6 +59,20 @@ class AmneziaWgTest {
     }
 
     @Test
+    fun keepsEveryAddressAndAllowedIpsLine() {
+        val parsed = requireNotNull(LinkParser.parse(REPEATED_CONFIG))
+
+        assertEquals(ProxyProtocol.AMNEZIAWG, parsed.protocol)
+        val proxy = parsed.proxy
+        assertEquals("172.16.0.2/32", proxy.getValue("ip").jsonPrimitive.content)
+        assertEquals("2606:4700:110:86a9:a897:c12d:2551:83d4/128", proxy.getValue("ipv6").jsonPrimitive.content)
+        assertEquals(
+            listOf("0.0.0.0/0", "::/0", "192.168.0.0/16"),
+            proxy.getValue("allowed-ips").jsonArray.map { it.jsonPrimitive.content }
+        )
+    }
+
+    @Test
     fun rejectsConfigWithoutPeer() {
         assertNull(LinkParser.parse("[Interface]\nPrivateKey = aPrivateKey=\nAddress = 10.8.1.2/32\n"))
     }
@@ -93,6 +107,23 @@ class AmneziaWgTest {
             PresharedKey = aPresharedKey=
             AllowedIPs = 0.0.0.0/0, ::/0
             Endpoint = vpn.example.com:51820
+            PersistentKeepalive = 25
+        """.trimIndent()
+
+        val REPEATED_CONFIG = """
+            [Interface]
+            Address = 172.16.0.2/32
+            Address = 2606:4700:110:86a9:a897:c12d:2551:83d4/128
+            PrivateKey = aPrivateKey=
+            MTU = 1280
+            Jc = 4
+            H1 = 1
+
+            [Peer]
+            PublicKey = aPublicKey=
+            AllowedIPs = 0.0.0.0/0, ::/0
+            AllowedIPs = 192.168.0.0/16
+            Endpoint = awg.example.com:51820
             PersistentKeepalive = 25
         """.trimIndent()
     }

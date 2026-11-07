@@ -31,7 +31,8 @@ class ProfileRepository(
         val input = raw.trim()
         val parsed = LinkParser.parse(input)
         return when {
-            parsed != null -> insertSingle(fileName?.let(::nameOfFile)?.let { parsed.copy(name = it) } ?: parsed)
+            parsed != null && !input.listsSeveralLinks() ->
+                insertSingle(fileName?.let(::nameOfFile)?.let { parsed.copy(name = it) } ?: parsed)
             input.isHttpUrl() -> refreshSubscription(input)
             else -> insertAll(SubscriptionParser.parseBody(input))
         }
@@ -320,6 +321,11 @@ class ProfileRepository(
 
     private fun String.isHttpUrl(): Boolean =
         startsWith("http://", ignoreCase = true) || startsWith("https://", ignoreCase = true)
+
+    private fun String.listsSeveralLinks(): Boolean {
+        val lines = lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+        return lines.size > 1 && LinkParser.parse(lines.first()) != null
+    }
 
     private fun String.serverKey(): String = trim().let { if ('\n' in it) it else it.substringBefore('#') }
 

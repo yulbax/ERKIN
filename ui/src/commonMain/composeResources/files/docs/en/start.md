@@ -1,6 +1,6 @@
 # Getting started
 
-1. **Add a server.** On the home screen, tap Add server. It takes `vless://`, `vmess://`, `trojan://`, `ss://`, `hysteria2://`, `tuic://`, `anytls://`, `socks5://`, `https://` and AmneziaWG `vpn://` links, a subscription link, or a WireGuard, AmneziaWG or OpenVPN config file.
+1. **Add a server.** On the home screen, tap Add server. It takes `vless://`, `vmess://`, `trojan://`, `ss://`, `hysteria2://`, `tuic://`, `anytls://`, `socks5://`, `https://`, AmneziaWG `vpn://` and `amneziawg://` links, a subscription link, or a WireGuard, AmneziaWG or OpenVPN config file.
 2. **Pick the main server** by tapping it in the list. Test latency measures every server and chain; with Sort by ping the list follows the result.
 3. **Give apps a channel** in Apps: Bypass, Direct, ByeDPI, VPN or Block. See Channels.
 4. **Connect** with the button on the home screen or with the ERKIN tile in Quick Settings.

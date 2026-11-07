@@ -64,6 +64,31 @@ class AmneziaVpnLinkTest {
         assertNull(LinkParser.parse("vpn://not-a-valid-payload"))
     }
 
+    @Test
+    fun parsesAPlainConfigPayload() {
+        val encoded = Base64.UrlSafe.encode(PLAIN_CONFIG.encodeToByteArray()).trimEnd('=')
+        val parsed = requireNotNull(LinkParser.parse("vpn://$encoded"))
+
+        assertEquals(ProxyProtocol.AMNEZIAWG, parsed.protocol)
+        assertEquals("awg.example.com", parsed.name)
+        assertEquals("172.16.0.2/32", parsed.proxy.getValue("ip").jsonPrimitive.content)
+        assertEquals("2606:4700:110:86a9:a897:c12d:2551:83d4/128", parsed.proxy.getValue("ipv6").jsonPrimitive.content)
+        assertEquals(4, parsed.proxy.getValue("amnezia-wg-option").jsonObject.getValue("jc").jsonPrimitive.content.toInt())
+    }
+
+    @Test
+    fun takesTheNameFromTheFragment() {
+        val encoded = Base64.UrlSafe.encode(PLAIN_CONFIG.encodeToByteArray()).trimEnd('=')
+        val parsed = requireNotNull(LinkParser.parse("vpn://$encoded#Home%20office"))
+
+        assertEquals("Home office", parsed.name)
+    }
+
+    @Test
+    fun takesTheNameFromTheFragmentOfACompressedLink() {
+        assertEquals("Riga", requireNotNull(LinkParser.parse(link(AMNEZIA_JSON) + "#Riga")).name)
+    }
+
     private fun link(payload: String): String {
         val bytes = payload.encodeToByteArray()
         val deflater = Deflater()
@@ -115,6 +140,28 @@ class AmneziaVpnLinkTest {
             AllowedIPs = 0.0.0.0/0, ::/0
             Endpoint = 129.101.124.211:42874
             PersistentKeepalive = 25-35
+        """.trimIndent()
+
+        val PLAIN_CONFIG = """
+            [Interface]
+            Address = 172.16.0.2/32
+            Address = 2606:4700:110:86a9:a897:c12d:2551:83d4/128
+            PrivateKey = aPrivateKey=
+            MTU = 1280
+            Jc = 4
+            Jmin = 40
+            Jmax = 70
+            H1 = 1
+            H2 = 2
+            H3 = 3
+            H4 = 4
+            I1 = <b 0xf3>
+
+            [Peer]
+            PublicKey = aPublicKey=
+            AllowedIPs = 0.0.0.0/0, ::/0
+            Endpoint = awg.example.com:51820
+            PersistentKeepalive = 25
         """.trimIndent()
 
         val AMNEZIA_JSON = """

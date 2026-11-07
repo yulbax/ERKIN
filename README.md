@@ -52,7 +52,8 @@ Get the latest APKs, the Windows installer and the Linux packages from
   without opening the app.
 - **Wide protocol support.** Import servers from `vless`, `vmess`, `trojan`,
   `shadowsocks`, `hysteria2`, `tuic`, `anytls`, `socks5` and `https` share links, AmneziaWG
-  `vpn://` links, WireGuard, AmneziaWG and OpenVPN config files, or a subscription URL.
+  `vpn://` and `amneziawg://` links, WireGuard, AmneziaWG and OpenVPN config files, or a
+  subscription URL.
 - **Modern transports.** TCP, WebSocket, gRPC, HTTP and HTTPUpgrade, with TLS / Reality
   and configurable uTLS fingerprints.
 - **Desktop extras.** On Windows and Linux apps are matched by process name, and traffic
