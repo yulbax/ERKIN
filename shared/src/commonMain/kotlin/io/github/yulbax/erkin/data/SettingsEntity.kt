@@ -33,8 +33,7 @@ data class SettingsEntity(
     val rulesHintSeen: Boolean = false,
     val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic,
     val chainsHintSeen: Boolean = false,
-    val sortServersByPing: Boolean = true,
-    val tunnelDirectApps: Boolean = false
+    val sortServersByPing: Boolean = true
 ) {
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
         ConnectionType.fromWire(newAppsConnectionType)?.takeIf { it in ConnectionType.FOR_NEW_APPS } ?: platformDefault

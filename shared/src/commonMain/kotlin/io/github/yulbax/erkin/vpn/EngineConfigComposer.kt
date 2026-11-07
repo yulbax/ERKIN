@@ -73,12 +73,7 @@ object EngineConfigComposer {
         val selected = inputs.selected
         if (selected == null && inputs.profiles.isNotEmpty()) fail(VpnFailure.NoServerSelected)
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
-        val routed = RoutedApps.from(
-            foreignApps,
-            hasServers = selected != null,
-            tunnelDirectApps = inputs.settings.tunnelDirectApps,
-            ruleApps = inputs.rules.mapNotNullTo(HashSet()) { it.app }
-        )
+        val routed = RoutedApps.from(foreignApps, hasServers = selected != null)
         if (routed.isEmpty) fail(if (selected == null) VpnFailure.NoServers else VpnFailure.NoRoutedApps)
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
@@ -117,8 +112,7 @@ object EngineConfigComposer {
             routingKey = foreignApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 rules.joinToString("|", prefix = "#") { "${it.app?.let { app -> "$app~" }.orEmpty()}${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
-                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" } +
-                "#${inputs.settings.tunnelDirectApps}",
+                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
             vpnActive = routed.hasVpn
         )
     }

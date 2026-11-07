@@ -74,8 +74,6 @@
     <string name="setup_step_connect">اتصال</string>
     <string name="servers_title">سرورها</string>
     <string name="sort_servers_by_ping">مرتب‌سازی بر اساس پینگ</string>
-    <string name="tunnel_direct_apps">هدایت همه ترافیک از طریق ERKIN</string>
-    <string name="tunnel_direct_apps_warning">برنامه‌های کانال مستقیم هم از ERKIN عبور می‌کنند و قوانین روی آن‌ها اعمال می‌شود. آن‌ها VPN فعال را می‌بینند و برنامه‌های بانکی ممکن است متوجه شوند. اگر هسته هنگ کند یا دوباره وصل شود، اینترنت آن‌ها هم قطع می‌شود. مسدودسازی QUIC روی آن‌ها هم اعمال می‌شود و یافتن دستگاه‌ها در شبکه محلی ممکن است کار نکند.</string>
     <string name="servers_empty">هنوز سروری نیست. لینک پیکربندی یا اشتراک اضافه کنید.</string>
     <string name="server_test_latency">آزمایش تأخیر</string>
     <string name="server_ping_timeout">مهلت تمام شد</string>
@@ -84,12 +82,15 @@
     <string name="dismiss">بستن</string>
     <string name="got_it">متوجه شدم</string>
     <string name="apps_hint_title">نحوهٔ مسیریابی ترافیک</string>
-    <string name="apps_hint_direct">ترافیک مستقیم و خارج از تونل می‌رود</string>
+    <string name="apps_hint_direct">ترافیک مستقیم از طریق ERKIN می‌رود و قوانین اعمال می‌شوند</string>
+    <string name="apps_hint_bypass">ترافیک از کنار ERKIN می‌گذرد و برنامه VPN را نمی‌بیند</string>
     <string name="apps_hint_byedpi">ترافیک از ByeDPI عبور می‌کند</string>
     <string name="apps_hint_vpn">ترافیک از VPN عبور می‌کند · سرور را با › در منوی کانال انتخاب کنید</string>
     <string name="apps_hint_block">تا زمانی که ERKIN متصل است، دسترسی به شبکه وجود ندارد</string>
     <string name="apps_block_note">تا زمانی که ERKIN متصل است</string>
-    <string name="apps_hint_ru_default">برنامه‌های ru/vk/yandex از ابتدا در Direct هستند</string>
+    <string name="apps_bypass_note">برنامه VPN را نمی‌بیند</string>
+    <string name="apps_direct_note">قوانین و «اتصال‌ها»</string>
+    <string name="apps_hint_ru_default">برنامه‌های ru/vk/yandex از ابتدا در Bypass هستند</string>
     <string name="app_server_main">اصلی · %1$s</string>
     <string name="dialog_error">خطا</string>
     <string name="vpn_disconnected">قطع شد</string>
@@ -239,8 +240,7 @@
     <string name="update_check_failed">بررسی به‌روزرسانی ناموفق بود</string>
     <string name="rules_title">قوانین</string>
     <string name="rules_description">قوانین از بالا به پایین بررسی می‌شوند و اولین قانون منطبق اعمال می‌شود. قانون منطبق بر کانال برنامه اولویت دارد.</string>
-    <string name="rules_scope_tunneled">در اندروید قوانین فقط روی برنامه‌های کانال VPN و ByeDPI اعمال می‌شوند: برنامه‌های کانال مستقیم از ERKIN عبور نمی‌کنند.</string>
-    <string name="rules_scope_tunneled_all_apps">همه ترافیک از ERKIN عبور می‌کند، بنابراین قوانین روی برنامه‌های کانال مستقیم هم اعمال می‌شوند.</string>
+    <string name="rules_scope_tunneled">در اندروید قوانین روی برنامه‌های همه کانال‌ها به جز Bypass اعمال می‌شوند: برنامه‌های Bypass کاملاً از کنار ERKIN می‌گذرند.</string>
     <string name="rules_scope_all">قوانین روی تمام ترافیک این رایانه اعمال می‌شوند.</string>
     <string name="rules_empty">هنوز قانونی وجود ندارد. ترافیک از کانال برنامه پیروی می‌کند.</string>
     <string name="add_rule">افزودن</string>
@@ -355,6 +355,7 @@
     <string name="connections_purpose_request">بررسی‌ها و دانلودها</string>
     <string name="rule_app">برنامه</string>
     <string name="rule_app_all">همهٔ برنامه‌ها</string>
+    <string name="rule_app_bypass_hint">Bypass: قوانین اعمال نمی‌شوند</string>
     <string name="rule_app_search">جستجوی برنامه</string>
     <string name="rule_app_system">برنامه‌های سیستمی</string>
     <string name="connections_rule_site">قانون برای کل سایت (*.%1$s)</string>

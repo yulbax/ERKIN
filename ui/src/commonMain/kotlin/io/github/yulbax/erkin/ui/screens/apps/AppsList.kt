@@ -148,6 +148,7 @@ private fun AppRow(
                 onClick = { menuOpen = true }
             )
             ChannelMenu(
+                channels = appChannelChoices,
                 expanded = menuOpen && browsing,
                 current = app.connectionType,
                 vpnEnabled = choices.vpnEnabled,

@@ -62,7 +62,9 @@ expect object AppLocale {
 
 expect val supportsSystemAppsFilter: Boolean
 
-expect val rulesCoverAllApps: Boolean
+expect val appsCanBypass: Boolean
+
+val platformChannels: List<ConnectionType> = ConnectionType.entries.filter { appsCanBypass || it != ConnectionType.BYPASS }
 
 expect val revealInFolder: ((path: String) -> Unit)?
 

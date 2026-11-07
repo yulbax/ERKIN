@@ -2,6 +2,8 @@ package io.github.yulbax.erkin.ui.screens.apps
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -48,17 +50,40 @@ import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.ui
 import io.github.yulbax.erkin.ui.res.*
+import io.github.yulbax.erkin.ui.platform.appsCanBypass
+import io.github.yulbax.erkin.ui.platform.platformChannels
+import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.ui.theme.LocalDarkTheme
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import io.github.yulbax.erkin.ui.viewmodel.ServerLabel
 import org.jetbrains.compose.resources.stringResource
 
-private val MENU_ORDER = listOf(ConnectionType.DIRECT, ConnectionType.BYEDPI, ConnectionType.VPN, ConnectionType.BLOCK)
+internal class ChannelChoice(val type: ConnectionType, val note: StringResource? = null)
+
+private val BLOCK_CHOICE = ChannelChoice(ConnectionType.BLOCK, Res.string.apps_block_note)
+
+internal val appChannelChoices: List<ChannelChoice> = if (appsCanBypass) {
+    listOf(
+        ChannelChoice(ConnectionType.BYPASS, Res.string.apps_bypass_note),
+        ChannelChoice(ConnectionType.DIRECT, Res.string.apps_direct_note),
+        ChannelChoice(ConnectionType.BYEDPI),
+        ChannelChoice(ConnectionType.VPN),
+        BLOCK_CHOICE
+    )
+} else {
+    listOf(ChannelChoice(ConnectionType.DIRECT), ChannelChoice(ConnectionType.BYEDPI), ChannelChoice(ConnectionType.VPN), BLOCK_CHOICE)
+}
+
+internal val ruleChannelChoices: List<ChannelChoice> =
+    listOf(ChannelChoice(ConnectionType.DIRECT), ChannelChoice(ConnectionType.BYEDPI), ChannelChoice(ConnectionType.VPN), BLOCK_CHOICE)
+
 private val CHANNEL_WIDTH = 112.dp
 private val CHANNEL_MAX_WIDTH = 140.dp
 private val CHANNEL_HEIGHT = 40.dp
 private val BULK_HEIGHT = 40.dp
 private val BULK_SERVER_WIDTH = 32.dp
+private val BULK_SPACING = 2.dp
+private val BULK_LABELED_MIN_WIDTH = 64.dp
 
 private const val TINT_ALPHA_DARK = 0.2f
 private const val TINT_ALPHA_LIGHT = 0.14f
@@ -68,7 +93,7 @@ private class ChannelAccent(val dark: Color, val light: Color)
 private val ConnectionType.accent: ChannelAccent?
     get() = when (this) {
         ConnectionType.BLOCK -> ChannelAccent(dark = Color(0xFFF2554D), light = Color(0xFFC62828))
-        ConnectionType.DIRECT -> null
+        ConnectionType.BYPASS, ConnectionType.DIRECT -> null
         ConnectionType.BYEDPI -> ChannelAccent(dark = Color(0xFF1FA3CF), light = Color(0xFF0E7490))
         ConnectionType.VPN -> ChannelAccent(dark = Color(0xFF2BAE5A), light = Color(0xFF15803D))
     }
@@ -148,6 +173,7 @@ internal fun ChannelButton(
 
 @Composable
 internal fun ChannelMenu(
+    channels: List<ChannelChoice>,
     expanded: Boolean,
     current: ConnectionType?,
     vpnEnabled: Boolean,
@@ -157,15 +183,16 @@ internal fun ChannelMenu(
     onChooseServer: () -> Unit
 ) {
     AppDropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        MENU_ORDER.forEach { type ->
+        channels.forEach { choice ->
+            val type = choice.type
             if (type == ConnectionType.BLOCK) HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             DropdownMenuItem(
                 text = {
                     Column {
                         Text(type.label())
-                        if (type == ConnectionType.BLOCK) {
+                        if (choice.note != null) {
                             Text(
-                                stringResource(Res.string.apps_block_note),
+                                stringResource(choice.note),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -252,11 +279,31 @@ internal fun BulkChannelBar(
     onChooseServer: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val types = ConnectionType.entries
+    val types = platformChannels
     val lastIndex = if (canChooseServer) types.size else types.lastIndex
+    BoxWithConstraints(modifier) {
+        val serverWidth = if (canChooseServer) BULK_SERVER_WIDTH + BULK_SPACING else 0.dp
+        val labeled = (maxWidth - serverWidth - BULK_SPACING * (types.size - 1)) / types.size >= BULK_LABELED_MIN_WIDTH
+        BulkButtons(types, lastIndex, labeled, enabled, blockEnabled, vpnEnabled, canChooseServer, onSelect, onChooseServer)
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun BulkButtons(
+    types: List<ConnectionType>,
+    lastIndex: Int,
+    labeled: Boolean,
+    enabled: Boolean,
+    blockEnabled: Boolean,
+    vpnEnabled: Boolean,
+    canChooseServer: Boolean,
+    onSelect: (ConnectionType) -> Unit,
+    onChooseServer: () -> Unit
+) {
     Row(
-        modifier = modifier.height(BULK_HEIGHT),
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+        modifier = Modifier.fillMaxWidth().height(BULK_HEIGHT),
+        horizontalArrangement = Arrangement.spacedBy(BULK_SPACING)
     ) {
         types.forEachIndexed { index, type ->
             ElevatedToggleButton(
@@ -267,9 +314,11 @@ internal fun BulkChannelBar(
                 contentPadding = PaddingValues(horizontal = 2.dp),
                 modifier = Modifier.weight(1f).fillMaxHeight()
             ) {
-                ConnectionTypeIcon(type, Modifier.size(16.dp))
-                Spacer(Modifier.width(4.dp))
-                Text(type.label(), style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
+                ConnectionTypeIcon(type, Modifier.size(if (labeled) 16.dp else 20.dp))
+                if (labeled) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(type.label(), style = MaterialTheme.typography.labelMedium, maxLines = 1, softWrap = false)
+                }
             }
         }
         if (canChooseServer) {

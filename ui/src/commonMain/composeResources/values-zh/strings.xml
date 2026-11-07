@@ -74,8 +74,6 @@
     <string name="setup_step_connect">连接</string>
     <string name="servers_title">服务器</string>
     <string name="sort_servers_by_ping">按延迟排序</string>
-    <string name="tunnel_direct_apps">通过 ERKIN 转发所有流量</string>
-    <string name="tunnel_direct_apps_warning">直连通道中的应用也会经过 ERKIN，规则将对它们生效。它们会看到已启用的 VPN，银行应用可能会察觉。如果核心卡死或正在重新连接，它们也会断网。QUIC 阻止同样对它们生效，局域网设备发现可能无法使用。</string>
     <string name="servers_empty">暂无服务器。请添加配置链接或订阅。</string>
     <string name="server_test_latency">测试延迟</string>
     <string name="server_ping_timeout">超时</string>
@@ -84,12 +82,15 @@
     <string name="dismiss">关闭</string>
     <string name="got_it">知道了</string>
     <string name="apps_hint_title">流量如何分流</string>
-    <string name="apps_hint_direct">流量直连，不经过隧道</string>
+    <string name="apps_hint_direct">流量经 ERKIN 直连，规则生效</string>
+    <string name="apps_hint_bypass">流量绕过 ERKIN，应用看不到 VPN</string>
     <string name="apps_hint_byedpi">流量经由 ByeDPI</string>
     <string name="apps_hint_vpn">流量经由 VPN · 在通道菜单中点 › 选择服务器</string>
     <string name="apps_hint_block">ERKIN 连接期间无法访问网络</string>
     <string name="apps_block_note">ERKIN 连接期间</string>
-    <string name="apps_hint_ru_default">ru/vk/yandex 应用默认归入 Direct</string>
+    <string name="apps_bypass_note">应用看不到 VPN</string>
+    <string name="apps_direct_note">规则和「连接」</string>
+    <string name="apps_hint_ru_default">ru/vk/yandex 应用默认归入 Bypass</string>
     <string name="app_server_main">主服务器 · %1$s</string>
     <string name="dialog_error">错误</string>
     <string name="vpn_disconnected">已断开</string>
@@ -236,8 +237,7 @@
     <string name="update_check_failed">无法检查更新</string>
     <string name="rules_title">规则</string>
     <string name="rules_description">规则从上到下依次检查，第一条匹配的规则生效。匹配的规则优先于应用所在的通道。</string>
-    <string name="rules_scope_tunneled">在 Android 上，规则只作用于 VPN 和 ByeDPI 通道中的应用：直连通道中的应用完全不经过 ERKIN。</string>
-    <string name="rules_scope_tunneled_all_apps">所有流量都经过 ERKIN，因此规则也作用于直连通道中的应用。</string>
+    <string name="rules_scope_tunneled">在 Android 上，规则作用于除 Bypass 外所有通道中的应用：Bypass 应用完全绕过 ERKIN。</string>
     <string name="rules_scope_all">规则作用于这台电脑的全部流量。</string>
     <string name="rules_empty">还没有规则。流量按应用所在的通道走。</string>
     <string name="add_rule">添加</string>
@@ -351,6 +351,7 @@
     <string name="connections_purpose_request">检查与下载</string>
     <string name="rule_app">应用</string>
     <string name="rule_app_all">全部应用</string>
+    <string name="rule_app_bypass_hint">Bypass：规则不生效</string>
     <string name="rule_app_search">搜索应用</string>
     <string name="rule_app_system">系统应用</string>
     <string name="connections_rule_site">整个网站的规则（*.%1$s）</string>

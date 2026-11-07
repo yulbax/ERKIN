@@ -14,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ByeDpiSiteListsTest {
-    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
 
     @After
     fun tearDown() {
@@ -25,7 +25,7 @@ class ByeDpiSiteListsTest {
     fun aFreshInstallEnablesTheListsOfItsLanguage() = runBlocking {
         assertEquals(listOf("YouTube", "Google Video"), ByeDpiSiteLists(database) { "ru" }.active().map { it.name })
 
-        val turkish = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        val turkish = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         try {
             assertEquals(listOf("Discord", "Türkiye"), ByeDpiSiteLists(turkish) { "tr" }.active().map { it.name })
         } finally {
@@ -89,7 +89,7 @@ class ByeDpiSiteListsTest {
         source.setActive(discord.id, true)
         val backup = source.backup()
 
-        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         try {
             val target = ByeDpiSiteLists(fresh) { "tr" }
             fresh.transaction { target.restoreWithinTransaction(backup) }

@@ -75,11 +75,12 @@ class ConnectionLedgerTest {
     }
 
     @Test
-    fun aDirectAppWithItsOwnRulesIsTunneledSoTheRulesSeeIt() {
-        val apps = listOf(App("org.direct", "Direct", false, ConnectionType.DIRECT), App("org.other", "Other", false, ConnectionType.DIRECT))
-        val routed = RoutedApps.from(apps, ruleApps = setOf("org.direct"))
+    fun directAppsAreTunneledAndBypassAppsAreNot() {
+        val apps = listOf(App("org.direct", "Direct", false, ConnectionType.DIRECT), App("org.bank", "Bank", false, ConnectionType.BYPASS))
+        val routed = RoutedApps.from(apps)
 
         assertEquals(listOf("org.direct"), routed.directPackages)
+        assertEquals(listOf("org.direct"), routed.tunneledPackages)
     }
 
     private companion object {

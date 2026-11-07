@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
@@ -27,10 +28,11 @@ class RuleSetsViewModel(
     private val commandBus: VpnCommandBus,
     profileRepository: ProfileRepository,
     vpnStateRepository: VpnStateRepository,
+    appDao: AppDao,
     installedApps: InstalledAppsSource
 ) : ViewModel() {
 
-    val apps: StateFlow<List<RuleAppChoice>> = ruleAppChoices(installedApps)
+    val apps: StateFlow<List<RuleAppChoice>> = ruleAppChoices(installedApps, appDao)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)

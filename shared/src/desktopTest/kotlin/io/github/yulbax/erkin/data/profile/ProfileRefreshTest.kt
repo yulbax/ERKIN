@@ -27,7 +27,7 @@ class ProfileRefreshTest {
 
     @Before
     fun setUp() {
-        database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         repository = ProfileRepository(database, database.profileDao(), subscription, log)
     }
 

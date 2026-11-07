@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import androidx.room.Room
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.ConfigBackupRepository
@@ -47,7 +48,7 @@ val desktopModule = module {
     single { FileAppLog(DesktopPaths.logFile) { level, tag, text -> println("${level.symbol}/$tag: $text") } }
     single<AppLog> { get<FileAppLog>() }
 
-    single { AppDatabase.build(Room.databaseBuilder<AppDatabase>(name = DesktopPaths.database.absolutePath)) }
+    single { AppDatabase.build(Room.databaseBuilder<AppDatabase>(name = DesktopPaths.database.absolutePath), appsCanBypass) }
     single { get<AppDatabase>().appDao() }
     single { get<AppDatabase>().settingsDao() }
     single { get<AppDatabase>().profileDao() }
@@ -70,7 +71,7 @@ val desktopModule = module {
     single { DownloadRoute() }
     single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get(), DesktopDeviceIdentity.load()) }
     single { ProfileRepository(get(), get(), get(), get()) }
-    single { ConfigBackupRepository(get(), get(), get()) }
+    single { ConfigBackupRepository(get(), get(), get(), appsCanBypass) }
     single { RoutingRuleRepository(get()) }
     single<VpnSessionStore> { RoomVpnSessionStore(get(), get()) }
 

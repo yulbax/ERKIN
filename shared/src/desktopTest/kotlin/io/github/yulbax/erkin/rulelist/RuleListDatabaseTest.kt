@@ -21,7 +21,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RuleListDatabaseTest {
-    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
     private val root = Files.createTempDirectory("rule-lists").toFile()
     private val store = FakeStore(root)
     private val lists = RuleListDatabase(store, database.ruleListDao())

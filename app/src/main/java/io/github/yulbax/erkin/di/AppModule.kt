@@ -43,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import io.github.yulbax.erkin.vpn.AndroidTestNetworkSource
 import io.github.yulbax.erkin.vpn.core.TestNetworkSource
+import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -55,7 +56,8 @@ class AppModule {
         Room.databaseBuilder<AppDatabase>(
             context = context.applicationContext,
             name = context.getDatabasePath(AppDatabase.FILE_NAME).absolutePath
-        )
+        ),
+        appsCanBypass = appsCanBypass
     )
 
     @Single
@@ -134,7 +136,7 @@ class AppModule {
         database: AppDatabase,
         profileRepository: ProfileRepository,
         siteLists: ByeDpiSiteLists
-    ): ConfigBackupRepository = ConfigBackupRepository(database, profileRepository, siteLists)
+    ): ConfigBackupRepository = ConfigBackupRepository(database, profileRepository, siteLists, appsCanBypass)
 
     @Single
     fun subscriptionProfileSource(context: Context, route: DownloadRoute): SubscriptionProfileSource =

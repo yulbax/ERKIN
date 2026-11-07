@@ -438,10 +438,11 @@ internal val RuleTarget.channel: ConnectionType
         RuleTarget.BLOCK -> ConnectionType.BLOCK
     }
 
-internal val ConnectionType.ruleTarget: RuleTarget
+internal val ConnectionType.ruleTarget: RuleTarget?
     get() = when (this) {
         ConnectionType.VPN -> RuleTarget.VPN
         ConnectionType.BYEDPI -> RuleTarget.BYEDPI
         ConnectionType.DIRECT -> RuleTarget.DIRECT
         ConnectionType.BLOCK -> RuleTarget.BLOCK
+        ConnectionType.BYPASS -> null
     }

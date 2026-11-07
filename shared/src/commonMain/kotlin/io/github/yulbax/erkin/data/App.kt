@@ -18,10 +18,10 @@ fun isExecutablePath(id: String): Boolean = '/' in id || '\\' in id
 fun executableName(id: String): String = id.substringAfterLast('/').substringAfterLast('\\')
 
 enum class ConnectionType(val wire: String, val needsServer: Boolean = false) {
-    BLOCK("BLOCK"), DIRECT("DIRECT"), BYEDPI("BYEDPI"), VPN("VPN", needsServer = true);
+    BLOCK("BLOCK"), BYPASS("BYPASS"), DIRECT("DIRECT"), BYEDPI("BYEDPI"), VPN("VPN", needsServer = true);
 
     companion object {
-        val FOR_NEW_APPS: List<ConnectionType> = listOf(DIRECT, BYEDPI, VPN)
+        val FOR_NEW_APPS: List<ConnectionType> = listOf(BYPASS, DIRECT, BYEDPI, VPN)
 
         fun fromWire(value: String): ConnectionType? = entries.firstOrNull { it.wire == value }
     }
@@ -42,13 +42,15 @@ data class RoutedApps(
     val runsWithoutServer: Boolean get() = hasByeDpi || hasBlocked
 
     companion object {
-        fun from(apps: List<App>, hasServers: Boolean = true, tunnelDirectApps: Boolean = false, ruleApps: Set<String> = emptySet()): RoutedApps {
-            val direct = if (hasServers) apps.packagesOf(ConnectionType.DIRECT) else apps.packagesOf(ConnectionType.DIRECT) + apps.packagesOf(ConnectionType.VPN)
+        fun from(apps: List<App>, hasServers: Boolean = true): RoutedApps {
+            val vpn = apps.packagesOf(ConnectionType.VPN)
+            val bypass = apps.packagesOf(ConnectionType.BYPASS) + if (hasServers) emptyList() else vpn
+            val direct = apps.packagesOf(ConnectionType.DIRECT)
             return RoutedApps(
                 byeDpiPackages = apps.packagesOf(ConnectionType.BYEDPI),
-                vpnPackages = if (hasServers) apps.packagesOf(ConnectionType.VPN) else emptyList(),
-                directPaths = direct.filter(::isExecutablePath),
-                directPackages = direct.filterNot(::isExecutablePath).filter { tunnelDirectApps || it in ruleApps },
+                vpnPackages = if (hasServers) vpn else emptyList(),
+                directPaths = (direct + bypass).filter(::isExecutablePath),
+                directPackages = direct.filterNot(::isExecutablePath),
                 blockedPackages = apps.packagesOf(ConnectionType.BLOCK)
             )
         }

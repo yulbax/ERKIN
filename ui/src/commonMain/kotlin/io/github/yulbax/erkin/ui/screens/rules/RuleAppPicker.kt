@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,6 +58,7 @@ internal fun RuleAppPickerSheet(
                 AppChoiceRow(
                     icon = { AllAppsIcon(40.dp, Modifier.padding(end = 12.dp)) },
                     name = stringResource(Res.string.rule_app_all),
+                    hint = null,
                     checked = current == null,
                     onClick = { close { onPick(null) } }
                 )
@@ -78,6 +80,7 @@ internal fun RuleAppPickerSheet(
                 AppChoiceRow(
                     icon = { AppIcon(app.packageName, app.path, app.name, 40.dp, Modifier.padding(end = 12.dp)) },
                     name = app.name,
+                    hint = stringResource(Res.string.rule_app_bypass_hint).takeIf { app.bypassed },
                     checked = current == app.packageName,
                     onClick = { close { onPick(app.packageName) } }
                 )
@@ -87,7 +90,7 @@ internal fun RuleAppPickerSheet(
 }
 
 @Composable
-private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, checked: Boolean, onClick: () -> Unit) {
+private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, hint: String?, checked: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
@@ -96,7 +99,12 @@ private fun AppChoiceRow(icon: @Composable () -> Unit, name: String, checked: Bo
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             icon()
-            Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (hint != null) {
+                    Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             if (checked) {
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))

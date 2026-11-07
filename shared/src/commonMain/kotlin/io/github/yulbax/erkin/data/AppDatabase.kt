@@ -32,7 +32,7 @@ import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
-    version = 25,
+    version = 26,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -260,9 +260,24 @@ abstract class AppDatabase : RoomDatabase() {
             }
         )
 
-        fun build(builder: Builder<AppDatabase>): AppDatabase =
+        fun migrations(appsCanBypass: Boolean): Array<Migration> = MIGRATIONS + bypassMigration(appsCanBypass)
+
+        private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
+            override fun migrate(connection: SQLiteConnection) {
+                if (appsCanBypass) {
+                    val excluded = "connectionType = 'DIRECT' AND IFNULL((SELECT tunnelDirectApps FROM settings LIMIT 1), 0) = 0 " +
+                        "AND packageName NOT IN (SELECT app FROM routing_rules WHERE app IS NOT NULL)"
+                    connection.execSQL("UPDATE apps SET connectionType = 'BYPASS' WHERE $excluded")
+                    connection.execSQL("UPDATE pending_apps SET connectionType = 'BYPASS' WHERE $excluded")
+                    connection.execSQL("UPDATE settings SET newAppsConnectionType = 'BYPASS' WHERE newAppsConnectionType = 'DIRECT' AND tunnelDirectApps = 0")
+                }
+                connection.execSQL("ALTER TABLE settings DROP COLUMN tunnelDirectApps")
+            }
+        }
+
+        fun build(builder: Builder<AppDatabase>, appsCanBypass: Boolean): AppDatabase =
             builder
-                .addMigrations(*MIGRATIONS)
+                .addMigrations(*migrations(appsCanBypass))
                 .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)

@@ -209,7 +209,7 @@ actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.VPN
 
 actual val supportsSystemAppsFilter: Boolean = true
 
-actual val rulesCoverAllApps: Boolean = false
+actual val appsCanBypass: Boolean = true
 
 actual val scrollbarEdgeInset: Dp = 0.dp
 

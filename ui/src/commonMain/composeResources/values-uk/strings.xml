@@ -74,8 +74,6 @@
     <string name="setup_step_connect">Підключитися</string>
     <string name="servers_title">Сервери</string>
     <string name="sort_servers_by_ping">Сортувати за пінгом</string>
-    <string name="tunnel_direct_apps">Спрямовувати весь трафік через ERKIN</string>
-    <string name="tunnel_direct_apps_warning">Застосунки в каналі Direct теж ітимуть через ERKIN, і правила почнуть діяти на них. Вони побачать активний VPN, банківські застосунки можуть це помітити. Якщо ядро зависне або перепідключається, інтернет зникне і в них. Блокування QUIC теж діятиме на них, а пошук пристроїв у локальній мережі може перестати працювати.</string>
     <string name="servers_empty">Серверів поки немає. Додайте посилання-конфіг або підписку.</string>
     <string name="server_test_latency">Перевірити затримку</string>
     <string name="server_ping_timeout">тайм-аут</string>
@@ -84,12 +82,15 @@
     <string name="dismiss">Закрити</string>
     <string name="got_it">Зрозуміло</string>
     <string name="apps_hint_title">Як спрямовується трафік</string>
-    <string name="apps_hint_direct">трафік іде напряму поза тунелем</string>
+    <string name="apps_hint_direct">трафік іде через ERKIN напряму, правила працюють</string>
+    <string name="apps_hint_bypass">трафік іде повз ERKIN, застосунок не бачить VPN</string>
     <string name="apps_hint_byedpi">трафік іде через ByeDPI</string>
     <string name="apps_hint_vpn">трафік іде через VPN · сервер вибирається кнопкою › у меню каналу</string>
     <string name="apps_hint_block">немає доступу до мережі, доки ERKIN підключено</string>
     <string name="apps_block_note">Доки ERKIN підключено</string>
-    <string name="apps_hint_ru_default">Застосунки ru/vk/yandex одразу потрапляють у Direct</string>
+    <string name="apps_bypass_note">Застосунок не бачить VPN</string>
+    <string name="apps_direct_note">Правила і «З’єднання»</string>
+    <string name="apps_hint_ru_default">Застосунки ru/vk/yandex одразу потрапляють у Bypass</string>
     <string name="app_server_main">Основний · %1$s</string>
     <string name="dialog_error">Помилка</string>
     <string name="vpn_disconnected">Відключено</string>
@@ -245,8 +246,7 @@
     <string name="update_check_failed">Не вдалося перевірити оновлення</string>
     <string name="rules_title">Правила</string>
     <string name="rules_description">Правила перевіряються згори донизу, спрацьовує перше відповідне. Відповідне правило важливіше за канал застосунку.</string>
-    <string name="rules_scope_tunneled">На Android правила діють лише на застосунки в каналах VPN і ByeDPI: застосунки в каналі Direct ідуть повз ERKIN.</string>
-    <string name="rules_scope_tunneled_all_apps">Весь трафік іде через ERKIN, тому правила діють і на застосунки в каналі Direct.</string>
+    <string name="rules_scope_tunneled">На Android правила діють на застосунки в усіх каналах, крім Bypass: такі застосунки йдуть повз ERKIN.</string>
     <string name="rules_scope_all">Правила діють на весь трафік комп’ютера.</string>
     <string name="rules_empty">Правил поки немає. Трафік іде каналом застосунку.</string>
     <string name="add_rule">Додати</string>
@@ -363,6 +363,7 @@
     <string name="connections_purpose_request">Перевірки й завантаження</string>
     <string name="rule_app">Застосунок</string>
     <string name="rule_app_all">Усі застосунки</string>
+    <string name="rule_app_bypass_hint">Bypass: правила не діють</string>
     <string name="rule_app_search">Пошук застосунку</string>
     <string name="rule_app_system">Системні застосунки</string>
     <string name="connections_rule_site">Правило для всього сайту (*.%1$s)</string>

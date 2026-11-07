@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import io.github.yulbax.erkin.ui.platform.appsCanBypass
+import io.github.yulbax.erkin.ui.platform.platformChannels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,13 +60,15 @@ internal fun AppsHint(onDismiss: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(8.dp))
-            ConnectionType.entries.forEach { TypeLine(it, stringResource(it.ui.hint)) }
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = stringResource(Res.string.apps_hint_ru_default),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+            platformChannels.forEach { TypeLine(it, stringResource(it.ui.hint)) }
+            if (appsCanBypass) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = stringResource(Res.string.apps_hint_ru_default),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End

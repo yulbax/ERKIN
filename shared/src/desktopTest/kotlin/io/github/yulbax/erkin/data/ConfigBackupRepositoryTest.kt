@@ -23,11 +23,12 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ConfigBackupRepositoryTest {
-    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
     private val repository = ConfigBackupRepository(
         database,
         ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog),
-        ByeDpiSiteLists(database)
+        ByeDpiSiteLists(database),
+        appsCanBypass = true
     )
 
     @After
@@ -83,10 +84,10 @@ class ConfigBackupRepositoryTest {
         assertEquals(homeId, requireNotNull(BackupCodec.decode(repository.export(withProfiles))).rules?.single()?.serverId)
         assertNull(requireNotNull(BackupCodec.decode(repository.export(rulesOnly))).rules?.single()?.serverId)
 
-        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         try {
             fresh.profileDao().append(ProfileEntity(name = "Other", type = "vless", link = "vless://id@other.example:443?security=tls#Other", outboundJson = "{}"))
-            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh), appsCanBypass = true)
             target.apply(requireNotNull(BackupCodec.decode(repository.export(withProfiles))), withProfiles)
 
             val home = fresh.profileDao().getAll().first { it.name == "Home" }
@@ -170,10 +171,10 @@ class ConfigBackupRepositoryTest {
         val only = BackupSelection(settings = false, apps = false, profiles = true, rules = false)
         val exported = requireNotNull(BackupCodec.decode(repository.export(only)))
 
-        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         try {
             fresh.profileDao().append(ProfileEntity(name = "Other", type = "vless", link = "vless://id@other.example:443?security=tls#Other", outboundJson = "{}"))
-            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh), appsCanBypass = true)
             val result = target.apply(exported, only)
             val imported = fresh.profileDao().getAll()
             val byName = imported.associateBy { it.name }
@@ -205,10 +206,10 @@ class ConfigBackupRepositoryTest {
         val all = BackupSelection(settings = false, apps = true, profiles = true, rules = false)
         val exported = requireNotNull(BackupCodec.decode(repository.export(all)))
 
-        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         try {
             fresh.appDao().upsertApp(App("org.bound", "Bound", isSystemApp = false, connectionType = ConnectionType.DIRECT))
-            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh))
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh), appsCanBypass = true)
             val result = target.apply(exported, all)
             val home = fresh.profileDao().getAll().single { it.name == "Home" }
 

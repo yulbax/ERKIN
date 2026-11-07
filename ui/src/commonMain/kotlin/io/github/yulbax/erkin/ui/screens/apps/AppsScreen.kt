@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import io.github.yulbax.erkin.ui.platform.platformChannels
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -214,7 +215,7 @@ private fun ChannelFilter(apps: List<AppInfo>, choices: ServerChoices, selected:
             onClick = { onSelect(null) },
             label = { Text("${stringResource(Res.string.apps_filter_all)} ${apps.size}") }
         )
-        ConnectionType.entries.forEach { type ->
+        platformChannels.forEach { type ->
             val filter = AppFilter.Channel(type)
             FilterChip(
                 selected = selected == filter,

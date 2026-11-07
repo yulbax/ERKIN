@@ -100,7 +100,7 @@ class AppDatabaseUpgradeTest {
         assertEquals(profile.id.toInt(), profile.position)
     }
 
-    private fun open(): AppDatabase = AppDatabase.build(Room.databaseBuilder<AppDatabase>(name = dbFile.absolutePath))
+    private fun open(): AppDatabase = AppDatabase.build(Room.databaseBuilder<AppDatabase>(name = dbFile.absolutePath), appsCanBypass = true)
 
     private suspend fun AppDatabase.useDatabase(block: suspend (AppDatabase) -> Unit) {
         try {

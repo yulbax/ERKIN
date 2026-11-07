@@ -183,7 +183,7 @@ actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.DIRECT
 
 actual val supportsSystemAppsFilter: Boolean = false
 
-actual val rulesCoverAllApps: Boolean = true
+actual val appsCanBypass: Boolean = false
 
 actual val scrollbarEdgeInset: Dp = 6.dp
 

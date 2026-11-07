@@ -53,10 +53,11 @@ import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.groupItemShape
 import io.github.yulbax.erkin.ui.components.HintBanner
 import io.github.yulbax.erkin.ui.components.SelectionBar
-import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
+import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ChannelButton
 import io.github.yulbax.erkin.ui.screens.apps.ChannelMenu
+import io.github.yulbax.erkin.ui.screens.apps.ruleChannelChoices
 import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.screens.apps.menuServer
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
@@ -74,7 +75,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel()) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
-    val tunnelDirectApps by viewModel.tunnelDirectApps.collectAsStateWithLifecycle()
     val listStates by viewModel.listStates.collectAsStateWithLifecycle()
     val choices by viewModel.serverChoices.collectAsStateWithLifecycle()
     val apps by viewModel.apps.collectAsStateWithLifecycle()
@@ -111,11 +111,7 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
 
     val hint = stringResource(Res.string.rules_description) + "\n\n" +
         stringResource(
-            when {
-                rulesCoverAllApps -> Res.string.rules_scope_all
-                tunnelDirectApps -> Res.string.rules_scope_tunneled_all_apps
-                else -> Res.string.rules_scope_tunneled
-            }
+            if (appsCanBypass) Res.string.rules_scope_tunneled else Res.string.rules_scope_all
         )
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -341,6 +337,7 @@ private fun RuleRow(
                     onClick = { menuOpen = true }
                 )
                 ChannelMenu(
+                    channels = ruleChannelChoices,
                     expanded = menuOpen,
                     current = target.channel,
                     vpnEnabled = true,
@@ -348,7 +345,7 @@ private fun RuleRow(
                     onDismiss = { menuOpen = false },
                     onSelect = { type ->
                         menuOpen = false
-                        if (type != target.channel) onTargetChange(type.ruleTarget)
+                        if (type != target.channel) type.ruleTarget?.let(onTargetChange)
                     },
                     onChooseServer = {
                         menuOpen = false

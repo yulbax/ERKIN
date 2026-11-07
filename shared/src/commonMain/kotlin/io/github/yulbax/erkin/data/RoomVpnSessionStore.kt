@@ -34,9 +34,8 @@ class RoomVpnSessionStore(
             database.profileDao().observeAll(),
             database.profileDao().observeSelected(),
             database.appDao().getAllApps(),
-            database.routingRuleDao().observeAll(),
-            database.settingsDao().observeSettings().map { it?.tunnelDirectApps == true }
-        ) { profiles, selected, apps, rules, tunnelDirectApps -> listOf(profiles, selected, apps, rules, tunnelDirectApps) }
+            database.routingRuleDao().observeAll()
+        ) { profiles, selected, apps, rules -> listOf(profiles, selected, apps, rules) }
             .distinctUntilChanged()
             .map { }
 

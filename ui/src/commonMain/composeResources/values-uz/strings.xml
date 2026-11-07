@@ -74,8 +74,6 @@
     <string name="setup_step_connect">Ulaning</string>
     <string name="servers_title">Serverlar</string>
     <string name="sort_servers_by_ping">Ping boʻyicha saralash</string>
-    <string name="tunnel_direct_apps">Barcha trafikni ERKIN orqali yoʻnaltirish</string>
-    <string name="tunnel_direct_apps_warning">Toʻgʻridan-toʻgʻri kanaldagi ilovalar ham ERKIN orqali oʻtadi va qoidalar ularga ham taʼsir qiladi. Ular faol VPNni koʻradi, bank ilovalari buni sezishi mumkin. Yadro qotib qolsa yoki qayta ulansa, ularda ham internet uziladi. QUIC bloklash ularga ham taʼsir qiladi, mahalliy tarmoqdagi qurilmalarni topish ishlamasligi mumkin.</string>
     <string name="servers_empty">Hozircha serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshing.</string>
     <string name="server_test_latency">Kechikishni tekshirish</string>
     <string name="server_ping_timeout">vaqt tugadi</string>
@@ -84,12 +82,15 @@
     <string name="dismiss">Yopish</string>
     <string name="got_it">Tushunarli</string>
     <string name="apps_hint_title">Trafik qanday yoʻnaltiriladi</string>
-    <string name="apps_hint_direct">trafik tunneldan tashqarida, toʻgʻridan-toʻgʻri boradi</string>
+    <string name="apps_hint_direct">trafik ERKIN orqali toʻgʻridan-toʻgʻri boradi, qoidalar ishlaydi</string>
+    <string name="apps_hint_bypass">trafik ERKIN’ni chetlab oʻtadi, ilova VPN’ni koʻrmaydi</string>
     <string name="apps_hint_byedpi">trafik ByeDPI orqali boradi</string>
     <string name="apps_hint_vpn">trafik VPN orqali boradi · server kanal menyusidagi › tugmasi bilan tanlanadi</string>
     <string name="apps_hint_block">ERKIN ulangan paytda tarmoqqa kirish yoʻq</string>
     <string name="apps_block_note">ERKIN ulangan paytda</string>
-    <string name="apps_hint_ru_default">ru/vk/yandex ilovalari Toʻgʻridan-toʻgʻri kanalda boshlanadi</string>
+    <string name="apps_bypass_note">Ilova VPN’ni koʻrmaydi</string>
+    <string name="apps_direct_note">Qoidalar va «Ulanishlar»</string>
+    <string name="apps_hint_ru_default">ru/vk/yandex ilovalari Bypass kanalida boshlanadi</string>
     <string name="app_server_main">Asosiy · %1$s</string>
     <string name="dialog_error">Xato</string>
     <string name="vpn_disconnected">Uzilgan</string>
@@ -239,8 +240,7 @@
     <string name="update_check_failed">Yangilanishlarni tekshirib boʻlmadi</string>
     <string name="rules_title">Qoidalar</string>
     <string name="rules_description">Qoidalar yuqoridan pastga tekshiriladi va birinchi mos kelgani ishlaydi. Mos kelgan qoida ilova kanalidan ustun turadi.</string>
-    <string name="rules_scope_tunneled">Android’da qoidalar faqat VPN va ByeDPI kanallaridagi ilovalarga taʼsir qiladi: Toʻgʻridan-toʻgʻri kanaldagi ilovalar ERKIN’ni butunlay chetlab oʻtadi.</string>
-    <string name="rules_scope_tunneled_all_apps">Barcha trafik ERKIN orqali oʻtadi, shuning uchun qoidalar Toʻgʻridan-toʻgʻri kanaldagi ilovalarga ham taʼsir qiladi.</string>
+    <string name="rules_scope_tunneled">Android’da qoidalar Bypass’dan boshqa barcha kanallardagi ilovalarga taʼsir qiladi: Bypass ilovalari ERKIN’ni butunlay chetlab oʻtadi.</string>
     <string name="rules_scope_all">Qoidalar ushbu kompyuterdagi barcha trafikka taʼsir qiladi.</string>
     <string name="rules_empty">Hozircha qoidalar yoʻq. Trafik har bir ilovaning kanali boʻyicha boradi.</string>
     <string name="add_rule">Qoida qoʻshish</string>
@@ -355,6 +355,7 @@
     <string name="connections_purpose_request">Tekshiruvlar va yuklab olishlar</string>
     <string name="rule_app">Ilova</string>
     <string name="rule_app_all">Barcha ilovalar</string>
+    <string name="rule_app_bypass_hint">Bypass: qoidalar ishlamaydi</string>
     <string name="rule_app_search">Ilovani qidirish</string>
     <string name="rule_app_system">Tizim ilovalari</string>
     <string name="connections_rule_site">Butun sayt uchun qoida (*.%1$s)</string>

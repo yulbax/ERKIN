@@ -76,8 +76,6 @@
     <string name="setup_step_connect">Connect</string>
     <string name="servers_title">Servers</string>
     <string name="sort_servers_by_ping">Sort by ping</string>
-    <string name="tunnel_direct_apps">Route all traffic through ERKIN</string>
-    <string name="tunnel_direct_apps_warning">Apps in the Direct channel also go through ERKIN, so rules apply to them. They will see an active VPN and banking apps may notice it. If the core hangs or reconnects they lose internet too. QUIC blocking applies to them, and finding devices on the local network may stop working.</string>
     <string name="servers_empty">No servers yet. Add a config link or a subscription.</string>
     <string name="server_test_latency">Test latency</string>
     <string name="server_ping_timeout">timeout</string>
@@ -86,13 +84,16 @@
     <string name="dismiss">Dismiss</string>
     <string name="got_it">Got it</string>
     <string name="apps_hint_title">How traffic is routed</string>
-    <string name="apps_hint_direct">traffic goes directly, outside the tunnel</string>
+    <string name="apps_hint_direct">traffic goes directly through ERKIN, rules apply</string>
+    <string name="apps_hint_bypass">traffic goes around ERKIN, the app does not see the VPN</string>
     <string name="apps_hint_byedpi">traffic goes through ByeDPI</string>
     <string name="apps_hint_vpn">traffic goes through the VPN · pick a server with › in the channel menu</string>
     <string name="connection_type_block">Block</string>
     <string name="apps_hint_block">no network access while ERKIN is connected</string>
     <string name="apps_block_note">While ERKIN is connected</string>
-    <string name="apps_hint_ru_default">ru/vk/yandex apps start in Direct</string>
+    <string name="apps_bypass_note">The app does not see the VPN</string>
+    <string name="apps_direct_note">Rules and Connections</string>
+    <string name="apps_hint_ru_default">ru/vk/yandex apps start in Bypass</string>
     <string name="app_server_main">Main · %1$s</string>
     <string name="dialog_error">Error</string>
     <string name="vpn_disconnected">Disconnected</string>
@@ -206,6 +207,7 @@
     <string name="subscription_device_limit">This subscription has reached its device limit. Remove an old device with your provider, in their bot or account page.</string>
     <string name="subscription_hwid_required">The provider refused the subscription: it did not accept this device’s ID.</string>
     <string name="connection_type_direct">Direct</string>
+    <string name="connection_type_bypass">Bypass</string>
     <string name="connection_type_byedpi">ByeDPI</string>
     <string name="connection_type_vpn">VPN</string>
     <string name="exit_confirm_title">Disconnect and exit?</string>
@@ -248,8 +250,7 @@
     <string name="update_check_failed">Could not check for updates</string>
     <string name="rules_title">Rules</string>
     <string name="rules_description">Rules are checked from top to bottom and the first match wins. A matching rule overrides the app&apos;s channel.</string>
-    <string name="rules_scope_tunneled">On Android rules only apply to apps in the VPN and ByeDPI channels: apps in the Direct channel bypass ERKIN completely.</string>
-    <string name="rules_scope_tunneled_all_apps">All traffic goes through ERKIN, so rules also apply to apps in the Direct channel.</string>
+    <string name="rules_scope_tunneled">On Android rules apply to apps in every channel except Bypass: Bypass apps go around ERKIN completely.</string>
     <string name="rules_scope_all">Rules apply to all traffic on this computer.</string>
     <string name="rules_empty">No rules yet. Traffic follows each app&apos;s channel.</string>
     <string name="add_rule">Add rule</string>
@@ -382,6 +383,7 @@
     <string name="connections_purpose_request">Checks and downloads</string>
     <string name="rule_app">App</string>
     <string name="rule_app_all">All apps</string>
+    <string name="rule_app_bypass_hint">Bypass: rules do not apply</string>
     <string name="rule_app_search">Search apps</string>
     <string name="rule_app_system">System apps</string>
     <string name="connections_rule_site">Rule for the whole site (*.%1$s)</string>

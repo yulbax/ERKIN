@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
@@ -25,10 +26,11 @@ class RulesViewModel(
     ruleListDatabase: RuleListDatabase,
     profileRepository: ProfileRepository,
     vpnStateRepository: VpnStateRepository,
+    appDao: AppDao,
     installedApps: InstalledAppsSource
 ) : ViewModel() {
 
-    val apps: StateFlow<List<RuleAppChoice>> = ruleAppChoices(installedApps)
+    val apps: StateFlow<List<RuleAppChoice>> = ruleAppChoices(installedApps, appDao)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val serverChoices: StateFlow<ServerChoices> = profileRepository.serverChoices(vpnStateRepository)
@@ -43,10 +45,6 @@ class RulesViewModel(
     val hintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.rulesHintSeen }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
-
-    val tunnelDirectApps: StateFlow<Boolean> = settingsRepository.settings
-        .map { it.tunnelDirectApps }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun dismissHint() {
         viewModelScope.launch(Dispatchers.IO) {

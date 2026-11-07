@@ -178,7 +178,7 @@ class InstalledAppsRepository(
         name = name,
         isSystemApp = isSystemApp,
         connectionType = if (newAppsType == ConnectionType.VPN && usesDirectRouting(packageName)) {
-            ConnectionType.DIRECT
+            ConnectionType.BYPASS
         } else {
             newAppsType
         }

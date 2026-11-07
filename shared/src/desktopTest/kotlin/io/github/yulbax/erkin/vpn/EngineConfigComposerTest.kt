@@ -27,18 +27,16 @@ class EngineConfigComposerTest {
     }
 
     @Test
-    fun directAppsEnterTheTunOnlyWhenTheSettingIsOn() {
-        val apps = listOf(
-            App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN),
-            App("org.example.direct", "Direct", isSystemApp = false, connectionType = ConnectionType.DIRECT)
-        )
-        val off = EngineConfigComposer.compose(inputs(apps), OWN, BYEDPI_PORT)
-        val on = EngineConfigComposer.compose(inputs(apps).copy(settings = SettingsEntity(tunnelDirectApps = true)), OWN, BYEDPI_PORT)
+    fun directAppsEnterTheTunAndBypassAppsStayOutside() {
+        val vpn = App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN)
+        val bypass = App("org.example.bank", "Bank", isSystemApp = false, connectionType = ConnectionType.BYPASS)
+        val bypassed = EngineConfigComposer.compose(inputs(listOf(vpn, bypass)), OWN, BYEDPI_PORT)
+        val direct = EngineConfigComposer.compose(inputs(listOf(vpn, bypass.copy(connectionType = ConnectionType.DIRECT))), OWN, BYEDPI_PORT)
 
-        assertEquals(listOf("org.example.vpn"), off.engineConfig.tunneledPackages)
-        assertEquals(listOf("org.example.vpn", "org.example.direct"), on.engineConfig.tunneledPackages)
-        assertEquals(listOf("org.example.direct"), on.engineConfig.directPackages)
-        assertTrue(on.isStructuralChangeFrom(off))
+        assertEquals(listOf("org.example.vpn"), bypassed.engineConfig.tunneledPackages)
+        assertEquals(listOf("org.example.vpn", "org.example.bank"), direct.engineConfig.tunneledPackages)
+        assertEquals(listOf("org.example.bank"), direct.engineConfig.directPackages)
+        assertTrue(direct.isStructuralChangeFrom(bypassed))
     }
 
     @Test

@@ -74,8 +74,6 @@
     <string name="setup_step_connect">Bağlanın</string>
     <string name="servers_title">Sunucular</string>
     <string name="sort_servers_by_ping">Ping’e göre sırala</string>
-    <string name="tunnel_direct_apps">Tüm trafiği ERKIN üzerinden yönlendir</string>
-    <string name="tunnel_direct_apps_warning">Doğrudan kanaldaki uygulamalar da ERKIN üzerinden geçer ve kurallar onlara da uygulanır. Etkin bir VPN görürler, bankacılık uygulamaları bunu fark edebilir. Çekirdek donarsa veya yeniden bağlanırsa onların da interneti kesilir. QUIC engeli onlara da uygulanır ve yerel ağdaki cihazları bulma çalışmayabilir.</string>
     <string name="servers_empty">Henüz sunucu yok. Bir yapılandırma bağlantısı veya abonelik ekleyin.</string>
     <string name="server_test_latency">Gecikmeyi test et</string>
     <string name="server_ping_timeout">zaman aşımı</string>
@@ -84,12 +82,15 @@
     <string name="dismiss">Kapat</string>
     <string name="got_it">Anladım</string>
     <string name="apps_hint_title">Trafik nasıl yönlendirilir</string>
-    <string name="apps_hint_direct">trafik tünel dışında, doğrudan gider</string>
+    <string name="apps_hint_direct">trafik ERKIN üzerinden doğrudan gider, kurallar çalışır</string>
+    <string name="apps_hint_bypass">trafik ERKIN’i atlar, uygulama VPN’i görmez</string>
     <string name="apps_hint_byedpi">trafik ByeDPI üzerinden gider</string>
     <string name="apps_hint_vpn">trafik VPN üzerinden gider · sunucuyu kanal menüsündeki › ile seçin</string>
     <string name="apps_hint_block">ERKIN bağlıyken ağ erişimi yok</string>
     <string name="apps_block_note">ERKIN bağlıyken</string>
-    <string name="apps_hint_ru_default">ru/vk/yandex uygulamaları Doğrudan kanalda başlar</string>
+    <string name="apps_bypass_note">Uygulama VPN’i görmez</string>
+    <string name="apps_direct_note">Kurallar ve «Bağlantılar»</string>
+    <string name="apps_hint_ru_default">ru/vk/yandex uygulamaları Bypass kanalında başlar</string>
     <string name="app_server_main">Ana · %1$s</string>
     <string name="dialog_error">Hata</string>
     <string name="vpn_disconnected">Bağlı değil</string>
@@ -239,8 +240,7 @@
     <string name="update_check_failed">Güncellemeler denetlenemedi</string>
     <string name="rules_title">Kurallar</string>
     <string name="rules_description">Kurallar yukarıdan aşağıya denetlenir ve ilk eşleşen geçerli olur. Eşleşen kural, uygulamanın kanalını geçersiz kılar.</string>
-    <string name="rules_scope_tunneled">Android’de kurallar yalnızca VPN ve ByeDPI kanallarındaki uygulamalara uygulanır: Doğrudan kanaldaki uygulamalar ERKIN’i tamamen atlar.</string>
-    <string name="rules_scope_tunneled_all_apps">Tüm trafik ERKIN üzerinden geçer, bu yüzden kurallar Doğrudan kanaldaki uygulamalara da uygulanır.</string>
+    <string name="rules_scope_tunneled">Android’de kurallar Bypass dışındaki tüm kanallardaki uygulamalara uygulanır: Bypass uygulamaları ERKIN’i tamamen atlar.</string>
     <string name="rules_scope_all">Kurallar bu bilgisayardaki tüm trafiğe uygulanır.</string>
     <string name="rules_empty">Henüz kural yok. Trafik her uygulamanın kanalını izler.</string>
     <string name="add_rule">Kural ekle</string>
@@ -355,6 +355,7 @@
     <string name="connections_purpose_request">Denetimler ve indirmeler</string>
     <string name="rule_app">Uygulama</string>
     <string name="rule_app_all">Tüm uygulamalar</string>
+    <string name="rule_app_bypass_hint">Bypass: kurallar uygulanmaz</string>
     <string name="rule_app_search">Uygulama ara</string>
     <string name="rule_app_system">Sistem uygulamaları</string>
     <string name="connections_rule_site">Tüm site için kural (*.%1$s)</string>

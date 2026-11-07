@@ -510,12 +510,12 @@ private fun HostActivity.ruleDraft(scope: RuleScope, app: String): RoutingRuleEn
         scope is RuleScope.Site -> RuleMatch.DOMAIN_SUFFIX
         else -> RuleMatch.DOMAIN
     }
-    val channel = if (blocked) ConnectionType.DIRECT else route.channel
+    val target = if (blocked) RuleTarget.DIRECT else route.channel.ruleTarget ?: RuleTarget.DIRECT
     return RoutingRuleEntity(
         type = match.wire,
         value = scope.value,
-        target = channel.ruleTarget.wire,
-        serverId = route.serverId.takeIf { channel == ConnectionType.VPN },
+        target = target.wire,
+        serverId = route.serverId.takeIf { target == RuleTarget.VPN },
         app = app
     )
 }

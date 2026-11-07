@@ -40,7 +40,8 @@ private data class ProfilesImport(val result: SectionResult, val ids: Map<Long, 
 class ConfigBackupRepository(
     private val database: AppDatabase,
     private val profileRepository: ProfileRepository,
-    private val siteLists: ByeDpiSiteLists
+    private val siteLists: ByeDpiSiteLists,
+    private val appsCanBypass: Boolean
 ) {
 
     suspend fun export(selection: BackupSelection): String = withContext(Dispatchers.IO) {
@@ -94,7 +95,7 @@ class ConfigBackupRepository(
         withContext(Dispatchers.IO) {
             if (!BackupCodec.isValid(backup)) return@withContext ImportResult(error = "Invalid backup")
             try {
-                database.transaction { applyInTransaction(backup, selection) }
+                database.transaction { applyInTransaction(backup.adaptedTo(appsCanBypass), selection) }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

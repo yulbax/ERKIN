@@ -14,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ByeDpiHistoryTest {
-    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+    private val database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
     private val settings = SettingsRepository(database, database.settingsDao())
     private var clock = 0L
     private val history = ByeDpiHistory(database, settings) { ++clock }

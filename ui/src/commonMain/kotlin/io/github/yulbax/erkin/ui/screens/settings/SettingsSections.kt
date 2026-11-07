@@ -54,7 +54,6 @@ import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
 import io.github.yulbax.erkin.ui.platform.rememberSharer
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rememberSystemVpnSettings
-import io.github.yulbax.erkin.ui.platform.rulesCoverAllApps
 import kotlinx.coroutines.launch
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
@@ -169,23 +168,6 @@ internal fun NetworkSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
                 SwitchRow(stringResource(Res.string.bypass_lan), network.bypassLan) { enabled ->
                     if (enabled) requestLocalNetwork() else viewModel.setBypassLan(false)
                 }
-            },
-            if (!rulesCoverAllApps) {
-                {
-                    Column {
-                        SwitchRow(stringResource(Res.string.tunnel_direct_apps), ui.tunnelDirectApps) {
-                            viewModel.setTunnelDirectApps(it)
-                        }
-                        Text(
-                            text = stringResource(Res.string.tunnel_direct_apps_warning),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 14.dp)
-                        )
-                    }
-                }
-            } else {
-                null
             }
         )
     )

@@ -116,7 +116,7 @@ class DesktopRenderTest {
 
     @Before
     fun setUp() {
-        database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>())
+        database = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
         val installedApps = listOf(
             InstalledApp("telegram.exe", "Telegram", isSystemApp = false, isLaunchable = true),
             InstalledApp("chrome.exe", "Google Chrome", isSystemApp = false, isLaunchable = true),
@@ -152,7 +152,7 @@ class DesktopRenderTest {
                     }
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
-                    single { ConfigBackupRepository(get(), get(), get()) }
+                    single { ConfigBackupRepository(get(), get(), get(), appsCanBypass = true) }
                     single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _, _ -> "{}" } }
                     single { VpnStateRepository() }
                     single { VpnCommandBus() }
