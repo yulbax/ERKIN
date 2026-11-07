@@ -30,7 +30,7 @@ val buildHash = runCatching {
     providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
 }.getOrDefault("")
 
-val baseVersionCode = 20000
+val baseVersionCode = 20001
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
 val playVersionCodeSuffix = 90
 
