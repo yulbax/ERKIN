@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -17,8 +18,8 @@ import (
 
 const (
 	trafficRowLimit = 2000
+	evictionShare   = 10
 	quicPort        = 443
-	ruleLookups     = 2
 )
 
 type trafficKey struct {
@@ -108,17 +109,15 @@ func (l *trafficLedger) evictLocked() {
 	if len(l.rows) < l.limit {
 		return
 	}
-	var oldest *trafficRow
+	idle := make([]*trafficRow, 0, len(l.rows))
 	for _, row := range l.rows {
-		if row.active.Load() > 0 {
-			continue
-		}
-		if oldest == nil || row.lastSeen.Load() < oldest.lastSeen.Load() {
-			oldest = row
+		if row.active.Load() == 0 {
+			idle = append(idle, row)
 		}
 	}
-	if oldest != nil {
-		delete(l.rows, oldest.key)
+	sort.Slice(idle, func(i, j int) bool { return idle[i].lastSeen.Load() < idle[j].lastSeen.Load() })
+	for _, row := range idle[:min(len(idle), max(1, l.limit/evictionShare))] {
+		delete(l.rows, row.key)
 	}
 }
 
@@ -198,22 +197,45 @@ func (p countingProxy) ListenPacketContext(ctx context.Context, metadata *C.Meta
 }
 
 type ruleWatch struct {
-	lookups atomic.Int32
+	learned atomic.Bool
 }
 
-func (w *ruleWatch) learn(row *trafficRow, self any) {
-	if w.lookups.Load() >= ruleLookups || w.lookups.Add(1) > ruleLookups {
+func (w *ruleWatch) learnFrom(row *trafficRow, tracker statistic.Tracker) {
+	info := tracker.Info()
+	traffic.learnRule(row, info.Rule, info.RulePayload)
+	w.learned.Store(true)
+}
+
+func (w *ruleWatch) learnOnClose(row *trafficRow, self any) {
+	if w.learned.Load() {
 		return
 	}
 	statistic.DefaultManager.Range(func(tracker statistic.Tracker) bool {
-		upstream, ok := tracker.(interface{ Upstream() any })
-		if !ok || upstream.Upstream() != self {
+		if upstreamOf(tracker) != self {
 			return true
 		}
-		info := tracker.Info()
-		traffic.learnRule(row, info.Rule, info.RulePayload)
-		w.lookups.Store(ruleLookups)
+		w.learnFrom(row, tracker)
 		return false
+	})
+}
+
+func upstreamOf(tracker statistic.Tracker) any {
+	upstream, ok := tracker.(interface{ Upstream() any })
+	if !ok {
+		return nil
+	}
+	return upstream.Upstream()
+}
+
+func learnActiveRules() {
+	statistic.DefaultManager.Range(func(tracker statistic.Tracker) bool {
+		switch counted := upstreamOf(tracker).(type) {
+		case *countingConn:
+			counted.rules.learnFrom(counted.row, tracker)
+		case *countingPacketConn:
+			counted.rules.learnFrom(counted.row, tracker)
+		}
+		return true
 	})
 }
 
@@ -226,7 +248,6 @@ type countingConn struct {
 
 func (c *countingConn) counted(download int64) {
 	c.row.down.Add(download)
-	c.rules.learn(c.row, c)
 }
 
 func (c *countingConn) Read(b []byte) (int, error) {
@@ -264,7 +285,7 @@ func (c *countingConn) UnwrapWriter() (io.Writer, []N.CountFunc) {
 
 func (c *countingConn) Close() error {
 	if c.closed.CompareAndSwap(false, true) {
-		c.rules.learn(c.row, c)
+		c.rules.learnOnClose(c.row, c)
 		traffic.close(c.row, time.Now())
 	}
 	return c.Conn.Close()
@@ -280,14 +301,12 @@ type countingPacketConn struct {
 func (c *countingPacketConn) ReadFrom(b []byte) (int, net.Addr, error) {
 	n, addr, err := c.PacketConn.ReadFrom(b)
 	c.row.down.Add(int64(n))
-	c.rules.learn(c.row, c)
 	return n, addr, err
 }
 
 func (c *countingPacketConn) WaitReadFrom() ([]byte, func(), net.Addr, error) {
 	data, put, addr, err := c.PacketConn.WaitReadFrom()
 	c.row.down.Add(int64(len(data)))
-	c.rules.learn(c.row, c)
 	return data, put, addr, err
 }
 
@@ -299,7 +318,7 @@ func (c *countingPacketConn) WriteTo(b []byte, addr net.Addr) (int, error) {
 
 func (c *countingPacketConn) Close() error {
 	if c.closed.CompareAndSwap(false, true) {
-		c.rules.learn(c.row, c)
+		c.rules.learnOnClose(c.row, c)
 		traffic.close(c.row, time.Now())
 	}
 	return c.PacketConn.Close()
@@ -317,6 +336,7 @@ func countTraffic() {
 }
 
 func Connections() (string, error) {
+	learnActiveRules()
 	encoded, err := json.Marshal(traffic.snapshot(time.Now()))
 	return string(encoded), err
 }

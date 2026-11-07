@@ -15,6 +15,7 @@ import (
 	"github.com/metacubex/mihomo/adapter"
 	"github.com/metacubex/mihomo/adapter/outbound"
 	C "github.com/metacubex/mihomo/constant"
+	"github.com/metacubex/mihomo/tunnel/statistic"
 )
 
 func TestTrafficIsKeptPerAppSiteAndRouteAfterConnectionsClose(t *testing.T) {
@@ -155,5 +156,69 @@ func TestALatencyTestFindsTheHopsOfAChainAmongTheTestedProxies(t *testing.T) {
 	}
 	if delays["p1"] <= 0 || delays["p2"] > 0 {
 		t.Fatalf("the chain should answer through its hop and a chain without one should fail, got %v", delays)
+	}
+}
+
+func TestAFullLedgerMakesRoomForATenthOfItsRowsAtOnce(t *testing.T) {
+	ledger := newTrafficLedger(20)
+	for i := range 20 {
+		row := ledger.open(&C.Metadata{Host: fmt.Sprintf("host%02d.example", i)}, "DIRECT", time.UnixMilli(int64(i)))
+		ledger.close(row, time.UnixMilli(int64(i)))
+	}
+	ledger.open(&C.Metadata{Host: "new.example"}, "DIRECT", time.UnixMilli(100))
+
+	hosts := map[string]bool{}
+	for _, row := range ledger.snapshot(time.UnixMilli(101)).Rows {
+		hosts[row.Host] = true
+	}
+	if len(hosts) != 19 || hosts["host00.example"] || hosts["host01.example"] || !hosts["host02.example"] || !hosts["new.example"] {
+		t.Fatalf("expected the two oldest rows to make room, got %d rows: %v", len(hosts), hosts)
+	}
+}
+
+type suffixRule struct{}
+
+func (suffixRule) RuleType() C.RuleType                                { return C.DomainSuffix }
+func (suffixRule) Match(*C.Metadata, C.RuleMatchHelper) (bool, string) { return true, "DIRECT" }
+func (suffixRule) Adapter() string                                     { return "DIRECT" }
+func (suffixRule) Payload() string                                     { return "example.com" }
+func (suffixRule) ProviderNames() []string                             { return nil }
+
+func TestTheRuleOfAnOpenConnectionIsLearnedWhenTheTableIsRead(t *testing.T) {
+	server, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+	go func() {
+		conn, acceptErr := server.Accept()
+		if acceptErr == nil {
+			defer conn.Close()
+			_, _ = io.Copy(io.Discard, conn)
+		}
+	}()
+	saved := traffic
+	traffic = newTrafficLedger(10)
+	defer func() { traffic = saved }()
+
+	port := server.Addr().(*net.TCPAddr).Port
+	metadata := &C.Metadata{NetWork: C.TCP, Type: C.TUN, DstIP: netip.MustParseAddr("127.0.0.1"), DstPort: uint16(port)}
+	conn, err := countingProxy{adapter.NewProxy(outbound.NewDirect())}.DialContext(context.Background(), metadata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tracker := statistic.NewTCPTracker(conn, statistic.DefaultManager, metadata, suffixRule{}, 0, 0, true)
+	defer tracker.Close()
+
+	encoded, err := Connections()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var table trafficTable
+	if err = json.Unmarshal([]byte(encoded), &table); err != nil {
+		t.Fatal(err)
+	}
+	if len(table.Rows) != 1 || table.Rows[0].Rule != C.DomainSuffix.String() || table.Rows[0].Payload != "example.com" {
+		t.Fatalf("expected the open connection to report its rule, got %+v", table.Rows)
 	}
 }
