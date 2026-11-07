@@ -322,4 +322,38 @@
     <string name="subscription_expired">منقضی شده</string>
     <string name="subscription_show_servers">نمایش سرورها</string>
     <string name="subscription_hide_servers">پنهان کردن سرورها</string>
+    <string name="connections_title">اتصال‌ها</string>
+    <string name="connections_off">ERKIN را وصل کنید تا ببینید برنامه‌ها به کجا وصل می‌شوند</string>
+    <string name="connections_empty">هنوز اتصالی نیست</string>
+    <string name="connections_summary">برنامه‌ها: %1$d · اتصال‌های فعال: %2$d</string>
+    <string name="connections_app_line">فعال: %1$d · %2$s</string>
+    <string name="connections_blocked_badge">مسدود: %1$d</string>
+    <string name="connections_session">در این نشست</string>
+    <string name="connections_tab_hosts">نشانی‌ها · %1$d</string>
+    <string name="connections_tab_rules">قوانین · %1$d</string>
+    <string name="connections_by_rule">قانون</string>
+    <string name="connections_by_app_rule">قانون برنامه</string>
+    <string name="connections_unknown_app">برنامهٔ ناشناخته</string>
+    <string name="connections_channel">کانال: %1$s</string>
+    <string name="connections_rule_menu">قانون برای این نشانی</string>
+    <string name="connections_copy">کپی نشانی</string>
+    <string name="connections_copied">نشانی کپی شد</string>
+    <string name="connections_no_rules">این برنامه قانون مخصوص خودش را ندارد. از منوی ⋮ کنار یک نشانی قانون بسازید.</string>
+    <string name="connections_more_cd">کارهای نشانی</string>
+    <string name="connections_service_subtitle">اتصال‌های خود ERKIN</string>
+    <string name="connections_purpose_request">بررسی‌ها و دانلودها</string>
+    <string name="rule_app">برنامه</string>
+    <string name="rule_app_all">همهٔ برنامه‌ها</string>
+    <string name="rule_app_search">جستجوی برنامه</string>
+    <string name="rule_app_system">برنامه‌های سیستمی</string>
+    <string name="connections_rule_site">قانون برای کل سایت (*.%1$s)</string>
+    <string name="connections_copy_site">کپی نام سایت</string>
+    <plurals name="connections_addresses">
+        <item quantity="one">%1$d نشانی</item>
+        <item quantity="other">%1$d نشانی</item>
+    </plurals>
+    <plurals name="connections_attempts">
+        <item quantity="one">%1$d تلاش</item>
+        <item quantity="other">%1$d تلاش</item>
+    </plurals>
 </resources>

@@ -322,4 +322,38 @@
     <string name="subscription_expired">süresi doldu</string>
     <string name="subscription_show_servers">Sunucuları göster</string>
     <string name="subscription_hide_servers">Sunucuları gizle</string>
+    <string name="connections_title">Bağlantılar</string>
+    <string name="connections_off">Uygulamaların nereye bağlandığını görmek için ERKIN’i bağlayın</string>
+    <string name="connections_empty">Henüz bağlantı yok</string>
+    <string name="connections_summary">Uygulama: %1$d · etkin bağlantı: %2$d</string>
+    <string name="connections_app_line">etkin: %1$d · %2$s</string>
+    <string name="connections_blocked_badge">engellenen: %1$d</string>
+    <string name="connections_session">bu oturumda</string>
+    <string name="connections_tab_hosts">Adresler · %1$d</string>
+    <string name="connections_tab_rules">Kurallar · %1$d</string>
+    <string name="connections_by_rule">kural</string>
+    <string name="connections_by_app_rule">uygulama kuralı</string>
+    <string name="connections_unknown_app">Bilinmeyen uygulama</string>
+    <string name="connections_channel">Kanal: %1$s</string>
+    <string name="connections_rule_menu">Bu adres için kural</string>
+    <string name="connections_copy">Adresi kopyala</string>
+    <string name="connections_copied">Adres kopyalandı</string>
+    <string name="connections_no_rules">Bu uygulamanın kendi kuralı yok. Bir adresin ⋮ menüsünden kural oluşturun.</string>
+    <string name="connections_more_cd">Adres işlemleri</string>
+    <string name="connections_service_subtitle">ERKIN’in kendi bağlantıları</string>
+    <string name="connections_purpose_request">Denetimler ve indirmeler</string>
+    <string name="rule_app">Uygulama</string>
+    <string name="rule_app_all">Tüm uygulamalar</string>
+    <string name="rule_app_search">Uygulama ara</string>
+    <string name="rule_app_system">Sistem uygulamaları</string>
+    <string name="connections_rule_site">Tüm site için kural (*.%1$s)</string>
+    <string name="connections_copy_site">Site adını kopyala</string>
+    <plurals name="connections_addresses">
+        <item quantity="one">%1$d adres</item>
+        <item quantity="other">%1$d adres</item>
+    </plurals>
+    <plurals name="connections_attempts">
+        <item quantity="one">%1$d deneme</item>
+        <item quantity="other">%1$d deneme</item>
+    </plurals>
 </resources>

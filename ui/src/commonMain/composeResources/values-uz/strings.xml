@@ -322,4 +322,38 @@
     <string name="subscription_expired">muddati tugagan</string>
     <string name="subscription_show_servers">Serverlarni koʻrsatish</string>
     <string name="subscription_hide_servers">Serverlarni yashirish</string>
+    <string name="connections_title">Ulanishlar</string>
+    <string name="connections_off">Ilovalar qayerga murojaat qilayotganini koʻrish uchun ERKIN ni ulang</string>
+    <string name="connections_empty">Hozircha ulanishlar yoʻq</string>
+    <string name="connections_summary">Ilovalar: %1$d · faol ulanishlar: %2$d</string>
+    <string name="connections_app_line">faol: %1$d · %2$s</string>
+    <string name="connections_blocked_badge">bloklangan: %1$d</string>
+    <string name="connections_session">shu seansda</string>
+    <string name="connections_tab_hosts">Manzillar · %1$d</string>
+    <string name="connections_tab_rules">Qoidalar · %1$d</string>
+    <string name="connections_by_rule">qoida</string>
+    <string name="connections_by_app_rule">ilova qoidasi</string>
+    <string name="connections_unknown_app">Nomaʼlum ilova</string>
+    <string name="connections_channel">Kanal: %1$s</string>
+    <string name="connections_rule_menu">Manzil uchun qoida</string>
+    <string name="connections_copy">Manzilni nusxalash</string>
+    <string name="connections_copied">Manzil nusxalandi</string>
+    <string name="connections_no_rules">Bu ilovaning oʻz qoidalari yoʻq. Qoidani manzil yonidagi ⋮ menyusida yarating.</string>
+    <string name="connections_more_cd">Manzil bilan amallar</string>
+    <string name="connections_service_subtitle">ERKIN ning oʻz ulanishlari</string>
+    <string name="connections_purpose_request">Tekshiruvlar va yuklab olishlar</string>
+    <string name="rule_app">Ilova</string>
+    <string name="rule_app_all">Barcha ilovalar</string>
+    <string name="rule_app_search">Ilovani qidirish</string>
+    <string name="rule_app_system">Tizim ilovalari</string>
+    <string name="connections_rule_site">Butun sayt uchun qoida (*.%1$s)</string>
+    <string name="connections_copy_site">Sayt nomini nusxalash</string>
+    <plurals name="connections_addresses">
+        <item quantity="one">%1$d ta manzil</item>
+        <item quantity="other">%1$d ta manzil</item>
+    </plurals>
+    <plurals name="connections_attempts">
+        <item quantity="one">%1$d ta urinish</item>
+        <item quantity="other">%1$d ta urinish</item>
+    </plurals>
 </resources>

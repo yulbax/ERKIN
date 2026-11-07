@@ -328,4 +328,42 @@
     <string name="subscription_expired">закінчилася</string>
     <string name="subscription_show_servers">Показати сервери</string>
     <string name="subscription_hide_servers">Сховати сервери</string>
+    <string name="connections_title">З’єднання</string>
+    <string name="connections_off">Підключіть ERKIN, щоб побачити, куди звертаються застосунки</string>
+    <string name="connections_empty">З’єднань поки немає</string>
+    <string name="connections_summary">Застосунків: %1$d · активних з’єднань: %2$d</string>
+    <string name="connections_app_line">активних: %1$d · %2$s</string>
+    <string name="connections_blocked_badge">заблок.: %1$d</string>
+    <string name="connections_session">за сеанс</string>
+    <string name="connections_tab_hosts">Адреси · %1$d</string>
+    <string name="connections_tab_rules">Правила · %1$d</string>
+    <string name="connections_by_rule">правило</string>
+    <string name="connections_by_app_rule">правило застосунку</string>
+    <string name="connections_unknown_app">Невідомий застосунок</string>
+    <string name="connections_channel">Канал: %1$s</string>
+    <string name="connections_rule_menu">Правило для адреси</string>
+    <string name="connections_copy">Копіювати адресу</string>
+    <string name="connections_copied">Адресу скопійовано</string>
+    <string name="connections_no_rules">У цього застосунку немає власних правил. Створіть правило в меню ⋮ біля адреси.</string>
+    <string name="connections_more_cd">Дії з адресою</string>
+    <string name="connections_service_subtitle">Власні з’єднання ERKIN</string>
+    <string name="connections_purpose_request">Перевірки й завантаження</string>
+    <string name="rule_app">Застосунок</string>
+    <string name="rule_app_all">Усі застосунки</string>
+    <string name="rule_app_search">Пошук застосунку</string>
+    <string name="rule_app_system">Системні застосунки</string>
+    <string name="connections_rule_site">Правило для всього сайту (*.%1$s)</string>
+    <string name="connections_copy_site">Копіювати ім’я сайту</string>
+    <plurals name="connections_addresses">
+        <item quantity="one">%1$d адреса</item>
+        <item quantity="few">%1$d адреси</item>
+        <item quantity="many">%1$d адрес</item>
+        <item quantity="other">%1$d адреси</item>
+    </plurals>
+    <plurals name="connections_attempts">
+        <item quantity="one">%1$d спроба</item>
+        <item quantity="few">%1$d спроби</item>
+        <item quantity="many">%1$d спроб</item>
+        <item quantity="other">%1$d спроби</item>
+    </plurals>
 </resources>

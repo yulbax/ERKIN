@@ -319,4 +319,36 @@
     <string name="subscription_expired">已过期</string>
     <string name="subscription_show_servers">显示服务器</string>
     <string name="subscription_hide_servers">隐藏服务器</string>
+    <string name="connections_title">连接</string>
+    <string name="connections_off">连接 ERKIN 后即可查看各应用的去向</string>
+    <string name="connections_empty">暂无连接</string>
+    <string name="connections_summary">应用：%1$d · 活动连接：%2$d</string>
+    <string name="connections_app_line">活动：%1$d · %2$s</string>
+    <string name="connections_blocked_badge">已拦截：%1$d</string>
+    <string name="connections_session">本次会话</string>
+    <string name="connections_tab_hosts">地址 · %1$d</string>
+    <string name="connections_tab_rules">规则 · %1$d</string>
+    <string name="connections_by_rule">规则</string>
+    <string name="connections_by_app_rule">应用规则</string>
+    <string name="connections_unknown_app">未知应用</string>
+    <string name="connections_channel">通道：%1$s</string>
+    <string name="connections_rule_menu">为此地址创建规则</string>
+    <string name="connections_copy">复制地址</string>
+    <string name="connections_copied">地址已复制</string>
+    <string name="connections_no_rules">此应用还没有自己的规则。可在地址的 ⋮ 菜单中创建。</string>
+    <string name="connections_more_cd">地址操作</string>
+    <string name="connections_service_subtitle">ERKIN 自身的连接</string>
+    <string name="connections_purpose_request">检查与下载</string>
+    <string name="rule_app">应用</string>
+    <string name="rule_app_all">全部应用</string>
+    <string name="rule_app_search">搜索应用</string>
+    <string name="rule_app_system">系统应用</string>
+    <string name="connections_rule_site">整个网站的规则（*.%1$s）</string>
+    <string name="connections_copy_site">复制网站名称</string>
+    <plurals name="connections_addresses">
+        <item quantity="other">%1$d 个地址</item>
+    </plurals>
+    <plurals name="connections_attempts">
+        <item quantity="other">%1$d 次尝试</item>
+    </plurals>
 </resources>
