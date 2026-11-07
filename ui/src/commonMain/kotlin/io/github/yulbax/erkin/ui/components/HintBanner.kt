@@ -2,6 +2,8 @@ package io.github.yulbax.erkin.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,12 +28,14 @@ import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.res.*
 
 @Composable
-fun HintBanner(
-    text: String,
+fun HintCard(
+    onDismiss: (() -> Unit)?,
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null,
-    onDismiss: (() -> Unit)? = null
+    headerAlignment: Alignment.Vertical = Alignment.Top,
+    header: @Composable RowScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit = {}
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -39,24 +43,8 @@ fun HintBanner(
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 8.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
-                Icon(
-                    Icons.Filled.Info,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .size(20.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = 2.dp)
-                )
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = headerAlignment) {
+                header()
                 if (onDismiss != null) {
                     IconButton(onClick = onDismiss) {
                         Icon(
@@ -68,6 +56,7 @@ fun HintBanner(
                     }
                 }
             }
+            content()
             if (actionLabel != null && onAction != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -78,4 +67,33 @@ fun HintBanner(
             }
         }
     }
+}
+
+@Composable
+fun HintBanner(
+    text: String,
+    modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+    onDismiss: (() -> Unit)? = null
+) {
+    HintCard(onDismiss = onDismiss, modifier = modifier, actionLabel = actionLabel, onAction = onAction, header = {
+        Icon(
+            Icons.Filled.Info,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier
+                .padding(top = 2.dp)
+                .size(20.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier
+                .weight(1f)
+                .padding(top = 2.dp)
+        )
+    })
 }
