@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -159,7 +160,7 @@ internal fun ChannelButton(
                 )
             }
             Text(
-                text = server?.name ?: type.label(),
+                text = server?.let { serverName(it.name) } ?: type.label(),
                 style = MaterialTheme.typography.labelLarge,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -246,7 +247,7 @@ internal fun ServerChoiceText(server: ServerLabel, modifier: Modifier = Modifier
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            server.name,
+            serverName(server.name),
             style = MaterialTheme.typography.bodySmall,
             color = warning ?: MaterialTheme.colorScheme.primary,
             maxLines = 1,
@@ -265,7 +266,7 @@ internal fun ServerChoiceText(server: ServerLabel, modifier: Modifier = Modifier
 @Composable
 internal fun ServerChoices.menuServer(channel: ConnectionType, serverId: Long?): ServerLabel? {
     if (!canChoose) return null
-    return label(channel, serverId) ?: main?.let { ServerLabel(stringResource(Res.string.app_server_main, it.name), isChain = false) }
+    return label(channel, serverId) ?: main?.let { ServerLabel(stringResource(Res.string.app_server_main, serverName(it.name)), isChain = false) }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

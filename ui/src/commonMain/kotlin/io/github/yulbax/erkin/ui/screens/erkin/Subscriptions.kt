@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.util.formatBytes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -90,7 +91,7 @@ internal fun SubscriptionRow(
     modifier: Modifier = Modifier
 ) {
     ServerRowLayout(
-        title = item.current.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
+        title = serverName(item.current.name),
         subtitle = "${item.name} · ${item.members.size} · ${item.current.type}",
         isSelected = isSelected,
         mode = mode,

@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.connections
 
+import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -532,5 +533,6 @@ private fun ConnectionApp.route(channel: ConnectionType, choices: ServerChoices)
 @Composable
 private fun routeLabel(route: ConnectionRoute, choices: ServerChoices): String {
     val server = route.server?.takeIf { route.channel == ConnectionType.VPN }?.let(choices::labelOf) ?: return route.channel.label()
-    return if (server.unreachable) "${server.name} · ${stringResource(Res.string.apps_server_unreachable)}" else server.name
+    val name = serverName(server.name)
+    return if (server.unreachable) "$name · ${stringResource(Res.string.apps_server_unreachable)}" else name
 }

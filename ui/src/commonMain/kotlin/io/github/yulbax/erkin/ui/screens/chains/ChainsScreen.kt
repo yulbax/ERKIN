@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
+import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -200,7 +201,7 @@ private fun ChainRow(
         Spacer(Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = chain.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
+                text = serverName(chain.name),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,

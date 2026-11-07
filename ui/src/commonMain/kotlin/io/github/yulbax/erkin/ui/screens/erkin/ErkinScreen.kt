@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.serverName
+import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -297,19 +299,19 @@ fun ErkinScreen(
                 val last = profiles.size >= servers.profiles.size && ui.hasVpnApps
                 val single = profiles.singleOrNull()
                 if (single != null) {
-                    val displayName = single.name.ifEmpty { stringResource(Res.string.unnamed_profile) }
+                    val displayName = serverName(single.name)
                     val message = if (last) Res.string.delete_last_server_message else Res.string.delete_server_message
                     Text(stringResource(message, displayName))
                 } else {
                     val message = if (last) Res.string.delete_all_servers_message else Res.string.delete_servers_message
-                    val unnamed = stringResource(Res.string.unnamed_profile)
+                    val names = serverNames()
                     Column {
                         Text(stringResource(message, profiles.size))
                         Spacer(Modifier.height(12.dp))
                         Column(modifier = Modifier.heightIn(max = 240.dp).verticalScroll(rememberScrollState())) {
                             profiles.forEach { profile ->
                                 Text(
-                                    text = "• ${profile.name.ifEmpty { unnamed }}",
+                                    text = "• ${names.of(profile.name)}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis

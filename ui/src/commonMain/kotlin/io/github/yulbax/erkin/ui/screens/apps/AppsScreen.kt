@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.ui.platform.platformChannels
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -230,7 +231,7 @@ private fun ChannelFilter(apps: List<AppInfo>, choices: ServerChoices, selected:
             FilterChip(
                 selected = selected == filter,
                 onClick = { toggle(filter) },
-                label = { Text("${server.name} $count", maxLines = 1) },
+                label = { Text("${serverName(server.name)} $count", maxLines = 1) },
                 leadingIcon = {
                     CompositionLocalProvider(LocalContentColor provides if (server.unreachable) warningColor() else LocalContentColor.current) {
                         SourceIcon(server.icon(ConnectionType.VPN), contentDescription = null, modifier = Modifier.size(16.dp))

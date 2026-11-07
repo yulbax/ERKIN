@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -51,7 +52,7 @@ internal fun ServerRow(
     mode: RowMode = RowMode.Normal
 ) {
     ServerRowLayout(
-        title = profile.name.ifEmpty { stringResource(Res.string.unnamed_profile) },
+        title = serverName(profile.name),
         subtitle = chainLabel ?: profile.type,
         isSelected = isSelected,
         mode = mode,

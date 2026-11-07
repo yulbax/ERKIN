@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.apps
 
+import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,7 +63,7 @@ internal fun ServerPickerSheet(
         items(rows, key = { it.key }) { row ->
             when (row) {
                 is ServerPickerRow.Main -> ServerRow(
-                    name = stringResource(Res.string.app_server_main, row.name),
+                    name = stringResource(Res.string.app_server_main, serverName(row.name)),
                     checked = row.checked,
                     onClick = { close { onPick(null) } }
                 )
@@ -70,7 +71,7 @@ internal fun ServerPickerSheet(
                     expanded = if (row.open) expanded - row.id else expanded + row.id
                 }
                 is ServerPickerRow.Server -> ServerRow(
-                    name = row.name,
+                    name = serverName(row.name),
                     checked = row.checked,
                     indented = row.indented,
                     onClick = { close { onPick(row.id) } }

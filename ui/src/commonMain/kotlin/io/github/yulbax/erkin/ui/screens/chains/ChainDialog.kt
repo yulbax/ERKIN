@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.chains
 
+import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import sh.calvin.reorderable.ReorderableColumn
@@ -59,10 +60,10 @@ internal fun ChainDialog(
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var draft by remember { mutableStateOf(ChainDraft.of((initial?.kind as? ServerKind.Chain)?.chain, servers.firstOrNull()?.id)) }
     val byeDpiLabel = stringResource(Res.string.chain_byedpi)
-    val unnamed = stringResource(Res.string.unnamed_profile)
+    val names = serverNames()
     fun nodeLabel(node: ChainEntry): String = when (node) {
         ChainEntry.ByeDpi -> byeDpiLabel
-        is ChainEntry.Server -> servers.firstOrNull { it.id == node.profileId }?.name?.ifEmpty { unnamed } ?: "—"
+        is ChainEntry.Server -> servers.firstOrNull { it.id == node.profileId }?.let { names.of(it.name) } ?: "—"
     }
     val chain = draft.chain
     val valid = chain != null && chain.isValid && chain.serverIds.all { id -> servers.any { it.id == id } }
@@ -179,8 +180,8 @@ private fun Modifier.pullStart(pull: Dp): Modifier = layout { measurable, constr
 @Composable
 internal fun chainLabel(profile: ProfileEntity, profiles: List<ProfileEntity>): String? {
     val chain = (profile.kind as? ServerKind.Chain)?.chain ?: return null
-    val unnamed = stringResource(Res.string.unnamed_profile)
-    fun nameOf(id: Long) = profiles.firstOrNull { it.id == id }?.name?.ifEmpty { unnamed } ?: "—"
+    val names = serverNames()
+    fun nameOf(id: Long) = profiles.firstOrNull { it.id == id }?.let { names.of(it.name) } ?: "—"
     val byeDpi = stringResource(Res.string.chain_byedpi)
     val hops = chain.hops.map { hop ->
         when (hop) {
