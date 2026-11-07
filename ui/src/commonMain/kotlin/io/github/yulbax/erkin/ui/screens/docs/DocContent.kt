@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.ui.screens.docs
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.AltRoute
+import androidx.compose.material.icons.automirrored.filled.Rule
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.RocketLaunch
 import io.github.yulbax.erkin.ui.components.IconSource
@@ -11,6 +12,7 @@ import io.github.yulbax.erkin.ui.res.ic_byedpi
 enum class DocArticle(val slug: String, val icon: IconSource) {
     START("start", IconSource.Vector(Icons.Filled.RocketLaunch)),
     CHANNELS("channels", IconSource.Vector(Icons.AutoMirrored.Filled.AltRoute)),
+    RULES("rules", IconSource.Vector(Icons.AutoMirrored.Filled.Rule)),
     BYEDPI("byedpi", IconSource.Drawable(Res.drawable.ic_byedpi)),
     TROUBLESHOOTING("troubleshooting", IconSource.Vector(Icons.Filled.Build));
 

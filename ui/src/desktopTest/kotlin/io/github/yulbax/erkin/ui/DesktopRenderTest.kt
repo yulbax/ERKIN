@@ -224,6 +224,7 @@ class DesktopRenderTest {
         render("docs", width = 420, height = 600) { Docs(onOpen = {}) }
         render("doc-byedpi", width = 420, height = 2000) { DocPage(DocArticle.BYEDPI) }
         render("doc-channels", width = 420, height = 1400) { DocPage(DocArticle.CHANNELS) }
+        render("doc-rules", width = 420, height = 1400) { DocPage(DocArticle.RULES) }
     }
 
     @Test

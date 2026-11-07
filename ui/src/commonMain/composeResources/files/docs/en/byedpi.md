@@ -8,18 +8,15 @@ ByeDPI (ciadpi) alters packets on the device so the provider's DPI does not reco
 
 - Tap a strategy to apply it. While connected, only ByeDPI restarts.
 - The percentage is the share of sites that opened in the last test on the current network: Wi-Fi, or mobile with the operator. No percentage means it has not been tested on this network.
-- ⋮ opens details per site and network, test, full test, edit, rename, pin and delete.
+- ⋮ opens details per site and network, test, edit, rename, pin and delete.
 - Long-press to select several for deletion.
 - The 30 most recent unpinned strategies are kept. Pinned ones and the active one are never dropped.
 
 ## Testing
 
-Corner button → Test all. Each strategy runs in its own ciadpi, up to five at once; no VPN connection is needed. A site counts as open only if the whole page loads.
+Corner button → Test all. Each strategy runs in its own ciadpi, up to five at once; no VPN connection is needed. A site counts as open only if the whole page loads. After Test all the list is sorted by result.
 
-- The quick test checks 32 YouTube and Google Video addresses, as in ByeByeDPI.
-- The full test adds Discord, Telegram, social networks, Cloudflare and more.
-
-After Test all the list is sorted by result.
+The gear in the top bar opens Site lists, as in ByeByeDPI, which set the sites to check. The built-in lists are YouTube, Google Video, Discord, Telegram, Social, Cloudflare, General and Türkiye, and you can add your own. An edited built-in list can be reset to its original sites. Strategy tests, Find strategy and the ByeDPI indicator on the home screen all check the enabled lists.
 
 ## Find strategy
 

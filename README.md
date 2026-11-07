@@ -26,26 +26,40 @@ Get the latest APKs, the Windows installer and the Linux packages from
 
 ## Features
 
-- **Per-app routing.** Assign every app one of four modes:
-  - **Direct** — leaves the device normally, with its real IP and no overhead.
+- **Per-app routing.** Assign every app one of five modes:
+  - **Bypass** — leaves the device around ERKIN, with its real IP; the app does not see
+    the VPN. Android only.
+  - **Direct** — goes through ERKIN straight out, so rules apply and it shows up in
+    Connections.
   - **VPN** — tunnelled through your proxy server, the main one or a server or chain of its own.
   - **ByeDPI** — routed through a built-in engine that defeats DPI-based censorship
     locally, without any remote server.
   - **Block** — no network at all while ERKIN is connected.
-- **Routing rules.** Send domains, IP ranges and rule lists to Direct, ByeDPI, VPN or Block,
-  each VPN rule through the main server or a server of its own.
+- **Routing rules.** Send domains, keywords, IP ranges, countries and rule lists to Direct,
+  ByeDPI, VPN or Block, for every app or for a single one, each VPN rule through the main
+  server or a server or chain of its own. Rules apply from top to bottom. Ready rule sets
+  cover ads, telemetry, country IP ranges and services such as YouTube, Telegram and Discord.
+- **Connections.** See where every app goes while connected — traffic per channel, the
+  addresses each app opened and the channel or rule that routed them — and turn an address
+  into a rule for that app.
+- **Chains.** Route through several servers in a row, optionally starting with ByeDPI, and
+  measure the whole chain.
+- **ByeDPI strategies.** Test strategies against the site lists you pick, find a working
+  one from a ready list, and see per-network results.
+- **Self-healing.** A health check watches the VPN and ByeDPI; when the server stops
+  answering, ERKIN reconnects and then switches to the fastest server of the subscription.
 - **Quick Settings tile.** On Android, turn ERKIN on or off from the notification shade
   without opening the app.
 - **Wide protocol support.** Import servers from `vless`, `vmess`, `trojan`,
-  `shadowsocks`, `hysteria2` and `wireguard` share links, AmneziaWG `vpn://` links,
-  WireGuard / AmneziaWG `.conf` files, or a subscription URL.
+  `shadowsocks`, `hysteria2`, `tuic`, `anytls`, `socks5` and `https` share links, AmneziaWG
+  `vpn://` links, WireGuard, AmneziaWG and OpenVPN config files, or a subscription URL.
 - **Modern transports.** TCP, WebSocket, gRPC, HTTP and HTTPUpgrade, with TLS / Reality
   and configurable uTLS fingerprints.
-- **Desktop extras.** On Windows and Linux apps are matched by process name; an optional
-  mode sends all traffic that has no explicit rule through the VPN. Closing the window while
-  connected asks first, and minimizing hides ERKIN to the system tray.
+- **Desktop extras.** On Windows and Linux apps are matched by process name, and traffic
+  of apps without a channel goes straight out. Closing the window while connected asks
+  first, and minimizing hides ERKIN to the system tray.
 - **Stays out of the way.** No system-wide proxy, no exposed control API, optional
-  auto-connect, and a built-in connection health check.
+  auto-connect, and built-in help in every app language.
 
 ## How it works
 
@@ -53,7 +67,7 @@ ERKIN combines two engines behind a single tunnel interface:
 
 - **[mihomo](https://github.com/MetaCubeX/mihomo)** owns the tunnel and dispatches traffic
   per app — *VPN* apps to the upstream server, *ByeDPI* apps to the local bypass proxy,
-  *Direct* apps straight out. ERKIN uses the official mihomo release behind a thin wrapper
+  *Direct* apps straight out; on Android *Bypass* apps never enter the tunnel. ERKIN uses the official mihomo release behind a thin wrapper
   (`core/mihomo`). The same core runs everywhere: as a Go Mobile library inside the app on
   Android (wired to the VPN service the way ClashMetaForAndroid does it), and inside the
   `erkin-service` background service (a Windows service or a systemd unit) on the desktop.

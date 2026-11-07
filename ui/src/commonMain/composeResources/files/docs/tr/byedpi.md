@@ -8,18 +8,15 @@ ByeDPI (ciadpi) paketleri cihazda, sağlayıcının DPI’ı tanımayacağı şe
 
 - Bir stratejiye dokunmak onu uygular. VPN bağlıyken yalnızca ByeDPI yeniden başlar.
 - Yüzde, geçerli ağdaki son testte açılan sitelerin oranıdır: Wi-Fi ya da operatörüyle birlikte mobil ağ. Yüzde yoksa strateji bu ağda henüz test edilmemiştir.
-- ⋮ menüsü: site ve ağ ayrıntıları, test, tam test, düzenleme, yeniden adlandırma, sabitleme, silme.
+- ⋮ menüsü: site ve ağ ayrıntıları, test, düzenleme, yeniden adlandırma, sabitleme, silme.
 - Uzun basarak silmek için birkaçını seçin.
 - Sabitlenmemiş son 30 strateji saklanır. Sabitlenenler ve etkin olan silinmez.
 
 ## Test
 
-Köşedeki düğme → Tümünü test et. Her strateji ayrı bir ciadpi’da, aynı anda en fazla beş tane çalışır; VPN bağlantısı gerekmez. Bir site yalnızca sayfa tamamen yüklendiğinde açık sayılır.
+Köşedeki düğme → Tümünü test et. Her strateji ayrı bir ciadpi’da, aynı anda en fazla beş tane çalışır; VPN bağlantısı gerekmez. Bir site yalnızca sayfa tamamen yüklendiğinde açık sayılır. Tümünü test et’ten sonra liste sonuca göre sıralanır.
 
-- Hızlı test, ByeByeDPI’daki gibi 32 YouTube ve Google Video adresini dener.
-- Tam test buna Discord, Telegram, sosyal ağlar, Cloudflare ve daha fazlasını ekler.
-
-Tümünü test et’ten sonra liste sonuca göre sıralanır.
+Hangi sitelerin test edileceğini başlık çubuğundaki dişli açan Site listeleri belirler, ByeByeDPI’daki gibi. Hazır listeler: YouTube, Google Video, Discord, Telegram, sosyal ağlar, Cloudflare, genel siteler ve Türkiye; kendi listenizi de ekleyebilirsiniz. Değiştirilmiş hazır liste ilk hâline sıfırlanabilir. Strateji testleri, Strateji bul ve ana ekrandaki ByeDPI göstergesi etkin listeleri kullanır.
 
 ## Strateji bul
 
