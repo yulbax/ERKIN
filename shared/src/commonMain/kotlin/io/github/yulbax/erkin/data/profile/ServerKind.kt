@@ -14,3 +14,5 @@ val ProfileEntity.kind: ServerKind
     }
 
 val ProfileEntity.isLink: Boolean get() = kind is ServerKind.Link
+
+fun ProfileEntity.canJoinGroup(current: ServerGroupEntity?): Boolean = isLink && (current?.kind?.acceptsServers ?: true)

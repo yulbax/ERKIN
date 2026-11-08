@@ -3,7 +3,7 @@ package io.github.yulbax.erkin.data
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.vpn.SessionInputs
 import io.github.yulbax.erkin.vpn.VpnSessionStore
 import kotlinx.coroutines.flow.Flow
@@ -44,8 +44,8 @@ class RoomVpnSessionStore(
             .map { it?.byeDpiArgs.orEmpty() }
             .distinctUntilChanged()
 
-    override suspend fun selectedSubscription(): SubscriptionEntity? =
-        database.profileDao().getSelected()?.subscriptionId?.let { database.subscriptionDao().get(it) }
+    override suspend fun selectedGroup(): ServerGroupEntity? =
+        database.profileDao().getSelected()?.groupId?.let { database.serverGroupDao().get(it) }
 
     override suspend fun refreshSubscription(url: String): ProfileOperationResult =
         profileRepository.refreshSubscription(url)

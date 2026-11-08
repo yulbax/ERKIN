@@ -5,7 +5,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
@@ -76,14 +76,14 @@ class VpnSessionRecoveryTest {
 
     private class Store(private val refreshing: CompletableDeferred<Unit>, private val release: CompletableDeferred<Unit>) : VpnSessionStore {
         private val profile = requireNotNull(LinkParser.parse(VLESS)).let {
-            ProfileEntity(id = 1, name = it.name, type = it.protocol.wire, link = VLESS, outboundJson = it.proxyJson(), selected = true, subscriptionId = 7)
+            ProfileEntity(id = 1, name = it.name, type = it.protocol.wire, link = VLESS, outboundJson = it.proxyJson(), selected = true, groupId = 7)
         }
 
         override suspend fun refreshProfiles() = Unit
         override suspend fun load() = SessionInputs(profile, listOf(profile), SettingsEntity(), listOf(App("org.vpn", "Vpn", false, ConnectionType.VPN)))
         override fun routingChanges(): Flow<Unit> = emptyFlow()
         override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
-        override suspend fun selectedSubscription() = SubscriptionEntity(id = 7, url = "https://example.com/sub")
+        override suspend fun selectedGroup() = ServerGroupEntity(id = 7, url = "https://example.com/sub")
         override suspend fun refreshSubscription(url: String): ProfileOperationResult {
             refreshing.complete(Unit)
             release.await()

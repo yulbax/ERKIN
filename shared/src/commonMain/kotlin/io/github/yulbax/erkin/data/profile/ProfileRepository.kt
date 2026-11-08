@@ -25,16 +25,17 @@ class ProfileRepository(
 ) {
     val profiles: Flow<List<ProfileEntity>> = profileDao.observeAll()
     val selected: Flow<ProfileEntity?> = profileDao.observeSelected()
-    val subscriptions: Flow<List<SubscriptionEntity>> = database.subscriptionDao().observeAll()
+    val groups: Flow<List<ServerGroupEntity>> = database.serverGroupDao().observeAll()
 
-    suspend fun add(raw: String, fileName: String? = null): ProfileOperationResult {
+    suspend fun add(raw: String, fileName: String?, target: AddTarget): ProfileOperationResult {
         val input = raw.trim()
         val parsed = LinkParser.parse(input)
+        val fileTitle = fileName?.let(::nameOfFile)
         return when {
             parsed != null && !input.listsSeveralLinks() ->
-                insertSingle(fileName?.let(::nameOfFile)?.let { parsed.copy(name = it) } ?: parsed)
+                insert(listOf(fileTitle?.let { parsed.copy(name = it) } ?: parsed), target)
             input.isHttpUrl() -> refreshSubscription(input)
-            else -> insertAll(SubscriptionParser.parseBody(input))
+            else -> insert(SubscriptionParser.parseBody(input), fileTitle?.let { target.named(it) } ?: target)
         }
     }
 
@@ -73,19 +74,79 @@ class ProfileRepository(
     }
 
     suspend fun refreshSubscription(id: Long): ProfileOperationResult {
-        val stored = database.subscriptionDao().get(id) ?: return ProfileOperationResult.Success(affected = 0)
-        return refreshSubscription(stored.url)
+        val subscription = database.serverGroupDao().get(id)?.kind as? GroupKind.Subscription
+            ?: return ProfileOperationResult.Success(affected = 0)
+        return refreshSubscription(subscription.url)
     }
 
-    suspend fun renameSubscription(id: Long, name: String) {
-        database.subscriptionDao().rename(id, name.trim().takeIf { it.isNotEmpty() })
+    suspend fun renameGroup(id: Long, name: String) {
+        val groups = database.serverGroupDao()
+        val group = groups.get(id) ?: return
+        val trimmed = name.trim().takeIf { it.isNotEmpty() }
+        if (trimmed == null && group.kind == GroupKind.Local) return
+        groups.rename(id, trimmed)
+    }
+
+    suspend fun moveToGroup(ids: Collection<Long>, target: GroupTarget) {
+        database.transaction {
+            val groups = database.serverGroupDao()
+            val stored = groups.getAll().associateBy { it.id }
+            val all = profileDao.getAll()
+            val moving = all.filter { it.id in ids && it.canJoinGroup(it.groupId?.let(stored::get)) }
+            if (moving.isEmpty()) return@transaction
+            val groupId = when (target) {
+                is GroupTarget.New -> groups.insert(ServerGroupEntity(name = target.name.trim()))
+                is GroupTarget.Existing -> target.id.takeIf { stored[it]?.kind?.acceptsServers == true } ?: return@transaction
+            }
+            val movingIds = moving.mapTo(HashSet()) { it.id }
+            profileDao.moveToGroup(movingIds.toList(), groupId)
+            val rest = all.filterNot { it.id in movingIds }
+            val anchor = rest.indexOfLast { it.groupId == groupId }.takeIf { it >= 0 }?.plus(1)
+                ?: all.indexOfFirst { it.id in movingIds }
+            profileDao.reorder(rest.take(anchor).map { it.id } + moving.map { it.id } + rest.drop(anchor).map { it.id })
+            groups.deleteEmpty()
+        }
+    }
+
+    suspend fun removeFromGroup(ids: Collection<Long>) {
+        database.transaction {
+            val stored = database.serverGroupDao().getAll().associateBy { it.id }
+            val all = profileDao.getAll()
+            val leaving = all.filter { profile ->
+                profile.id in ids && profile.groupId?.let(stored::get)?.kind?.acceptsServers == true
+            }
+            if (leaving.isEmpty()) return@transaction
+            val leavingIds = leaving.mapTo(HashSet()) { it.id }
+            profileDao.moveToGroup(leavingIds.toList(), null)
+            val lastStaying = all.filterNot { it.id in leavingIds }.filter { it.groupId != null }
+                .associate { it.groupId to it.id }
+            val leftBehind = leaving.groupBy { it.groupId }
+            val order = all.flatMap { profile ->
+                when {
+                    profile.id in leavingIds -> if (lastStaying[profile.groupId] == null) listOf(profile.id) else emptyList()
+                    lastStaying[profile.groupId] == profile.id -> listOf(profile.id) + leftBehind[profile.groupId].orEmpty().map { it.id }
+                    else -> listOf(profile.id)
+                }
+            }
+            profileDao.reorder(order)
+            database.serverGroupDao().deleteEmpty()
+        }
+    }
+
+    suspend fun dissolveGroup(id: Long) {
+        database.transaction {
+            val groups = database.serverGroupDao()
+            if (groups.get(id)?.kind != GroupKind.Local) return@transaction
+            profileDao.moveToGroup(profileDao.getAll().filter { it.groupId == id }.map { it.id }, null)
+            groups.delete(id)
+        }
     }
 
     private suspend fun sync(url: String, subscription: FetchedSubscription): ProfileOperationResult.SubscriptionSynced {
-        val subscriptions = database.subscriptionDao()
+        val subscriptions = database.serverGroupDao()
         val stored = subscriptions.obtain(url)
         val all = profileDao.getAll()
-        val members = all.filter { it.isLink && it.subscriptionId == stored.id }
+        val members = all.filter { it.isLink && it.groupId == stored.id }
         val unmatched = members.toMutableList()
         val matches = arrayOfNulls<ProfileEntity>(subscription.profiles.size)
         subscription.profiles.forEachIndexed { index, fresh ->
@@ -132,7 +193,7 @@ class ProfileRepository(
             listed
         }
         val others = profileDao.getAll().map { it.id }.filterNot { it in groupIds }
-        val anchor = all.indexOfFirst { it.subscriptionId == stored.id }
+        val anchor = all.indexOfFirst { it.groupId == stored.id }
             .let { first -> if (first < 0) others.size else all.take(first).count { it.id in others } }
         profileDao.reorder(others.take(anchor) + groupIds + others.drop(anchor))
         ensureSelection(preferredId = orderedIds.firstOrNull())
@@ -166,7 +227,7 @@ class ProfileRepository(
     suspend fun select(profile: ProfileEntity) {
         database.transaction {
             profileDao.selectExclusive(profile.id)
-            profile.subscriptionId?.let { database.subscriptionDao().updateCurrent(it, profile.id) }
+            profile.groupId?.let { database.serverGroupDao().updateCurrent(it, profile.id) }
         }
     }
 
@@ -201,7 +262,7 @@ class ProfileRepository(
             }
             profileDao.deleteMany(profiles + orphanedChains)
             clearServers(profiles + orphanedChains)
-            database.subscriptionDao().deleteEmpty()
+            database.serverGroupDao().deleteEmpty()
             ensureSelection()
             if (profileDao.getAll().isEmpty()) {
                 database.appDao().reassignConnectionType(ConnectionType.VPN, ConnectionType.DIRECT)
@@ -262,7 +323,7 @@ class ProfileRepository(
             append(" parses=").append(parsed != null)
             if (parsed != null) append(" fresh=").append(parsed.proxyJson() == profile.outboundJson)
             append(" selected=").append(profile.selected)
-            append(" subscription=").append(profile.subscriptionId != null)
+            append(" group=").append(profile.groupId != null)
         }
     }
 
@@ -272,18 +333,20 @@ class ProfileRepository(
         profileDao.selectExclusive(id)
     }
 
-    private suspend fun insertSingle(profile: ParsedProfile): ProfileOperationResult {
-        database.transaction {
-            val id = profileDao.append(profile.toEntity())
-            ensureSelection(preferredId = id)
-        }
-        return ProfileOperationResult.Success()
+    private fun AddTarget.named(name: String): AddTarget = when (this) {
+        is AddTarget.Main -> AddTarget.Main(newGroupName = name)
+        is AddTarget.Group -> this
     }
 
-    private suspend fun insertAll(profiles: List<ParsedProfile>): ProfileOperationResult {
+    private suspend fun insert(profiles: List<ParsedProfile>, target: AddTarget): ProfileOperationResult {
         if (profiles.isEmpty()) return ProfileOperationResult.InvalidLink
         database.transaction {
-            val ids = profileDao.appendAll(profiles.map { it.toEntity() })
+            val groups = database.serverGroupDao()
+            val groupId = when (target) {
+                is AddTarget.Group -> target.id.takeIf { groups.get(it)?.kind?.acceptsServers == true }
+                is AddTarget.Main -> if (profiles.size > 1) groups.insert(ServerGroupEntity(name = target.newGroupName)) else null
+            }
+            val ids = profileDao.appendAll(profiles.map { it.toEntity(groupId) })
             ensureSelection(preferredId = ids.firstOrNull())
         }
         return ProfileOperationResult.Success(affected = profiles.size)
@@ -299,12 +362,12 @@ class ProfileRepository(
         FetchResult.Failed(error)
     }
 
-    private fun ParsedProfile.toEntity(subscriptionId: Long? = null) = ProfileEntity(
+    private fun ParsedProfile.toEntity(groupId: Long? = null) = ProfileEntity(
         name = name,
         type = protocol.wire,
         link = link,
         outboundJson = proxyJson(),
-        subscriptionId = subscriptionId
+        groupId = groupId
     )
 
     private companion object {

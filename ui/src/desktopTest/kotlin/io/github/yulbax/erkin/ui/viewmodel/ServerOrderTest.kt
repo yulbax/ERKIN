@@ -9,9 +9,9 @@ class ServerOrderTest {
 
     private val profiles = listOf(
         ProfileEntity(id = 1, name = "own slow"),
-        ProfileEntity(id = 2, name = "sub dead", subscriptionId = 7),
+        ProfileEntity(id = 2, name = "sub dead", groupId = 7),
         ProfileEntity(id = 3, name = "own fast"),
-        ProfileEntity(id = 4, name = "sub fast", subscriptionId = 7)
+        ProfileEntity(id = 4, name = "sub fast", groupId = 7)
     )
     private val delays = mapOf(
         1L to ProxyDelay.Measured(300),

@@ -4,9 +4,9 @@ import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenuItem
@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.ChainIcon
-import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import org.jetbrains.compose.resources.StringResource
@@ -33,6 +32,7 @@ internal class ServerActions(
     val onEdit: () -> Unit,
     val onShare: (() -> Unit)?,
     val onRefreshSubscription: (() -> Unit)?,
+    val onRemoveFromGroup: (() -> Unit)?,
     val onDelete: () -> Unit
 )
 
@@ -48,7 +48,7 @@ internal fun ServerRow(
     testing: Boolean = false,
     isBest: Boolean = false,
     chainLabel: String? = null,
-    fromSubscription: Boolean = false,
+    groupIcon: RowIcon? = null,
     mode: RowMode = RowMode.Normal
 ) {
     ServerRowLayout(
@@ -64,8 +64,7 @@ internal fun ServerRow(
         modifier = modifier,
         titleIcon = when {
             chainLabel != null -> RowIcon(ChainIcon, Res.string.chain)
-            fromSubscription -> RowIcon(IconSource.Vector(Icons.Default.Cloud), Res.string.subscription)
-            else -> null
+            else -> groupIcon
         },
         menu = { ServerMenu(actions) }
     )
@@ -86,6 +85,7 @@ private fun ServerMenu(actions: ServerActions) {
             ServerMenuItem(Res.string.edit, Icons.Default.Edit, actions.onEdit, close)
             actions.onShare?.let { ServerMenuItem(Res.string.share, Icons.Default.Share, it, close) }
             actions.onRefreshSubscription?.let { ServerMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, it, close) }
+            actions.onRemoveFromGroup?.let { ServerMenuItem(Res.string.remove_from_group, Icons.Default.FolderOff, it, close) }
             ServerMenuItem(Res.string.delete, Icons.Default.Delete, actions.onDelete, close)
         }
     }

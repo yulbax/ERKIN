@@ -1,7 +1,8 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.data.profile.ProfileEntity
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -12,8 +13,8 @@ class ServerListItemsTest {
     private val manualAfter = server(4, "After")
     private val france = server(5, "France", GROUP_ID)
     private val stored = mapOf(
-        SINGLE_ID to SubscriptionEntity(id = SINGLE_ID, url = "https://one.example/list"),
-        GROUP_ID to SubscriptionEntity(id = GROUP_ID, url = GROUP_URL)
+        SINGLE_ID to ServerGroupEntity(id = SINGLE_ID, url = "https://one.example/list"),
+        GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL)
     )
 
     @Test
@@ -23,8 +24,8 @@ class ServerListItemsTest {
         assertEquals(
             listOf(
                 ServerListItem.Server(manual),
-                ServerListItem.Server(single, subscriptionId = SINGLE_ID),
-                ServerListItem.Subscription(GROUP_ID, GROUP_URL, "sub.example", null, listOf(germany, france), current = germany),
+                ServerListItem.Server(single, stored.getValue(SINGLE_ID)),
+                ServerListItem.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), current = germany),
                 ServerListItem.Server(manualAfter)
             ),
             items
@@ -34,7 +35,7 @@ class ServerListItemsTest {
     @Test
     fun theCurrentServerIsTheSelectedOneThenTheRememberedOne() {
         val profiles = listOf(germany, france, manual)
-        val remembered = mapOf(GROUP_ID to SubscriptionEntity(id = GROUP_ID, url = GROUP_URL, name = "Mine", currentId = france.id))
+        val remembered = mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, name = "Mine", currentId = france.id))
 
         assertEquals(france, subscriptionOf(serverListItems(profiles, selectedId = france.id, stored)).current)
         assertEquals(france, subscriptionOf(serverListItems(profiles, selectedId = manual.id, remembered)).current)
@@ -42,14 +43,26 @@ class ServerListItemsTest {
         assertEquals("Mine", subscriptionOf(serverListItems(profiles, selectedId = null, remembered)).name)
     }
 
-    private fun subscriptionOf(items: List<ServerListItem>) = items.filterIsInstance<ServerListItem.Subscription>().single()
+    @Test
+    fun aLocalGroupStaysAGroupEvenWithOneServer() {
+        val lone = server(6, "Lone", LOCAL_ID)
+        val groups = mapOf(LOCAL_ID to ServerGroupEntity(id = LOCAL_ID, name = "Work"))
 
-    private fun server(id: Long, name: String, subscriptionId: Long? = null) =
-        ProfileEntity(id = id, name = name, type = "vless", link = "vless://$id", outboundJson = "{}", subscriptionId = subscriptionId)
+        assertEquals(
+            listOf(ServerListItem.Group(LOCAL_ID, GroupKind.Local, "Work", null, listOf(lone), current = lone)),
+            serverListItems(listOf(lone), selectedId = null, groups)
+        )
+    }
+
+    private fun subscriptionOf(items: List<ServerListItem>) = items.filterIsInstance<ServerListItem.Group>().single()
+
+    private fun server(id: Long, name: String, groupId: Long? = null) =
+        ProfileEntity(id = id, name = name, type = "vless", link = "vless://$id", outboundJson = "{}", groupId = groupId)
 
     private companion object {
         const val GROUP_URL = "https://sub.example/list"
         const val GROUP_ID = 10L
         const val SINGLE_ID = 11L
+        const val LOCAL_ID = 12L
     }
 }

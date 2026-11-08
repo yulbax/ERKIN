@@ -10,13 +10,13 @@ import io.github.yulbax.erkin.proxy.ProxyProtocol
     tableName = "profiles",
     foreignKeys = [
         ForeignKey(
-            entity = SubscriptionEntity::class,
+            entity = ServerGroupEntity::class,
             parentColumns = ["id"],
-            childColumns = ["subscriptionId"],
+            childColumns = ["groupId"],
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("subscriptionId")]
+    indices = [Index("groupId")]
 )
 data class ProfileEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -25,7 +25,7 @@ data class ProfileEntity(
     val link: String = "",
     val outboundJson: String = "",
     val selected: Boolean = false,
-    val subscriptionId: Long? = null,
+    val groupId: Long? = null,
     val position: Int = 0
 ) {
     val protocol: ProxyProtocol? get() = ProxyProtocol.fromWire(type)

@@ -5,7 +5,7 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ServerKind
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -23,8 +23,8 @@ internal fun ViewModel.serverChoicesOf(profiles: ProfileRepository, states: VpnS
     profiles.serverChoices(states).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ServerChoices())
 
 private fun ProfileRepository.serverChoices(states: VpnStateRepository): Flow<ServerChoices> =
-    combine(profiles, subscriptions, states.stats.map { it.unreachableServers }.distinctUntilChanged()) { servers, subscriptions, down ->
-        ServerChoices(servers, subscriptions.associateBy { it.id }, down)
+    combine(profiles, groups, states.stats.map { it.unreachableServers }.distinctUntilChanged()) { servers, groups, down ->
+        ServerChoices(servers, groups.associateBy { it.id }, down)
     }
 
 data class ServerLabel(val name: String, val isChain: Boolean, val unreachable: Boolean = false)
@@ -37,7 +37,7 @@ sealed interface CurrentServer {
 
 class ServerChoices(
     val servers: List<ProfileEntity> = emptyList(),
-    val subscriptions: Map<Long, SubscriptionEntity> = emptyMap(),
+    val groups: Map<Long, ServerGroupEntity> = emptyMap(),
     private val unreachable: Set<Long> = emptySet()
 ) {
     private val byId = servers.associateBy { it.id }
@@ -74,7 +74,7 @@ class ServerChoices(
         return (chain.hops.getOrNull(hop.index) as? ChainEntry.Server)?.profileId
     }
 
-    fun subscriptionOf(serverId: Long): Long? = byId[serverId]?.subscriptionId
+    fun groupOf(serverId: Long): Long? = byId[serverId]?.groupId
 
     private fun labelOf(server: ProfileEntity): ServerLabel = when (val kind = server.kind) {
         is ServerKind.Link -> ServerLabel(server.name, isChain = false)
@@ -92,8 +92,8 @@ sealed interface ServerPickerRow {
         override val key: Any get() = "main"
     }
 
-    data class Subscription(val id: Long, val name: String, val count: Int, val open: Boolean) : ServerPickerRow {
-        override val key: Any get() = "subscription:$id"
+    data class Group(val id: Long, val name: String, val count: Int, val open: Boolean) : ServerPickerRow {
+        override val key: Any get() = "group:$id"
     }
 
     data class Server(val id: Long, val name: String, val checked: Boolean, val indented: Boolean = false) : ServerPickerRow {
@@ -118,13 +118,13 @@ internal fun serverPickerRows(
         return choices.servers.filter { it.name.contains(needle, ignoreCase = true) }.map { row(it) }
     }
     val main = choices.main?.let { ServerPickerRow.Main(it.name, checked = current == CurrentServer.Main) }
-    return listOfNotNull(main) + serverListItems(choices.servers, choices.main?.id, choices.subscriptions).flatMap { item ->
+    return listOfNotNull(main) + serverListItems(choices.servers, choices.main?.id, choices.groups).flatMap { item ->
         when (item) {
             is ServerListItem.Server -> listOf(row(item.profile))
-            is ServerListItem.Subscription -> {
+            is ServerListItem.Group -> {
                 val open = item.id in expanded
                 val members = if (open) item.members.map { row(it, indented = true) } else emptyList()
-                listOf(ServerPickerRow.Subscription(item.id, item.name, item.members.size, open)) + members
+                listOf(ServerPickerRow.Group(item.id, item.name, item.members.size, open)) + members
             }
         }
     }

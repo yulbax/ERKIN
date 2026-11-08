@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Speed
@@ -56,7 +57,9 @@ import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.GroupKind
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
+import io.github.yulbax.erkin.data.profile.canJoinGroup
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.AddFab
@@ -116,7 +119,8 @@ fun ErkinScreen(
     val sharer = rememberSharer()
     val shareChooserTitle = stringResource(Res.string.share_server_chooser)
 
-    var showAddDialog by remember { mutableStateOf(false) }
+    var adding by remember { mutableStateOf<AddRequest?>(null) }
+    var movingToGroup by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
@@ -157,7 +161,7 @@ fun ErkinScreen(
         onDismissHint = { viewModel.dismissHomeHint() },
         onNavigateToApps = onNavigateToApps,
         onByedpiClick = onNavigateToByeDpi,
-        onAddServerClick = { showAddDialog = true },
+        onAddServerClick = { adding = AddRequest(groupId = null) },
         onTest = profileViewModel::test,
         onReorder = profileViewModel::reorder,
         onSelect = { profileViewModel.select(it) },
@@ -169,23 +173,29 @@ fun ErkinScreen(
         },
         onShare = { profile -> sharer.shareText(profile.link, shareChooserTitle) },
         onDelete = { deleting = listOf(it) },
-        subscriptions = SubscriptionActions(
+        groups = GroupActions(
             refreshing = servers.refreshing,
             testing = servers.testing,
             onOpen = { sheetId = it },
             onTest = profileViewModel::test,
             onRefresh = profileViewModel::refreshSubscription,
+            onAdd = { adding = AddRequest(groupId = it) },
             onRename = { renamingId = it },
-            onShare = { id -> servers.subscriptions[id]?.let { sharer.shareText(it.url, shareChooserTitle) } },
-            onDelete = { id -> deleting = servers.profiles.filter { it.subscriptionId == id } }
+            onShare = { id -> shareText(servers, id)?.let { sharer.shareText(it, shareChooserTitle) } },
+            onUngroup = profileViewModel::dissolveGroup,
+            onDelete = { id -> deleting = servers.profiles.filter { it.groupId == id } }
         ),
+        onRemoveFromGroup = { profileViewModel.removeFromGroup(listOf(it.id)) },
         snackbarHostState = snackbarHostState,
         checked = checked,
         onToggleCheck = { profile -> selection.toggle(profile.id) },
         onToggleChecks = { profiles -> selection.toggleAll(profiles.map { it.id }) },
         onCheckAll = selection::selectAll,
         onClearChecks = selection::clear,
-        onDeleteChecked = { deleting = servers.profiles.filter { it.id in checked } }
+        onDeleteChecked = { deleting = servers.profiles.filter { it.id in checked } },
+        canMoveChecked = servers.profiles.filter { it.id in checked }
+            .let { picked -> picked.isNotEmpty() && picked.all { it.canJoinGroup(it.groupId?.let(servers.groups::get)) } },
+        onMoveChecked = { movingToGroup = true }
     )
 
     val windowSize = LocalWindowInfo.current.containerSize
@@ -193,21 +203,39 @@ fun ErkinScreen(
     if (landscape) ErkinScreenLandscape(content) else ErkinScreenPortrait(content)
 
     sheetId?.let { id ->
-        val item = servers.subscription(id)
+        val item = servers.group(id)
         if (item == null) {
             LaunchedEffect(id) { sheetId = null }
         } else {
-            SubscriptionSheet(item, content.subscriptions, onDismiss = { sheetId = null }) { profile, close ->
-                ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.delays), Modifier, onSelected = close)
+            GroupSheet(item, content.groups, onDismiss = { sheetId = null }) { profile, close ->
+                ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.delays), Modifier, onSelected = close, sheet = item)
             }
         }
     }
 
-    if (showAddDialog) {
+    adding?.let { request ->
         AddServerDialog(
-            onDismiss = { showAddDialog = false },
+            onDismiss = { adding = null },
             onReadFile = { file, onRead -> profileViewModel.readConfigFile(file::open, onRead) },
-            onAdd = { raw, fileName -> profileViewModel.add(raw, fileName); showAddDialog = false }
+            onAdd = { raw, fileName -> profileViewModel.add(raw, fileName, request.groupId); adding = null }
+        )
+    }
+
+    if (movingToGroup) {
+        val ids = checked.toList()
+        MoveToGroupDialog(
+            groups = servers.items.filterIsInstance<ServerListItem.Group>().filter { it.kind == GroupKind.Local },
+            onDismiss = { movingToGroup = false },
+            onNewGroup = {
+                profileViewModel.moveToNewGroup(ids)
+                selection.clear()
+                movingToGroup = false
+            },
+            onGroup = { groupId ->
+                profileViewModel.moveToGroup(ids, groupId)
+                selection.clear()
+                movingToGroup = false
+            }
         )
     }
 
@@ -228,16 +256,16 @@ fun ErkinScreen(
     }
 
     renamingId?.let { id ->
-        val stored = servers.subscriptions[id]
+        val stored = servers.groups[id]
         if (stored == null) {
             LaunchedEffect(id) { renamingId = null }
         } else {
             RenameDialog(
                 current = stored.name.orEmpty(),
-                placeholder = stored.title ?: SubscriptionEntity.hostOf(stored.url),
+                placeholder = stored.title ?: stored.url?.let(ServerGroupEntity::hostOf) ?: stored.name.orEmpty(),
                 onDismiss = { renamingId = null },
                 onSave = { name ->
-                    profileViewModel.renameSubscription(id, name)
+                    profileViewModel.renameGroup(id, name)
                     renamingId = null
                 }
             )
@@ -317,6 +345,14 @@ fun ErkinScreen(
     }
 }
 
+private class AddRequest(val groupId: Long?)
+
+private fun shareText(servers: ServersUiState, groupId: Long): String? = when (val kind = servers.groups[groupId]?.kind) {
+    is GroupKind.Subscription -> kind.url
+    GroupKind.Local -> servers.profiles.filter { it.groupId == groupId }.joinToString("\n") { it.link }
+    null -> null
+}
+
 private class ErkinScreenContent(
     val ui: ErkinUiState,
     val state: VpnState,
@@ -334,14 +370,17 @@ private class ErkinScreenContent(
     val onEdit: (ProfileEntity) -> Unit,
     val onShare: (ProfileEntity) -> Unit,
     val onDelete: (ProfileEntity) -> Unit,
-    val subscriptions: SubscriptionActions,
+    val groups: GroupActions,
+    val onRemoveFromGroup: (ProfileEntity) -> Unit,
     val snackbarHostState: SnackbarHostState,
     val checked: Set<Long>,
     val onToggleCheck: (ProfileEntity) -> Unit,
     val onToggleChecks: (List<ProfileEntity>) -> Unit,
     val onCheckAll: () -> Unit,
     val onClearChecks: () -> Unit,
-    val onDeleteChecked: () -> Unit
+    val onDeleteChecked: () -> Unit,
+    val canMoveChecked: Boolean,
+    val onMoveChecked: () -> Unit
 ) {
     val selecting: Boolean get() = checked.isNotEmpty()
 
@@ -599,7 +638,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                             val mode = if (c.selecting) RowMode.Selecting(c.checkState(item.profileIds), handle) else RowMode.Normal
                             when (item) {
                                 is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, mode = mode)
-                                is ServerListItem.Subscription -> SubscriptionListRow(c, item, fastestId, Modifier, mode)
+                                is ServerListItem.Group -> GroupListRow(c, item, fastestId, Modifier, mode)
                             }
                         }
                     }
@@ -607,7 +646,11 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
             }
             val notifying = c.snackbarHostState.currentSnackbarData != null
             AnimatedSpeedometerButton(visible = showTest && !c.selecting && !notifying, testing = c.servers.testing, onClick = { scrollAfterSort(c.onTest(c.servers.profiles.map { it.id })) })
-            SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked)
+            SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked) {
+                IconButton(onClick = c.onMoveChecked, enabled = c.canMoveChecked) {
+                    Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(Res.string.move_to_group))
+                }
+            }
             SnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
             if (!showHeader && !c.selecting) {
                 AddFab(
@@ -700,9 +743,11 @@ private fun ServerListRow(
     fastestId: Long?,
     modifier: Modifier,
     onSelected: () -> Unit = {},
-    mode: RowMode = RowMode.Normal
+    mode: RowMode = RowMode.Normal,
+    sheet: ServerListItem.Group? = null
 ) {
     val profile = item.profile
+    val group = item.group
     val chainLabel = chainLabel(profile, c.servers.profiles)
     ServerRow(
         profile = profile,
@@ -710,7 +755,8 @@ private fun ServerListRow(
         actions = ServerActions(
             onEdit = { c.onEdit(profile) },
             onShare = if (chainLabel == null) ({ c.onShare(profile) }) else null,
-            onRefreshSubscription = item.subscriptionId?.let { id -> { c.subscriptions.onRefresh(id) } },
+            onRefreshSubscription = group?.takeIf { it.kind is GroupKind.Subscription }?.let { { c.groups.onRefresh(it.id) } },
+            onRemoveFromGroup = sheet?.takeIf { it.kind == GroupKind.Local }?.let { { c.onRemoveFromGroup(profile) } },
             onDelete = { c.onDelete(profile) }
         ),
         onSelect = {
@@ -727,23 +773,23 @@ private fun ServerListRow(
         testing = profile.id in c.servers.testingIds,
         isBest = profile.id == fastestId,
         chainLabel = chainLabel,
-        fromSubscription = item.subscriptionId != null,
+        groupIcon = group?.kind?.rowIcon,
         mode = mode
     )
 }
 
 @Composable
-private fun SubscriptionListRow(
+private fun GroupListRow(
     c: ErkinScreenContent,
-    item: ServerListItem.Subscription,
+    item: ServerListItem.Group,
     fastestId: Long?,
     modifier: Modifier,
     mode: RowMode
 ) {
     val current = item.current
-    SubscriptionRow(
+    GroupRow(
         item = item,
-        actions = c.subscriptions,
+        actions = c.groups,
         isSelected = current.id == c.servers.selected?.id,
         delay = c.servers.delays[current.id],
         testing = current.id in c.servers.testingIds,

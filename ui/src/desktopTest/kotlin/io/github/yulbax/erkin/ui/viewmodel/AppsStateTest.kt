@@ -4,7 +4,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -16,8 +16,8 @@ class AppsStateTest {
     private val discord = AppInfo("com.discord", "Discord", isSystemApp = false, connectionType = ConnectionType.BYEDPI)
     private val main = ProfileEntity(id = 1, name = "Main", selected = true)
     private val helsinki = ProfileEntity(id = 2, name = "Helsinki")
-    private val riga = ProfileEntity(id = 3, name = "Riga", subscriptionId = SUBSCRIPTION)
-    private val oslo = ProfileEntity(id = 4, name = "Oslo", subscriptionId = SUBSCRIPTION)
+    private val riga = ProfileEntity(id = 3, name = "Riga", groupId = SUBSCRIPTION)
+    private val oslo = ProfileEntity(id = 4, name = "Oslo", groupId = SUBSCRIPTION)
     private val chain = ProfileEntity(
         id = 5,
         name = "ByeDPI → Helsinki",
@@ -26,7 +26,7 @@ class AppsStateTest {
     )
     private val choices = ServerChoices(
         listOf(main, helsinki, riga, oslo, chain),
-        mapOf(SUBSCRIPTION to SubscriptionEntity(id = SUBSCRIPTION, url = "https://sub.example/list"))
+        mapOf(SUBSCRIPTION to ServerGroupEntity(id = SUBSCRIPTION, url = "https://sub.example/list"))
     )
 
     @Test
@@ -102,7 +102,7 @@ class AppsStateTest {
 
     @Test
     fun aServerThatDoesNotAnswerIsFlaggedOnItsLabel() {
-        val down = ServerChoices(choices.servers, choices.subscriptions, unreachable = setOf(helsinki.id))
+        val down = ServerChoices(choices.servers, choices.groups, unreachable = setOf(helsinki.id))
 
         assertEquals(ServerLabel("Helsinki", isChain = false, unreachable = true), down.labelFor(telegram.copy(serverId = helsinki.id)))
         assertEquals(ServerLabel("Riga", isChain = false), down.labelFor(telegram.copy(serverId = riga.id)))
@@ -124,7 +124,7 @@ class AppsStateTest {
                 ServerPickerRow.Main("Main", checked = true),
                 ServerPickerRow.Server(1, "Main", checked = false),
                 ServerPickerRow.Server(2, "Helsinki", checked = false),
-                ServerPickerRow.Subscription(SUBSCRIPTION, "sub.example", count = 2, open = false),
+                ServerPickerRow.Group(SUBSCRIPTION, "sub.example", count = 2, open = false),
                 ServerPickerRow.Server(5, "ByeDPI → Helsinki", checked = false)
             ),
             rows

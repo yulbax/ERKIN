@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
@@ -66,8 +67,8 @@ class ConfigBackupRepository(
                 },
                 siteLists = if (selection.settings) siteLists.backup() else null,
                 profiles = if (selection.profiles) {
-                    val subscriptions = database.subscriptionDao().getAll().associateBy { it.id }
-                    database.profileDao().getAll().map { ProfileBackup.of(it, it.subscriptionId?.let(subscriptions::get)) }
+                    val groups = database.serverGroupDao().getAll().associateBy { it.id }
+                    database.profileDao().getAll().map { ProfileBackup.of(it, it.groupId?.let(groups::get)) }
                 } else {
                     null
                 },
@@ -171,7 +172,8 @@ class ConfigBackupRepository(
 
     private suspend fun applyProfiles(backups: List<ProfileBackup>, insert: Boolean): ProfilesImport {
         val profileDao = database.profileDao()
-        val subscriptionDao = database.subscriptionDao()
+        val groupDao = database.serverGroupDao()
+        val localGroups = HashMap<Long, Long>()
         val profiles = backups.map { it to it.toEntity() }
         val stored = profileDao.getAll()
         val existingByLink = stored.filter { it.isLink }.associateTo(HashMap()) { it.link to it.id }
@@ -192,14 +194,17 @@ class ConfigBackupRepository(
             } else {
                 val parsed = checkNotNull(LinkParser.parse(profile.link))
                 added++
-                val subscriptionId = backup.subscriptionUrl.takeIf { it.isNotBlank() }?.let { subscriptionDao.obtain(it).id }
+                val groupId = backup.subscriptionUrl.takeIf { it.isNotBlank() }?.let { groupDao.obtain(it).id }
+                    ?: backup.groupId?.let { original ->
+                        localGroups.getOrPut(original) { groupDao.insert(ServerGroupEntity(name = backup.subscriptionName)) }
+                    }
                 profileDao.append(
                     profile.copy(
                         id = 0,
                         type = parsed.protocol.wire,
                         outboundJson = parsed.proxyJson(),
                         selected = false,
-                        subscriptionId = subscriptionId
+                        groupId = groupId
                     )
                 ).also { existingByLink[profile.link] = it }
             }
@@ -229,12 +234,12 @@ class ConfigBackupRepository(
     }
 
     private suspend fun restoreSubscriptionNames(backups: List<ProfileBackup>) {
-        val subscriptionDao = database.subscriptionDao()
+        val groupDao = database.serverGroupDao()
         backups.mapNotNull { backup -> backup.subscriptionName?.let { backup.subscriptionUrl to it } }
             .filter { (url, _) -> url.isNotBlank() }
             .distinctBy { (url, _) -> url }
             .forEach { (url, name) ->
-                subscriptionDao.find(url)?.takeIf { it.name == null }?.let { subscriptionDao.rename(it.id, name) }
+                groupDao.find(url)?.takeIf { it.name == null }?.let { groupDao.rename(it.id, name) }
             }
     }
 

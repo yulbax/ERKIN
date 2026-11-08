@@ -202,6 +202,12 @@
     <string name="byedpi_args_label">Arguments</string>
     <string name="invalid_link_error">Unsupported or invalid link</string>
     <string name="subscription">Subscription</string>
+    <string name="server_group">Group</string>
+    <string name="server_group_default">Group %1$d</string>
+    <string name="move_to_group">Move to group</string>
+    <string name="new_group">New group</string>
+    <string name="remove_from_group">Remove from group</string>
+    <string name="ungroup">Ungroup</string>
     <string name="fetch_subscription_failed">Failed to fetch subscription: %1$s</string>
     <string name="no_servers_in_subscription">No servers found in subscription</string>
     <string name="subscription_device_limit">This subscription has reached its device limit. Remove an old device with your provider, in their bot or account page.</string>

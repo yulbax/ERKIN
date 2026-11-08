@@ -4,7 +4,7 @@ import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.vpn.core.RoutingRule
 import kotlinx.coroutines.flow.Flow
 
@@ -25,7 +25,7 @@ interface VpnSessionStore {
 
     fun byeDpiArgsChanges(): Flow<String>
 
-    suspend fun selectedSubscription(): SubscriptionEntity?
+    suspend fun selectedGroup(): ServerGroupEntity?
 
     suspend fun refreshSubscription(url: String): ProfileOperationResult
 

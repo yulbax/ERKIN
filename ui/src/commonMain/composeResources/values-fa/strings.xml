@@ -196,6 +196,12 @@
     <string name="byedpi_args_label">آرگومان‌ها</string>
     <string name="invalid_link_error">لینک پشتیبانی‌نشده یا نامعتبر</string>
     <string name="subscription">اشتراک</string>
+    <string name="server_group">گروه</string>
+    <string name="server_group_default">گروه %1$d</string>
+    <string name="move_to_group">انتقال به گروه</string>
+    <string name="new_group">گروه جدید</string>
+    <string name="remove_from_group">حذف از گروه</string>
+    <string name="ungroup">لغو گروه‌بندی</string>
     <string name="fetch_subscription_failed">دریافت اشتراک ناموفق بود: %1$s</string>
     <string name="no_servers_in_subscription">سروری در اشتراک یافت نشد</string>
     <string name="subscription_device_limit">اشتراک به سقف تعداد دستگاه رسیده است. یک دستگاه قدیمی را نزد ارائه‌دهنده، در ربات یا حساب کاربری او، حذف کنید.</string>

@@ -43,7 +43,7 @@ internal fun ServerPickerSheet(
 ) {
     var query by remember { mutableStateOf("") }
     var expanded by remember {
-        mutableStateOf(setOfNotNull((current as? CurrentServer.Bound)?.let { choices.subscriptionOf(it.serverId) }))
+        mutableStateOf(setOfNotNull((current as? CurrentServer.Bound)?.let { choices.groupOf(it.serverId) }))
     }
     val rows = serverPickerRows(choices, query, expanded, current)
 
@@ -62,7 +62,7 @@ internal fun ServerPickerSheet(
                     checked = row.checked,
                     onClick = { close { onPick(null) } }
                 )
-                is ServerPickerRow.Subscription -> SubscriptionHeader(row.name, row.count, row.open) {
+                is ServerPickerRow.Group -> GroupHeader(row.name, row.count, row.open) {
                     expanded = if (row.open) expanded - row.id else expanded + row.id
                 }
                 is ServerPickerRow.Server -> ChoiceRow(
@@ -77,7 +77,7 @@ internal fun ServerPickerSheet(
 }
 
 @Composable
-private fun SubscriptionHeader(name: String, count: Int, open: Boolean, onClick: () -> Unit) {
+private fun GroupHeader(name: String, count: Int, open: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

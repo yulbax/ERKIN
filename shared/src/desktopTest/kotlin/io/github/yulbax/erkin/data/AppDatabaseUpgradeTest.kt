@@ -75,15 +75,15 @@ class AppDatabaseUpgradeTest {
         }
 
         open().useDatabase { database ->
-            val subscription = requireNotNull(database.subscriptionDao().find(SUBSCRIPTION_URL))
+            val subscription = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL))
             val profiles = database.profileDao().getAll()
-            assertEquals(listOf(null, subscription.id, subscription.id), profiles.map { it.subscriptionId })
+            assertEquals(listOf(null, subscription.id, subscription.id), profiles.map { it.groupId })
 
-            database.subscriptionDao().deleteEmpty()
-            assertEquals(subscription, database.subscriptionDao().get(subscription.id))
-            database.profileDao().deleteMany(profiles.filter { it.subscriptionId != null })
-            database.subscriptionDao().deleteEmpty()
-            assertNull(database.subscriptionDao().get(subscription.id))
+            database.serverGroupDao().deleteEmpty()
+            assertEquals(subscription, database.serverGroupDao().get(subscription.id))
+            database.profileDao().deleteMany(profiles.filter { it.groupId != null })
+            database.serverGroupDao().deleteEmpty()
+            assertNull(database.serverGroupDao().get(subscription.id))
         }
     }
 

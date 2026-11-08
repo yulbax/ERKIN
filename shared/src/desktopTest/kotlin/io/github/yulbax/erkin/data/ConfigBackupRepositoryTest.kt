@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.data
 import androidx.room.Room
 import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.data.profile.add
 import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.ChainEntry
@@ -192,10 +193,10 @@ class ConfigBackupRepositoryTest {
     fun appServersSubscriptionNamesAndMissingAppsSurviveARestore() = runBlocking {
         val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
         profiles.add("vless://id@main.example:443?security=tls#Main")
-        val subscription = database.subscriptionDao().obtain("https://sub.example/list")
-        database.subscriptionDao().rename(subscription.id, "Home")
+        val subscription = database.serverGroupDao().obtain("https://sub.example/list")
+        database.serverGroupDao().rename(subscription.id, "Home")
         val homeId = database.profileDao().append(
-            ProfileEntity(name = "Home", type = "vless", link = "vless://id@home.example:443?security=tls#Home", outboundJson = "{}", subscriptionId = subscription.id)
+            ProfileEntity(name = "Home", type = "vless", link = "vless://id@home.example:443?security=tls#Home", outboundJson = "{}", groupId = subscription.id)
         )
         database.appDao().upsertApps(
             listOf(
@@ -216,7 +217,7 @@ class ConfigBackupRepositoryTest {
             assertEquals(1, result.applied)
             assertEquals(1, result.deferred)
             assertEquals(home.id, fresh.appDao().getApp("org.bound")?.serverId)
-            assertEquals("Home", fresh.subscriptionDao().find("https://sub.example/list")?.name)
+            assertEquals("Home", fresh.serverGroupDao().find("https://sub.example/list")?.name)
 
             fresh.appDao().addApps(listOf(App("org.later", "Later", isSystemApp = false)))
             assertEquals(ConnectionType.BYEDPI, fresh.appDao().getApp("org.later")?.connectionType)

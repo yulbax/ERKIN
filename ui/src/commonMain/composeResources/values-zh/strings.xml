@@ -193,6 +193,12 @@
     <string name="byedpi_args_label">参数</string>
     <string name="invalid_link_error">不支持或无效的链接</string>
     <string name="subscription">订阅</string>
+    <string name="server_group">分组</string>
+    <string name="server_group_default">分组 %1$d</string>
+    <string name="move_to_group">移到分组</string>
+    <string name="new_group">新建分组</string>
+    <string name="remove_from_group">移出分组</string>
+    <string name="ungroup">取消分组</string>
     <string name="fetch_subscription_failed">获取订阅失败：%1$s</string>
     <string name="no_servers_in_subscription">订阅中未找到服务器</string>
     <string name="subscription_device_limit">该订阅已达到设备数量上限。请在服务商的机器人或账户页面中移除旧设备。</string>

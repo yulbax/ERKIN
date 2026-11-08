@@ -3,7 +3,7 @@ package io.github.yulbax.erkin.vpn
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +51,15 @@ class ServerFailoverTest {
     }
 
     @Test
+    fun aLocalGroupSwitchesWithoutRefreshing() = runBlocking {
+        val store = FakeStore(group = ServerGroupEntity(id = SUBSCRIPTION.id, name = "Mine"))
+        failover(store, """{"p1":0,"p2":240,"p3":90,"p9":10}""").switchToFastest()
+
+        assertEquals(emptyList<String>(), store.refreshed)
+        assertEquals(3L, store.selectedNow?.id)
+    }
+
+    @Test
     fun keepsTheCurrentServerWhenNoServerAnswers() = runBlocking {
         val store = FakeStore()
         failover(store, """{"p1":0,"p2":0,"p3":0}""").switchToFastest()
@@ -69,21 +78,24 @@ class ServerFailoverTest {
     private fun failover(store: FakeStore, results: String) =
         ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> results }, SilentLog)
 
-    private class FakeStore(private val refresh: ProfileOperationResult = ProfileOperationResult.SubscriptionSynced(0, 0, 0, false)) : VpnSessionStore {
+    private class FakeStore(
+        private val refresh: ProfileOperationResult = ProfileOperationResult.SubscriptionSynced(0, 0, 0, false),
+        private val group: ServerGroupEntity = SUBSCRIPTION
+    ) : VpnSessionStore {
         val refreshed = mutableListOf<String>()
         var selectedNow: ProfileEntity? = null
         private val profiles = listOf(
-            ProfileEntity(id = 1, name = "dead", selected = true, subscriptionId = SUBSCRIPTION.id),
-            ProfileEntity(id = 2, name = "slow", subscriptionId = SUBSCRIPTION.id),
-            ProfileEntity(id = 3, name = "fast", subscriptionId = SUBSCRIPTION.id),
-            ProfileEntity(id = 9, name = "other subscription", subscriptionId = 99)
+            ProfileEntity(id = 1, name = "dead", selected = true, groupId = SUBSCRIPTION.id),
+            ProfileEntity(id = 2, name = "slow", groupId = SUBSCRIPTION.id),
+            ProfileEntity(id = 3, name = "fast", groupId = SUBSCRIPTION.id),
+            ProfileEntity(id = 9, name = "other group", groupId = 99)
         )
 
         override suspend fun refreshProfiles() = Unit
         override suspend fun load() = SessionInputs(profiles.first(), profiles, SettingsEntity(), emptyList())
         override fun routingChanges(): Flow<Unit> = emptyFlow()
         override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
-        override suspend fun selectedSubscription() = SUBSCRIPTION
+        override suspend fun selectedGroup() = group
         override suspend fun refreshSubscription(url: String): ProfileOperationResult = refresh.also { refreshed += url }
         override suspend fun select(profile: ProfileEntity) {
             selectedNow = profile
@@ -97,6 +109,6 @@ class ServerFailoverTest {
     }
 
     private companion object {
-        val SUBSCRIPTION = SubscriptionEntity(id = 7, url = "https://example.com/sub")
+        val SUBSCRIPTION = ServerGroupEntity(id = 7, url = "https://example.com/sub")
     }
 }

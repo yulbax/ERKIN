@@ -1,7 +1,8 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ProfileEntity
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.GroupKind
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -13,28 +14,30 @@ data class ProfileBackup(
     val outboundJson: String = "",
     val selected: Boolean = false,
     val subscriptionUrl: String = "",
-    val subscriptionName: String? = null
+    val subscriptionName: String? = null,
+    val groupId: Long? = null
 ) {
-    fun toEntity(subscriptionId: Long? = null) = ProfileEntity(
+    fun toEntity(groupId: Long? = null) = ProfileEntity(
         id = id,
         name = name,
         type = type,
         link = link,
         outboundJson = outboundJson,
         selected = selected,
-        subscriptionId = subscriptionId
+        groupId = groupId
     )
 
     companion object {
-        fun of(profile: ProfileEntity, subscription: SubscriptionEntity?) = ProfileBackup(
+        fun of(profile: ProfileEntity, group: ServerGroupEntity?) = ProfileBackup(
             id = profile.id,
             name = profile.name,
             type = profile.type,
             link = profile.link,
             outboundJson = profile.outboundJson,
             selected = profile.selected,
-            subscriptionUrl = subscription?.url.orEmpty(),
-            subscriptionName = subscription?.name
+            subscriptionUrl = group?.url.orEmpty(),
+            subscriptionName = group?.name,
+            groupId = group?.takeIf { it.kind == GroupKind.Local }?.id
         )
     }
 }

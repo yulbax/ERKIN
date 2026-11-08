@@ -202,6 +202,12 @@
     <string name="byedpi_args_label">Аргументи</string>
     <string name="invalid_link_error">Непідтримуване або неправильне посилання</string>
     <string name="subscription">Підписка</string>
+    <string name="server_group">Група</string>
+    <string name="server_group_default">Група %1$d</string>
+    <string name="move_to_group">До групи</string>
+    <string name="new_group">Нова група</string>
+    <string name="remove_from_group">Прибрати з групи</string>
+    <string name="ungroup">Розгрупувати</string>
     <string name="fetch_subscription_failed">Не вдалося отримати підписку: %1$s</string>
     <string name="no_servers_in_subscription">У підписці немає серверів</string>
     <string name="subscription_device_limit">Досягнуто ліміту пристроїв підписки. Видаліть старий пристрій у провайдера — в його боті або особистому кабінеті.</string>

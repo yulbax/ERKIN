@@ -196,6 +196,12 @@
     <string name="byedpi_args_label">Argümanlar</string>
     <string name="invalid_link_error">Desteklenmeyen veya geçersiz bağlantı</string>
     <string name="subscription">Abonelik</string>
+    <string name="server_group">Grup</string>
+    <string name="server_group_default">Grup %1$d</string>
+    <string name="move_to_group">Gruba taşı</string>
+    <string name="new_group">Yeni grup</string>
+    <string name="remove_from_group">Gruptan çıkar</string>
+    <string name="ungroup">Grubu dağıt</string>
     <string name="fetch_subscription_failed">Abonelik alınamadı: %1$s</string>
     <string name="no_servers_in_subscription">Abonelikte sunucu bulunamadı</string>
     <string name="subscription_device_limit">Bu abonelik cihaz sınırına ulaştı. Eski bir cihazı sağlayıcınızın botundan veya hesap sayfasından kaldırın.</string>

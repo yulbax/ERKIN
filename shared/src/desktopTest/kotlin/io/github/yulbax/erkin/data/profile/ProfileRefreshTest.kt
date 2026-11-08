@@ -177,7 +177,9 @@ class ProfileRefreshTest {
         var links: List<String> = emptyList()
         var info = SubscriptionInfo()
         var refusal: SubscriptionRefusal? = null
+        var fetches = 0
         override suspend fun fetch(url: String): FetchedSubscription {
+            fetches++
             refusal?.let { throw SubscriptionRefusedException(it) }
             return FetchedSubscription(links.mapNotNull(LinkParser::parse), info)
         }
@@ -185,7 +187,7 @@ class ProfileRefreshTest {
 
     private suspend fun storedSubscriptionServer(link: String, selected: Boolean = false): ProfileEntity {
         val parsed = requireNotNull(LinkParser.parse(link))
-        val subscriptionId = database.subscriptionDao().obtain(SUBSCRIPTION_URL).id
+        val groupId = database.serverGroupDao().obtain(SUBSCRIPTION_URL).id
         val id = database.profileDao().append(
             ProfileEntity(
                 name = parsed.name,
@@ -193,13 +195,15 @@ class ProfileRefreshTest {
                 link = parsed.link,
                 outboundJson = parsed.proxyJson(),
                 selected = selected,
-                subscriptionId = subscriptionId
+                groupId = groupId
             )
         )
         return database.profileDao().getAll().single { it.id == id }
     }
 
     private suspend fun names(): List<String> = database.profileDao().getAll().map { it.name }
+
+    private fun link(host: String, name: String) = "vless://$UUID@$host.example:443?security=tls&sni=$host.example#$name"
 
     private suspend fun followProviderOrder() {
         database.settingsDao().upsertSettings(SettingsEntity(sortServersByPing = false))
@@ -326,17 +330,17 @@ class ProfileRefreshTest {
         subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
         subscription.info = SubscriptionInfo(title = "Provider", usage = SubscriptionUsage(1, 2, 10, 1_900_000_000))
         repository.add(SUBSCRIPTION_URL)
-        val id = requireNotNull(database.subscriptionDao().find(SUBSCRIPTION_URL)).id
-        repository.renameSubscription(id, "  Mine ")
+        val id = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+        repository.renameGroup(id, "  Mine ")
 
-        val stored = requireNotNull(database.subscriptionDao().get(id))
+        val stored = requireNotNull(database.serverGroupDao().get(id))
         assertEquals("Provider", stored.title)
         assertEquals("Mine", stored.displayName)
         assertEquals(SubscriptionUsage(1, 2, 10, 1_900_000_000), stored.usage)
 
         repository.delete(database.profileDao().getAll())
 
-        assertNull(database.subscriptionDao().get(id))
+        assertNull(database.serverGroupDao().get(id))
     }
 
     @Test
@@ -352,7 +356,7 @@ class ProfileRefreshTest {
         repository.select(germany)
         repository.select(other)
 
-        assertEquals(germany.id, database.subscriptionDao().find(SUBSCRIPTION_URL)?.currentId)
+        assertEquals(germany.id, database.serverGroupDao().find(SUBSCRIPTION_URL)?.currentId)
         assertEquals(other.id, database.profileDao().getSelected()?.id)
     }
 
@@ -380,7 +384,7 @@ class ProfileRefreshTest {
     }
 
     @Test
-    fun addingAFileWithSeveralLinksImportsEachServer() = runBlocking {
+    fun addingAFileWithSeveralLinksImportsEachServerIntoOneGroup() = runBlocking {
         val body = listOf(
             "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
             "not a link",
@@ -391,11 +395,14 @@ class ProfileRefreshTest {
 
         val stored = database.profileDao().getAll()
         assertEquals(listOf("Netherlands", "Germany"), stored.map { it.name })
-        assertTrue(stored.all { it.subscriptionId == null })
+        val group = database.serverGroupDao().getAll().single()
+        assertEquals(GroupKind.Local, group.kind)
+        assertEquals(TEST_GROUP_NAME, group.displayName)
+        assertTrue(stored.all { it.groupId == group.id })
     }
 
     @Test
-    fun addingSeveralPastedLinksImportsEachServer() = runBlocking {
+    fun addingSeveralPastedLinksImportsEachServerIntoOneGroup() = runBlocking {
         val links = listOf("a.example", "b.example").mapIndexed { index, host ->
             "vpn://" + Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(AWG_CONFIG.replace("vpn.example.com", host).encodeToByteArray()) + "#${index + 1}"
@@ -405,7 +412,152 @@ class ProfileRefreshTest {
 
         val stored = database.profileDao().getAll()
         assertEquals(listOf("1", "2"), stored.map { it.name })
-        assertTrue(stored.all { it.subscriptionId == null })
+        assertEquals(1, stored.map { it.groupId }.distinct().filterNotNull().size)
+    }
+
+    @Test
+    fun aFileWithSeveralLinksNamesItsGroupAfterTheFile() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"), fileName = "Work servers.txt")
+
+        assertEquals("Work servers", database.serverGroupDao().getAll().single().displayName)
+    }
+
+    @Test
+    fun aSingleLinkIsAddedWithoutAGroup() = runBlocking {
+        repository.add(link("a", "Netherlands"))
+
+        assertNull(database.profileDao().getAll().single().groupId)
+        assertTrue(database.serverGroupDao().getAll().isEmpty())
+    }
+
+    @Test
+    fun linksAddedInsideAGroupJoinItsEnd() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"))
+        repository.add(link("x", "Standalone"))
+        val group = database.serverGroupDao().getAll().single()
+
+        repository.add(link("c", "C"), null, AddTarget.Group(group.id))
+
+        assertEquals(listOf("A", "B", "Standalone", "C"), names())
+        assertEquals(listOf("A", "B", "C"), database.profileDao().getAll().filter { it.groupId == group.id }.map { it.name })
+    }
+
+    @Test
+    fun linksAddedInsideASubscriptionStayStandalone() = runBlocking {
+        subscription.links = listOf(link("a", "Netherlands"))
+        repository.add(SUBSCRIPTION_URL)
+        val id = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+
+        repository.add(link("b", "Mine"), null, AddTarget.Group(id))
+
+        assertNull(database.profileDao().getAll().single { it.name == "Mine" }.groupId)
+    }
+
+    @Test
+    fun serversMovedIntoANewGroupGatherWhereTheFirstOfThemWas() = runBlocking {
+        listOf("A", "B", "C", "D").forEach { repository.add(link(it.lowercase(), it)) }
+        val (_, b, _, d) = database.profileDao().getAll()
+
+        repository.moveToGroup(listOf(b.id, d.id), GroupTarget.New("Pair"))
+
+        assertEquals(listOf("A", "B", "D", "C"), names())
+        val group = database.serverGroupDao().getAll().single()
+        assertEquals("Pair", group.displayName)
+        assertEquals(listOf("B", "D"), database.profileDao().getAll().filter { it.groupId == group.id }.map { it.name })
+    }
+
+    @Test
+    fun serversMovedIntoAGroupFollowItsLastServer() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"))
+        repository.add(link("x", "X"))
+        repository.add(link("y", "Y"))
+        val group = database.serverGroupDao().getAll().single()
+        val y = database.profileDao().getAll().single { it.name == "Y" }
+
+        repository.moveToGroup(listOf(y.id), GroupTarget.Existing(group.id))
+
+        assertEquals(listOf("A", "B", "Y", "X"), names())
+        assertEquals(group.id, database.profileDao().getAll().single { it.name == "Y" }.groupId)
+    }
+
+    @Test
+    fun aGroupEmptiedByAMoveIsRemoved() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"))
+        repository.add(listOf(link("c", "C"), link("d", "D")).joinToString("\n"))
+        val (first, second) = database.serverGroupDao().getAll()
+        val members = database.profileDao().getAll().filter { it.groupId == second.id }.map { it.id }
+
+        repository.moveToGroup(members, GroupTarget.Existing(first.id))
+
+        assertEquals(listOf(first.id), database.serverGroupDao().getAll().map { it.id })
+        assertTrue(database.profileDao().getAll().all { it.groupId == first.id })
+    }
+
+    @Test
+    fun subscriptionServersNeverChangeGroup() = runBlocking {
+        subscription.links = listOf(link("a", "Netherlands"), link("b", "Germany"))
+        repository.add(SUBSCRIPTION_URL)
+        val subscriptionId = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+        val members = database.profileDao().getAll().map { it.id }
+
+        repository.moveToGroup(members, GroupTarget.New("Mine"))
+        repository.removeFromGroup(members)
+
+        assertTrue(database.profileDao().getAll().all { it.groupId == subscriptionId })
+        assertEquals(listOf(subscriptionId), database.serverGroupDao().getAll().map { it.id })
+    }
+
+    @Test
+    fun serversRemovedFromAGroupStandRightAfterIt() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B"), link("c", "C")).joinToString("\n"))
+        repository.add(link("x", "X"))
+        val a = database.profileDao().getAll().first()
+
+        repository.removeFromGroup(listOf(a.id))
+
+        assertEquals(listOf("B", "C", "A", "X"), names())
+        assertNull(database.profileDao().getAll().single { it.name == "A" }.groupId)
+    }
+
+    @Test
+    fun removingEveryServerOfAGroupKeepsThemInPlaceAndDropsTheGroup() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"))
+        repository.add(link("x", "X"))
+
+        repository.removeFromGroup(database.profileDao().getAll().map { it.id })
+
+        assertEquals(listOf("A", "B", "X"), names())
+        assertTrue(database.serverGroupDao().getAll().isEmpty())
+    }
+
+    @Test
+    fun dissolvingAGroupKeepsItsServersButNotASubscription() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"))
+        val group = database.serverGroupDao().getAll().single()
+        subscription.links = listOf(link("c", "C"))
+        repository.add(SUBSCRIPTION_URL)
+        val subscriptionId = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+
+        repository.dissolveGroup(group.id)
+        repository.dissolveGroup(subscriptionId)
+
+        assertEquals(listOf("A", "B", "C"), names())
+        assertEquals(listOf(null, null, subscriptionId), database.profileDao().getAll().map { it.groupId })
+        assertEquals(listOf(subscriptionId), database.serverGroupDao().getAll().map { it.id })
+    }
+
+    @Test
+    fun aLocalGroupKeepsItsNameWhenRenamedToBlankAndIsNeverRefreshed() = runBlocking {
+        repository.add(listOf(link("a", "A"), link("b", "B")).joinToString("\n"))
+        val group = database.serverGroupDao().getAll().single()
+
+        repository.renameGroup(group.id, "  ")
+        assertEquals(TEST_GROUP_NAME, database.serverGroupDao().get(group.id)?.name)
+        repository.renameGroup(group.id, " Work ")
+        assertEquals("Work", database.serverGroupDao().get(group.id)?.name)
+
+        assertEquals(ProfileOperationResult.Success(affected = 0), repository.refreshSubscription(group.id))
+        assertEquals(0, subscription.fetches)
     }
 
     @Test

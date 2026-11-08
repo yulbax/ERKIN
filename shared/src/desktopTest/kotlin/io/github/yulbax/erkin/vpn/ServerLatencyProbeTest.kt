@@ -5,7 +5,7 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProxyChain
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
@@ -80,7 +80,7 @@ class ServerLatencyProbeTest {
         override suspend fun load() = SessionInputs(profiles.first(), profiles, SettingsEntity(), emptyList())
         override fun routingChanges(): Flow<Unit> = emptyFlow()
         override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
-        override suspend fun selectedSubscription(): SubscriptionEntity? = null
+        override suspend fun selectedGroup(): ServerGroupEntity? = null
         override suspend fun refreshSubscription(url: String): ProfileOperationResult = ProfileOperationResult.EmptySubscription
         override suspend fun select(profile: ProfileEntity) = Unit
     }

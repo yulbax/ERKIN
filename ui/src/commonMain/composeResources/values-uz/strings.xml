@@ -196,6 +196,12 @@
     <string name="byedpi_args_label">Argumentlar</string>
     <string name="invalid_link_error">Qoʻllab-quvvatlanmaydigan yoki notoʻgʻri havola</string>
     <string name="subscription">Obuna</string>
+    <string name="server_group">Guruh</string>
+    <string name="server_group_default">Guruh %1$d</string>
+    <string name="move_to_group">Guruhga</string>
+    <string name="new_group">Yangi guruh</string>
+    <string name="remove_from_group">Guruhdan chiqarish</string>
+    <string name="ungroup">Guruhni tarqatish</string>
     <string name="fetch_subscription_failed">Obunani olib boʻlmadi: %1$s</string>
     <string name="no_servers_in_subscription">Obunada serverlar topilmadi</string>
     <string name="subscription_device_limit">Bu obuna qurilmalar chegarasiga yetdi. Eski qurilmani provayderingizning boti yoki shaxsiy kabinetida oʻchiring.</string>

@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -36,7 +37,8 @@ fun BoxScope.SelectionBar(
     count: Int,
     onClear: () -> Unit,
     onSelectAll: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     FloatingVisibility(
         visible = visible,
@@ -63,6 +65,7 @@ fun BoxScope.SelectionBar(
                 IconButton(onClick = onSelectAll) {
                     Icon(Icons.Default.SelectAll, contentDescription = stringResource(Res.string.select_all))
                 }
+                actions()
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,

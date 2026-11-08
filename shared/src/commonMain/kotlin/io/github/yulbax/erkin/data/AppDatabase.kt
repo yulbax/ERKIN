@@ -17,8 +17,8 @@ import io.github.yulbax.erkin.data.byedpi.SiteListDao
 import io.github.yulbax.erkin.data.byedpi.SiteListEntity
 import io.github.yulbax.erkin.data.profile.ProfileDao
 import io.github.yulbax.erkin.data.profile.ProfileEntity
-import io.github.yulbax.erkin.data.profile.SubscriptionDao
-import io.github.yulbax.erkin.data.profile.SubscriptionEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupDao
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleDao
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RuleListDao
@@ -31,8 +31,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, SubscriptionEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
-    version = 26,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, ServerGroupEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
+    version = 27,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -43,7 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun profileDao(): ProfileDao
     abstract fun routingRuleDao(): RoutingRuleDao
     abstract fun ruleListDao(): RuleListDao
-    abstract fun subscriptionDao(): SubscriptionDao
+    abstract fun serverGroupDao(): ServerGroupDao
     abstract fun byeDpiHistoryDao(): ByeDpiHistoryDao
     abstract fun siteListDao(): SiteListDao
 
@@ -260,7 +260,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         )
 
-        fun migrations(appsCanBypass: Boolean): Array<Migration> = MIGRATIONS + bypassMigration(appsCanBypass)
+        fun migrations(appsCanBypass: Boolean): Array<Migration> = MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {
@@ -272,6 +272,35 @@ abstract class AppDatabase : RoomDatabase() {
                     connection.execSQL("UPDATE settings SET newAppsConnectionType = 'BYPASS' WHERE newAppsConnectionType = 'DIRECT' AND tunnelDirectApps = 0")
                 }
                 connection.execSQL("ALTER TABLE settings DROP COLUMN tunnelDirectApps")
+            }
+        }
+
+        private val SERVER_GROUPS_MIGRATION = object : Migration(26, 27) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE `server_groups` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `url` TEXT, `name` TEXT, " +
+                        "`title` TEXT, `upload` INTEGER, `download` INTEGER, `total` INTEGER, `expire` INTEGER, " +
+                        "`updatedAt` INTEGER NOT NULL, `currentId` INTEGER)"
+                )
+                connection.execSQL(
+                    "INSERT INTO server_groups (id, url, name, title, upload, download, total, expire, updatedAt, currentId) " +
+                        "SELECT id, url, name, title, upload, download, total, expire, updatedAt, currentId FROM subscriptions"
+                )
+                connection.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_server_groups_url` ON `server_groups` (`url`)")
+                connection.execSQL(
+                    "CREATE TABLE `profiles_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+                        "`type` TEXT NOT NULL, `link` TEXT NOT NULL, `outboundJson` TEXT NOT NULL, `selected` INTEGER NOT NULL, " +
+                        "`groupId` INTEGER, `position` INTEGER NOT NULL, FOREIGN KEY(`groupId`) " +
+                        "REFERENCES `server_groups`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"
+                )
+                connection.execSQL(
+                    "INSERT INTO profiles_new (id, name, type, link, outboundJson, selected, groupId, position) " +
+                        "SELECT id, name, type, link, outboundJson, selected, subscriptionId, position FROM profiles"
+                )
+                connection.execSQL("DROP TABLE profiles")
+                connection.execSQL("ALTER TABLE profiles_new RENAME TO profiles")
+                connection.execSQL("CREATE INDEX IF NOT EXISTS `index_profiles_groupId` ON `profiles` (`groupId`)")
+                connection.execSQL("DROP TABLE subscriptions")
             }
         }
 

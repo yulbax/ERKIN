@@ -45,6 +45,15 @@ import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
 import io.github.yulbax.erkin.vpn.core.TestNetwork
 import io.github.yulbax.erkin.vpn.core.TestNetworkSource
+import io.github.yulbax.erkin.data.profile.AddTarget
+import io.github.yulbax.erkin.data.profile.GroupKind
+import io.github.yulbax.erkin.ui.screens.erkin.GroupActions
+import io.github.yulbax.erkin.ui.screens.erkin.GroupSheet
+import io.github.yulbax.erkin.ui.screens.erkin.MoveToGroupDialog
+import io.github.yulbax.erkin.ui.screens.erkin.ServerActions
+import io.github.yulbax.erkin.ui.screens.erkin.ServerRow
+import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
+import kotlinx.coroutines.CompletableDeferred
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
@@ -184,8 +193,8 @@ class DesktopRenderTest {
             )
         }
         runBlocking {
-            get<ProfileRepository>().add("vless://id@example.com:443?security=tls#Amsterdam")
-            get<ProfileRepository>().add("trojan://pass@example.org:443#Frankfurt")
+            get<ProfileRepository>().add("vless://id@example.com:443?security=tls#Amsterdam", null, AddTarget.Main(""))
+            get<ProfileRepository>().add("trojan://pass@example.org:443#Frankfurt", null, AddTarget.Main(""))
             val ads = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard/multi-onlydomains.txt"
             val custom = "https://example.com/lists/blocked.txt"
             database.ruleListDao().upsert(RuleListEntity(ads, title = "HaGeZi's Multi NORMAL", entries = 164947))
@@ -236,6 +245,29 @@ class DesktopRenderTest {
         render("connection-app", width = 420, height = 860) { Surface { AppConnections("chrome.exe") } }
         render("connection-app-dark", width = 420, height = 860, dark = true) { Surface { AppConnections("chrome.exe") } }
         render("connection-service", width = 420, height = 600, dark = true) { Surface { AppConnections(ConnectionLedger.SERVICE_APP) } }
+    }
+
+    @Test
+    fun rendersServerGroups() {
+        val repository = get<ProfileRepository>()
+        val group = runBlocking {
+            val links = listOf("Riga", "Oslo", "Tallinn").joinToString("\n") { "vless://id@${it.lowercase()}.example:443?security=tls#$it" }
+            repository.add(links, null, AddTarget.Main("Group 1"))
+            val stored = repository.groups.first().single { it.kind == GroupKind.Local }
+            val members = repository.profiles.first().filter { it.groupId == stored.id }
+            ServerListItem.Group(stored.id, stored.kind, stored.displayName, null, members, members.first())
+        }
+        val actions = GroupActions(
+            refreshing = emptySet(), testing = false, onOpen = {}, onTest = { CompletableDeferred(null) }, onRefresh = {},
+            onAdd = {}, onRename = {}, onShare = {}, onUngroup = {}, onDelete = {}
+        )
+        render("server-groups", width = 420, height = 860) { MainScreen() }
+        render("server-group-sheet", width = 420, height = 700) {
+            GroupSheet(group, actions, onDismiss = {}) { profile, _ ->
+                ServerRow(profile, isSelected = false, ServerActions({}, {}, null, {}, {}), onSelect = {}, onLongClick = {})
+            }
+        }
+        render("move-to-group", width = 420, height = 600) { MoveToGroupDialog(listOf(group), onDismiss = {}, onNewGroup = {}, onGroup = {}) }
     }
 
     @Test
