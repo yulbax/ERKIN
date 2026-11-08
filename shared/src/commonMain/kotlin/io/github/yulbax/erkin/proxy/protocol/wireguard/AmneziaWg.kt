@@ -8,7 +8,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 object AmneziaWg : ProtocolHandler {
-    override val schemes: List<String> = listOf(AmneziaVpnLink.SCHEME, AmneziaConfigLink.SCHEME)
+    override val schemes: List<String> = AmneziaLink.SCHEMES
 
     private const val VERSION_3 = 3
     private val OBFUSCATION_NUMBERS = listOf("jc", "jmin", "jmax", "s1", "s2", "s3", "s4")
@@ -38,10 +38,8 @@ object AmneziaWg : ProtocolHandler {
         if (WgIni.looksLikeConfig(input)) {
             val config = WgIni.parse(input)
             ParsedLink(config.host, descriptor(config))
-        } else if (input.startsWith("${AmneziaConfigLink.SCHEME}://")) {
-            AmneziaConfigLink.parse(input)
         } else {
-            AmneziaVpnLink.parse(input)
+            AmneziaLink.parse(input)
         }
 
     internal fun descriptor(config: WgConfig): JsonObject = wgProxy(config, options(config.interfaceValues))

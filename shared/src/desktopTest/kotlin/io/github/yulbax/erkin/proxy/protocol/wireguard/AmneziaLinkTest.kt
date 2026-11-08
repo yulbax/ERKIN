@@ -15,7 +15,7 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
-class AmneziaVpnLinkTest {
+class AmneziaLinkTest {
 
     @Test
     fun parsesAmneziaLinkIntoAmneziaWgEndpoint() {
@@ -57,6 +57,20 @@ class AmneziaVpnLinkTest {
             .replace("\"awg\"", "\"xray\"")
             .replace("amnezia-awg2", "amnezia-xray")
         assertNull(LinkParser.parse(link(other)))
+    }
+
+    @Test
+    fun bothSchemesReadTheSamePayloads() {
+        val vpn = requireNotNull(LinkParser.parse(link(AMNEZIA_JSON)))
+        val amneziawg = requireNotNull(LinkParser.parse(link(AMNEZIA_JSON).replaceFirst("vpn://", "amneziawg://")))
+
+        assertEquals(vpn, amneziawg.copy(link = vpn.link))
+    }
+
+    @Test
+    fun rejectsAnOversizedPlainPayload() {
+        val huge = PLAIN_CONFIG + "\n#" + "x".repeat(1 shl 20)
+        assertNull(LinkParser.parse("amneziawg://" + Base64.UrlSafe.encode(huge.encodeToByteArray()).trimEnd('=')))
     }
 
     @Test

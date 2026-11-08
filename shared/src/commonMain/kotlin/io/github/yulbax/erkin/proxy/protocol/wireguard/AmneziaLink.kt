@@ -12,8 +12,8 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 @OptIn(ExperimentalEncodingApi::class)
-internal object AmneziaVpnLink {
-    const val SCHEME = "vpn"
+internal object AmneziaLink {
+    val SCHEMES = listOf("vpn", "amneziawg")
     private const val SIZE_PREFIX_BYTES = 4
     private const val MAX_PAYLOAD_BYTES = 1 shl 20
     private const val ZLIB_HEADER = 0x78
@@ -22,7 +22,7 @@ internal object AmneziaVpnLink {
     private val json = Json { ignoreUnknownKeys = true }
 
     fun parse(link: String): ParsedLink {
-        val body = link.removePrefix("$SCHEME://").trim()
+        val body = link.substringAfter("://").trim()
         val payload = decode(body.substringBefore('#'))
         val name = body.substringAfter('#', "").trim().takeIf { it.isNotEmpty() }?.let(::decodeComponent)
         return if (WgIni.looksLikeConfig(payload)) configProfile(payload, name) else jsonProfile(payload, name)
@@ -66,7 +66,7 @@ internal object AmneziaVpnLink {
             .filterNot { it.isWhitespace() }
             .let { it.padEnd((it.length + 3) / 4 * 4, '=') }
         val raw = Base64.UrlSafe.decode(normalized)
-        require(raw.isNotEmpty()) { "payload too short" }
+        require(raw.size in 1..MAX_PAYLOAD_BYTES) { "unexpected payload size ${raw.size}" }
         return if (isCompressed(raw)) inflate(raw, declaredSize(raw)).decodeToString() else raw.decodeToString()
     }
 
