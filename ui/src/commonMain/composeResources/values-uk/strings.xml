@@ -299,6 +299,7 @@
     <string name="rule_sets_pick_country">Вибрати країну</string>
     <string name="rule_set_country">%1$s (IP-адреси)</string>
     <string name="rule_set_download">Завантажити</string>
+    <string name="rule_set_source">Джерело</string>
     <string name="rule_set_link">Посилання</string>
     <string name="rule_set_name_optional">Назва (необов’язково)</string>
     <string name="rename">Перейменувати</string>

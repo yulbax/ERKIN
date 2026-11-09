@@ -21,22 +21,23 @@ internal enum class RuleSetPreset(
     val group: RuleSetGroup,
     val label: StringResource,
     val url: String,
+    val page: String,
     val target: RuleTarget,
     val kind: RuleSetKind? = null,
     val extra: List<RuleListSource> = emptyList()
 ) {
-    YOUTUBE(RuleSetGroup.SERVICES, Res.string.rule_set_youtube, "$GEOSITE/youtube.mrs", RuleTarget.BYEDPI, RuleSetKind.DOMAIN),
+    YOUTUBE(RuleSetGroup.SERVICES, Res.string.rule_set_youtube, "$GEOSITE/youtube.mrs", "$GEOSITE_PAGE/youtube.list", RuleTarget.BYEDPI, RuleSetKind.DOMAIN),
     TELEGRAM(
-        RuleSetGroup.SERVICES, Res.string.rule_set_telegram, "$GEOSITE/telegram.mrs", RuleTarget.VPN, RuleSetKind.DOMAIN,
+        RuleSetGroup.SERVICES, Res.string.rule_set_telegram, "$GEOSITE/telegram.mrs", "$GEOSITE_PAGE/telegram.list", RuleTarget.VPN, RuleSetKind.DOMAIN,
         listOf(RuleListSource("$GEOIP/telegram.mrs", RuleSetKind.IPCIDR))
     ),
-    DISCORD(RuleSetGroup.SERVICES, Res.string.rule_set_discord, "$GEOSITE/discord.mrs", RuleTarget.BYEDPI, RuleSetKind.DOMAIN),
-    HAGEZI_LIGHT(RuleSetGroup.ADS, Res.string.rule_set_hagezi_light, "$HAGEZI/light-onlydomains.txt", RuleTarget.BLOCK),
-    HAGEZI_NORMAL(RuleSetGroup.ADS, Res.string.rule_set_hagezi_normal, "$HAGEZI/multi-onlydomains.txt", RuleTarget.BLOCK),
-    HAGEZI_PRO(RuleSetGroup.ADS, Res.string.rule_set_hagezi_pro, "$HAGEZI/pro-onlydomains.txt", RuleTarget.BLOCK),
-    OISD_SMALL(RuleSetGroup.ADS, Res.string.rule_set_oisd_small, "https://small.oisd.nl/domainswild", RuleTarget.BLOCK),
-    XIAOMI(RuleSetGroup.TELEMETRY, Res.string.rule_set_xiaomi, "$HAGEZI/native.xiaomi-onlydomains.txt", RuleTarget.BLOCK),
-    SAMSUNG(RuleSetGroup.TELEMETRY, Res.string.rule_set_samsung, "$HAGEZI/native.samsung-onlydomains.txt", RuleTarget.BLOCK);
+    DISCORD(RuleSetGroup.SERVICES, Res.string.rule_set_discord, "$GEOSITE/discord.mrs", "$GEOSITE_PAGE/discord.list", RuleTarget.BYEDPI, RuleSetKind.DOMAIN),
+    HAGEZI_LIGHT(RuleSetGroup.ADS, Res.string.rule_set_hagezi_light, "$HAGEZI/light-onlydomains.txt", "$HAGEZI_PAGE#light", RuleTarget.BLOCK),
+    HAGEZI_NORMAL(RuleSetGroup.ADS, Res.string.rule_set_hagezi_normal, "$HAGEZI/multi-onlydomains.txt", "$HAGEZI_PAGE#normal", RuleTarget.BLOCK),
+    HAGEZI_PRO(RuleSetGroup.ADS, Res.string.rule_set_hagezi_pro, "$HAGEZI/pro-onlydomains.txt", "$HAGEZI_PAGE#pro", RuleTarget.BLOCK),
+    OISD_SMALL(RuleSetGroup.ADS, Res.string.rule_set_oisd_small, "https://small.oisd.nl/domainswild", "https://oisd.nl", RuleTarget.BLOCK),
+    XIAOMI(RuleSetGroup.TELEMETRY, Res.string.rule_set_xiaomi, "$HAGEZI/native.xiaomi-onlydomains.txt", "$HAGEZI_PAGE#native", RuleTarget.BLOCK),
+    SAMSUNG(RuleSetGroup.TELEMETRY, Res.string.rule_set_samsung, "$HAGEZI/native.samsung-onlydomains.txt", "$HAGEZI_PAGE#native", RuleTarget.BLOCK);
 
     val source: RuleListSource get() = RuleListSource(url, kind)
     val sources: List<RuleListSource> get() = listOf(source) + extra
@@ -51,6 +52,8 @@ internal enum class RuleSetPreset(
 private const val HAGEZI = "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/wildcard"
 private const val GEOSITE = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite"
 private const val GEOIP = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip"
+private const val HAGEZI_PAGE = "https://github.com/hagezi/dns-blocklists"
+private const val GEOSITE_PAGE = "https://github.com/MetaCubeX/meta-rules-dat/blob/meta/geo/geosite"
 
 @Composable
 internal fun ruleSetName(url: String, state: RuleListState?): String {

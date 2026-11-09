@@ -290,6 +290,7 @@
     <string name="rule_sets_pick_country">选择国家</string>
     <string name="rule_set_country">%1$s（IP 地址）</string>
     <string name="rule_set_download">下载</string>
+    <string name="rule_set_source">来源</string>
     <string name="rule_set_link">链接</string>
     <string name="rule_set_name_optional">名称（可选）</string>
     <string name="rename">重命名</string>

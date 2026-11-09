@@ -307,6 +307,7 @@
     <string name="rule_sets_pick_country">Choose a country</string>
     <string name="rule_set_country">%1$s (IP addresses)</string>
     <string name="rule_set_download">Download</string>
+    <string name="rule_set_source">Source</string>
     <string name="rule_set_link">Link</string>
     <string name="rule_set_name_optional">Name (optional)</string>
     <string name="rename">Rename</string>

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
@@ -38,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +70,7 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
     val apps by viewModel.apps.collectAsStateWithLifecycle()
     val usage by viewModel.usage.collectAsStateWithLifecycle()
     val showMessage = rememberShowMessage()
+    val uriHandler = LocalUriHandler.current
     var error by remember { mutableStateOf<RuleListError?>(null) }
     var draft by remember { mutableStateOf<RoutingRuleEntity?>(null) }
     var draftCompanions by remember { mutableStateOf(emptyList<String>()) }
@@ -129,6 +132,7 @@ fun RuleSets(viewModel: RuleSetsViewModel = koinViewModel()) {
                             name = stringResource(preset.label),
                             detail = linkHost(preset.url),
                             state = states[preset.url],
+                            onOpenSource = { runCatching { uriHandler.openUri(preset.page) } },
                             onDownload = {
                                 viewModel.addAll(preset.sources) { failure ->
                                     report(failure)
@@ -257,7 +261,7 @@ private fun LibraryRow(
 }
 
 @Composable
-private fun PresetRow(name: String, detail: String, state: RuleListState?, onDownload: () -> Unit) {
+private fun PresetRow(name: String, detail: String, state: RuleListState?, onOpenSource: () -> Unit, onDownload: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -271,6 +275,9 @@ private fun PresetRow(name: String, detail: String, state: RuleListState?, onDow
             subtitleColor = state?.textColor() ?: MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
+        IconButton(onClick = onOpenSource) {
+            Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = stringResource(Res.string.rule_set_source))
+        }
         when {
             state?.downloading == true -> Progress()
             state?.installed != null -> Icon(

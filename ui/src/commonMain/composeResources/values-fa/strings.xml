@@ -293,6 +293,7 @@
     <string name="rule_sets_pick_country">انتخاب کشور</string>
     <string name="rule_set_country">%1$s (آدرس‌های IP)</string>
     <string name="rule_set_download">دانلود</string>
+    <string name="rule_set_source">منبع</string>
     <string name="rule_set_link">پیوند</string>
     <string name="rule_set_name_optional">نام (اختیاری)</string>
     <string name="rename">تغییر نام</string>
