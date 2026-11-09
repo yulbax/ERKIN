@@ -9,13 +9,16 @@ import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleSetsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
+import io.github.yulbax.erkin.ui.viewmodel.ServerDelays
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.SiteListsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
+import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val uiModule = module {
+    singleOf(::ServerDelays)
     viewModelOf(::AppsViewModel)
     viewModelOf(::ByeDpiViewModel)
     viewModelOf(::ChainsViewModel)

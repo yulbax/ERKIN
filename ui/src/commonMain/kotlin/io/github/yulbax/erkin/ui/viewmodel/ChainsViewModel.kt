@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,8 +19,11 @@ import kotlinx.coroutines.withContext
 
 class ChainsViewModel(
     private val profileRepository: ProfileRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    serverDelays: ServerDelays
 ) : ViewModel() {
+
+    val delays: StateFlow<Map<Long, ProxyDelay>> = serverDelays.delays
 
     val hintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.chainsHintSeen }

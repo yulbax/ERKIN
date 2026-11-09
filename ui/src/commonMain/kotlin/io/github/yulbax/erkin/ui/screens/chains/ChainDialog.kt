@@ -5,6 +5,9 @@ import io.github.yulbax.erkin.ui.components.EditorDialog
 import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.DestructiveButton
 import io.github.yulbax.erkin.ui.components.serverNames
+import io.github.yulbax.erkin.ui.components.color
+import io.github.yulbax.erkin.ui.components.label
+import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import sh.calvin.reorderable.ReorderableColumn
@@ -53,6 +56,7 @@ import org.jetbrains.compose.resources.stringResource
 internal fun ChainDialog(
     initial: ProfileEntity?,
     profiles: List<ProfileEntity>,
+    delays: Map<Long, ProxyDelay>,
     onDismiss: () -> Unit,
     onSave: (name: String, chain: ProxyChain) -> Unit,
     onDelete: (() -> Unit)?
@@ -124,7 +128,16 @@ internal fun ChainDialog(
                                     options = draft.options(index, serverIds),
                                     selected = node,
                                     optionLabel = ::nodeLabel,
-                                    onSelect = { selected -> draft = draft.select(index, selected) }
+                                    onSelect = { selected -> draft = draft.select(index, selected) },
+                                    optionDetail = { option ->
+                                        (option as? ChainEntry.Server)?.let { delays[it.profileId] }?.let { delay ->
+                                            Text(
+                                                delay.label(),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = delay.color()
+                                            )
+                                        }
+                                    }
                                 )
                             }
                             if (draft.isRemovable(index)) {

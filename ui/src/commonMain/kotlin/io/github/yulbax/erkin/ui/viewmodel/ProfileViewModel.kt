@@ -72,11 +72,11 @@ class ProfileViewModel(
     private val profileRepository: ProfileRepository,
     private val settingsRepository: SettingsRepository,
     private val latencyProbe: ServerLatencyProbe,
+    private val serverDelays: ServerDelays,
     private val log: AppLog
 ) : ViewModel() {
 
     private val _error = MutableStateFlow<ServerError?>(null)
-    private val _delays = MutableStateFlow<Map<Long, ProxyDelay>>(emptyMap())
     private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _refreshing = MutableStateFlow<Set<Long>>(emptySet())
     private val _unreachable = MutableSharedFlow<List<Long>>(extraBufferCapacity = 1)
@@ -89,7 +89,7 @@ class ProfileViewModel(
     val uiState: StateFlow<ServersUiState> = combine(
         profileRepository.profiles,
         profileRepository.selected,
-        combine(_delays, _testingIds) { delays, testingIds -> delays to testingIds },
+        combine(serverDelays.delays, _testingIds) { delays, testingIds -> delays to testingIds },
         groups,
         _error
     ) { profiles, selected, (delays, testingIds), (stored, refreshing), error ->
@@ -108,12 +108,12 @@ class ProfileViewModel(
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()
         if (_testingIds.value.isNotEmpty() || ids.isEmpty()) return CompletableDeferred(null)
-        _delays.value -= ids
+        serverDelays.update { it - ids }
         _testingIds.value = ids
         return viewModelScope.async(Dispatchers.IO) {
             try {
                 val delays = latencyProbe.measure(ids)
-                _delays.value += delays
+                serverDelays.update { it + delays }
                 val order = if (settingsRepository.settings.first().sortServersByPing) {
                     uiState.value.profiles.sortedByDelay(ids, delays).map { it.id }.also { profileRepository.reorder(it) }
                 } else {
@@ -125,7 +125,7 @@ class ProfileViewModel(
                 throw cancelled
             } catch (t: Throwable) {
                 log.w(TAG, "latency test failed", t)
-                _delays.value = ids.associateWith { ProxyDelay.Failed }
+                serverDelays.update { ids.associateWith { ProxyDelay.Failed } }
                 null
             } finally {
                 _testingIds.value = emptySet()

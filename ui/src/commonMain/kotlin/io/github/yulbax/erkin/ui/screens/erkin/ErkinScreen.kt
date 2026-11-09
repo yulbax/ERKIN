@@ -244,6 +244,7 @@ fun ErkinScreen(
         ChainDialog(
             initial = chain,
             profiles = servers.profiles,
+            delays = servers.delays,
             onDismiss = { editingChain = null },
             onSave = { name, spec ->
                 chainsViewModel.save(chain, name, spec) { saved -> if (saved) editingChain = null else showMessage(chainInvalid) }

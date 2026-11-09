@@ -86,7 +86,8 @@ fun <T> DropdownSetting(
     options: List<T>,
     selected: T,
     optionLabel: (T) -> String,
-    onSelect: (T) -> Unit
+    onSelect: (T) -> Unit,
+    optionDetail: @Composable (T) -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -112,7 +113,8 @@ fun <T> DropdownSetting(
                     onClick = {
                         onSelect(option)
                         expanded = false
-                    }
+                    },
+                    trailingIcon = { optionDetail(option) }
                 )
             }
         }

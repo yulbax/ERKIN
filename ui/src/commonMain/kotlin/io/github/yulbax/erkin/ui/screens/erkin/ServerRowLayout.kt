@@ -40,7 +40,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
@@ -52,8 +51,8 @@ import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.ui.theme.StatusAmber
-import io.github.yulbax.erkin.ui.theme.StatusGreen
+import io.github.yulbax.erkin.ui.components.color
+import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import kotlin.math.PI
 import kotlin.math.sin
@@ -84,7 +83,7 @@ internal fun ServerRowLayout(
     subtitleIcon: RowIcon? = null,
     menu: @Composable RowScope.() -> Unit
 ) {
-    val pingColor = delay?.let(::pingColor)
+    val pingColor = delay?.color()
     val shape = RoundedCornerShape(18.dp)
     Surface(
         shape = shape,
@@ -204,18 +203,12 @@ private fun DelaySuffix(delay: ProxyDelay?, testing: Boolean) {
         WaveDots(color = MaterialTheme.colorScheme.onSurfaceVariant)
     } else if (delay != null) {
         Text(
-            text = when (delay) {
-                ProxyDelay.Failed -> stringResource(Res.string.server_ping_timeout)
-                ProxyDelay.NeedsConnection -> stringResource(Res.string.server_ping_needs_connection)
-                is ProxyDelay.Measured -> "${delay.ms} ms"
-            },
+            text = delay.label(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
-
-private val PING_RED = Color(0xFFE53935)
 
 @Composable
 private fun WaveDots(color: Color, modifier: Modifier = Modifier) {
@@ -250,14 +243,3 @@ private const val WAVE_DOTS = 3
 private const val WAVE_PERIOD_MS = 1_000
 private const val WAVE_DOT_SHIFT = 0.15f
 private val WAVE_LIFT = 4.dp
-
-private fun pingColor(delay: ProxyDelay): Color = when (delay) {
-    ProxyDelay.Failed -> PING_RED
-    ProxyDelay.NeedsConnection -> StatusAmber
-    is ProxyDelay.Measured -> when {
-        delay.ms <= 100 -> StatusGreen
-        delay.ms < 450 -> lerp(StatusGreen, StatusAmber, (delay.ms - 100) / 350f)
-        delay.ms < 900 -> lerp(StatusAmber, PING_RED, (delay.ms - 450) / 450f)
-        else -> PING_RED
-    }
-}
