@@ -337,6 +337,7 @@
     <string name="subscription_usage">%1$s / %2$s</string>
     <string name="subscription_used">%1$s ishlatilgan</string>
     <string name="subscription_expires">%1$s gacha</string>
+    <string name="subscription_updated">yangilangan: %1$s</string>
     <string name="subscription_expired">muddati tugagan</string>
     <string name="subscription_show_servers">Serverlarni koʻrsatish</string>
     <string name="subscription_hide_servers">Serverlarni yashirish</string>

@@ -172,7 +172,10 @@ internal fun GroupSheet(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    pluralStringResource(Res.plurals.subscription_servers, item.members.size, item.members.size),
+                    listOfNotNull(
+                        pluralStringResource(Res.plurals.subscription_servers, item.members.size, item.members.size),
+                        item.updatedAt?.let { stringResource(Res.string.subscription_updated, updatedText(it)) }
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -337,5 +340,8 @@ private fun usageText(usage: SubscriptionUsage): String? {
     }
     return listOfNotNull(traffic, expiry).joinToString(" · ").takeIf { it.isNotEmpty() }
 }
+
+private fun updatedText(millis: Long): String =
+    DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault()).format(Date(millis))
 
 private const val SHORT_LIST = 6

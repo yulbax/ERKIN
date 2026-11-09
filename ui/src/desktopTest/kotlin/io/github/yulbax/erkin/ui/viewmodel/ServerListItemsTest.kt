@@ -54,6 +54,20 @@ class ServerListItemsTest {
         )
     }
 
+    @Test
+    fun onlyARefreshedSubscriptionCarriesItsUpdateTime() {
+        val lone = server(6, "Lone", LOCAL_ID)
+        val profiles = listOf(germany, france, lone)
+        val groups = mapOf(
+            GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, updatedAt = UPDATED_AT),
+            LOCAL_ID to ServerGroupEntity(id = LOCAL_ID, name = "Work", updatedAt = UPDATED_AT)
+        )
+        val items = serverListItems(profiles, selectedId = null, groups).filterIsInstance<ServerListItem.Group>()
+
+        assertEquals(listOf(UPDATED_AT, null), items.map { it.updatedAt })
+        assertEquals(null, subscriptionOf(serverListItems(listOf(germany, france), selectedId = null, stored)).updatedAt)
+    }
+
     private fun subscriptionOf(items: List<ServerListItem>) = items.filterIsInstance<ServerListItem.Group>().single()
 
     private fun server(id: Long, name: String, groupId: Long? = null) =
@@ -64,5 +78,6 @@ class ServerListItemsTest {
         const val GROUP_ID = 10L
         const val SINGLE_ID = 11L
         const val LOCAL_ID = 12L
+        const val UPDATED_AT = 1_762_000_000_000L
     }
 }

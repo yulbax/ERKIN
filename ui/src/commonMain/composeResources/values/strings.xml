@@ -361,6 +361,7 @@
     <string name="subscription_usage">%1$s of %2$s</string>
     <string name="subscription_used">%1$s used</string>
     <string name="subscription_expires">until %1$s</string>
+    <string name="subscription_updated">updated %1$s</string>
     <string name="subscription_expired">expired</string>
     <string name="subscription_show_servers">Show servers</string>
     <string name="subscription_hide_servers">Hide servers</string>

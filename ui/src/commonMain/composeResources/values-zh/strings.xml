@@ -333,6 +333,7 @@
     <string name="subscription_usage">%1$s / %2$s</string>
     <string name="subscription_used">已用 %1$s</string>
     <string name="subscription_expires">到期 %1$s</string>
+    <string name="subscription_updated">更新于 %1$s</string>
     <string name="subscription_expired">已过期</string>
     <string name="subscription_show_servers">显示服务器</string>
     <string name="subscription_hide_servers">隐藏服务器</string>

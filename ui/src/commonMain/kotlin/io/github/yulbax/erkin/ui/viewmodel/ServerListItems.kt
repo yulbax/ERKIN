@@ -20,7 +20,8 @@ sealed interface ServerListItem {
         val name: String,
         val usage: SubscriptionUsage?,
         val members: List<ProfileEntity>,
-        val current: ProfileEntity
+        val current: ProfileEntity,
+        val updatedAt: Long? = null
     ) : ServerListItem {
         override val key: Any get() = GROUP_KEY_PREFIX + id
         override val profileIds: List<Long> get() = members.map { it.id }
@@ -55,7 +56,8 @@ internal fun serverListItems(
                     members = members,
                     current = members.firstOrNull { it.id == selectedId }
                         ?: members.firstOrNull { it.id == stored.currentId }
-                        ?: members.first()
+                        ?: members.first(),
+                    updatedAt = stored.updatedAt.takeIf { stored.kind is GroupKind.Subscription && it > 0 }
                 )
             }
         }

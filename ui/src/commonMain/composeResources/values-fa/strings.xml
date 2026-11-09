@@ -337,6 +337,7 @@
     <string name="subscription_usage">%1$s از %2$s</string>
     <string name="subscription_used">%1$s مصرف شده</string>
     <string name="subscription_expires">تا %1$s</string>
+    <string name="subscription_updated">به‌روزرسانی: %1$s</string>
     <string name="subscription_expired">منقضی شده</string>
     <string name="subscription_show_servers">نمایش سرورها</string>
     <string name="subscription_hide_servers">پنهان کردن سرورها</string>
