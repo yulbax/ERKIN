@@ -44,7 +44,7 @@
 +    uint32_t index = 0;
 +    int n = recv(fd, (char *)&index, sizeof(index), MSG_WAITALL);
 +    closesocket(fd);
-+    if (n != sizeof(index) || !index) {
++    if (n != sizeof(index)) {
 +        LOG(LOG_E, "protect: no interface index\n");
 +        return -1;
 +    }

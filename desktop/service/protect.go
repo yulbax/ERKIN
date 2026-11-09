@@ -11,6 +11,7 @@ import (
 const (
 	protectSocketName = "protect.sock"
 	protectTimeout    = 2 * time.Second
+	unboundInterface  = 0
 )
 
 func protectSocketPath(socketPath string) string {

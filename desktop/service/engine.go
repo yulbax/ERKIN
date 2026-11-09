@@ -87,7 +87,7 @@ func (e *engine) traffic() (up int64, down int64, ok bool) {
 
 func (e *engine) defaultInterfaceIndex() (int, error) {
 	if !e.isRunning() {
-		return 0, errors.New("mihomo is not running")
+		return unboundInterface, nil
 	}
 	name := mihomocore.DefaultInterface()
 	if name == "" {
