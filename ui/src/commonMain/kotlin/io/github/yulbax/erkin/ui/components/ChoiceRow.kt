@@ -29,7 +29,8 @@ fun ChoiceRow(
     onClick: () -> Unit,
     subtitle: String? = null,
     padding: PaddingValues = PaddingValues(12.dp),
-    leading: (@Composable () -> Unit)? = null
+    leading: (@Composable () -> Unit)? = null,
+    trailing: (@Composable () -> Unit)? = null
 ) {
     Surface(
         onClick = onClick,
@@ -44,6 +45,10 @@ fun ChoiceRow(
                 if (subtitle != null) {
                     Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+            if (trailing != null) {
+                Spacer(Modifier.width(8.dp))
+                trailing()
             }
             if (checked) {
                 Spacer(Modifier.width(8.dp))

@@ -19,8 +19,7 @@ internal data class ChainDraft(val nodes: List<ChainEntry>) {
 
     fun isRemovable(index: Int): Boolean = index in 1 until lastIndex
 
-    fun options(index: Int, servers: List<Long>): List<ChainEntry> =
-        listOfNotNull(ChainEntry.ByeDpi.takeIf { index == 0 }) + servers.map(ChainEntry::Server)
+    fun acceptsByeDpi(index: Int): Boolean = index == 0
 
     fun select(index: Int, entry: ChainEntry): ChainDraft {
         val other = nodes.indexOf(entry).takeIf { it >= 0 && it != index }

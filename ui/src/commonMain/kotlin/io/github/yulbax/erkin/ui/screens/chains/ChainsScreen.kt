@@ -51,7 +51,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
     val profiles by viewModel.profiles.collectAsStateWithLifecycle()
-    val delays by viewModel.delays.collectAsStateWithLifecycle()
+    val choices by viewModel.serverChoices.collectAsStateWithLifecycle()
     val hintSeen by viewModel.hintSeen.collectAsStateWithLifecycle()
     val chains = profiles.filter { it.kind is ServerKind.Chain }
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
@@ -121,8 +121,7 @@ fun Chains(viewModel: ChainsViewModel = koinViewModel()) {
         }
         ChainDialog(
             initial = existing,
-            profiles = profiles,
-            delays = delays,
+            choices = choices,
             onDismiss = close,
             onSave = { name, chain ->
                 viewModel.save(existing, name, chain) { saved -> if (saved) close() else showMessage(invalid) }

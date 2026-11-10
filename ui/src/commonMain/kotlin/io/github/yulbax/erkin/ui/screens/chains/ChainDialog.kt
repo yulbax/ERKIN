@@ -5,10 +5,15 @@ import io.github.yulbax.erkin.ui.components.EditorDialog
 import io.github.yulbax.erkin.ui.components.DialogAction
 import io.github.yulbax.erkin.ui.components.DestructiveButton
 import io.github.yulbax.erkin.ui.components.serverNames
-import io.github.yulbax.erkin.ui.components.color
-import io.github.yulbax.erkin.ui.components.label
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.ui.text.style.TextOverflow
+import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
+import io.github.yulbax.erkin.ui.viewmodel.CurrentServer
+import io.github.yulbax.erkin.ui.viewmodel.PickerLead
+import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
 import androidx.compose.foundation.layout.padding
 import sh.calvin.reorderable.ReorderableColumn
 import io.github.yulbax.erkin.ui.components.groupItemShape
@@ -45,9 +50,7 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
-import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
-import io.github.yulbax.erkin.ui.components.DropdownSetting
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.stringResource
@@ -55,13 +58,14 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun ChainDialog(
     initial: ProfileEntity?,
-    profiles: List<ProfileEntity>,
-    delays: Map<Long, ProxyDelay>,
+    choices: ServerChoices,
     onDismiss: () -> Unit,
     onSave: (name: String, chain: ProxyChain) -> Unit,
     onDelete: (() -> Unit)?
 ) {
-    val servers = profiles.filter { it.isLink }
+    val links = choices.linksOnly()
+    val servers = links.servers
+    var picking by remember { mutableStateOf<Int?>(null) }
     var name by remember { mutableStateOf(initial?.name.orEmpty()) }
     var draft by remember { mutableStateOf(ChainDraft.of((initial?.kind as? ServerKind.Chain)?.chain, servers.firstOrNull()?.id)) }
     val byeDpiLabel = stringResource(Res.string.chain_byedpi)
@@ -73,7 +77,6 @@ internal fun ChainDialog(
     val chain = draft.chain
     val valid = chain != null && chain.isValid && chain.serverIds.all { id -> servers.any { it.id == id } }
     val unused = servers.firstOrNull { !draft.uses(it.id) }
-    val serverIds = servers.map { it.id }
 
     EditorDialog(
         title = stringResource(if (initial == null) Res.string.new_chain else Res.string.edit_chain),
@@ -117,28 +120,32 @@ internal fun ChainDialog(
                                 )
                             }
                             Box(modifier = Modifier.weight(1f).pullStart(FIELD_PULL)) {
-                                DropdownSetting(
-                                    label = stringResource(
-                                        when (index) {
-                                            0 -> Res.string.chain_entry
-                                            draft.lastIndex -> Res.string.chain_exit
-                                            else -> Res.string.chain_via
-                                        }
-                                    ),
-                                    options = draft.options(index, serverIds),
-                                    selected = node,
-                                    optionLabel = ::nodeLabel,
-                                    onSelect = { selected -> draft = draft.select(index, selected) },
-                                    optionDetail = { option ->
-                                        (option as? ChainEntry.Server)?.let { delays[it.profileId] }?.let { delay ->
-                                            Text(
-                                                delay.label(),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = delay.color()
-                                            )
-                                        }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { picking = index }
+                                        .padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            hopLabel(index, draft.lastIndex),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            nodeLabel(node),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
                                     }
-                                )
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = stringResource(Res.string.apps_choose_server_cd),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                             if (draft.isRemovable(index)) {
                                 IconButton(onClick = { draft = draft.remove(index) }) {
@@ -158,7 +165,32 @@ internal fun ChainDialog(
             }
         }
     }
+
+    picking?.let { index ->
+        draft.nodes.getOrNull(index)?.let { node ->
+            ServerPickerSheet(
+                subtitle = hopLabel(index, draft.lastIndex),
+                choices = links,
+                current = when (node) {
+                    ChainEntry.ByeDpi -> CurrentServer.ByeDpi
+                    is ChainEntry.Server -> CurrentServer.Bound(node.profileId)
+                },
+                lead = if (draft.acceptsByeDpi(index)) PickerLead.BYEDPI else PickerLead.NONE,
+                onPick = { id -> draft = draft.select(index, id?.let(ChainEntry::Server) ?: ChainEntry.ByeDpi) },
+                onDismiss = { picking = null }
+            )
+        }
+    }
 }
+
+@Composable
+private fun hopLabel(index: Int, lastIndex: Int): String = stringResource(
+    when (index) {
+        0 -> Res.string.chain_entry
+        lastIndex -> Res.string.chain_exit
+        else -> Res.string.chain_via
+    }
+)
 
 private val HANDLE_START = 8.dp
 private val HANDLE_SIZE = 24.dp

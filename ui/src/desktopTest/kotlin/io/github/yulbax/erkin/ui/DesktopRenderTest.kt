@@ -283,7 +283,7 @@ class DesktopRenderTest {
 
     @Test
     fun pickingAServerForASingleSelectedAppEndsSelection() = runBlocking {
-        val viewModel = AppsViewModel(get(), get(), get(), get(), get())
+        val viewModel = AppsViewModel(get(), get(), get(), get(), get(), get())
         val server = get<ProfileRepository>().profiles.first().first()
         val collector = launch(Dispatchers.Main) { viewModel.visibleApps.collect {} }
         viewModel.visibleApps.first { it.isNotEmpty() }

@@ -38,10 +38,11 @@ class AppsViewModel(
     private val installedAppsRepository: InstalledAppsSource,
     private val settingsRepository: SettingsRepository,
     profileRepository: ProfileRepository,
-    vpnStateRepository: VpnStateRepository
+    vpnStateRepository: VpnStateRepository,
+    serverDelays: ServerDelays
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository)
+    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, serverDelays)
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.appsHintSeen }

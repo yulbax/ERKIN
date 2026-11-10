@@ -29,12 +29,13 @@ class RuleSetsViewModel(
     profileRepository: ProfileRepository,
     vpnStateRepository: VpnStateRepository,
     appDao: AppDao,
-    installedApps: InstalledAppsSource
+    installedApps: InstalledAppsSource,
+    serverDelays: ServerDelays
 ) : ViewModel() {
 
     val apps: StateFlow<List<RuleAppChoice>> = ruleAppChoicesOf(installedApps, appDao)
 
-    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository)
+    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, serverDelays)
 
     val states: StateFlow<Map<String, RuleListState>> =
         ruleListDatabase.states.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())

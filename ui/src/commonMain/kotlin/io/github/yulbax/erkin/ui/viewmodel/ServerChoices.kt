@@ -2,13 +2,16 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ChainEntry
+import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ServerKind
+import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -19,12 +22,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
-internal fun ViewModel.serverChoicesOf(profiles: ProfileRepository, states: VpnStateRepository): StateFlow<ServerChoices> =
-    profiles.serverChoices(states).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ServerChoices())
+internal fun ViewModel.serverChoicesOf(profiles: ProfileRepository, states: VpnStateRepository, delays: ServerDelays): StateFlow<ServerChoices> =
+    profiles.serverChoices(states, delays).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ServerChoices())
 
-private fun ProfileRepository.serverChoices(states: VpnStateRepository): Flow<ServerChoices> =
-    combine(profiles, groups, states.stats.map { it.unreachableServers }.distinctUntilChanged()) { servers, groups, down ->
-        ServerChoices(servers, groups.associateBy { it.id }, down)
+private fun ProfileRepository.serverChoices(states: VpnStateRepository, delays: ServerDelays): Flow<ServerChoices> =
+    combine(
+        profiles,
+        groups,
+        states.stats.map { it.unreachableServers }.distinctUntilChanged(),
+        delays.delays
+    ) { servers, groups, down, delayMap ->
+        ServerChoices(servers, groups.associateBy { it.id }, down, delayMap)
     }
 
 data class ServerLabel(val name: String, val isChain: Boolean, val unreachable: Boolean = false)
@@ -32,13 +40,15 @@ data class ServerLabel(val name: String, val isChain: Boolean, val unreachable: 
 sealed interface CurrentServer {
     data object None : CurrentServer
     data object Main : CurrentServer
+    data object ByeDpi : CurrentServer
     data class Bound(val serverId: Long) : CurrentServer
 }
 
 class ServerChoices(
     val servers: List<ProfileEntity> = emptyList(),
     val groups: Map<Long, ServerGroupEntity> = emptyMap(),
-    private val unreachable: Set<Long> = emptySet()
+    private val unreachable: Set<Long> = emptySet(),
+    private val delays: Map<Long, ProxyDelay> = emptyMap()
 ) {
     private val byId = servers.associateBy { it.id }
     private val labels = servers.associate { it.id to labelOf(it) }
@@ -76,6 +86,10 @@ class ServerChoices(
 
     fun groupOf(serverId: Long): Long? = byId[serverId]?.groupId
 
+    fun delayOf(id: Long): ProxyDelay? = delays[id]
+
+    fun linksOnly(): ServerChoices = ServerChoices(servers.filter { it.isLink }, groups, unreachable, delays)
+
     private fun labelOf(server: ProfileEntity): ServerLabel = when (val kind = server.kind) {
         is ServerKind.Link -> ServerLabel(server.name, isChain = false)
         is ServerKind.Chain -> ServerLabel(
@@ -85,6 +99,8 @@ class ServerChoices(
     }
 }
 
+enum class PickerLead { MAIN_SERVER, BYEDPI, NONE }
+
 sealed interface ServerPickerRow {
     val key: Any
 
@@ -92,42 +108,64 @@ sealed interface ServerPickerRow {
         override val key: Any get() = "main"
     }
 
-    data class Group(val id: Long, val name: String, val count: Int, val open: Boolean) : ServerPickerRow {
+    data class ByeDpi(val checked: Boolean) : ServerPickerRow {
+        override val key: Any get() = "byedpi"
+    }
+
+    data class Group(val id: Long, val kind: GroupKind, val name: String, val count: Int, val current: String?) : ServerPickerRow {
         override val key: Any get() = "group:$id"
     }
 
-    data class Server(val id: Long, val name: String, val checked: Boolean, val indented: Boolean = false) : ServerPickerRow {
+    data class Server(val id: Long, val name: String, val checked: Boolean, val group: String? = null, val delay: ProxyDelay? = null) : ServerPickerRow {
         override val key: Any get() = id
     }
 }
 
-internal fun serverPickerRows(
+data class ServerPickerPage(val openGroup: Long?, val group: String?, val rows: List<ServerPickerRow>)
+
+internal fun serverPickerPage(
     choices: ServerChoices,
     query: String,
-    expanded: Set<Long>,
-    current: CurrentServer
-): List<ServerPickerRow> {
-    fun row(server: ProfileEntity, indented: Boolean = false) = ServerPickerRow.Server(
+    openGroup: Long?,
+    current: CurrentServer,
+    lead: PickerLead = PickerLead.MAIN_SERVER
+): ServerPickerPage {
+    fun row(server: ProfileEntity, group: String? = null) = ServerPickerRow.Server(
         id = server.id,
         name = server.name,
         checked = current == CurrentServer.Bound(server.id),
-        indented = indented
+        group = group,
+        delay = choices.delayOf(server.id)
     )
+    val items = serverListItems(choices.servers, choices.main?.id, choices.groups)
+    val groups = items.filterIsInstance<ServerListItem.Group>()
     val needle = query.trim()
     if (needle.isNotEmpty()) {
-        return choices.servers.filter { it.name.contains(needle, ignoreCase = true) }.map { row(it) }
+        val groupNames = groups.flatMap { group -> group.members.map { it.id to group.name } }.toMap()
+        val found = choices.servers.filter { it.name.contains(needle, ignoreCase = true) }
+        return ServerPickerPage(openGroup, group = null, rows = found.map { row(it, groupNames[it.id]) })
     }
-    val main = choices.main?.let { ServerPickerRow.Main(it.name, checked = current == CurrentServer.Main) }
-    return listOfNotNull(main) + serverListItems(choices.servers, choices.main?.id, choices.groups).flatMap { item ->
+    groups.firstOrNull { it.id == openGroup }?.let { group ->
+        return ServerPickerPage(openGroup, group = group.name, rows = group.members.map { row(it) })
+    }
+    val leading = when (lead) {
+        PickerLead.MAIN_SERVER -> choices.main?.let { ServerPickerRow.Main(it.name, checked = current == CurrentServer.Main) }
+        PickerLead.BYEDPI -> ServerPickerRow.ByeDpi(checked = current == CurrentServer.ByeDpi)
+        PickerLead.NONE -> null
+    }
+    val rows = items.map { item ->
         when (item) {
-            is ServerListItem.Server -> listOf(row(item.profile))
-            is ServerListItem.Group -> {
-                val open = item.id in expanded
-                val members = if (open) item.members.map { row(it, indented = true) } else emptyList()
-                listOf(ServerPickerRow.Group(item.id, item.name, item.members.size, open)) + members
-            }
+            is ServerListItem.Server -> row(item.profile)
+            is ServerListItem.Group -> ServerPickerRow.Group(
+                id = item.id,
+                kind = item.kind,
+                name = item.name,
+                count = item.members.size,
+                current = item.members.firstOrNull { current == CurrentServer.Bound(it.id) }?.name
+            )
         }
     }
+    return ServerPickerPage(openGroup, group = null, rows = listOfNotNull(leading) + rows)
 }
 
 private const val STOP_TIMEOUT_MS = 5_000L

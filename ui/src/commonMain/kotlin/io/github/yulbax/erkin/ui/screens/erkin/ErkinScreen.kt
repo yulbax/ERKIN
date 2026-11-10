@@ -116,6 +116,7 @@ fun ErkinScreen(
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val servers by profileViewModel.uiState.collectAsStateWithLifecycle()
+    val chainChoices by chainsViewModel.serverChoices.collectAsStateWithLifecycle()
     val sharer = rememberSharer()
     val shareChooserTitle = stringResource(Res.string.share_server_chooser)
 
@@ -243,8 +244,7 @@ fun ErkinScreen(
         val chainInvalid = stringResource(Res.string.chain_invalid)
         ChainDialog(
             initial = chain,
-            profiles = servers.profiles,
-            delays = servers.delays,
+            choices = chainChoices,
             onDismiss = { editingChain = null },
             onSave = { name, spec ->
                 chainsViewModel.save(chain, name, spec) { saved -> if (saved) editingChain = null else showMessage(chainInvalid) }
