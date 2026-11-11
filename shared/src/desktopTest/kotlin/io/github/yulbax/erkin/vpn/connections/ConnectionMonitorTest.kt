@@ -10,8 +10,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
@@ -27,7 +26,7 @@ class ConnectionMonitorTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         val monitor = ConnectionMonitor({ reads.incrementAndGet(); null }, states, CountingLog(warnings), scope)
         try {
-            withTimeout(3_000) { monitor.activity.take(1).toList() }
+            scope.launch { monitor.activity.collect {} }
             withTimeout(3_000) { while (reads.get() < 2) delay(50) }
 
             assertEquals(emptyList<AppActivity>(), monitor.activity.first())
