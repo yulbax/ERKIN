@@ -82,6 +82,8 @@ import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ErkinUiState
 import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
 import io.github.yulbax.erkin.ui.viewmodel.LoginRequest
+import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
+import org.koin.compose.koinInject
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
 import io.github.yulbax.erkin.ui.viewmodel.ServersUiState
@@ -120,6 +122,11 @@ fun ErkinScreen(
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val servers by profileViewModel.uiState.collectAsStateWithLifecycle()
     val login by profileViewModel.login.collectAsStateWithLifecycle()
+    val incoming = koinInject<IncomingServers>()
+    val incomingServer by incoming.next.collectAsStateWithLifecycle()
+    LaunchedEffect(incomingServer) {
+        incoming.take()?.let { profileViewModel.add(it.raw, it.fileName) }
+    }
     val chainChoices by chainsViewModel.serverChoices.collectAsStateWithLifecycle()
     val sharer = rememberSharer()
     val shareChooserTitle = stringResource(Res.string.share_server_chooser)

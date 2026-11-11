@@ -60,6 +60,7 @@ import io.github.yulbax.erkin.ui.platform.drawerSwipeToOpen
 import io.github.yulbax.erkin.ui.screens.apps.AppsSelectionBar
 import io.github.yulbax.erkin.ui.viewmodel.AppsMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
+import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -94,6 +95,12 @@ fun MainScreen(
         scope.launch { snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long) }
     }
     UnreachableServersMessage(snackbarHostState)
+
+    val incoming = koinInject<IncomingServers>()
+    val incomingServer by incoming.next.collectAsStateWithLifecycle()
+    LaunchedEffect(incomingServer) {
+        if (incomingServer != null) navController.navigateToScreen(Screen.Main)
+    }
 
     val appsViewModel: AppsViewModel = koinViewModel()
     val appsMode by appsViewModel.mode.collectAsStateWithLifecycle()

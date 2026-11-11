@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import androidx.room.Room
@@ -77,6 +78,7 @@ val desktopModule = module {
     single<VpnSessionStore> { RoomVpnSessionStore(get(), get()) }
 
     single { VpnStateRepository() }
+    single { IncomingServers() }
     single { CoreLog(get()) }
     single { VpnCommandBus() }
     single<DiagnosticsSource> { DesktopDiagnostics(get(), get(), get(), get()) }

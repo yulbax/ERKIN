@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui
 
+import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.data.rules.RuleListEntity
@@ -165,6 +166,7 @@ class DesktopRenderTest {
                     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass = true) }
                     single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _, _ -> "{}" } }
                     single { VpnStateRepository() }
+                    single { IncomingServers() }
                     single { VpnCommandBus() }
                     single<VpnLauncher> { VpnLauncher { } }
                     single<AppLog> { SilentLog }

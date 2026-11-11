@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.di
 
+import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.vpn.CoreLog
 import android.content.Context
 import androidx.room.Room
@@ -167,4 +168,7 @@ class AppModule {
 
     @Single
     fun coreLog(log: AppLog): CoreLog = CoreLog(log)
+
+    @Single
+    fun incomingServers(): IncomingServers = IncomingServers()
 }
