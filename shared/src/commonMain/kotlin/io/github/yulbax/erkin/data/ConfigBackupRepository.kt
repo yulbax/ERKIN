@@ -228,6 +228,7 @@ class ConfigBackupRepository(
         }
         if (insert) {
             restoreSubscriptionNames(backups)
+            restoreRemembered(backups, newIds)
             profileRepository.ensureSelection(preferredId = importedSelectedId)
         }
         return ProfilesImport(SectionResult(added, skipped), newIds)
@@ -241,6 +242,16 @@ class ConfigBackupRepository(
             .forEach { (url, name) ->
                 groupDao.find(url)?.takeIf { it.name == null }?.let { groupDao.rename(it.id, name) }
             }
+    }
+
+    private suspend fun restoreRemembered(backups: List<ProfileBackup>, ids: Map<Long, Long>) {
+        val groupDao = database.serverGroupDao()
+        val stored = database.profileDao().getAll().associateBy { it.id }
+        backups.filter { it.remembered }.mapNotNull { ids[it.id]?.let(stored::get) }.forEach { profile ->
+            val group = profile.groupId?.let { groupDao.get(it) } ?: return@forEach
+            val remembers = group.currentId?.let(stored::get)?.groupId == group.id
+            if (!remembers) groupDao.updateCurrent(group.id, profile.id)
+        }
     }
 
     private fun RoutingRuleEntity.identity() = Triple(type, value, target)

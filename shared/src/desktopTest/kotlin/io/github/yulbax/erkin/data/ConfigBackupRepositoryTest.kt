@@ -4,6 +4,7 @@ import androidx.room.Room
 import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.add
+import io.github.yulbax.erkin.data.profile.AddTarget
 import io.github.yulbax.erkin.data.profile.FetchedSubscription
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.ChainEntry
@@ -222,6 +223,34 @@ class ConfigBackupRepositoryTest {
             fresh.appDao().addApps(listOf(App("org.later", "Later", isSystemApp = false)))
             assertEquals(ConnectionType.BYEDPI, fresh.appDao().getApp("org.later")?.connectionType)
             assertEquals(emptyList<PendingApp>(), fresh.appDao().getPending(listOf("org.later")))
+        } finally {
+            fresh.close()
+        }
+    }
+
+    @Test
+    fun theSelectedServerAndEachGroupsRememberedOneSurviveARestore() = runBlocking {
+        val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        val links = listOf("Riga", "Oslo", "Tallinn").joinToString("\n") { "vless://id@${it.lowercase()}.example:443?security=tls#$it" }
+        profiles.add(links, null, AddTarget.Main("Group"))
+        profiles.add("vless://id@solo.example:443?security=tls#Solo")
+        val servers = database.profileDao().getAll().associateBy { it.name }
+        profiles.select(servers.getValue("Oslo"))
+        profiles.select(servers.getValue("Solo"))
+        val only = BackupSelection(settings = false, apps = false, profiles = true, rules = false)
+        val exported = requireNotNull(BackupCodec.decode(repository.export(only)))
+
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
+        try {
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh), appsCanBypass = true)
+            target.apply(exported, only)
+            val restored = fresh.profileDao().getAll().associateBy { it.name }
+
+            assertEquals("Solo", fresh.profileDao().getSelected()?.name)
+            assertEquals(restored.getValue("Oslo").id, fresh.serverGroupDao().getAll().single().currentId)
+
+            target.apply(exported.copy(profiles = exported.profiles?.map { it.copy(remembered = it.name == "Riga") }), only)
+            assertEquals(restored.getValue("Oslo").id, fresh.serverGroupDao().getAll().single().currentId)
         } finally {
             fresh.close()
         }

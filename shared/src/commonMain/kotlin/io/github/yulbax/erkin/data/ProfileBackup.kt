@@ -15,7 +15,8 @@ data class ProfileBackup(
     val selected: Boolean = false,
     val subscriptionUrl: String = "",
     val subscriptionName: String? = null,
-    val groupId: Long? = null
+    val groupId: Long? = null,
+    val remembered: Boolean = false
 ) {
     fun toEntity(groupId: Long? = null) = ProfileEntity(
         id = id,
@@ -37,7 +38,8 @@ data class ProfileBackup(
             selected = profile.selected,
             subscriptionUrl = group?.url.orEmpty(),
             subscriptionName = group?.name,
-            groupId = group?.takeIf { it.kind == GroupKind.Local }?.id
+            groupId = group?.takeIf { it.kind == GroupKind.Local }?.id,
+            remembered = group?.currentId == profile.id
         )
     }
 }
