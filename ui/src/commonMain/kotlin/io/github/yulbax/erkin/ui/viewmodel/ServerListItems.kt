@@ -10,11 +10,13 @@ sealed interface ServerListItem {
     val key: Any
     val profileIds: List<Long>
     val server: ProfileEntity
+    val others: List<ProfileEntity>
 
     data class Server(val profile: ProfileEntity, val group: ServerGroupEntity? = null) : ServerListItem {
         override val key: Any get() = profile.id
         override val profileIds: List<Long> get() = listOf(profile.id)
         override val server: ProfileEntity get() = profile
+        override val others: List<ProfileEntity> get() = emptyList()
     }
 
     data class Group(
@@ -31,12 +33,15 @@ sealed interface ServerListItem {
         override val key: Any get() = GROUP_KEY_PREFIX + id
         override val profileIds: List<Long> get() = members.map { it.id }
         override val server: ProfileEntity get() = current
+        override val others: List<ProfileEntity> get() = members.filter { it.id != current.id }
     }
 
     private companion object {
         const val GROUP_KEY_PREFIX = "group:"
     }
 }
+
+internal fun List<ServerListItem>.testQueue(): List<Long> = (map { it.server } + flatMap { it.others }).map { it.id }
 
 internal fun serverListItems(profiles: List<ProfileEntity>, groups: Map<Long, ServerGroupEntity>): List<ServerListItem> {
     val membersOf = profiles.filter { it.groupId != null }.groupBy { it.groupId }

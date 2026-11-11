@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +85,7 @@ class ProfileViewModel(
 
     private val _error = MutableStateFlow<ServerError?>(null)
     private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
+    private var running: Deferred<List<Long>?>? = null
     private val _refreshing = MutableStateFlow<Set<Long>>(emptySet())
     private val _unreachable = MutableSharedFlow<List<Long>>(extraBufferCapacity = 1)
     val unreachable: SharedFlow<List<Long>> = _unreachable
@@ -113,13 +115,17 @@ class ProfileViewModel(
 
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()
-        if (_testingIds.value.isNotEmpty() || ids.isEmpty()) return CompletableDeferred(null)
+        if (running?.isActive == true || ids.isEmpty()) return CompletableDeferred(null)
         serverDelays.update { it - ids }
         _testingIds.value = ids
         return viewModelScope.async(Dispatchers.IO) {
+            val delays = mutableMapOf<Long, ProxyDelay>()
             try {
-                val delays = latencyProbe.measure(ids)
-                serverDelays.update { it + delays }
+                latencyProbe.measureEach(uiState.value.items.testQueue().filter { it in ids }).collect { (id, delay) ->
+                    delays[id] = delay
+                    serverDelays.update { it + (id to delay) }
+                    _testingIds.update { it - id }
+                }
                 val order = if (settingsRepository.settings.first().sortServersByPing) {
                     val state = uiState.value
                     state.profiles.orderByDelay(ids, delays, state.groups).also { profileRepository.reorder(it) }
@@ -132,12 +138,12 @@ class ProfileViewModel(
                 throw cancelled
             } catch (t: Throwable) {
                 log.w(TAG, "latency test failed", t)
-                serverDelays.update { ids.associateWith { ProxyDelay.Failed } }
+                serverDelays.update { it + (ids - delays.keys).associateWith { ProxyDelay.Failed } }
                 null
             } finally {
                 _testingIds.value = emptySet()
             }
-        }
+        }.also { running = it }
     }
 
     fun clearError() {

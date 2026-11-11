@@ -37,6 +37,13 @@ class ServerOrderTest {
         assertEquals(listOf(1L, 4L, 2L, 3L), profiles.orderByDelay(setOf(2L, 4L), delays, groups(currentId = 2)))
     }
 
+    @Test
+    fun theServersTheListShowsAreTestedBeforeTheOnesInsideGroups() {
+        val items = serverListItems(profiles, groups(currentId = 4))
+
+        assertEquals(listOf(1L, 4L, 3L, 2L), items.testQueue())
+    }
+
     private fun groups(currentId: Long) =
         mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = "https://sub.example/list", currentId = currentId))
 
