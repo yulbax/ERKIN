@@ -137,7 +137,7 @@ internal fun serverPickerPage(
         group = group,
         delay = choices.delayOf(server.id)
     )
-    val items = serverListItems(choices.servers, choices.main?.id, choices.groups)
+    val items = serverListItems(choices.servers, choices.groups)
     val groups = items.filterIsInstance<ServerListItem.Group>()
     val needle = query.trim()
     if (needle.isNotEmpty()) {

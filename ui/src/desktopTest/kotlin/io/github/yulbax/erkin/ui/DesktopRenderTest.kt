@@ -255,7 +255,7 @@ class DesktopRenderTest {
             repository.add(links, null, AddTarget.Main("Group 1"))
             val stored = repository.groups.first().single { it.kind == GroupKind.Local }
             val members = repository.profiles.first().filter { it.groupId == stored.id }
-            ServerListItem.Group(stored.id, stored.kind, stored.displayName, null, members, members.first())
+            ServerListItem.Group(stored.id, stored.kind, stored.displayName, null, members, rememberedId = null)
         }
         val actions = GroupActions(
             refreshing = emptySet(), testing = false, onOpen = {}, onTest = { CompletableDeferred(null) }, onRefresh = {},

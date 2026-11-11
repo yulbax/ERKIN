@@ -19,13 +19,13 @@ class ServerListItemsTest {
 
     @Test
     fun groupsASubscriptionAtItsFirstServerAndLeavesASingleServerSubscriptionInline() {
-        val items = serverListItems(listOf(manual, single, germany, manualAfter, france), selectedId = null, stored)
+        val items = serverListItems(listOf(manual, single, germany, manualAfter, france), stored)
 
         assertEquals(
             listOf(
                 ServerListItem.Server(manual),
                 ServerListItem.Server(single, stored.getValue(SINGLE_ID)),
-                ServerListItem.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), current = germany),
+                ServerListItem.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), rememberedId = null),
                 ServerListItem.Server(manualAfter)
             ),
             items
@@ -37,10 +37,13 @@ class ServerListItemsTest {
         val profiles = listOf(germany, france, manual)
         val remembered = mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, name = "Mine", currentId = france.id))
 
-        assertEquals(france, subscriptionOf(serverListItems(profiles, selectedId = france.id, stored)).current)
-        assertEquals(france, subscriptionOf(serverListItems(profiles, selectedId = manual.id, remembered)).current)
-        assertEquals(germany, subscriptionOf(serverListItems(profiles, selectedId = manual.id, stored)).current)
-        assertEquals("Mine", subscriptionOf(serverListItems(profiles, selectedId = null, remembered)).name)
+        val chosen = france.copy(selected = true)
+        val rememberedGermany = mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, currentId = germany.id))
+
+        assertEquals(chosen, subscriptionOf(serverListItems(listOf(germany, chosen, manual), rememberedGermany)).current)
+        assertEquals(france, subscriptionOf(serverListItems(profiles, remembered)).current)
+        assertEquals(germany, subscriptionOf(serverListItems(profiles, stored)).current)
+        assertEquals("Mine", subscriptionOf(serverListItems(profiles, remembered)).name)
     }
 
     @Test
@@ -49,8 +52,8 @@ class ServerListItemsTest {
         val groups = mapOf(LOCAL_ID to ServerGroupEntity(id = LOCAL_ID, name = "Work"))
 
         assertEquals(
-            listOf(ServerListItem.Group(LOCAL_ID, GroupKind.Local, "Work", null, listOf(lone), current = lone)),
-            serverListItems(listOf(lone), selectedId = null, groups)
+            listOf(ServerListItem.Group(LOCAL_ID, GroupKind.Local, "Work", null, listOf(lone), rememberedId = null)),
+            serverListItems(listOf(lone), groups)
         )
     }
 
@@ -62,10 +65,10 @@ class ServerListItemsTest {
             GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, updatedAt = UPDATED_AT),
             LOCAL_ID to ServerGroupEntity(id = LOCAL_ID, name = "Work", updatedAt = UPDATED_AT)
         )
-        val items = serverListItems(profiles, selectedId = null, groups).filterIsInstance<ServerListItem.Group>()
+        val items = serverListItems(profiles, groups).filterIsInstance<ServerListItem.Group>()
 
         assertEquals(listOf(UPDATED_AT, null), items.map { it.updatedAt })
-        assertEquals(null, subscriptionOf(serverListItems(listOf(germany, france), selectedId = null, stored)).updatedAt)
+        assertEquals(null, subscriptionOf(serverListItems(listOf(germany, france), stored)).updatedAt)
     }
 
     private fun subscriptionOf(items: List<ServerListItem>) = items.filterIsInstance<ServerListItem.Group>().single()

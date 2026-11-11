@@ -8,10 +8,12 @@ import io.github.yulbax.erkin.data.profile.SubscriptionUsage
 sealed interface ServerListItem {
     val key: Any
     val profileIds: List<Long>
+    val server: ProfileEntity
 
     data class Server(val profile: ProfileEntity, val group: ServerGroupEntity? = null) : ServerListItem {
         override val key: Any get() = profile.id
         override val profileIds: List<Long> get() = listOf(profile.id)
+        override val server: ProfileEntity get() = profile
     }
 
     data class Group(
@@ -20,11 +22,15 @@ sealed interface ServerListItem {
         val name: String,
         val usage: SubscriptionUsage?,
         val members: List<ProfileEntity>,
-        val current: ProfileEntity,
+        val rememberedId: Long?,
         val updatedAt: Long? = null
     ) : ServerListItem {
+        val current: ProfileEntity =
+            members.find { it.selected } ?: members.find { it.id == rememberedId } ?: members.first()
+
         override val key: Any get() = GROUP_KEY_PREFIX + id
         override val profileIds: List<Long> get() = members.map { it.id }
+        override val server: ProfileEntity get() = current
     }
 
     private companion object {
@@ -32,11 +38,7 @@ sealed interface ServerListItem {
     }
 }
 
-internal fun serverListItems(
-    profiles: List<ProfileEntity>,
-    selectedId: Long?,
-    groups: Map<Long, ServerGroupEntity>
-): List<ServerListItem> {
+internal fun serverListItems(profiles: List<ProfileEntity>, groups: Map<Long, ServerGroupEntity>): List<ServerListItem> {
     val membersOf = profiles.filter { it.groupId != null }.groupBy { it.groupId }
     val seen = HashSet<Long>()
     return profiles.mapNotNull { profile ->
@@ -54,9 +56,7 @@ internal fun serverListItems(
                     name = stored.displayName,
                     usage = stored.usage,
                     members = members,
-                    current = members.firstOrNull { it.id == selectedId }
-                        ?: members.firstOrNull { it.id == stored.currentId }
-                        ?: members.first(),
+                    rememberedId = stored.currentId,
                     updatedAt = stored.updatedAt.takeIf { stored.kind is GroupKind.Subscription && it > 0 }
                 )
             }

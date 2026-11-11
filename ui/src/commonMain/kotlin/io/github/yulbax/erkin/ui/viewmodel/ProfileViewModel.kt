@@ -41,9 +41,15 @@ sealed interface ServerError {
     data class Refused(val refusal: SubscriptionRefusal) : ServerError
 }
 
-fun List<ProfileEntity>.sortedByDelay(ids: Set<Long>, delays: Map<Long, ProxyDelay>): List<ProfileEntity> {
-    val ranked = filter { it.id in ids }.sortedBy { delays[it.id].rank() }.iterator()
-    return map { if (it.id in ids) ranked.next() else it }
+fun List<ProfileEntity>.orderByDelay(ids: Set<Long>, delays: Map<Long, ProxyDelay>, groups: Map<Long, ServerGroupEntity>): List<Long> =
+    serverListItems(sortedByDelay(ids, delays) { it }, groups)
+        .sortedByDelay(ids, delays) { it.server }
+        .flatMap { it.profileIds }
+
+private fun <T> List<T>.sortedByDelay(ids: Set<Long>, delays: Map<Long, ProxyDelay>, server: (T) -> ProfileEntity): List<T> {
+    val tested: (T) -> Boolean = { server(it).id in ids }
+    val ranked = filter(tested).sortedBy { delays[server(it).id].rank() }.iterator()
+    return map { if (tested(it)) ranked.next() else it }
 }
 
 private fun ProxyDelay?.rank(): Int = when (this) {
@@ -100,7 +106,7 @@ class ProfileViewModel(
             testingIds = testingIds,
             groups = stored,
             refreshing = refreshing,
-            items = serverListItems(profiles, selected?.id, stored),
+            items = serverListItems(profiles, stored),
             error = error
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
@@ -115,7 +121,8 @@ class ProfileViewModel(
                 val delays = latencyProbe.measure(ids)
                 serverDelays.update { it + delays }
                 val order = if (settingsRepository.settings.first().sortServersByPing) {
-                    uiState.value.profiles.sortedByDelay(ids, delays).map { it.id }.also { profileRepository.reorder(it) }
+                    val state = uiState.value
+                    state.profiles.orderByDelay(ids, delays, state.groups).also { profileRepository.reorder(it) }
                 } else {
                     null
                 }
