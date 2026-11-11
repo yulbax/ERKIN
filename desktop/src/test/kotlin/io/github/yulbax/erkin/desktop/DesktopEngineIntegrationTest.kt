@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.HealthSnapshot
 import io.github.yulbax.erkin.vpn.CiadpiProcess
@@ -103,7 +104,7 @@ class DesktopEngineIntegrationTest {
             }
         """.trimIndent()
 
-        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog)
+        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog, coreLog = CoreLog(SilentLog))
         val client = service.connect()
         assertEquals(File(workDir, "svc").absoluteFile, service.hello?.workDir)
         assertTrue(service.hello?.core.orEmpty().isNotEmpty())

@@ -388,4 +388,13 @@
         <item quantity="many">%1$d адресов</item>
         <item quantity="other">%1$d адреса</item>
     </plurals>
+    <string name="login_title">Вход</string>
+    <string name="login_openvpn_hint">Этот конфиг OpenVPN просит логин и пароль. Они сохранятся вместе с сервером.</string>
+    <string name="login_username">Логин</string>
+    <string name="login_password">Пароль</string>
+    <string name="login_show_password">Показать пароль</string>
+    <string name="login_hide_password">Скрыть пароль</string>
+    <string name="login_menu">Логин и пароль</string>
+    <string name="login_edit_hint">Логин и пароль, с которыми подключается этот сервер.</string>
+    <string name="login_wrong">Неправильный логин или пароль.</string>
 </resources>

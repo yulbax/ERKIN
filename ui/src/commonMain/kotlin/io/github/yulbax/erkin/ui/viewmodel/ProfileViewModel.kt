@@ -10,6 +10,10 @@ import io.github.yulbax.erkin.data.profile.AddTarget
 import io.github.yulbax.erkin.data.profile.GroupTarget
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
+import io.github.yulbax.erkin.proxy.protocol.OpenVpn
+import io.github.yulbax.erkin.vpn.CoreEvent
+import io.github.yulbax.erkin.vpn.CoreLog
+import kotlinx.coroutines.flow.filterIsInstance
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.server_group_default
 import io.github.yulbax.erkin.util.AppLog
@@ -34,6 +38,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import org.jetbrains.compose.resources.getString
+
+sealed interface LoginRequest {
+    class NewServer(val raw: String, val fileName: String?, val groupId: Long?) : LoginRequest
+
+    class Existing(val profile: ProfileEntity, val rejected: Boolean) : LoginRequest {
+        val username: String get() = OpenVpn.username(profile.link).orEmpty()
+    }
+}
 
 sealed interface ServerError {
     data object InvalidLink : ServerError
@@ -80,10 +92,14 @@ class ProfileViewModel(
     private val settingsRepository: SettingsRepository,
     private val latencyProbe: ServerLatencyProbe,
     private val serverDelays: ServerDelays,
-    private val log: AppLog
+    private val log: AppLog,
+    private val coreLog: CoreLog
 ) : ViewModel() {
 
     private val _error = MutableStateFlow<ServerError?>(null)
+    private val _login = MutableStateFlow<LoginRequest?>(null)
+    val login: StateFlow<LoginRequest?> = _login
+    private val questioned = HashSet<Long>()
     private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
     private var running: Deferred<List<Long>?>? = null
     private val _refreshing = MutableStateFlow<Set<Long>>(emptySet())
@@ -146,15 +162,51 @@ class ProfileViewModel(
         }.also { running = it }
     }
 
+    init {
+        viewModelScope.launch { coreLog.all.filterIsInstance<CoreEvent.LoginRejected>().collect { askIfRejected(it.serverId) } }
+    }
+
     fun clearError() {
         _error.value = null
     }
 
     fun add(raw: String, fileName: String? = null, groupId: Long? = null) {
+        if (OpenVpn.asksForLogin(raw.trim())) {
+            _login.value = LoginRequest.NewServer(raw, fileName, groupId)
+            return
+        }
         viewModelScope.launch(Dispatchers.IO) {
             val target = groupId?.let(AddTarget::Group) ?: AddTarget.Main(newGroupName())
             handleResult("add server", profileRepository.add(raw, fileName, target))
         }
+    }
+
+    fun editLogin(profile: ProfileEntity) {
+        _login.value = LoginRequest.Existing(profile, rejected = false)
+    }
+
+    fun submitLogin(username: String, password: String) {
+        val request = _login.value ?: return
+        _login.value = null
+        when (request) {
+            is LoginRequest.NewServer ->
+                add(OpenVpn.withLogin(request.raw, username.trim(), password), request.fileName, request.groupId)
+            is LoginRequest.Existing -> {
+                questioned -= request.profile.id
+                update(request.profile, request.profile.name, OpenVpn.withLogin(request.profile.link, username.trim(), password))
+            }
+        }
+    }
+
+    private suspend fun askIfRejected(id: Long) {
+        if (_login.value != null || !questioned.add(id)) return
+        if (latencyProbe.measure(setOf(id))[id] is ProxyDelay.Measured) return
+        val profile = profileRepository.profiles.first().firstOrNull { it.id == id } ?: return
+        if (_login.value == null) _login.value = LoginRequest.Existing(profile, rejected = true)
+    }
+
+    fun cancelLogin() {
+        _login.value = null
     }
 
     fun moveToNewGroup(ids: Collection<Long>) {

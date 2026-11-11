@@ -1,7 +1,7 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.util.AppLog
-import io.github.yulbax.erkin.util.core
 import java.io.File
 import java.util.concurrent.TimeUnit
 
@@ -10,7 +10,8 @@ class DesktopService(
     private val bundled: File,
     private val appDir: File?,
     private val expectedVersion: String?,
-    private val log: AppLog
+    private val log: AppLog,
+    private val coreLog: CoreLog
 ) {
     @Volatile private var client: ServiceClient? = null
     @Volatile var hello: ServiceClient.Hello? = null
@@ -57,7 +58,7 @@ class DesktopService(
     }
 
     private fun tryConnect(): ServiceClient? = runCatching {
-        ServiceClient.connect(socket) { level, message -> log.core(level, message) }.also { connected ->
+        ServiceClient.connect(socket, coreLog::line).also { connected ->
             hello = connected.hello()
             runCatching { connected.subscribeLog() }.onFailure { log.w(TAG, "the service does not stream the core log", it) }
         }

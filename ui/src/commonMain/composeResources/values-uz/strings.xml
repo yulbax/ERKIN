@@ -376,4 +376,13 @@
         <item quantity="one">%1$d ta urinish</item>
         <item quantity="other">%1$d ta urinish</item>
     </plurals>
+    <string name="login_title">Kirish</string>
+    <string name="login_openvpn_hint">Bu OpenVPN sozlamasi login va parol soʻraydi. Ular server bilan birga saqlanadi.</string>
+    <string name="login_username">Login</string>
+    <string name="login_password">Parol</string>
+    <string name="login_show_password">Parolni koʻrsatish</string>
+    <string name="login_hide_password">Parolni yashirish</string>
+    <string name="login_menu">Login va parol</string>
+    <string name="login_edit_hint">Bu server ulanishda foydalanadigan login va parol.</string>
+    <string name="login_wrong">Login yoki parol notoʻgʻri.</string>
 </resources>

@@ -388,4 +388,13 @@
         <item quantity="many">%1$d спроб</item>
         <item quantity="other">%1$d спроби</item>
     </plurals>
+    <string name="login_title">Вхід</string>
+    <string name="login_openvpn_hint">Ця конфігурація OpenVPN просить логін і пароль. Вони збережуться разом із сервером.</string>
+    <string name="login_username">Логін</string>
+    <string name="login_password">Пароль</string>
+    <string name="login_show_password">Показати пароль</string>
+    <string name="login_hide_password">Сховати пароль</string>
+    <string name="login_menu">Логін і пароль</string>
+    <string name="login_edit_hint">Логін і пароль, з якими підключається цей сервер.</string>
+    <string name="login_wrong">Неправильний логін або пароль.</string>
 </resources>

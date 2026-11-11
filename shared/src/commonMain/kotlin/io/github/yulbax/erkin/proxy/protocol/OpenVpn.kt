@@ -15,6 +15,9 @@ object OpenVpn : ProtocolHandler {
     private val BLOCK = Regex("<([a-z0-9-]+)>(.*?)</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
     private val REMOTE = Regex("^\\s*remote\\s+\\S+", RegexOption.MULTILINE)
     private val CLIENT = Regex("^\\s*(client|tls-client)\\s*$", RegexOption.MULTILINE)
+    private val ASKS_LOGIN = Regex("^\\s*auth-user-pass\\s*$", RegexOption.MULTILINE)
+    private const val LOGIN_BLOCK = "<auth-user-pass>"
+    private val LOGIN = Regex("<auth-user-pass>(.*?)</auth-user-pass>\\s*", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
     private val INLINE = listOf("ca", "cert", "key", "tls-auth", "tls-crypt", "tls-crypt-v2")
     private val PASSTHROUGH = listOf("dev", "cipher", "auth", "data-ciphers-fallback", "key-direction")
 
@@ -22,6 +25,15 @@ object OpenVpn : ProtocolHandler {
 
     override fun recognizes(input: String): Boolean =
         "://" !in input.lineSequence().first() && REMOTE.containsMatchIn(input) && (CLIENT.containsMatchIn(input) || "<ca>" in input)
+
+    fun asksForLogin(input: String): Boolean =
+        recognizes(input) && ASKS_LOGIN.containsMatchIn(input) && LOGIN_BLOCK !in input.lowercase()
+
+    fun withLogin(input: String, username: String, password: String): String =
+        LOGIN.replace(input, "").trimEnd() + "\n$LOGIN_BLOCK\n$username\n$password\n</auth-user-pass>\n"
+
+    fun username(input: String): String? =
+        LOGIN.find(input)?.groupValues?.get(1)?.lines()?.map { it.trim() }?.firstOrNull { it.isNotEmpty() }
 
     override fun parse(input: String): ParsedLink {
         val blocks = BLOCK.findAll(input).associate { it.groupValues[1].lowercase() to it.groupValues[2].trim() }

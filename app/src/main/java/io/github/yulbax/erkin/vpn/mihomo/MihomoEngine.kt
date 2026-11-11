@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
+import io.github.yulbax.erkin.vpn.CoreLog
 import android.content.Context
 import io.github.yulbax.erkin.util.ErkinLog
 import io.github.yulbax.erkin.vpn.ProbeUrls
@@ -24,7 +25,8 @@ class MihomoEngine(
     private val appContext: Context,
     private val tunPlatform: TunPlatform,
     private val listener: EngineListener,
-    private val log: ErkinLog
+    private val log: ErkinLog,
+    private val coreLog: CoreLog
 ) : VpnEngine {
 
     override val probeSocksPort: Int = freeLoopbackPort()
@@ -49,7 +51,7 @@ class MihomoEngine(
     @Synchronized
     override fun start(config: EngineConfig) {
         check(traffic == null) { "mihomo engine is already started" }
-        MihomoRuntime.ensureSetup(appContext, log)
+        MihomoRuntime.ensureSetup(appContext, coreLog)
         launch(config)
         traffic = sampleTraffic()
     }

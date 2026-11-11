@@ -19,6 +19,8 @@ sealed interface VpnFailure {
 
     data object ProcessLookupUnavailable : VpnFailure
 
+    data object LoginRejected : VpnFailure
+
     data class Other(val message: String) : VpnFailure
 
     companion object {

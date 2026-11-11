@@ -376,4 +376,13 @@
         <item quantity="one">%1$d deneme</item>
         <item quantity="other">%1$d deneme</item>
     </plurals>
+    <string name="login_title">Giriş</string>
+    <string name="login_openvpn_hint">Bu OpenVPN yapılandırması kullanıcı adı ve parola istiyor. Sunucuyla birlikte kaydedilir.</string>
+    <string name="login_username">Kullanıcı adı</string>
+    <string name="login_password">Parola</string>
+    <string name="login_show_password">Parolayı göster</string>
+    <string name="login_hide_password">Parolayı gizle</string>
+    <string name="login_menu">Kullanıcı adı ve parola</string>
+    <string name="login_edit_hint">Bu sunucunun bağlanırken kullandığı kullanıcı adı ve parola.</string>
+    <string name="login_wrong">Kullanıcı adı veya parola yanlış.</string>
 </resources>

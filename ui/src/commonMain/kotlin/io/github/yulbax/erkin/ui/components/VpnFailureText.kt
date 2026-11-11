@@ -16,5 +16,6 @@ fun VpnFailure.text(): String = when (this) {
     VpnFailure.MissingVpnPermission -> stringResource(Res.string.error_vpn_permission)
     VpnFailure.TunUnavailable -> stringResource(Res.string.error_tun_unavailable)
     VpnFailure.ProcessLookupUnavailable -> stringResource(Res.string.error_process_lookup)
+    VpnFailure.LoginRejected -> stringResource(Res.string.login_wrong)
     is VpnFailure.Other -> message
 }

@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOff
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.DropdownMenuItem
@@ -33,6 +34,7 @@ internal class ServerActions(
     val onShare: (() -> Unit)?,
     val onRefreshSubscription: (() -> Unit)?,
     val onRemoveFromGroup: (() -> Unit)?,
+    val onEditLogin: (() -> Unit)?,
     val onDelete: () -> Unit
 )
 
@@ -86,6 +88,7 @@ private fun ServerMenu(actions: ServerActions) {
             actions.onShare?.let { ServerMenuItem(Res.string.share, Icons.Default.Share, it, close) }
             actions.onRefreshSubscription?.let { ServerMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, it, close) }
             actions.onRemoveFromGroup?.let { ServerMenuItem(Res.string.remove_from_group, Icons.Default.FolderOff, it, close) }
+            actions.onEditLogin?.let { ServerMenuItem(Res.string.login_menu, Icons.Default.Key, it, close) }
             ServerMenuItem(Res.string.delete, Icons.Default.Delete, actions.onDelete, close)
         }
     }

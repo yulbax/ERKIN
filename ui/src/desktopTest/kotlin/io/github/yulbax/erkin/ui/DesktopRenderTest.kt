@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui
 
+import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.data.rules.RuleListEntity
 import io.github.yulbax.erkin.rulelist.InstalledSet
@@ -167,6 +168,7 @@ class DesktopRenderTest {
                     single { VpnCommandBus() }
                     single<VpnLauncher> { VpnLauncher { } }
                     single<AppLog> { SilentLog }
+                    single { CoreLog(SilentLog) }
                     single<DiagnosticsSource> {
                         object : DiagnosticsSource {
                             override val feed = object : LogFeed {
@@ -264,7 +266,7 @@ class DesktopRenderTest {
         render("server-groups", width = 420, height = 860) { MainScreen() }
         render("server-group-sheet", width = 420, height = 700) {
             GroupSheet(group, actions, onDismiss = {}) { profile, _ ->
-                ServerRow(profile, isSelected = false, ServerActions({}, {}, null, {}, {}), onSelect = {}, onLongClick = {})
+                ServerRow(profile, isSelected = false, ServerActions({}, {}, null, {}, null, {}), onSelect = {}, onLongClick = {})
             }
         }
         render("move-to-group", width = 420, height = 600) { MoveToGroupDialog(listOf(group), onDismiss = {}, onNewGroup = {}, onGroup = {}) }

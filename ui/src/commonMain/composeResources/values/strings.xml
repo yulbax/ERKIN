@@ -400,4 +400,13 @@
         <item quantity="one">%1$d address</item>
         <item quantity="other">%1$d addresses</item>
     </plurals>
+    <string name="login_title">Sign in</string>
+    <string name="login_openvpn_hint">This OpenVPN config asks for a login and password. They are saved with the server.</string>
+    <string name="login_username">Login</string>
+    <string name="login_password">Password</string>
+    <string name="login_show_password">Show password</string>
+    <string name="login_hide_password">Hide password</string>
+    <string name="login_menu">Login and password</string>
+    <string name="login_edit_hint">The login and password this server signs in with.</string>
+    <string name="login_wrong">Wrong login or password.</string>
 </resources>

@@ -370,4 +370,13 @@
     <plurals name="connections_attempts">
         <item quantity="other">%1$d 次尝试</item>
     </plurals>
+    <string name="login_title">登录</string>
+    <string name="login_openvpn_hint">此 OpenVPN 配置需要用户名和密码。它们会随服务器一起保存。</string>
+    <string name="login_username">用户名</string>
+    <string name="login_password">密码</string>
+    <string name="login_show_password">显示密码</string>
+    <string name="login_hide_password">隐藏密码</string>
+    <string name="login_menu">用户名和密码</string>
+    <string name="login_edit_hint">此服务器登录时使用的用户名和密码。</string>
+    <string name="login_wrong">用户名或密码错误。</string>
 </resources>

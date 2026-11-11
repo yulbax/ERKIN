@@ -172,6 +172,7 @@ class VpnController(
             Command.Recover -> session.recover()
             Command.CheckByeDpi -> session.checkByeDpi()
             Command.RestartByeDpi -> session.restartByeDpi()
+            is Command.CheckLogin -> session.checkLogin(command.serverId)
             Command.Start, Command.Stop -> Unit
         }
     }

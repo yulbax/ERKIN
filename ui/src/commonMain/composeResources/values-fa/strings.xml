@@ -376,4 +376,13 @@
         <item quantity="one">%1$d تلاش</item>
         <item quantity="other">%1$d تلاش</item>
     </plurals>
+    <string name="login_title">ورود</string>
+    <string name="login_openvpn_hint">این پیکربندی OpenVPN نام کاربری و رمز عبور می‌خواهد. آن‌ها همراه سرور ذخیره می‌شوند.</string>
+    <string name="login_username">نام کاربری</string>
+    <string name="login_password">رمز عبور</string>
+    <string name="login_show_password">نمایش رمز عبور</string>
+    <string name="login_hide_password">پنهان کردن رمز عبور</string>
+    <string name="login_menu">نام کاربری و رمز عبور</string>
+    <string name="login_edit_hint">نام کاربری و رمز عبوری که این سرور با آن وصل می‌شود.</string>
+    <string name="login_wrong">نام کاربری یا رمز عبور اشتباه است.</string>
 </resources>

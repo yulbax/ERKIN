@@ -18,6 +18,7 @@ sealed interface Command {
         override val stopsSessionOnFailure: Boolean get() = false
     }
     data object Stop : Command
+    data class CheckLogin(val serverId: Long) : Command
 }
 
 class VpnCommandBus {

@@ -14,7 +14,8 @@ class VpnSessionFactory(
     private val downloadRoute: DownloadRoute,
     private val quality: ByeDpiQualityCheck,
     private val log: AppLog,
-    private val latency: ServerLatencyProbe
+    private val latency: ServerLatencyProbe,
+    private val coreLog: CoreLog
 ) {
     fun create(
         controller: VpnController,
@@ -30,6 +31,8 @@ class VpnSessionFactory(
         stateRepository = stateRepository,
         health = HealthMonitor(stateRepository, log, SocksHealthProbe(byeDpiHealthProbeUrl)),
         failover = ServerFailover(store, latency, log),
+        latency = latency,
+        coreLog = coreLog,
         quality = quality,
         log = log,
         ownPackage = ownPackage,

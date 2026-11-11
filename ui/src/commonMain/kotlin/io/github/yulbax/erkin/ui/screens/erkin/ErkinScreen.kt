@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.LoginDialog
 import io.github.yulbax.erkin.ui.components.FloatingVisibility
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
@@ -80,6 +81,8 @@ import io.github.yulbax.erkin.ui.viewmodel.ChainsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ErkinUiState
 import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
+import io.github.yulbax.erkin.ui.viewmodel.LoginRequest
+import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
 import io.github.yulbax.erkin.ui.viewmodel.ServersUiState
 import io.github.yulbax.erkin.vpn.ConnectionStats
@@ -116,6 +119,7 @@ fun ErkinScreen(
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val servers by profileViewModel.uiState.collectAsStateWithLifecycle()
+    val login by profileViewModel.login.collectAsStateWithLifecycle()
     val chainChoices by chainsViewModel.serverChoices.collectAsStateWithLifecycle()
     val sharer = rememberSharer()
     val shareChooserTitle = stringResource(Res.string.share_server_chooser)
@@ -187,6 +191,7 @@ fun ErkinScreen(
             onDelete = { id -> deleting = servers.profiles.filter { it.groupId == id } }
         ),
         onRemoveFromGroup = { profileViewModel.removeFromGroup(listOf(it.id)) },
+        onEditLogin = profileViewModel::editLogin,
         snackbarHostState = snackbarHostState,
         checked = checked,
         onToggleCheck = { profile -> selection.toggle(profile.id) },
@@ -325,6 +330,23 @@ fun ErkinScreen(
         )
     }
 
+    if (login != null) {
+        val request = login
+        LoginDialog(
+            hint = stringResource(
+                when {
+                    request is LoginRequest.NewServer -> Res.string.login_openvpn_hint
+                    request is LoginRequest.Existing && request.rejected -> Res.string.login_wrong
+                    else -> Res.string.login_edit_hint
+                }
+            ),
+            confirmLabel = stringResource(if (request is LoginRequest.NewServer) Res.string.add else Res.string.save),
+            initialUsername = (request as? LoginRequest.Existing)?.username.orEmpty(),
+            onDismiss = profileViewModel::cancelLogin,
+            onSubmit = profileViewModel::submitLogin
+        )
+    }
+
     servers.error?.let { error ->
         val message = when (error) {
             ServerError.InvalidLink -> stringResource(Res.string.invalid_link_error)
@@ -373,6 +395,7 @@ private class ErkinScreenContent(
     val onDelete: (ProfileEntity) -> Unit,
     val groups: GroupActions,
     val onRemoveFromGroup: (ProfileEntity) -> Unit,
+    val onEditLogin: (ProfileEntity) -> Unit,
     val snackbarHostState: SnackbarHostState,
     val checked: Set<Long>,
     val onToggleCheck: (ProfileEntity) -> Unit,
@@ -758,6 +781,7 @@ private fun ServerListRow(
             onShare = if (chainLabel == null) ({ c.onShare(profile) }) else null,
             onRefreshSubscription = group?.takeIf { it.kind is GroupKind.Subscription }?.let { { c.groups.onRefresh(it.id) } },
             onRemoveFromGroup = sheet?.takeIf { it.kind == GroupKind.Local }?.let { { c.onRemoveFromGroup(profile) } },
+            onEditLogin = if (profile.protocol == ProxyProtocol.OPENVPN) ({ c.onEditLogin(profile) }) else null,
             onDelete = { c.onDelete(profile) }
         ),
         onSelect = {

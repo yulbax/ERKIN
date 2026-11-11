@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.di
 
+import io.github.yulbax.erkin.vpn.CoreLog
 import android.content.Context
 import androidx.room.Room
 import io.github.yulbax.erkin.data.AppDao
@@ -84,8 +85,8 @@ class AppModule {
     fun byeDpiSiteLists(database: AppDatabase): ByeDpiSiteLists = ByeDpiSiteLists(database)
 
     @Single
-    fun byeDpiSiteCheck(context: Context, log: AppLog, siteLists: ByeDpiSiteLists): ByeDpiSiteCheck =
-        ByeDpiSiteCheck(MihomoSiteTester(context.applicationContext, log), siteLists::active)
+    fun byeDpiSiteCheck(context: Context, coreLog: CoreLog, siteLists: ByeDpiSiteLists): ByeDpiSiteCheck =
+        ByeDpiSiteCheck(MihomoSiteTester(context.applicationContext, coreLog), siteLists::active)
 
     @Single
     fun byeDpiStrategyRunner(context: Context, siteCheck: ByeDpiSiteCheck, log: AppLog): ByeDpiStrategyRunner {
@@ -124,8 +125,9 @@ class AppModule {
         route: DownloadRoute,
         siteCheck: ByeDpiSiteCheck,
         log: AppLog,
-        latency: ServerLatencyProbe
-    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log, latency)
+        latency: ServerLatencyProbe,
+        coreLog: CoreLog
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log, latency, coreLog)
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =
@@ -160,6 +162,9 @@ class AppModule {
         ConnectionMonitor(MihomoConnectionTable(), stateRepository, log, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 
     @Single
-    fun serverLatencyProbe(context: Context, store: VpnSessionStore, log: AppLog, states: VpnStateRepository): ServerLatencyProbe =
-        ServerLatencyProbe(store, { states.stats.value.byeDpiPort }, MihomoLatencyTester(context.applicationContext, log))
+    fun serverLatencyProbe(context: Context, store: VpnSessionStore, coreLog: CoreLog, states: VpnStateRepository): ServerLatencyProbe =
+        ServerLatencyProbe(store, { states.stats.value.byeDpiPort }, MihomoLatencyTester(context.applicationContext, coreLog))
+
+    @Single
+    fun coreLog(log: AppLog): CoreLog = CoreLog(log)
 }
