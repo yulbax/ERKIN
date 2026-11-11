@@ -33,14 +33,10 @@ class ServerListItemsTest {
     }
 
     @Test
-    fun theCurrentServerIsTheSelectedOneThenTheRememberedOne() {
+    fun theCurrentServerIsTheRememberedOneThenTheFirst() {
         val profiles = listOf(germany, france, manual)
         val remembered = mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, name = "Mine", currentId = france.id))
 
-        val chosen = france.copy(selected = true)
-        val rememberedGermany = mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, currentId = germany.id))
-
-        assertEquals(chosen, subscriptionOf(serverListItems(listOf(germany, chosen, manual), rememberedGermany)).current)
         assertEquals(france, subscriptionOf(serverListItems(profiles, remembered)).current)
         assertEquals(germany, subscriptionOf(serverListItems(profiles, stored)).current)
         assertEquals("Mine", subscriptionOf(serverListItems(profiles, remembered)).name)

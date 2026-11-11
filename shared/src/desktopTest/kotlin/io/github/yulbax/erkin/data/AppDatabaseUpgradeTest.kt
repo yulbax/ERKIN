@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import androidx.sqlite.execSQL
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.vpn.core.ByeDpiDns
 import java.io.File
@@ -98,6 +99,32 @@ class AppDatabaseUpgradeTest {
         assertEquals(ProxyProtocol.VLESS, profile.protocol)
         assertEquals("Example", profile.name)
         assertEquals(profile.id.toInt(), profile.position)
+    }
+
+    @Test
+    fun openingTheDatabaseGivesEveryGroupARememberedServerAndTheSelectedOneToItsGroup() = runBlocking {
+        open().useDatabase { database ->
+            val groups = database.serverGroupDao()
+            val forgetful = groups.insert(ServerGroupEntity(name = "Forgetful"))
+            val stale = groups.insert(ServerGroupEntity(name = "Stale", currentId = 999))
+            val mismatched = groups.insert(ServerGroupEntity(name = "Mismatched"))
+            val profiles = database.profileDao()
+            profiles.insert(ProfileEntity(name = "a", link = "vless://a", groupId = forgetful, position = 1))
+            profiles.insert(ProfileEntity(name = "b", link = "vless://b", groupId = stale, position = 2))
+            val kept = profiles.insert(ProfileEntity(name = "c", link = "vless://c", groupId = mismatched, position = 3))
+            profiles.insert(ProfileEntity(name = "d", link = "vless://d", groupId = mismatched, position = 4, selected = true))
+            groups.updateCurrent(mismatched, kept)
+        }
+
+        open().useDatabase { database ->
+            val servers = database.profileDao().getAll().associateBy { it.name }
+            val remembered = database.serverGroupDao().getAll().associate { it.name to it.currentId }
+
+            assertEquals(
+                mapOf("Forgetful" to servers.getValue("a").id, "Stale" to servers.getValue("b").id, "Mismatched" to servers.getValue("d").id),
+                remembered
+            )
+        }
     }
 
     private fun open(): AppDatabase = AppDatabase.build(Room.databaseBuilder<AppDatabase>(name = dbFile.absolutePath), appsCanBypass = true)

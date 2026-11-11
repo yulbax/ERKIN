@@ -7,6 +7,13 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
+const val SYNC_REMEMBERED_SQL =
+    "UPDATE server_groups SET currentId = " +
+        "(SELECT id FROM profiles WHERE groupId = server_groups.id ORDER BY selected DESC, position, id LIMIT 1) " +
+        "WHERE currentId IS NULL " +
+        "OR currentId NOT IN (SELECT id FROM profiles WHERE groupId = server_groups.id) " +
+        "OR EXISTS (SELECT 1 FROM profiles WHERE groupId = server_groups.id AND selected = 1 AND id != server_groups.currentId)"
+
 @Dao
 interface ServerGroupDao {
 
@@ -37,6 +44,9 @@ interface ServerGroupDao {
 
     @Query("UPDATE server_groups SET currentId = :profileId WHERE id = :id")
     suspend fun updateCurrent(id: Long, profileId: Long)
+
+    @Query(SYNC_REMEMBERED_SQL)
+    suspend fun syncRemembered()
 
     @Query("DELETE FROM server_groups WHERE id = :id")
     suspend fun delete(id: Long)

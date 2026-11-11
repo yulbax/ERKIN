@@ -189,6 +189,44 @@ class ProfileRefreshTest {
         assertEquals("First", database.profileDao().getSelected()?.name)
     }
 
+    @Test
+    fun aGroupRemembersTheSelectedServerMovedIntoIt() = runBlocking {
+        val links = listOf("Riga", "Oslo").joinToString("\n") { "vless://id@${it.lowercase()}.example:443?security=tls#$it" }
+        repository.add(links, null, AddTarget.Main("Group"))
+        repository.add("vless://id@solo.example:443?security=tls#Solo")
+        repository.add("vless://id@spare.example:443?security=tls#Spare")
+        val servers = database.profileDao().getAll().associateBy { it.name }
+        val group = database.serverGroupDao().getAll().single()
+        repository.select(servers.getValue("Oslo"))
+        repository.select(servers.getValue("Solo"))
+
+        repository.moveToGroup(listOf(servers.getValue("Spare").id), GroupTarget.Existing(group.id))
+        assertEquals(servers.getValue("Oslo").id, database.serverGroupDao().get(group.id)?.currentId)
+
+        repository.moveToGroup(listOf(servers.getValue("Solo").id), GroupTarget.Existing(group.id))
+        assertEquals(servers.getValue("Solo").id, database.serverGroupDao().get(group.id)?.currentId)
+    }
+
+    @Test
+    fun aGroupAlwaysRemembersOneOfItsServers() = runBlocking {
+        val links = listOf("Riga", "Oslo", "Tallinn").joinToString("\n") { "vless://id@${it.lowercase()}.example:443?security=tls#$it" }
+        repository.add("vless://id@solo.example:443?security=tls#Solo")
+        repository.add(links, null, AddTarget.Main("Group"))
+        val servers = database.profileDao().getAll().associateBy { it.name }
+        val remembered: suspend () -> Long? = { database.serverGroupDao().getAll().single().currentId }
+        assertEquals(servers.getValue("Riga").id, remembered())
+
+        repository.select(servers.getValue("Oslo"))
+        repository.select(servers.getValue("Solo"))
+        assertEquals(servers.getValue("Oslo").id, remembered())
+
+        repository.delete(listOf(servers.getValue("Oslo")))
+        assertEquals(servers.getValue("Riga").id, remembered())
+
+        repository.removeFromGroup(listOf(servers.getValue("Riga").id))
+        assertEquals(servers.getValue("Tallinn").id, remembered())
+    }
+
     private class RecordingLog : AppLog {
         val warnings = mutableListOf<String>()
         override fun i(tag: String, message: String) = Unit

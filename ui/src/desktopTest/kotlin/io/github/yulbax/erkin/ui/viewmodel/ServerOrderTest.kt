@@ -23,8 +23,8 @@ class ServerOrderTest {
     private val everything = setOf(1L, 2L, 3L, 4L)
 
     @Test
-    fun aGroupWithoutAChosenServerStandsWhereItsFastestServerDoes() {
-        assertEquals(listOf(3L, 4L, 2L, 1L), profiles.orderByDelay(everything, delays, groups()))
+    fun aGroupThatRemembersItsFastestServerStandsWhereThatServerDoes() {
+        assertEquals(listOf(3L, 4L, 2L, 1L), profiles.orderByDelay(everything, delays, groups(currentId = 4)))
     }
 
     @Test
@@ -33,16 +33,11 @@ class ServerOrderTest {
     }
 
     @Test
-    fun theSelectedServerIsTheOneAGroupShows() {
-        assertEquals(listOf(3L, 4L, 2L, 1L), profiles.map { it.copy(selected = it.id == 4L) }.orderByDelay(everything, delays, groups(currentId = 2)))
-    }
-
-    @Test
     fun testingOneGroupOnlySortsItsServersAndLeavesTheListInPlace() {
         assertEquals(listOf(1L, 4L, 2L, 3L), profiles.orderByDelay(setOf(2L, 4L), delays, groups(currentId = 2)))
     }
 
-    private fun groups(currentId: Long? = null) =
+    private fun groups(currentId: Long) =
         mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = "https://sub.example/list", currentId = currentId))
 
     private companion object {

@@ -16,6 +16,7 @@ import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteResultEntity
 import io.github.yulbax.erkin.data.byedpi.SiteListDao
 import io.github.yulbax.erkin.data.byedpi.SiteListEntity
 import io.github.yulbax.erkin.data.profile.ProfileDao
+import io.github.yulbax.erkin.data.profile.SYNC_REMEMBERED_SQL
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerGroupDao
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
@@ -307,6 +308,11 @@ abstract class AppDatabase : RoomDatabase() {
         fun build(builder: Builder<AppDatabase>, appsCanBypass: Boolean): AppDatabase =
             builder
                 .addMigrations(*migrations(appsCanBypass))
+                .addCallback(object : Callback() {
+                    override fun onOpen(connection: SQLiteConnection) {
+                        connection.execSQL(SYNC_REMEMBERED_SQL)
+                    }
+                })
                 .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
                 .setDriver(BundledSQLiteDriver())
                 .setQueryCoroutineContext(Dispatchers.IO)
