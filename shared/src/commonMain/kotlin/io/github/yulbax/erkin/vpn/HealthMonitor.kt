@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import kotlinx.coroutines.CoroutineScope
@@ -32,6 +33,7 @@ data class ProbeParams(
 data class HealthParams(
     val probe: ProbeParams,
     val onVpnDown: suspend () -> Unit,
+    val onLoginRejected: suspend () -> Unit,
     val onVpnUp: () -> Unit,
     val onByedpiChanged: suspend () -> Unit
 )
@@ -46,7 +48,8 @@ data class HealthSnapshot(
     val byedpiActive: Boolean,
     val byedpiUp: Boolean,
     val byedpiChecked: Boolean,
-    val measured: HealthChannel
+    val measured: HealthChannel,
+    val vpnLoginRejected: Boolean = false
 ) {
     val vpnUp get() = vpnDelayMs != null
     val anyUp get() = vpnUp || byedpiUp
@@ -101,13 +104,23 @@ class HealthMonitor(
 
         childScope.launch {
             var failures = 0
+            var rejections = 0
             vpnResults.collect { snapshot ->
-                if (snapshot.vpnHealthy) {
-                    failures = 0
-                    params.onVpnUp()
-                } else {
-                    failures++
-                    if (failures % RECOVER_EVERY_N_FAILURES == 0) params.onVpnDown()
+                when {
+                    snapshot.vpnHealthy -> {
+                        failures = 0
+                        rejections = 0
+                        params.onVpnUp()
+                    }
+                    snapshot.vpnLoginRejected -> {
+                        rejections++
+                        if (rejections == REJECTIONS_TO_STOP) params.onLoginRejected()
+                    }
+                    else -> {
+                        rejections = 0
+                        failures++
+                        if (failures % RECOVER_EVERY_N_FAILURES == 0) params.onVpnDown()
+                    }
                 }
             }
         }
@@ -122,16 +135,16 @@ class HealthMonitor(
         val misses = HashMap<Long, Int>()
         var previous = emptySet<Long>()
         while (true) {
-            val failed = coroutineScope {
-                probe.serverTags.map { (id, tag) -> async { id.takeIf { probe.engine.measureDelay(tag) == null } } }
-                    .awaitAll()
-                    .filterNotNullTo(HashSet())
+            val results = coroutineScope {
+                probe.serverTags.map { (id, tag) -> async { id to probe.engine.probe(tag) } }.awaitAll()
             }
+            val failed = results.filter { (_, result) -> result !is ProbeResult.Answered }.mapTo(HashSet()) { it.first }
+            val rejected = results.filter { (_, result) -> result == ProbeResult.LoginRejected }.mapTo(HashSet()) { it.first }
             probe.serverTags.keys.forEach { id -> misses[id] = if (id in failed) (misses[id] ?: 0) + 1 else 0 }
             val down = misses.filterValues { it >= SERVER_MISSES_TO_DOWN }.keys
             if (down != previous) log.w(TAG, "servers not responding: ${down.sorted()}")
             previous = down
-            stateRepository.updateStats { it.copy(unreachableServers = down) }
+            stateRepository.updateStats { it.copy(unreachableServers = down, loginRejectedServers = rejected) }
             val suspect = failed.any { id -> id !in down }
             delay(if (suspect) serverRecheckDelay else serverCheckInterval)
         }
@@ -172,6 +185,7 @@ class HealthMonitor(
         private const val TAG = "Health"
         private const val RECOVER_EVERY_N_FAILURES = 4
         private const val SERVER_MISSES_TO_DOWN = 2
+        private const val REJECTIONS_TO_STOP = 2
         private val SERVER_CHECK_INTERVAL = 60.seconds
         private val SERVER_RECHECK_DELAY = 10.seconds
     }

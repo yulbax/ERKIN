@@ -5,23 +5,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.server_ping_needs_connection
+import io.github.yulbax.erkin.ui.res.server_ping_login_rejected
 import io.github.yulbax.erkin.ui.res.server_ping_timeout
 import io.github.yulbax.erkin.ui.theme.StatusAmber
 import io.github.yulbax.erkin.ui.theme.StatusGreen
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun ProxyDelay.label(): String = when (this) {
-    ProxyDelay.Failed -> stringResource(Res.string.server_ping_timeout)
-    ProxyDelay.NeedsConnection -> stringResource(Res.string.server_ping_needs_connection)
-    is ProxyDelay.Measured -> "$ms ms"
+fun ProbeResult.label(): String = when (this) {
+    ProbeResult.NoAnswer -> stringResource(Res.string.server_ping_timeout)
+    ProbeResult.NeedsConnection -> stringResource(Res.string.server_ping_needs_connection)
+    ProbeResult.LoginRejected -> stringResource(Res.string.server_ping_login_rejected)
+    is ProbeResult.Answered -> "$ms ms"
 }
 
-fun ProxyDelay.color(): Color = when (this) {
-    ProxyDelay.Failed -> PING_RED
-    ProxyDelay.NeedsConnection -> StatusAmber
-    is ProxyDelay.Measured -> when {
+fun ProbeResult.color(): Color = when (this) {
+    ProbeResult.NoAnswer, ProbeResult.LoginRejected -> PING_RED
+    ProbeResult.NeedsConnection -> StatusAmber
+    is ProbeResult.Answered -> when {
         ms <= 100 -> StatusGreen
         ms < 450 -> lerp(StatusGreen, StatusAmber, (ms - 100) / 350f)
         ms < 900 -> lerp(StatusAmber, PING_RED, (ms - 450) / 450f)

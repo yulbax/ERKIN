@@ -385,4 +385,5 @@
     <string name="login_menu">Login va parol</string>
     <string name="login_edit_hint">Bu server ulanishda foydalanadigan login va parol.</string>
     <string name="login_wrong">Login yoki parol notoʻgʻri.</string>
+    <string name="server_ping_login_rejected">login notoʻgʻri</string>
 </resources>

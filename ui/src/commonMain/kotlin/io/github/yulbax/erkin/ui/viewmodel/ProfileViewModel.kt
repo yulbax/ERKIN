@@ -1,5 +1,11 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import io.github.yulbax.erkin.vpn.VpnFailure
+import io.github.yulbax.erkin.vpn.VpnState
+import io.github.yulbax.erkin.vpn.VpnStateRepository
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.SettingsRepository
@@ -11,15 +17,12 @@ import io.github.yulbax.erkin.data.profile.GroupTarget
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.proxy.protocol.OpenVpn
-import io.github.yulbax.erkin.vpn.CoreEvent
-import io.github.yulbax.erkin.vpn.CoreLog
-import kotlinx.coroutines.flow.filterIsInstance
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.server_group_default
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
@@ -54,27 +57,27 @@ sealed interface ServerError {
     data class Refused(val refusal: SubscriptionRefusal) : ServerError
 }
 
-fun List<ProfileEntity>.orderByDelay(ids: Set<Long>, delays: Map<Long, ProxyDelay>, groups: Map<Long, ServerGroupEntity>): List<Long> =
-    serverListItems(sortedByDelay(ids, delays) { it }, groups)
-        .sortedByDelay(ids, delays) { it.server }
+fun List<ProfileEntity>.orderByDelay(ids: Set<Long>, results: Map<Long, ProbeResult>, groups: Map<Long, ServerGroupEntity>): List<Long> =
+    serverListItems(sortedByDelay(ids, results) { it }, groups)
+        .sortedByDelay(ids, results) { it.server }
         .flatMap { it.profileIds }
 
-private fun <T> List<T>.sortedByDelay(ids: Set<Long>, delays: Map<Long, ProxyDelay>, server: (T) -> ProfileEntity): List<T> {
+private fun <T> List<T>.sortedByDelay(ids: Set<Long>, results: Map<Long, ProbeResult>, server: (T) -> ProfileEntity): List<T> {
     val tested: (T) -> Boolean = { server(it).id in ids }
-    val ranked = filter(tested).sortedBy { delays[server(it).id].rank() }.iterator()
+    val ranked = filter(tested).sortedBy { results[server(it).id].rank() }.iterator()
     return map { if (tested(it)) ranked.next() else it }
 }
 
-private fun ProxyDelay?.rank(): Int = when (this) {
-    is ProxyDelay.Measured -> ms
-    null, ProxyDelay.NeedsConnection -> Int.MAX_VALUE - 1
-    ProxyDelay.Failed -> Int.MAX_VALUE
+private fun ProbeResult?.rank(): Int = when (this) {
+    is ProbeResult.Answered -> ms
+    null, ProbeResult.NeedsConnection -> Int.MAX_VALUE - 1
+    ProbeResult.NoAnswer, ProbeResult.LoginRejected -> Int.MAX_VALUE
 }
 
 data class ServersUiState(
     val profiles: List<ProfileEntity> = emptyList(),
     val selected: ProfileEntity? = null,
-    val delays: Map<Long, ProxyDelay> = emptyMap(),
+    val results: Map<Long, ProbeResult> = emptyMap(),
     val testingIds: Set<Long> = emptySet(),
     val groups: Map<Long, ServerGroupEntity> = emptyMap(),
     val refreshing: Set<Long> = emptySet(),
@@ -91,9 +94,9 @@ class ProfileViewModel(
     private val profileRepository: ProfileRepository,
     private val settingsRepository: SettingsRepository,
     private val latencyProbe: ServerLatencyProbe,
-    private val serverDelays: ServerDelays,
+    private val probeResults: ProbeResults,
     private val log: AppLog,
-    private val coreLog: CoreLog
+    private val states: VpnStateRepository
 ) : ViewModel() {
 
     private val _error = MutableStateFlow<ServerError?>(null)
@@ -113,14 +116,14 @@ class ProfileViewModel(
     val uiState: StateFlow<ServersUiState> = combine(
         profileRepository.profiles,
         profileRepository.selected,
-        combine(serverDelays.delays, _testingIds) { delays, testingIds -> delays to testingIds },
+        combine(probeResults.results, _testingIds) { results, testingIds -> results to testingIds },
         groups,
         _error
-    ) { profiles, selected, (delays, testingIds), (stored, refreshing), error ->
+    ) { profiles, selected, (results, testingIds), (stored, refreshing), error ->
         ServersUiState(
             profiles = profiles,
             selected = selected,
-            delays = delays,
+            results = results,
             testingIds = testingIds,
             groups = stored,
             refreshing = refreshing,
@@ -132,29 +135,30 @@ class ProfileViewModel(
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()
         if (running?.isActive == true || ids.isEmpty()) return CompletableDeferred(null)
-        serverDelays.update { it - ids }
+        probeResults.update { it - ids }
         _testingIds.value = ids
         return viewModelScope.async(Dispatchers.IO) {
-            val delays = mutableMapOf<Long, ProxyDelay>()
+            val results = mutableMapOf<Long, ProbeResult>()
             try {
-                latencyProbe.measureEach(uiState.value.items.testQueue().filter { it in ids }).collect { (id, delay) ->
-                    delays[id] = delay
-                    serverDelays.update { it + (id to delay) }
+                latencyProbe.measureEach(uiState.value.items.testQueue().filter { it in ids }).collect { (id, result) ->
+                    results[id] = result
+                    probeResults.update { it + (id to result) }
                     _testingIds.update { it - id }
                 }
                 val order = if (settingsRepository.settings.first().sortServersByPing) {
                     val state = uiState.value
-                    state.profiles.orderByDelay(ids, delays, state.groups).also { profileRepository.reorder(it) }
+                    state.profiles.orderByDelay(ids, results, state.groups).also { profileRepository.reorder(it) }
                 } else {
                     null
                 }
-                ids.filter { delays[it] == ProxyDelay.Failed }.takeIf { it.isNotEmpty() }?.let(_unreachable::tryEmit)
+                ids.filter { results[it] == ProbeResult.NoAnswer }.takeIf { it.isNotEmpty() }?.let(_unreachable::tryEmit)
+                ids.firstOrNull { results[it] == ProbeResult.LoginRejected }?.let { askLogin(it) }
                 order
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
                 log.w(TAG, "latency test failed", t)
-                serverDelays.update { it + (ids - delays.keys).associateWith { ProxyDelay.Failed } }
+                probeResults.update { it + (ids - results.keys).associateWith { ProbeResult.NoAnswer } }
                 null
             } finally {
                 _testingIds.value = emptySet()
@@ -163,7 +167,13 @@ class ProfileViewModel(
     }
 
     init {
-        viewModelScope.launch { coreLog.all.filterIsInstance<CoreEvent.LoginRejected>().collect { askIfRejected(it.serverId) } }
+        viewModelScope.launch {
+            states.stats.map { it.loginRejectedServers }.distinctUntilChanged().collect { ids -> ids.forEach { askLogin(it) } }
+        }
+        viewModelScope.launch {
+            states.state.filter { it == VpnState.Error(VpnFailure.LoginRejected) }
+                .collect { profileRepository.selected.first()?.let { askLogin(it.id) } }
+        }
     }
 
     fun clearError() {
@@ -198,9 +208,8 @@ class ProfileViewModel(
         }
     }
 
-    private suspend fun askIfRejected(id: Long) {
+    private suspend fun askLogin(id: Long) {
         if (_login.value != null || !questioned.add(id)) return
-        if (latencyProbe.measure(setOf(id))[id] is ProxyDelay.Measured) return
         val profile = profileRepository.profiles.first().firstOrNull { it.id == id } ?: return
         if (_login.value == null) _login.value = LoginRequest.Existing(profile, rejected = true)
     }

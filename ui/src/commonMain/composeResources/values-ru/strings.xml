@@ -397,4 +397,5 @@
     <string name="login_menu">Логин и пароль</string>
     <string name="login_edit_hint">Логин и пароль, с которыми подключается этот сервер.</string>
     <string name="login_wrong">Неправильный логин или пароль.</string>
+    <string name="server_ping_login_rejected">неверный логин</string>
 </resources>

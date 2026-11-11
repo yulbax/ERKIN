@@ -32,7 +32,6 @@ class ErkinVpnService :
     private val commandBus: VpnCommandBus by inject()
     private val networkMonitor: DefaultNetworkMonitor by inject()
     private val erkinLog: ErkinLog by inject()
-    private val coreLog: CoreLog by inject()
     private val sessions: VpnSessionFactory by inject()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -49,7 +48,7 @@ class ErkinVpnService :
             sessions.create(
                 controller = controller,
                 scope = scope,
-                engine = MihomoEngine(applicationContext, this, controller, erkinLog, coreLog),
+                engine = MihomoEngine(applicationContext, this, controller, erkinLog),
                 byeDpi = ByeDpiRunner(
                     packageName,
                     File(applicationInfo.nativeLibraryDir, ByeDpiRunner.BINARY_NAME),

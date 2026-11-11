@@ -1,7 +1,6 @@
 package io.github.yulbax.erkin.ui
 
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
-import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.data.rules.RuleListEntity
 import io.github.yulbax.erkin.rulelist.InstalledSet
@@ -170,7 +169,6 @@ class DesktopRenderTest {
                     single { VpnCommandBus() }
                     single<VpnLauncher> { VpnLauncher { } }
                     single<AppLog> { SilentLog }
-                    single { CoreLog(SilentLog) }
                     single<DiagnosticsSource> {
                         object : DiagnosticsSource {
                             override val feed = object : LogFeed {

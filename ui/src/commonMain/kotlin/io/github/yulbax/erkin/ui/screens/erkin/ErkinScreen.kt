@@ -89,7 +89,7 @@ import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
 import io.github.yulbax.erkin.ui.viewmodel.ServersUiState
 import io.github.yulbax.erkin.vpn.ConnectionStats
 import io.github.yulbax.erkin.vpn.VpnState
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -221,7 +221,7 @@ fun ErkinScreen(
             LaunchedEffect(id) { sheetId = null }
         } else {
             GroupSheet(item, content.groups, onDismiss = { sheetId = null }) { profile, close ->
-                ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.delays), Modifier, onSelected = close, sheet = item)
+                ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.results), Modifier, onSelected = close, sheet = item)
             }
         }
     }
@@ -643,7 +643,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val fastestId = fastestId(c.servers.delays)
+                val fastestId = fastestId(c.servers.results)
                 items(order, key = { it.key }) { item ->
                     ReorderableItem(reorderState, key = item.key) { dragging ->
                         val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
@@ -801,7 +801,7 @@ private fun ServerListRow(
         },
         onLongClick = { c.onToggleCheck(profile) },
         modifier = modifier,
-        delay = c.servers.delays[profile.id],
+        result = c.servers.results[profile.id],
         testing = profile.id in c.servers.testingIds,
         isBest = profile.id == fastestId,
         chainLabel = chainLabel,
@@ -823,7 +823,7 @@ private fun GroupListRow(
         item = item,
         actions = c.groups,
         isSelected = current.id == c.servers.selected?.id,
-        delay = c.servers.delays[current.id],
+        result = c.servers.results[current.id],
         testing = current.id in c.servers.testingIds,
         isBest = current.id == fastestId,
         mode = mode,
@@ -833,7 +833,7 @@ private fun GroupListRow(
     )
 }
 
-private fun fastestId(delays: Map<Long, ProxyDelay>): Long? = delays
-    .mapNotNull { (id, delay) -> (delay as? ProxyDelay.Measured)?.let { id to it.ms } }
+private fun fastestId(results: Map<Long, ProbeResult>): Long? = results
+    .mapNotNull { (id, result) -> (result as? ProbeResult.Answered)?.let { id to it.ms } }
     .minByOrNull { it.second }
     ?.first

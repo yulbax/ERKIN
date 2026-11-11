@@ -5,7 +5,7 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.util.AppLog
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
@@ -35,10 +35,10 @@ class ServerFailoverTest {
 
     @Test
     fun theFastestAnsweringServerWins() {
-        val delays = mapOf(1L to ProxyDelay.Failed, 2L to ProxyDelay.Measured(240), 3L to ProxyDelay.Measured(90))
+        val results = mapOf(1L to ProbeResult.NoAnswer, 2L to ProbeResult.Answered(240), 3L to ProbeResult.Answered(90))
 
-        assertEquals(3L, ServerFailover.fastest(delays))
-        assertNull(ServerFailover.fastest(mapOf(1L to ProxyDelay.Failed)))
+        assertEquals(3L, ServerFailover.fastest(results))
+        assertNull(ServerFailover.fastest(mapOf(1L to ProbeResult.NoAnswer)))
     }
 
     @Test

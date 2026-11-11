@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.desktop
 
-import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.HealthSnapshot
 import io.github.yulbax.erkin.vpn.CiadpiProcess
@@ -13,7 +12,7 @@ import io.github.yulbax.erkin.vpn.VpnState
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
@@ -104,7 +103,7 @@ class DesktopEngineIntegrationTest {
             }
         """.trimIndent()
 
-        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog, coreLog = CoreLog(SilentLog))
+        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog)
         val client = service.connect()
         assertEquals(File(workDir, "svc").absoluteFile, service.hello?.workDir)
         assertTrue(service.hello?.core.orEmpty().isNotEmpty())
@@ -187,9 +186,9 @@ class DesktopEngineIntegrationTest {
 
     private fun assertLatencyTestWorks(client: ServiceClient) {
         val proxies = """[{"name":"p1","type":"direct"},{"name":"p2","type":"socks5","server":"127.0.0.1","port":${freeLoopbackPort()}}]"""
-        val delays = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true))
-        assertTrue("a working server must be measured: $delays", delays[1L] is ProxyDelay.Measured)
-        assertEquals(ProxyDelay.Failed, delays[2L])
+        val results = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true))
+        assertTrue("a working server must be measured: $results", results[1L] is ProbeResult.Answered)
+        assertEquals(ProbeResult.NoAnswer, results[2L])
     }
 
     private fun waitForPort(port: Int): Boolean {
@@ -209,8 +208,8 @@ class DesktopEngineIntegrationTest {
     ) : VpnEngine {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
-        override suspend fun measureVpnDelay(): Int? = measure()
-        override suspend fun measureDelay(tag: String): Int? = null
+        override suspend fun probeVpn(): ProbeResult = measure()?.let(ProbeResult::Answered) ?: ProbeResult.NoAnswer
+        override suspend fun probe(tag: String): ProbeResult = ProbeResult.NoAnswer
         override fun stop() = Unit
     }
 

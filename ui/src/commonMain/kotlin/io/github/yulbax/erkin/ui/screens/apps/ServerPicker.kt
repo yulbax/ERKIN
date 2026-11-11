@@ -74,8 +74,8 @@ internal fun ServerPickerSheet(
                     subtitle = row.group,
                     checked = row.checked,
                     onClick = { close { onPick(row.id) } },
-                    trailing = row.delay?.let { delay ->
-                        { Text(delay.label(), style = MaterialTheme.typography.bodySmall, color = delay.color()) }
+                    trailing = row.result?.let { result ->
+                        { Text(result.label(), style = MaterialTheme.typography.bodySmall, color = result.color()) }
                     }
                 )
             }

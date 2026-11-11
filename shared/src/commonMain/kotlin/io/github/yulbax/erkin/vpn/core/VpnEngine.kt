@@ -11,9 +11,9 @@ interface VpnEngine {
 
     fun reloadRouting(config: EngineConfig)
 
-    suspend fun measureVpnDelay(): Int?
+    suspend fun probeVpn(): ProbeResult
 
-    suspend fun measureDelay(tag: String): Int?
+    suspend fun probe(tag: String): ProbeResult
 
     fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiPort
 
@@ -29,8 +29,19 @@ fun interface DefaultInterfaceListener {
     fun onDefaultInterfaceChanged(name: String, index: Int)
 }
 
-sealed interface ProxyDelay {
-    data class Measured(val ms: Int) : ProxyDelay
-    data object Failed : ProxyDelay
-    data object NeedsConnection : ProxyDelay
+sealed interface ProbeResult {
+    data class Answered(val ms: Int) : ProbeResult
+    data object NoAnswer : ProbeResult
+    data object LoginRejected : ProbeResult
+    data object NeedsConnection : ProbeResult
+
+    companion object {
+        private const val LOGIN_REJECTED = -2
+
+        fun fromWire(value: Int): ProbeResult = when {
+            value > 0 -> Answered(value)
+            value == LOGIN_REJECTED -> LoginRejected
+            else -> NoAnswer
+        }
+    }
 }

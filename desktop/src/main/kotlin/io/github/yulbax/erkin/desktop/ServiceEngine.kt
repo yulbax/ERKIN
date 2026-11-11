@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
@@ -45,10 +46,10 @@ class ServiceEngine(
         launch(config)
     }
 
-    override suspend fun measureVpnDelay(): Int? = activeProxyTag.takeIf { it.isNotEmpty() }?.let { measureDelay(it) }
+    override suspend fun probeVpn(): ProbeResult = activeProxyTag.takeIf { it.isNotEmpty() }?.let { probe(it) } ?: ProbeResult.NoAnswer
 
-    override suspend fun measureDelay(tag: String): Int? = withContext(Dispatchers.IO) {
-        client?.runCatching { delay(tag, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()
+    override suspend fun probe(tag: String): ProbeResult = withContext(Dispatchers.IO) {
+        client?.runCatching { delay(tag, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()?.let(ProbeResult::fromWire) ?: ProbeResult.NoAnswer
     }
 
     override fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiProbeSocksPort

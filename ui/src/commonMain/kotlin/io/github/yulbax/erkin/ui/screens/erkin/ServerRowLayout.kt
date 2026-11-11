@@ -53,7 +53,7 @@ import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.components.color
 import io.github.yulbax.erkin.ui.components.label
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import kotlin.math.PI
 import kotlin.math.sin
 import org.jetbrains.compose.resources.StringResource
@@ -73,7 +73,7 @@ internal fun ServerRowLayout(
     subtitle: String,
     isSelected: Boolean,
     mode: RowMode,
-    delay: ProxyDelay?,
+    result: ProbeResult?,
     testing: Boolean,
     isBest: Boolean,
     onClick: () -> Unit,
@@ -83,7 +83,7 @@ internal fun ServerRowLayout(
     subtitleIcon: RowIcon? = null,
     menu: @Composable RowScope.() -> Unit
 ) {
-    val pingColor = delay?.color()
+    val pingColor = result?.color()
     val shape = RoundedCornerShape(18.dp)
     Surface(
         shape = shape,
@@ -137,7 +137,7 @@ internal fun ServerRowLayout(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
-                    DelaySuffix(delay = delay, testing = testing)
+                    ResultSuffix(result = result, testing = testing)
                 }
             }
             when (mode) {
@@ -192,8 +192,8 @@ internal fun splitButtonColors() = ButtonColors(
 )
 
 @Composable
-private fun DelaySuffix(delay: ProxyDelay?, testing: Boolean) {
-    if (!testing && delay == null) return
+private fun ResultSuffix(result: ProbeResult?, testing: Boolean) {
+    if (!testing && result == null) return
     Text(
         " · ",
         style = MaterialTheme.typography.bodySmall,
@@ -201,9 +201,9 @@ private fun DelaySuffix(delay: ProxyDelay?, testing: Boolean) {
     )
     if (testing) {
         WaveDots(color = MaterialTheme.colorScheme.onSurfaceVariant)
-    } else if (delay != null) {
+    } else if (result != null) {
         Text(
-            text = delay.label(),
+            text = result.label(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

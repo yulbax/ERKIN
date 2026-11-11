@@ -1,6 +1,6 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
-import io.github.yulbax.erkin.vpn.CoreLog
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import android.content.Context
 import io.github.yulbax.erkin.util.ErkinLog
 import io.github.yulbax.erkin.vpn.ProbeUrls
@@ -25,8 +25,7 @@ class MihomoEngine(
     private val appContext: Context,
     private val tunPlatform: TunPlatform,
     private val listener: EngineListener,
-    private val log: ErkinLog,
-    private val coreLog: CoreLog
+    private val log: ErkinLog
 ) : VpnEngine {
 
     override val probeSocksPort: Int = freeLoopbackPort()
@@ -51,7 +50,7 @@ class MihomoEngine(
     @Synchronized
     override fun start(config: EngineConfig) {
         check(traffic == null) { "mihomo engine is already started" }
-        MihomoRuntime.ensureSetup(appContext, coreLog)
+        MihomoRuntime.ensureSetup(appContext, log)
         launch(config)
         traffic = sampleTraffic()
     }
@@ -83,10 +82,10 @@ class MihomoEngine(
         runCatching { Mihomocore.stop() }.onFailure { log.w(TAG, "mihomo stop failed", it) }
     }
 
-    override suspend fun measureVpnDelay(): Int? = activeProxyTag.takeIf { it.isNotEmpty() }?.let { measureDelay(it) }
+    override suspend fun probeVpn(): ProbeResult = activeProxyTag.takeIf { it.isNotEmpty() }?.let { probe(it) } ?: ProbeResult.NoAnswer
 
-    override suspend fun measureDelay(tag: String): Int? = withContext(Dispatchers.IO) {
-        Mihomocore.urlTest(tag, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS).takeIf { it > 0 }
+    override suspend fun probe(tag: String): ProbeResult = withContext(Dispatchers.IO) {
+        ProbeResult.fromWire(Mihomocore.urlTest(tag, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS))
     }
 
     private fun launch(config: EngineConfig) {

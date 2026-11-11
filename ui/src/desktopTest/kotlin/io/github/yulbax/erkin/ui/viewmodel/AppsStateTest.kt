@@ -6,7 +6,7 @@ import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -190,11 +190,11 @@ class AppsStateTest {
 
     @Test
     fun aServerRowCarriesItsMeasuredDelay() {
-        val measured = ServerChoices(choices.servers, choices.groups, delays = mapOf(helsinki.id to ProxyDelay.Measured(120)))
+        val measured = ServerChoices(choices.servers, choices.groups, results = mapOf(helsinki.id to ProbeResult.Answered(120)))
         val rows = serverPickerPage(measured, query = "", openGroup = null, current = CurrentServer.None).rows
 
-        assertEquals(ProxyDelay.Measured(120), rows.filterIsInstance<ServerPickerRow.Server>().first { it.id == helsinki.id }.delay)
-        assertNull(rows.filterIsInstance<ServerPickerRow.Server>().first { it.id == main.id }.delay)
+        assertEquals(ProbeResult.Answered(120), rows.filterIsInstance<ServerPickerRow.Server>().first { it.id == helsinki.id }.result)
+        assertNull(rows.filterIsInstance<ServerPickerRow.Server>().first { it.id == main.id }.result)
     }
 
     @Test

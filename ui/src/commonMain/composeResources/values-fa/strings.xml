@@ -385,4 +385,5 @@
     <string name="login_menu">نام کاربری و رمز عبور</string>
     <string name="login_edit_hint">نام کاربری و رمز عبوری که این سرور با آن وصل می‌شود.</string>
     <string name="login_wrong">نام کاربری یا رمز عبور اشتباه است.</string>
+    <string name="server_ping_login_rejected">ورود نادرست</string>
 </resources>

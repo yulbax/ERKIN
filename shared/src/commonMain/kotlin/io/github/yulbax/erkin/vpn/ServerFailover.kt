@@ -4,7 +4,7 @@ import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.util.AppLog
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 
 class ServerFailover(
     private val store: VpnSessionStore,
@@ -24,13 +24,13 @@ class ServerFailover(
         val inputs = store.load()
         val candidates = inputs.profiles.filter { it.isLink && it.groupId == group.id }
         val ids = candidates.map { it.id }.toSet()
-        val delays = latency.measure(ids).filterKeys { it in ids }
-        val target = fastest(delays)?.let { id -> candidates.first { it.id == id } }
+        val results = latency.measure(ids).filterKeys { it in ids }
+        val target = fastest(results)?.let { id -> candidates.first { it.id == id } }
         when {
             target == null -> log.w(TAG, "no server of group ${group.id} answers; keeping the current one")
             target.id == inputs.selected?.id -> log.i(TAG, "the current server answers the latency test; keeping it")
             else -> {
-                log.i(TAG, "switching to the fastest server ${target.id} (${delays[target.id]})")
+                log.i(TAG, "switching to the fastest server ${target.id} (${results[target.id]})")
                 store.select(target)
             }
         }
@@ -56,8 +56,8 @@ class ServerFailover(
     companion object {
         private const val TAG = "ServerFailover"
 
-        fun fastest(delays: Map<Long, ProxyDelay>): Long? =
-            delays.mapNotNull { (id, delay) -> (delay as? ProxyDelay.Measured)?.let { id to it.ms } }
+        fun fastest(results: Map<Long, ProbeResult>): Long? =
+            results.mapNotNull { (id, result) -> (result as? ProbeResult.Answered)?.let { id to it.ms } }
                 .minByOrNull { it.second }
                 ?.first
     }

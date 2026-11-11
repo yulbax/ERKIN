@@ -63,7 +63,7 @@ import io.github.yulbax.erkin.ui.components.ChoiceRow
 import io.github.yulbax.erkin.ui.components.IconSource
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -97,7 +97,7 @@ internal fun GroupRow(
     item: ServerListItem.Group,
     actions: GroupActions,
     isSelected: Boolean,
-    delay: ProxyDelay?,
+    result: ProbeResult?,
     testing: Boolean,
     isBest: Boolean,
     mode: RowMode,
@@ -110,7 +110,7 @@ internal fun GroupRow(
         subtitle = "${item.name} · ${item.members.size} · ${item.current.type}",
         isSelected = isSelected,
         mode = mode,
-        delay = delay,
+        result = result,
         testing = testing,
         isBest = isBest,
         onClick = onClick,

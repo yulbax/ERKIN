@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -33,11 +34,20 @@ class SocksHealthProbe(
         if (params.vpnActive) launch {
             var country = ""
             while (true) {
-                val vpnDelay = engine.measureVpnDelay()
+                val result = engine.probeVpn()
+                val vpnDelay = (result as? ProbeResult.Answered)?.ms
                 if (vpnDelay != null && country.isEmpty()) {
                     country = resolveCountry(engine.probeSocksPort, credentials) ?: country
                 }
-                publish { it.copy(vpnDelayMs = vpnDelay, vpnChecked = true, vpnCountry = country, measured = HealthChannel.VPN) }
+                publish {
+                    it.copy(
+                        vpnDelayMs = vpnDelay,
+                        vpnChecked = true,
+                        vpnCountry = country,
+                        vpnLoginRejected = result == ProbeResult.LoginRejected,
+                        measured = HealthChannel.VPN
+                    )
+                }
                 delay((if (vpnDelay != null) HEALTH_INTERVAL_MS else HEALTH_RETRY_MS).milliseconds)
             }
         }

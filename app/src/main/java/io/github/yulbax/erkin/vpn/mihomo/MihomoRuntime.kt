@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
-import io.github.yulbax.erkin.vpn.CoreLog
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.LinkProperties
@@ -10,6 +9,8 @@ import android.net.NetworkRequest
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.util.core
 import mihomocore.Mihomocore
 import java.io.File
 import java.net.Inet4Address
@@ -33,14 +34,14 @@ object MihomoRuntime {
     fun describeSystemDns(): String = "servers=[$systemDnsServers] privateDns=${privateDnsHost ?: "-"}"
 
     @Synchronized
-    fun ensureSetup(context: Context, coreLog: CoreLog) {
+    fun ensureSetup(context: Context, log: AppLog) {
         if (ready) return
         val appContext = context.applicationContext
         runCatching { go.Seq.setContext(appContext) }
         val workDir = workDir(appContext).apply { mkdirs() }
         File(workDir, LEGACY_GEOIP).delete()
         File(workDir, LEGACY_CORE_LOG).delete()
-        Mihomocore.setup(workDir.absolutePath, TimeZone.getDefault().id) { level, message -> coreLog.line(level, message) }
+        Mihomocore.setup(workDir.absolutePath, TimeZone.getDefault().id) { level, message -> log.core(level, message) }
         observeSystemDns(appContext)
         ready = true
     }

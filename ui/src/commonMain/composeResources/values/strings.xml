@@ -409,4 +409,5 @@
     <string name="login_menu">Login and password</string>
     <string name="login_edit_hint">The login and password this server signs in with.</string>
     <string name="login_wrong">Wrong login or password.</string>
+    <string name="server_ping_login_rejected">wrong login</string>
 </resources>

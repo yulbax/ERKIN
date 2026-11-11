@@ -25,7 +25,7 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -46,7 +46,7 @@ internal fun ServerRow(
     onSelect: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
-    delay: ProxyDelay? = null,
+    result: ProbeResult? = null,
     testing: Boolean = false,
     isBest: Boolean = false,
     chainLabel: String? = null,
@@ -58,7 +58,7 @@ internal fun ServerRow(
         subtitle = chainLabel ?: profile.type,
         isSelected = isSelected,
         mode = mode,
-        delay = delay,
+        result = result,
         testing = testing,
         isBest = isBest,
         onClick = onSelect,

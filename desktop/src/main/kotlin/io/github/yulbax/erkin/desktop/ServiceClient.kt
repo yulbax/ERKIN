@@ -109,7 +109,7 @@ class ServiceClient private constructor(
         put("proxy", proxy)
         put("url", url)
         put("timeout", timeoutMs)
-    }.let { reply -> reply["delay"]?.jsonPrimitive?.intOrNull?.takeIf { reply.ok && it > 0 } }
+    }.let { reply -> reply["delay"]?.jsonPrimitive?.intOrNull }
 
     fun traffic(): Traffic? = call("traffic").takeIf { it.ok }?.let { reply ->
         Traffic(reply["up"]?.jsonPrimitive?.longOrNull ?: 0, reply["down"]?.jsonPrimitive?.longOrNull ?: 0)

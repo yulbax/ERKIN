@@ -1,7 +1,6 @@
 package io.github.yulbax.erkin.desktop
 
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
-import io.github.yulbax.erkin.vpn.CoreLog
 import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import androidx.room.Room
 import io.github.yulbax.erkin.data.AppDatabase
@@ -79,7 +78,6 @@ val desktopModule = module {
 
     single { VpnStateRepository() }
     single { IncomingServers() }
-    single { CoreLog(get()) }
     single { VpnCommandBus() }
     single<DiagnosticsSource> { DesktopDiagnostics(get(), get(), get(), get()) }
     single {
@@ -88,8 +86,7 @@ val desktopModule = module {
             bundled = DesktopPaths.serviceBinary,
             appDir = DesktopPaths.installDir,
             expectedVersion = System.getProperty("erkin.version"),
-            log = get(),
-            coreLog = get()
+            log = get()
         )
     }
     single<VersionInfo> { DesktopVersionInfo(get()) }
@@ -103,7 +100,7 @@ val desktopModule = module {
         }
     }
 
-    single { VpnSessionFactory(get(), get(), get(), get(), get<ByeDpiSiteCheck>(), get(), get(), get()) }
+    single { VpnSessionFactory(get(), get(), get(), get(), get<ByeDpiSiteCheck>(), get(), get()) }
     single {
         val log = get<AppLog>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

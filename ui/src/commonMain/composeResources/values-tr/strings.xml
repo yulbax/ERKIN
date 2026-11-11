@@ -385,4 +385,5 @@
     <string name="login_menu">Kullanıcı adı ve parola</string>
     <string name="login_edit_hint">Bu sunucunun bağlanırken kullandığı kullanıcı adı ve parola.</string>
     <string name="login_wrong">Kullanıcı adı veya parola yanlış.</string>
+    <string name="server_ping_login_rejected">yanlış giriş</string>
 </resources>

@@ -1,7 +1,5 @@
 package io.github.yulbax.erkin.vpn
 
-import kotlinx.coroutines.flow.filterIsInstance
-import io.github.yulbax.erkin.vpn.core.ProxyDelay
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
@@ -30,8 +28,6 @@ class VpnSession(
     private val stateRepository: VpnStateRepository,
     private val health: HealthMonitor,
     private val failover: ServerFailover,
-    private val latency: ServerLatencyProbe,
-    private val coreLog: CoreLog,
     private val quality: ByeDpiQualityCheck,
     private val log: AppLog,
     private val ownPackage: String,
@@ -57,7 +53,6 @@ class VpnSession(
     private var byeDpiCheckJob: Job? = null
     private var failoverJob: Job? = null
     private val recovery = RecoveryLadder()
-    private var loginConfirmed = false
 
     val isIdle: Boolean get() = phase == Phase.Idle
     val configName: String get() = appliedConfig?.configName.orEmpty()
@@ -70,7 +65,6 @@ class VpnSession(
         phase = Phase.Starting
         generation++
         rapidByeDpiExits = 0
-        loginConfirmed = false
         recovery.reset()
         log.i(TAG, "start requested system=$systemInitiated")
         stateRepository.update(VpnState.Connecting)
@@ -121,14 +115,9 @@ class VpnSession(
         return ReloadOutcome.Done
     }
 
-    suspend fun checkLogin(serverId: Long) {
-        val selected = appliedConfig?.selectedTag?.let(ProxyTag::profileId)
-        if (!isRunning || loginConfirmed || serverId != selected) return
-        if (latency.measure(setOf(serverId))[serverId] is ProxyDelay.Measured) {
-            loginConfirmed = true
-            return
-        }
-        log.w(TAG, "server $serverId rejected the login")
+    fun rejectLogin() {
+        if (!isRunning) return
+        log.w(TAG, "the server keeps rejecting the login; stopping")
         fail(VpnFailure.LoginRejected)
     }
 
@@ -315,10 +304,7 @@ class VpnSession(
                 store.byeDpiArgsChanges()
                     .collect { requestWork(Command.RestartByeDpi) }
             }
-            launch {
-                coreLog.all.filterIsInstance<CoreEvent.LoginRejected>()
-                    .collect { requestWork(Command.CheckLogin(it.serverId)) }
-            }
+
         }
     }
 
@@ -334,6 +320,7 @@ class VpnSession(
                     serverTags = config.engineConfig.serverTags
                 ),
                 onVpnDown = { requestWork(Command.Recover) },
+                onLoginRejected = { requestWork(Command.RejectLogin) },
                 onVpnUp = recovery::reset,
                 onByedpiChanged = { requestWork(Command.CheckByeDpi) }
             )

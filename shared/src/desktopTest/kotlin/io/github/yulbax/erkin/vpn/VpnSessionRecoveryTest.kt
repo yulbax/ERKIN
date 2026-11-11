@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.SettingsEntity
@@ -47,8 +48,6 @@ class VpnSessionRecoveryTest {
             stateRepository = VpnStateRepository(),
             health = HealthMonitor(VpnStateRepository(), SilentLog, SilentProbe),
             failover = ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> "{}" }, SilentLog),
-            latency = ServerLatencyProbe(store) { _, _, _, _, _ -> "{}" },
-            coreLog = CoreLog(SilentLog),
             quality = { _, _ -> ByeDpiReachability(0, 0) },
             log = SilentLog,
             ownPackage = "io.github.yulbax.erkin",
@@ -72,44 +71,6 @@ class VpnSessionRecoveryTest {
             assertEquals(listOf<Command>(Command.Reload), requested.toList())
         } finally {
             session.stop(VpnState.Disconnected)
-            scope.cancel()
-        }
-    }
-
-    @Test
-    fun theMainServerRejectingTheLoginStopsTheSessionOnlyIfALoneAttemptFailsToo() = runBlocking {
-        val store = Store(CompletableDeferred(Unit), CompletableDeferred(Unit))
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        fun session(answer: String) = VpnSession(
-            engine = Engine(),
-            byeDpi = NoByeDpi,
-            store = store,
-            stateRepository = VpnStateRepository(),
-            health = HealthMonitor(VpnStateRepository(), SilentLog, SilentProbe),
-            failover = ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> "{}" }, SilentLog),
-            latency = ServerLatencyProbe(store) { _, _, _, _, _ -> answer },
-            coreLog = CoreLog(SilentLog),
-            quality = { _, _ -> ByeDpiReachability(0, 0) },
-            log = SilentLog,
-            ownPackage = "io.github.yulbax.erkin",
-            scope = scope,
-            requestWork = { },
-            onByeDpiExit = { _, _ -> }
-        )
-        val rejected = session("""{"p1":-1}""")
-        val signedIn = session("""{"p1":40}""")
-        try {
-            rejected.start(systemInitiated = false)
-            signedIn.start(systemInitiated = false)
-
-            rejected.checkLogin(serverId = 2)
-            val failure = runCatching { rejected.checkLogin(serverId = 1) }.exceptionOrNull()
-            signedIn.checkLogin(serverId = 1)
-
-            assertEquals(VpnFailure.LoginRejected, (failure as? VpnFailureException)?.failure)
-        } finally {
-            rejected.stop(VpnState.Disconnected)
-            signedIn.stop(VpnState.Disconnected)
             scope.cancel()
         }
     }
@@ -141,8 +102,8 @@ class VpnSessionRecoveryTest {
         override fun reloadRouting(config: EngineConfig) {
             reloads.incrementAndGet()
         }
-        override suspend fun measureVpnDelay(): Int? = null
-        override suspend fun measureDelay(tag: String): Int? = null
+        override suspend fun probeVpn(): ProbeResult = ProbeResult.NoAnswer
+        override suspend fun probe(tag: String): ProbeResult = ProbeResult.NoAnswer
         override fun stop() = Unit
     }
 

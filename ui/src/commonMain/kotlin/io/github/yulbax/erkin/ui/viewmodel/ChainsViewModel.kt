@@ -21,10 +21,10 @@ class ChainsViewModel(
     private val profileRepository: ProfileRepository,
     private val settingsRepository: SettingsRepository,
     vpnStateRepository: VpnStateRepository,
-    serverDelays: ServerDelays
+    probeResults: ProbeResults
 ) : ViewModel() {
 
-    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, serverDelays)
+    val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, probeResults)
 
     val hintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.chainsHintSeen }

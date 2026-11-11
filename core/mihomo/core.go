@@ -31,12 +31,15 @@ import (
 )
 
 const (
-	siteConcurrency    = 12
-	siteDeadlineFactor = 4
-	siteBodyLimit      = 1 << 20
-	testConcurrency    = 10
-	invalidInterface   = "<invalid>"
-	logFileMode        = 0o644
+	siteConcurrency      = 12
+	siteDeadlineFactor   = 4
+	siteBodyLimit        = 1 << 20
+	testConcurrency      = 10
+	delayFailed          = -1
+	delayLoginRejected   = -2
+	openVpnLoginRejected = "openvpn authentication failed"
+	invalidInterface     = "<invalid>"
+	logFileMode          = 0o644
 )
 
 type Traffic struct {
@@ -110,7 +113,7 @@ func Shutdown() {
 func URLTest(proxyName string, url string, timeoutMs int32) int32 {
 	proxy, loaded := tunnel.Proxies()[proxyName]
 	if !loaded {
-		return -1
+		return delayFailed
 	}
 	return measure(proxy, url, timeoutMs)
 }
@@ -141,7 +144,7 @@ func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string
 		name, _ := mapping["name"].(string)
 		proxy, err := adapter.ParseProxy(mapping, adapter.WithTunnelForAPI(table))
 		if err != nil {
-			results[name] = -1
+			results[name] = delayFailed
 			continue
 		}
 		table.proxies[name] = proxy
@@ -442,8 +445,11 @@ func measure(proxy C.Proxy, url string, timeoutMs int32) int32 {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutMs)*time.Millisecond)
 	defer cancel()
 	delay, err := proxy.URLTest(ctx, url, nil)
-	if err != nil || delay == 0 {
-		return -1
+	switch {
+	case err != nil && strings.Contains(err.Error(), openVpnLoginRejected):
+		return delayLoginRejected
+	case err != nil || delay == 0:
+		return delayFailed
 	}
 	return int32(delay)
 }
