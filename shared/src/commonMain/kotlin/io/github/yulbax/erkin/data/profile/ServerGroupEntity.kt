@@ -32,6 +32,9 @@ data class ServerGroupEntity(
     }
 }
 
+fun List<ProfileEntity>.shownServer(rememberedId: Long?): ProfileEntity =
+    find { it.selected } ?: find { it.id == rememberedId } ?: first()
+
 sealed interface GroupKind {
     val acceptsServers: Boolean
 

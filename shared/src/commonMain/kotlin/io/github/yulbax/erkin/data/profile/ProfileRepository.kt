@@ -329,8 +329,15 @@ class ProfileRepository(
 
     suspend fun ensureSelection(preferredId: Long? = null) {
         if (profileDao.getSelected() != null) return
-        val id = preferredId ?: profileDao.getAll().firstOrNull()?.id ?: return
+        val id = preferredId ?: firstRowServer()?.id ?: return
         profileDao.selectExclusive(id)
+    }
+
+    private suspend fun firstRowServer(): ProfileEntity? {
+        val all = profileDao.getAll()
+        val first = all.firstOrNull() ?: return null
+        val group = first.groupId?.let { database.serverGroupDao().get(it) } ?: return first
+        return all.filter { it.groupId == group.id }.shownServer(group.currentId)
     }
 
     private fun AddTarget.named(name: String): AddTarget = when (this) {

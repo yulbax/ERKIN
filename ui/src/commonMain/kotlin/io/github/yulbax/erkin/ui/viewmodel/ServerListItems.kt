@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionUsage
+import io.github.yulbax.erkin.data.profile.shownServer
 
 sealed interface ServerListItem {
     val key: Any
@@ -25,8 +26,7 @@ sealed interface ServerListItem {
         val rememberedId: Long?,
         val updatedAt: Long? = null
     ) : ServerListItem {
-        val current: ProfileEntity =
-            members.find { it.selected } ?: members.find { it.id == rememberedId } ?: members.first()
+        val current: ProfileEntity = members.shownServer(rememberedId)
 
         override val key: Any get() = GROUP_KEY_PREFIX + id
         override val profileIds: List<Long> get() = members.map { it.id }

@@ -164,6 +164,31 @@ class ProfileRefreshTest {
         assertTrue(database.profileDao().getAll().isEmpty())
     }
 
+    @Test
+    fun deletingTheSelectedServerSelectsTheOneTheFirstRowShows() = runBlocking {
+        repository.add(GROUP_LINKS, null, AddTarget.Main("Group"))
+        repository.add("vless://id@solo.example:443?security=tls#Solo")
+        val servers = database.profileDao().getAll().associateBy { it.name }
+        repository.select(servers.getValue("Oslo"))
+        repository.select(servers.getValue("Solo"))
+
+        repository.delete(listOf(servers.getValue("Solo")))
+
+        assertEquals("Oslo", database.profileDao().getSelected()?.name)
+    }
+
+    @Test
+    fun deletingTheSelectedServerSelectsALoneServerThatStandsFirst() = runBlocking {
+        repository.add("vless://id@first.example:443?security=tls#First")
+        repository.add(GROUP_LINKS, null, AddTarget.Main("Group"))
+        val servers = database.profileDao().getAll().associateBy { it.name }
+        repository.select(servers.getValue("Oslo"))
+
+        repository.delete(listOf(servers.getValue("Oslo")))
+
+        assertEquals("First", database.profileDao().getSelected()?.name)
+    }
+
     private class RecordingLog : AppLog {
         val warnings = mutableListOf<String>()
         override fun i(tag: String, message: String) = Unit
@@ -594,6 +619,7 @@ class ProfileRefreshTest {
 
     private companion object {
         const val SUBSCRIPTION_URL = "https://sub.example/list"
+        val GROUP_LINKS = listOf("Riga", "Oslo", "Tallinn").joinToString("\n") { "vless://id@${it.lowercase()}.example:443?security=tls#$it" }
         const val UUID = "11111111-2222-3333-4444-555555555555"
         const val OTHER_UUID = "66666666-7777-8888-9999-000000000000"
 
