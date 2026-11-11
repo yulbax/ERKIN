@@ -98,7 +98,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
+import io.github.yulbax.erkin.ui.components.SwipeableSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.text.style.TextOverflow
@@ -652,7 +652,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                     Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(Res.string.move_to_group))
                 }
             }
-            SnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
+            SwipeableSnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
             if (!showHeader && !c.selecting) {
                 AddFab(
                     onClick = c.onAddServerClick,

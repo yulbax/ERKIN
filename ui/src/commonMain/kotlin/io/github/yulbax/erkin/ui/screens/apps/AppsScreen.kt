@@ -23,9 +23,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
+import io.github.yulbax.erkin.ui.components.SwipeableSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
@@ -162,17 +161,13 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
                         }
                     }
                 }
-                SnackbarHost(
+                SwipeableSnackbarHost(
                     hostState = snackbarHostState,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                ) { data ->
-                    Snackbar(
-                        snackbarData = data,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                        actionColor = MaterialTheme.colorScheme.primary
-                    )
-                }
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    actionColor = MaterialTheme.colorScheme.primary
+                )
             }
 
             when (val target = picking) {

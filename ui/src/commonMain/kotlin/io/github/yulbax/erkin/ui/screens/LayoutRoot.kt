@@ -28,7 +28,7 @@ import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
+import io.github.yulbax.erkin.ui.components.SwipeableSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -144,7 +144,7 @@ fun MainScreen(
         }
     ) {
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            snackbarHost = { SwipeableSnackbarHost(snackbarHostState) },
             topBar = {
                 topBarFrame {
                     val selecting = (appsMode as? AppsMode.Selecting)?.takeIf { onAppsScreen }
