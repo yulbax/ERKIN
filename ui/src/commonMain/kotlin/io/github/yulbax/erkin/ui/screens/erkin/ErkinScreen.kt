@@ -46,7 +46,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -135,7 +134,7 @@ fun ErkinScreen(
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
-    var sheetId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var sheetId by remember { mutableStateOf<Long?>(null) }
     var renamingId by remember { mutableStateOf<Long?>(null) }
     val selection = rememberSelection(servers.profiles.map { it.id })
     val checked = selection.checked
