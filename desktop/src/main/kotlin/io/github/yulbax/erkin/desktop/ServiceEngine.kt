@@ -48,19 +48,19 @@ class ServiceEngine(
     }
 
     private fun launch(config: EngineConfig) {
-        val connected = service.connect()
+        val connected = service.control()
         connected.start(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
         client = connected
         log.i(TAG, "mihomo started by the ERKIN service ${service.hello?.version.orEmpty()}")
-        traffic = sampleTraffic(connected)
+        traffic = sampleTraffic()
     }
 
-    private fun sampleTraffic(connected: ServiceClient): ScheduledExecutorService {
+    private fun sampleTraffic(): ScheduledExecutorService {
         var last: ServiceClient.Traffic? = null
         return Executors.newSingleThreadScheduledExecutor { Thread(it, "mihomo-traffic").apply { isDaemon = true } }
             .apply {
                 scheduleAtFixedRate({
-                    val now = runCatching { connected.traffic() }.getOrNull() ?: return@scheduleAtFixedRate
+                    val now = runCatching { service.running()?.traffic() }.getOrNull() ?: return@scheduleAtFixedRate
                     last?.let { listener.onThroughput(now.up - it.up, now.down - it.down) }
                     last = now
                 }, 0, 1, TimeUnit.SECONDS)

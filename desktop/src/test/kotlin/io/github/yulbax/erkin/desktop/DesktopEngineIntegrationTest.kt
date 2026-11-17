@@ -134,6 +134,24 @@ class DesktopEngineIntegrationTest {
     }
 
     @Test
+    fun onlyTheControlConnectionHoldsTheTunnel() {
+        val socket = startService()
+        val config = """{"mode": "rule", "log-level": "warning", "proxies": [{"name": "p1", "type": "direct"}], "rules": ["MATCH,p1"]}"""
+        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog)
+        val control = service.control()
+        control.start(config, "", "")
+
+        checkNotNull(service.running()).close()
+        Thread.sleep(500)
+        assertNotNull("the tunnel must survive a broken work connection", checkNotNull(service.running()).traffic())
+
+        control.close()
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+        while (checkNotNull(service.running()).traffic() != null && System.nanoTime() < deadline) Thread.sleep(100)
+        assertNull("the tunnel must stop once the control connection closes", checkNotNull(service.running()).traffic())
+    }
+
+    @Test
     fun ciadpiProcessStartsStopsAndReportsUnexpectedExit() {
         val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog)
         val port = freeLoopbackPort()

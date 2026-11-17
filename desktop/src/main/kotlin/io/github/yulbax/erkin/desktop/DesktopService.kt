@@ -13,6 +13,7 @@ class DesktopService(
     private val log: AppLog
 ) {
     @Volatile private var client: ServiceClient? = null
+    @Volatile private var control: ServiceClient? = null
     @Volatile var hello: ServiceClient.Hello? = null
         private set
 
@@ -28,6 +29,13 @@ class DesktopService(
         }
         client = connected
         return connected
+    }
+
+    @Synchronized
+    fun control(): ServiceClient {
+        control?.takeIf { it.isOpen }?.let { return it }
+        connect()
+        return open().also { control = it }
     }
 
     @Synchronized
@@ -56,8 +64,10 @@ class DesktopService(
         runCatching { client?.clearLog() }.onFailure { log.w(TAG, "could not clear the core log", it) }
     }
 
+    private fun open(): ServiceClient = ServiceClient.connect(socket) { level, message -> log.core(level, message) }
+
     private fun tryConnect(): ServiceClient? = runCatching {
-        ServiceClient.connect(socket) { level, message -> log.core(level, message) }.also { connected ->
+        open().also { connected ->
             hello = connected.hello()
             runCatching { connected.subscribeLog() }.onFailure { log.w(TAG, "the service does not stream the core log", it) }
         }
