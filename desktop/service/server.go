@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -67,10 +68,10 @@ type server struct {
 	protector net.Listener
 
 	ownerMutex sync.Mutex
-	owner      net.Conn
+	owner      io.ReadWriteCloser
 
 	logMutex       sync.Mutex
-	logSubscribers map[net.Conn]func(response)
+	logSubscribers map[io.ReadWriteCloser]func(response)
 
 	clientsMutex sync.Mutex
 	clients      int
@@ -82,7 +83,25 @@ func listen(socketPath string, workDir string) (*server, error) {
 	if err != nil {
 		return nil, err
 	}
-	workDir, err = filepath.Abs(workDir)
+	s, err := newServer(workDir, protectSocketPath(socketPath))
+	if err != nil {
+		return nil, err
+	}
+	s.listener, err = clientListener(s.workDir, socketPath)
+	if err != nil {
+		_ = s.protector.Close()
+		return nil, err
+	}
+	s.idle = time.AfterFunc(idleExit, s.shutdown)
+	return s, nil
+}
+
+func newServer(workDir string, protectPath string) (*server, error) {
+	workDir, err := filepath.Abs(workDir)
+	if err != nil {
+		return nil, err
+	}
+	protectPath, err = filepath.Abs(protectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -93,24 +112,16 @@ func listen(socketPath string, workDir string) (*server, error) {
 		return nil, err
 	}
 	removeLegacyGeoIP(workDir)
-	listener, err := clientListener(workDir, socketPath)
-	if err != nil {
-		return nil, err
-	}
-	protectPath := protectSocketPath(socketPath)
 	_ = os.Remove(protectPath)
 	protector, err := net.Listen("unix", relativeTo(workDir, protectPath))
 	if err != nil {
-		_ = listener.Close()
 		return nil, err
 	}
 	if err = allowClients(protectPath); err != nil {
-		_ = listener.Close()
 		_ = protector.Close()
 		return nil, err
 	}
-	s := &server{workDir: workDir, listener: listener, protector: protector, logSubscribers: map[net.Conn]func(response){}}
-	s.idle = time.AfterFunc(idleExit, s.shutdown)
+	s := &server{workDir: workDir, protector: protector, logSubscribers: map[io.ReadWriteCloser]func(response){}}
 	mihomocore.SetLogSink(s)
 	mihomocore.Init(workDir, filepath.Join(workDir, coreLogName), "")
 	return s, nil
@@ -144,8 +155,17 @@ func (s *server) serve() error {
 			return err
 		}
 		s.connected()
-		go s.handle(conn)
+		go func() {
+			s.handle(conn)
+			s.disconnected()
+		}()
 	}
+}
+
+func (s *server) serveOne(conn io.ReadWriteCloser) {
+	go s.serveProtect()
+	s.handle(conn)
+	s.shutdown()
 }
 
 func (s *server) connected() {
@@ -165,13 +185,14 @@ func (s *server) disconnected() {
 }
 
 func (s *server) shutdown() {
-	_ = s.listener.Close()
+	if s.listener != nil {
+		_ = s.listener.Close()
+	}
 	_ = s.protector.Close()
 	_ = s.engine.stop()
 }
 
-func (s *server) handle(conn net.Conn) {
-	defer s.disconnected()
+func (s *server) handle(conn io.ReadWriteCloser) {
 	defer s.release(conn)
 	defer s.unsubscribeLog(conn)
 	defer conn.Close()
@@ -202,7 +223,7 @@ func (s *server) handle(conn net.Conn) {
 	}
 }
 
-func (s *server) dispatch(conn net.Conn, message request) response {
+func (s *server) dispatch(conn io.ReadWriteCloser, message request) response {
 	result := response{ID: message.ID}
 	fail := func(err error) response {
 		if err != nil {
@@ -280,25 +301,25 @@ func (s *server) Write(level string, message string) {
 	}
 }
 
-func (s *server) subscribeLog(conn net.Conn, reply func(response)) {
+func (s *server) subscribeLog(conn io.ReadWriteCloser, reply func(response)) {
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 	s.logSubscribers[conn] = reply
 }
 
-func (s *server) unsubscribeLog(conn net.Conn) {
+func (s *server) unsubscribeLog(conn io.ReadWriteCloser) {
 	s.logMutex.Lock()
 	defer s.logMutex.Unlock()
 	delete(s.logSubscribers, conn)
 }
 
-func (s *server) claim(conn net.Conn) {
+func (s *server) claim(conn io.ReadWriteCloser) {
 	s.ownerMutex.Lock()
 	defer s.ownerMutex.Unlock()
 	s.owner = conn
 }
 
-func (s *server) release(conn net.Conn) {
+func (s *server) release(conn io.ReadWriteCloser) {
 	s.ownerMutex.Lock()
 	owned := s.owner == conn
 	if owned {

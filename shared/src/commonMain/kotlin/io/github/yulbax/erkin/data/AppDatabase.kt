@@ -28,12 +28,13 @@ import io.github.yulbax.erkin.vpn.SiteListPreset
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
     entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, ServerGroupEntity::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
-    version = 28,
+    version = AppDatabase.VERSION,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -53,6 +54,17 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "erkin.db"
+        const val VERSION = 28
+
+        fun isNewerThanThisBuild(database: File): Boolean {
+            if (!database.isFile) return false
+            val connection = BundledSQLiteDriver().open(database.absolutePath)
+            return try {
+                connection.prepare("PRAGMA user_version").use { it.step() && it.getLong(0) > VERSION }
+            } finally {
+                connection.close()
+            }
+        }
 
         val MIGRATIONS: Array<Migration> = arrayOf(
             object : Migration(1, 2) {

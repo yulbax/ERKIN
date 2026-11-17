@@ -190,4 +190,53 @@ if (System.getProperty("os.name").startsWith("Windows")) {
             check(built.renameTo(File(dir, msiName))) { "Could not rename $built to $msiName" }
         }
     }
+
+    val portableImage = layout.buildDirectory.dir("portable/ERKIN")
+    val preparePortableImage = tasks.register<Sync>("preparePortableImage") {
+        group = "distribution"
+        description = "Turns the release app image into the portable ERKIN that runs as administrator."
+        dependsOn("createReleaseDistributable")
+        from(layout.buildDirectory.dir("compose/binaries/main-release/app/ERKIN"))
+        into(portableImage)
+        val root = portableImage.map { it.asFile }
+        doLast {
+            val dir = root.get()
+            fun run(vararg command: String) {
+                val process = ProcessBuilder(*command).redirectErrorStream(true).start()
+                val output = process.inputStream.bufferedReader().use { it.readText() }
+                check(process.waitFor() == 0) { "${command.first()} failed: $output" }
+            }
+
+            val cfg = File(dir, "app/ERKIN.cfg")
+            val text = cfg.readText()
+            val newline = if ("\r\n" in text) "\r\n" else "\n"
+            val header = "[JavaOptions]$newline"
+            check(header in text) { "No [JavaOptions] section in $cfg" }
+            val options = listOf("-Derkin.portable=true").joinToString("") { "java-options=$it$newline" }
+            cfg.writeText(text.replaceFirst(header, header + options))
+
+            val kits = File(System.getenv("ProgramFiles(x86)") ?: "C:\\Program Files (x86)", "Windows Kits/10/bin")
+            val mt = kits.listFiles().orEmpty()
+                .map { File(it, "x64/mt.exe") }
+                .filter { it.isFile }
+                .maxByOrNull { it.parentFile.parentFile.name }
+                ?: error("mt.exe not found in $kits; install the Windows SDK")
+            val launcher = File(dir, "ERKIN.exe")
+            val manifest = File(temporaryDir, "ERKIN.manifest")
+            run(mt.absolutePath, "-nologo", "-inputresource:${launcher.absolutePath};#1", "-out:${manifest.absolutePath}")
+            val asInvoker = "level=\"asInvoker\""
+            val manifestText = manifest.readText()
+            check(asInvoker in manifestText) { "The ERKIN.exe manifest does not request asInvoker: $manifestText" }
+            manifest.writeText(manifestText.replace(asInvoker, "level=\"requireAdministrator\""))
+            run(mt.absolutePath, "-nologo", "-manifest", manifest.absolutePath, "-outputresource:${launcher.absolutePath};#1")
+        }
+    }
+
+    tasks.register<Zip>("packagePortableZip") {
+        group = "distribution"
+        description = "Zips the portable ERKIN folder."
+        from(preparePortableImage) { into("ERKIN") }
+        destinationDirectory.set(layout.buildDirectory.dir("compose/binaries/main-release/portable"))
+        archiveFileName.set("ERKIN-$appVersion-windows-x86_64-portable.zip")
+    }
 }

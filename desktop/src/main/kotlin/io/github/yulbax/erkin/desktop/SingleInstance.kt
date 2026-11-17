@@ -14,9 +14,8 @@ import java.nio.file.StandardOpenOption
 import kotlin.concurrent.thread
 import kotlin.time.Duration.Companion.milliseconds
 
-class SingleInstance(dir: File) {
+class SingleInstance(dir: File, private val socketFile: File) {
     private val lockFile = File(dir, "instance.lock")
-    private val socketFile = File(dir, "instance.sock")
     private var lock: FileLock? = null
     private var server: ServerSocketChannel? = null
 

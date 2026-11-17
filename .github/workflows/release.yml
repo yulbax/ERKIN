@@ -19,7 +19,7 @@ on:
         type: boolean
         default: false
       windows:
-        description: Rebuild the Windows MSI
+        description: Rebuild the Windows MSI and portable zip
         type: boolean
         default: false
       linux:
@@ -282,13 +282,18 @@ jobs:
         shell: pwsh
         run: sdkmanager --channel=3 "platforms;android-$env:ANDROID_COMPILE_SDK"
       - uses: gradle/actions/setup-gradle@v4
-      - name: MSI
+      - name: MSI and portable
         shell: bash
-        run: ./gradlew -Perkin.desktopOnly :desktop:packageServiceMsi --no-daemon
+        run: ./gradlew -Perkin.desktopOnly :desktop:packageServiceMsi :desktop:packagePortableZip --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: msi
           path: desktop/build/compose/binaries/main-release/msi/*.msi
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portable
+          path: desktop/build/compose/binaries/main-release/portable/*.zip
           retention-days: 7
 
   linux:
@@ -326,7 +331,7 @@ jobs:
           path: desktop/build/linux-packages/*
           retention-days: 7
 
-  # ── Create the tag + GitHub Release with the four APKs and the MSI attached. ─────────────────
+  # ── Create the tag + GitHub Release with the four APKs, the MSI and the portable zip attached. ─
   release:
     needs: [check, quality, android, windows, linux]
     if: needs.check.outputs.should_release == 'true'
@@ -345,6 +350,10 @@ jobs:
         with:
           name: msi
           path: msi
+      - uses: actions/download-artifact@v4
+        with:
+          name: portable
+          path: portable
       - uses: actions/download-artifact@v4
         with:
           name: linux-packages
@@ -376,12 +385,13 @@ jobs:
           files: |
             apks/*.apk
             msi/*.msi
+            portable/*.zip
             linux/*
       - name: Label the assets with the build commit
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: scripts/label-release-assets.sh "v${{ needs.check.outputs.version }}" "$GITHUB_SHA" apks/*.apk msi/*.msi linux/*
+        run: scripts/label-release-assets.sh "v${{ needs.check.outputs.version }}" "$GITHUB_SHA" apks/*.apk msi/*.msi portable/*.zip linux/*
 
   # ── Replace the chosen platforms' assets of the current release with a rebuild from this commit. ──
   respin:
@@ -408,6 +418,11 @@ jobs:
         if: inputs.windows
         with:
           name: msi
+          path: assets
+      - uses: actions/download-artifact@v4
+        if: inputs.windows
+        with:
+          name: portable
           path: assets
       - uses: actions/download-artifact@v4
         if: inputs.linux

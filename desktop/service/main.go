@@ -3,9 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 var version = "dev"
@@ -25,8 +28,14 @@ func main() {
 		flags := flag.NewFlagSet("run", flag.ExitOnError)
 		socket := flags.String("socket", defaultSocketPath(), "unix socket to listen on")
 		workDir := flags.String("work-dir", defaultWorkDir(), "directory for logs and state")
+		stdio := flags.Bool("stdio", false, "serve the app that started this process over stdin and stdout")
+		protect := flags.String("protect", "", "unix socket ciadpi asks for the outbound interface (with --stdio)")
 		_ = flags.Parse(os.Args[2:])
-		err = run(*socket, *workDir)
+		if *stdio {
+			err = runStdio(*workDir, *protect)
+		} else {
+			err = run(*socket, *workDir)
+		}
 	case "version":
 		fmt.Println(version)
 	default:
@@ -43,7 +52,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: erkin-service run [--socket path] [--work-dir dir] | version"+serviceUsage)
+	fmt.Fprintln(os.Stderr, "usage: erkin-service run [--socket path | --stdio --protect path] [--work-dir dir] | version"+serviceUsage)
 	os.Exit(2)
 }
 
@@ -60,3 +69,24 @@ func runForeground(socket string, workDir string) error {
 	}()
 	return s.serve()
 }
+
+func runStdio(workDir string, protectPath string) error {
+	if protectPath == "" {
+		return fmt.Errorf("--stdio needs --protect")
+	}
+	logrus.SetOutput(io.Discard)
+	s, err := newServer(workDir, protectPath)
+	if err != nil {
+		return err
+	}
+	s.serveOne(stdio{})
+	return nil
+}
+
+type stdio struct{}
+
+func (stdio) Read(p []byte) (int, error) { return os.Stdin.Read(p) }
+
+func (stdio) Write(p []byte) (int, error) { return os.Stdout.Write(p) }
+
+func (stdio) Close() error { return os.Stdin.Close() }

@@ -18,6 +18,7 @@ import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
 import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
 import java.io.File
+import java.net.NetworkInterface
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -27,7 +28,9 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -53,12 +56,95 @@ class DesktopEngineIntegrationTest {
 
     private fun startService(): File {
         val socket = File(workDir, "s.sock")
-        processes += ProcessBuilder(File(binDir, "erkin-service").absolutePath, "run", "--socket", socket.absolutePath, "--work-dir", File(workDir, "svc").absolutePath)
+        processes += ProcessBuilder(binary("erkin-service").absolutePath, "run", "--socket", socket.absolutePath, "--work-dir", File(workDir, "svc").absolutePath)
             .redirectErrorStream(true).redirectOutput(File(workDir, "service.log")).start()
         val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
         while (!socket.exists() && System.nanoTime() < deadline) Thread.sleep(50)
         assertTrue("service socket did not appear", socket.exists())
         return socket
+    }
+
+    @Test
+    fun thePortableCoreStartsAgainAfterItDies() {
+        val service = portableService(installedSocket = File(workDir, "none.sock"))
+        val first = service.connect()
+        assertEquals(File(workDir, "core").absoluteFile, service.hello?.workDir)
+        assertSame("the portable core has one connection for everything", first, service.control())
+
+        portableCores().forEach { it.destroyForcibly() }
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
+        while (first.isOpen && System.nanoTime() < deadline) Thread.sleep(50)
+        assertNull("a dead core must not look running", service.running())
+
+        val second = service.connect()
+        assertNotSame(first, second)
+        assertNotNull(second.hello())
+        second.close()
+        assertTrue("the core must exit once the app closes its stdin", portableCores().all { it.onExit().get(10, TimeUnit.SECONDS) != null })
+    }
+
+    @Test
+    fun thePortableCoreStaysOffWhileTheInstalledServiceRuns() {
+        val service = portableService(installedSocket = startService())
+        val failure = runCatching { service.connect() }.exceptionOrNull()
+        assertTrue(failure?.message.orEmpty().contains("installed ERKIN"))
+        assertTrue(portableCores().isEmpty())
+    }
+
+    private fun portableService(installedSocket: File) = DesktopService.Portable(
+        binary = binary("erkin-service"),
+        workDir = File(workDir, "core"),
+        protectSocket = File(workDir, "p.sock"),
+        installedSocket = installedSocket,
+        log = SilentLog
+    )
+
+    private fun portableCores(): List<ProcessHandle> = ProcessHandle.current().children()
+        .filter { child -> processes.none { it.pid() == child.pid() } }
+        .filter { it.info().command().map { command -> "erkin-service" in command }.orElse(false) }
+        .toList()
+
+    private fun binary(name: String): File = File(binDir, if (DesktopPaths.isWindows) "$name.exe" else name)
+
+    @Test
+    fun thePortableCoreRoutesAnAppThroughTheTun() {
+        assumeTrue("set ERKIN_TEST_TUN where the core may create a TUN", System.getenv("ERKIN_TEST_TUN") != null)
+        val curl = if (DesktopPaths.isWindows) "curl.exe" else "curl"
+        val config = MihomoConfigBuilder.build(
+            EngineConfig(listOf(EngineProxy("p1", """{"type":"direct"}""")), "p1", emptyList(), listOf(curl), listOf(curl), 1081, NetworkOptions()),
+            ProbeInbound(freeLoopbackPort(), randomToken(), randomToken()),
+            MihomoPlatform.Desktop(listOf(binary("ciadpi").name))
+        )
+        val service = portableService(installedSocket = File(workDir, "none.sock"))
+        val client = service.control()
+        client.start(config, "", "")
+        assertTrue("the TUN must come up", waitFor { tunUp() })
+
+        val fetch = ProcessBuilder(curl, "-s", "-o", if (DesktopPaths.isWindows) "NUL" else "/dev/null", "https://www.example.com").start()
+        assertTrue(fetch.waitFor(30, TimeUnit.SECONDS))
+        assertEquals(0, fetch.exitValue())
+        assertTrue("the TUN must carry traffic through the core", checkNotNull(client.traffic()).down > 0)
+
+        client.close()
+        assertTrue("the core must exit once the app closes its stdin", portableCores().all { it.onExit().get(10, TimeUnit.SECONDS) != null })
+        assertTrue("the TUN must go away with the core", waitFor { !tunUp() })
+    }
+
+    private fun tunUp(): Boolean = if (DesktopPaths.isWindows) {
+        val query = ProcessBuilder("powershell", "-NoProfile", "-Command", "Get-NetAdapter -Name '${MihomoConfigBuilder.DESKTOP_INTERFACE_NAME}' -ErrorAction Stop")
+            .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start()
+        query.waitFor() == 0
+    } else {
+        NetworkInterface.getByName(MihomoConfigBuilder.DESKTOP_INTERFACE_NAME) != null
+    }
+
+    private fun waitFor(condition: () -> Boolean): Boolean {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20)
+        while (System.nanoTime() < deadline) {
+            if (condition()) return true
+            Thread.sleep(250)
+        }
+        return false
     }
 
     @Test
@@ -113,7 +199,7 @@ class DesktopEngineIntegrationTest {
             }
         """.trimIndent()
 
-        val service = DesktopService(socket, log = SilentLog)
+        val service = DesktopService.Installed(socket, log = SilentLog)
         val client = service.connect()
         assertEquals(File(workDir, "svc").absoluteFile, service.hello?.workDir)
         assertTrue(service.hello?.core.orEmpty().isNotEmpty())
@@ -150,7 +236,7 @@ class DesktopEngineIntegrationTest {
     fun onlyTheControlConnectionHoldsTheTunnel() {
         val socket = startService()
         val config = """{"mode": "rule", "log-level": "warning", "proxies": [{"name": "p1", "type": "direct"}], "rules": ["MATCH,p1"]}"""
-        val service = DesktopService(socket, log = SilentLog)
+        val service = DesktopService.Installed(socket, log = SilentLog)
         val control = service.control()
         control.start(config, "", "")
 
@@ -166,7 +252,7 @@ class DesktopEngineIntegrationTest {
 
     @Test
     fun ciadpiProcessStartsStopsAndReportsUnexpectedExit() {
-        val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog)
+        val ciadpi = CiadpiProcess(binary("ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog)
         val port = freeLoopbackPort()
         val exits = CountDownLatch(1)
         ciadpi.start(port, listOf("-d1")) { exits.countDown() }
@@ -176,7 +262,7 @@ class DesktopEngineIntegrationTest {
         assertFalse(ciadpi.isRunning)
         assertFalse("intentional stop must not be reported as a crash", exits.await(2, TimeUnit.SECONDS))
 
-        val crashing = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog)
+        val crashing = CiadpiProcess(binary("ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog)
         val codes = mutableListOf<Int>()
         val crashed = CountDownLatch(1)
         crashing.start(port, listOf("--definitely-invalid-option")) { code -> codes += code; crashed.countDown() }
@@ -187,7 +273,7 @@ class DesktopEngineIntegrationTest {
 
     @Test
     fun ciadpiSkipsOptionsItsBuildDoesNotSupport() {
-        val ciadpi = CiadpiProcess(File(binDir, "ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog, unsupportedOptions = setOf("--definitely-invalid"))
+        val ciadpi = CiadpiProcess(binary("ciadpi"), File(workDir, "protect.sock").absolutePath, SilentLog, unsupportedOptions = setOf("--definitely-invalid"))
         val port = freeLoopbackPort()
         val exits = CountDownLatch(1)
         ciadpi.start(port, listOf("-d1", "--definitely-invalid")) { exits.countDown() }

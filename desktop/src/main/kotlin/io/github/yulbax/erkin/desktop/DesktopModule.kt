@@ -82,11 +82,18 @@ val desktopModule = module {
     single { IncomingServers() }
     single { VpnCommandBus() }
     single<DiagnosticsSource> { DesktopDiagnostics(get(), get(), get(), get()) }
-    single {
-        DesktopService(
-            socket = DesktopPaths.serviceSocket,
-            log = get()
-        )
+    single<DesktopService> {
+        if (DesktopPaths.isPortable) {
+            DesktopService.Portable(
+                binary = DesktopPaths.serviceBinary,
+                workDir = DesktopPaths.coreDir,
+                protectSocket = DesktopPaths.protectSocket,
+                installedSocket = DesktopPaths.serviceSocket,
+                log = get()
+            )
+        } else {
+            DesktopService.Installed(socket = DesktopPaths.serviceSocket, log = get())
+        }
     }
     single<VersionInfo> { DesktopVersionInfo(get()) }
     single { RuleListDatabase(DesktopRuleListStore(get()), get<AppDatabase>().ruleListDao(), get()) }

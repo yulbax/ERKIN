@@ -207,6 +207,8 @@
     <string name="exit_confirm_text">VPN 已连接。关闭 ERKIN 将断开连接。</string>
     <string name="exit_confirm_exit">退出</string>
     <string name="exit_confirm_tray">最小化到托盘</string>
+    <string name="data_too_new_title">此 ERKIN 版本比其数据旧</string>
+    <string name="data_too_new_text">您的数据由较新版本的 ERKIN 保存，此版本会将其清除。请改用较新版本。</string>
     <string name="tray_open">打开 ERKIN</string>
     <string name="channel_status_no_servers">没有服务器</string>
     <string name="delete_last_server_message">确定删除“%1$s”吗？这是最后一个服务器：VPN 通道中的应用将改为直连。</string>

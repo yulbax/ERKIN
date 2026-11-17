@@ -210,6 +210,8 @@
     <string name="exit_confirm_text">VPN bağlı. ERKIN kapatılırsa bağlantı kesilir.</string>
     <string name="exit_confirm_exit">Çık</string>
     <string name="exit_confirm_tray">Sistem tepsisine küçült</string>
+    <string name="data_too_new_title">Bu ERKIN sürümü verilerinden eski</string>
+    <string name="data_too_new_text">Verileriniz daha yeni bir ERKIN sürümüyle kaydedildi ve bu sürüm onları siler. Bunun yerine daha yeni sürümü açın.</string>
     <string name="tray_open">ERKIN’i aç</string>
     <string name="channel_status_no_servers">sunucu yok</string>
     <string name="delete_last_server_message">“%1$s” silinsin mi? Bu son sunucunuz: VPN kanalındaki uygulamalar doğrudan kanala taşınacak.</string>

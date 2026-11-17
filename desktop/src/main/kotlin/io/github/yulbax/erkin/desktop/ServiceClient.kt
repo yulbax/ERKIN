@@ -5,6 +5,7 @@ import io.github.yulbax.erkin.vpn.core.RuleSetFormat
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.StandardProtocolFamily
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
@@ -28,7 +29,9 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 class ServiceClient private constructor(
-    private val channel: SocketChannel,
+    private val input: InputStream,
+    private val send: (ByteArray) -> Unit,
+    private val link: AutoCloseable,
     private val onLog: (level: String, message: String) -> Unit
 ) : AutoCloseable {
 
@@ -118,7 +121,7 @@ class ServiceClient private constructor(
 
     override fun close() {
         isOpen = false
-        runCatching { channel.close() }
+        runCatching { link.close() }
         pending.values.forEach { it.completeExceptionally(IOException("ERKIN service connection closed")) }
         pending.clear()
     }
@@ -139,10 +142,7 @@ class ServiceClient private constructor(
         }
         val bytes = (message.toString() + "\n").encodeToByteArray()
         try {
-            synchronized(writeLock) {
-                val buffer = ByteBuffer.wrap(bytes)
-                while (buffer.hasRemaining()) channel.write(buffer)
-            }
+            synchronized(writeLock) { send(bytes) }
             return future.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
         } catch (t: Throwable) {
             pending.remove(id)
@@ -152,7 +152,7 @@ class ServiceClient private constructor(
 
     private fun readLoop() {
         runCatching {
-            Channels.newInputStream(channel).bufferedReader().useLines { lines ->
+            input.bufferedReader().useLines { lines ->
                 lines.forEach { line ->
                     val reply = runCatching { Json.parseToJsonElement(line).jsonObject }.getOrNull() ?: return@forEach
                     (reply["log"] as? JsonObject)?.let { event ->
@@ -193,7 +193,20 @@ class ServiceClient private constructor(
                 channel.close()
                 throw t
             }
-            return ServiceClient(channel, onLog)
+            val send = { bytes: ByteArray ->
+                val buffer = ByteBuffer.wrap(bytes)
+                while (buffer.hasRemaining()) channel.write(buffer)
+            }
+            return ServiceClient(Channels.newInputStream(channel), send, channel, onLog)
+        }
+
+        fun attach(process: Process, onLog: (level: String, message: String) -> Unit): ServiceClient {
+            val output = process.outputStream
+            val send = { bytes: ByteArray ->
+                output.write(bytes)
+                output.flush()
+            }
+            return ServiceClient(process.inputStream, send, output, onLog)
         }
     }
 }

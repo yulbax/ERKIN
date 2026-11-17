@@ -210,6 +210,8 @@
     <string name="exit_confirm_text">VPN متصل است. با بستن ERKIN اتصال قطع می‌شود.</string>
     <string name="exit_confirm_exit">خروج</string>
     <string name="exit_confirm_tray">کوچک‌سازی به سینی سیستم</string>
+    <string name="data_too_new_title">این نسخه ERKIN از داده‌هایش قدیمی‌تر است</string>
+    <string name="data_too_new_text">داده‌های شما با نسخه جدیدتری از ERKIN ذخیره شده‌اند و این نسخه آن‌ها را پاک می‌کند. به‌جای آن نسخه جدیدتر را باز کنید.</string>
     <string name="tray_open">باز کردن ERKIN</string>
     <string name="channel_status_no_servers">سروری نیست</string>
     <string name="delete_last_server_message">«%1$s» حذف شود؟ این آخرین سرور است: برنامه‌های کانال VPN به کانال مستقیم منتقل می‌شوند.</string>

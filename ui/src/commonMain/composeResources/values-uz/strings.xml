@@ -210,6 +210,8 @@
     <string name="exit_confirm_text">VPN ulangan. ERKIN yopilsa, ulanish uziladi.</string>
     <string name="exit_confirm_exit">Chiqish</string>
     <string name="exit_confirm_tray">Trayga yigʻish</string>
+    <string name="data_too_new_title">Bu ERKIN versiyasi maʼlumotlardan eski</string>
+    <string name="data_too_new_text">Maʼlumotlaringiz ERKINning yangiroq versiyasida saqlangan, bu versiya esa ularni oʻchirib yuboradi. Yangiroq versiyani oching.</string>
     <string name="tray_open">ERKIN’ni ochish</string>
     <string name="channel_status_no_servers">serverlar yoʻq</string>
     <string name="delete_last_server_message">“%1$s” oʻchirilsinmi? Bu oxirgi serveringiz: VPN kanalidagi ilovalar toʻgʻridan-toʻgʻri kanalga oʻtkaziladi.</string>

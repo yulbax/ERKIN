@@ -216,6 +216,8 @@
     <string name="exit_confirm_text">VPN подключён. Если закрыть ERKIN, подключение разорвётся.</string>
     <string name="exit_confirm_exit">Выйти</string>
     <string name="exit_confirm_tray">Свернуть в трей</string>
+    <string name="data_too_new_title">Эта версия ERKIN устарела для этих данных</string>
+    <string name="data_too_new_text">Ваши данные сохранены более новой версией ERKIN, и эта версия их сотрёт. Запустите более новую версию.</string>
     <string name="tray_open">Открыть ERKIN</string>
     <string name="channel_status_no_servers">нет серверов</string>
     <string name="delete_last_server_message">Удалить «%1$s»? Это последний сервер: приложения из канала VPN будут переведены в прямой канал.</string>

@@ -10,18 +10,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberDialogState
 import androidx.compose.ui.window.rememberWindowState
 import com.kdroid.composetray.tray.api.Tray
 import io.github.yulbax.erkin.data.AppDao
+import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.RoutedApps
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.ui.components.DataTooNewMessage
 import io.github.yulbax.erkin.ui.components.ExitConfirmDialog
 import io.github.yulbax.erkin.ui.components.trayLabels
 import io.github.yulbax.erkin.ui.di.uiModule
+import io.github.yulbax.erkin.ui.platform.AppLocale
 import io.github.yulbax.erkin.ui.platform.ProvideAppLocale
 import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.theme.ERKINTheme
@@ -37,8 +42,14 @@ import kotlin.concurrent.thread
 
 fun main() {
     val activations = Channel<Unit>(Channel.CONFLATED)
-    val instance = SingleInstance(DesktopPaths.dataDir)
+    val instance = SingleInstance(DesktopPaths.dataDir, DesktopPaths.instanceSocket)
     if (!instance.claim { activations.trySend(Unit) }) return
+    AppLocale.storeIn(DesktopPaths.languageFile, importFromPreferences = !DesktopPaths.isPortable)
+    if (AppDatabase.isNewerThanThisBuild(DesktopPaths.database)) {
+        showDataTooNew()
+        instance.release()
+        return
+    }
 
     val koin = startKoin { modules(desktopModule, uiModule) }.koin
     thread(isDaemon = true, name = "erkin-service-start") { koin.get<DesktopService>().connectAtLaunch() }
@@ -157,6 +168,18 @@ private fun appIconBytes(): ByteArray =
 
 private const val APP_ICON = "erkin-icon.png"
 private const val TRAY_ICON_WINDOWS = "erkin-icon.ico"
+
+private fun showDataTooNew() = application {
+    DialogWindow(
+        onCloseRequest = ::exitApplication,
+        title = "ERKIN",
+        icon = remember { BitmapPainter(Image.makeFromEncoded(appIconBytes()).toComposeImageBitmap()) },
+        resizable = false,
+        state = rememberDialogState(width = 420.dp, height = 240.dp)
+    ) {
+        ERKINTheme { DataTooNewMessage(onClose = ::exitApplication) }
+    }
+}
 
 private fun autoConnect(settings: SettingsRepository, profiles: ProfileRepository, apps: AppDao, launcher: VpnLauncher) {
     val shouldConnect = runBlocking {

@@ -134,31 +134,32 @@ actual fun platformColorScheme(darkTheme: Boolean): ColorScheme? = null
 
 actual object AppLocale {
     private const val KEY = "language"
-    private const val LEGACY_NODE = "io/github/yulbax/frkn"
+    private val PREFERENCE_NODES = listOf("io/github/yulbax/erkin", "io/github/yulbax/frkn")
     private val systemLocale: Locale = Locale.getDefault()
-    private val preferences: Preferences? = runCatching { Preferences.userRoot().node("io/github/yulbax/erkin") }.getOrNull()
-    private var selected: String? = runCatching { preferences?.get(KEY, null) ?: legacyLanguage() }.getOrNull()?.ifBlank { null }
+    private var file: File? = null
+    private var selected: String? = null
 
     val revision = mutableIntStateOf(0)
 
-    init {
+    fun storeIn(file: File, importFromPreferences: Boolean) {
+        this.file = file
+        val stored = runCatching { file.takeIf { it.isFile }?.readText()?.trim() }.getOrNull()
+        selected = (stored ?: if (importFromPreferences) importedLanguage(file) else null)?.ifBlank { null }
         selected?.let { Locale.setDefault(Locale.forLanguageTag(it)) }
     }
 
     actual fun currentTag(): String? = selected
 
-    private fun legacyLanguage(): String? = Preferences.userRoot()
-        .takeIf { it.nodeExists(LEGACY_NODE) }
-        ?.node(LEGACY_NODE)
-        ?.get(KEY, null)
+    private fun importedLanguage(file: File): String? = runCatching {
+        val root = Preferences.userRoot()
+        PREFERENCE_NODES.firstNotNullOfOrNull { node -> root.takeIf { it.nodeExists(node) }?.node(node)?.get(KEY, null) }
+            ?.also { file.writeText(it) }
+    }.getOrNull()
 
     actual fun apply(tag: String?) {
         selected = tag
         Locale.setDefault(tag?.let(Locale::forLanguageTag) ?: systemLocale)
-        runCatching {
-            if (tag == null) preferences?.remove(KEY) else preferences?.put(KEY, tag)
-            preferences?.flush()
-        }
+        runCatching { file?.let { if (tag == null) it.delete() else it.writeText(tag) } }
         revision.intValue++
     }
 }

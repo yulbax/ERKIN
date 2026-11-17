@@ -220,6 +220,8 @@
     <string name="exit_confirm_text">The VPN is connected. Closing ERKIN will disconnect it.</string>
     <string name="exit_confirm_exit">Exit</string>
     <string name="exit_confirm_tray">Minimize to tray</string>
+    <string name="data_too_new_title">This ERKIN is older than its data</string>
+    <string name="data_too_new_text">Your data was saved by a newer version of ERKIN, and this version would erase it. Open the newer version instead.</string>
     <string name="tray_open">Open ERKIN</string>
     <string name="channel_status_no_servers">no servers</string>
     <string name="delete_last_server_message">Delete &quot;%1$s&quot;? It is your last server: apps in the VPN channel will be moved to the direct channel.</string>

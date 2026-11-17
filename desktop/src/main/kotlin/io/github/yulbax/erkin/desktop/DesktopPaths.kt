@@ -8,10 +8,16 @@ object DesktopPaths {
 
     val ciadpiUnsupportedOptions: Set<String> = if (isWindows) setOf("-S", "--md5sig") else emptySet()
 
+    val isPortable: Boolean = System.getProperty("erkin.portable").toBoolean()
+
     val dataDir: File = adoptLegacyData(userDataDir("ERKIN", "erkin"), userDataDir("FRKN", "frkn")).apply { mkdirs() }
 
     val database: File = File(dataDir, AppDatabase.FILE_NAME)
     val logFile: File = File(dataDir, "erkin.log")
+    val languageFile: File = File(dataDir, "language")
+
+    val instanceSocket: File = System.getenv("TEMP")?.takeIf { isWindows }?.let { File(it, "erkin-instance.sock") }
+        ?: File(dataDir, "instance.sock")
 
     private val binDir: File = System.getProperty("compose.application.resources.dir")?.let(::File)
         ?: System.getenv("ERKIN_BIN_DIR")?.let(::File)
@@ -21,7 +27,14 @@ object DesktopPaths {
         ?: if (isWindows) File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN/erkin.sock")
         else File("/run/erkin/erkin.sock")
 
-    val protectSocket: File = File(serviceSocket.parentFile, "protect.sock")
+    val protectSocket: File = if (isPortable) {
+        File(System.getenv("TEMP") ?: System.getProperty("user.home"), "erkin-${ProcessHandle.current().pid()}.sock")
+    } else {
+        File(serviceSocket.parentFile, "protect.sock")
+    }
+
+    val serviceBinary: File = File(binDir, executable("erkin-service"))
+    val coreDir: File = File(dataDir, "core")
 
     val ciadpi: File = File(binDir, executable("ciadpi"))
 
