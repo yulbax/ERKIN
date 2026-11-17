@@ -71,6 +71,7 @@ class DesktopVersionInfo(private val service: DesktopService) : VersionInfo {
 class DesktopUpdatePlatform(private val controller: VpnController) : UpdatePlatform {
     override val assetSuffix: String? = System.getProperty("erkin.updateAsset")?.ifBlank { null }?.takeUnless { DesktopPaths.isPortable }
     override val downloadDir: File = File(System.getProperty("java.io.tmpdir"), "erkin-updates")
+    override val checksOnLaunch: Boolean = !System.getProperty("erkin.testing").toBoolean()
 
     override fun install(file: File) {
         ProcessBuilder("msiexec", "/i", file.absolutePath).start()

@@ -30,6 +30,7 @@ val buildHash = runCatching {
     providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
 }.getOrDefault("")
 
+val testing = providers.gradleProperty("erkin.testing").map(String::toBoolean).getOrElse(false)
 val baseVersionCode = 20400
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
 val playVersionCodeSuffix = 90
@@ -65,6 +66,7 @@ android {
             byeDpiHealthProbeUrl.asBuildConfigString()
         )
         buildConfigField("String", "BUILD_HASH", buildHash.asBuildConfigString())
+        buildConfigField("boolean", "TESTING", testing.toString())
         buildConfigField(
             "String[]",
             "UPDATE_ABIS",

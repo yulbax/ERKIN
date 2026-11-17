@@ -39,7 +39,7 @@ class UpdateViewModel(
     private var download: Job? = null
 
     init {
-        if (platform.selfUpdates) viewModelScope.launch { check() }
+        if (platform.checksOnLaunch) viewModelScope.launch { check() }
     }
 
     fun checkNow(onResult: (UpdateCheckResult) -> Unit) {

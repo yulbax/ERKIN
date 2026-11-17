@@ -45,6 +45,7 @@ interface UpdatePlatform {
     val assetSuffix: String?
     val downloadDir: File
     val selfUpdates: Boolean get() = true
+    val checksOnLaunch: Boolean get() = selfUpdates
 
     fun install(file: File)
 }
