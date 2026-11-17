@@ -1,37 +1,23 @@
 package io.github.yulbax.erkin.vpn
 
-import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.launch
+import kotlin.time.Duration
 
-data class ProbeParams(
+data class HealthParams(
     val engine: VpnEngine,
     val byeDpiPort: Int?,
     val vpnActive: Boolean,
-    val serverTags: Map<Long, String> = emptyMap()
-)
-
-data class HealthParams(
-    val probe: ProbeParams,
+    val activeServer: Long?,
+    val boundServers: Set<Long>,
     val onVpnDown: suspend () -> Unit,
     val onLoginRejected: suspend () -> Unit,
     val onVpnUp: () -> Unit,
@@ -47,14 +33,10 @@ data class HealthSnapshot(
     val vpnCountry: String,
     val byedpiActive: Boolean,
     val byedpiUp: Boolean,
-    val byedpiChecked: Boolean,
-    val measured: HealthChannel,
-    val vpnLoginRejected: Boolean = false
+    val byedpiChecked: Boolean
 ) {
     val vpnUp get() = vpnDelayMs != null
-    val anyUp get() = vpnUp || byedpiUp
     val allActiveUp get() = (!vpnActive || vpnUp) && (!byedpiActive || byedpiUp)
-    val vpnHealthy get() = !vpnActive || vpnUp
     val vpnDown get() = vpnActive && vpnChecked && !vpnUp
     val byedpiDown get() = byedpiActive && byedpiChecked && !byedpiUp
     val state: VpnState get() = when {
@@ -65,16 +47,18 @@ data class HealthSnapshot(
     }
 }
 
-interface HealthProbe {
-    fun observe(params: ProbeParams): Flow<HealthSnapshot>
+interface ChannelProbe {
+    suspend fun byeDpiReachable(port: Int): Boolean
+    suspend fun country(engine: VpnEngine): String?
 }
 
 class HealthMonitor(
     private val stateRepository: VpnStateRepository,
     private val log: AppLog,
-    private val probe: HealthProbe,
-    private val serverCheckInterval: Duration = SERVER_CHECK_INTERVAL,
-    private val serverRecheckDelay: Duration = SERVER_RECHECK_DELAY
+    private val checks: ServerChecks,
+    private val channels: ChannelProbe,
+    private val checkInterval: Duration = ServerProbePolicy.CHECK_INTERVAL,
+    private val retryDelay: Duration = ServerProbePolicy.RETRY_DELAY
 ) {
     private var scope: CoroutineScope? = null
 
@@ -82,47 +66,23 @@ class HealthMonitor(
         stop()
         val childScope = CoroutineScope(scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]))
         this.scope = childScope
-
-        val health = probe.observe(params.probe)
-            .shareIn(childScope, SharingStarted.Eagerly, replay = 1)
-
-        health.onEach(::publishStats).launchIn(childScope)
-
-        val vpnResults = health.filter { it.vpnActive && it.measured == HealthChannel.VPN }
-
-        vpnResults
-            .distinctUntilChangedBy { it.vpnUp }
-            .onEach { logVpnTransition(it) }
-            .launchIn(childScope)
-
-        health.filter { it.byedpiActive && it.measured == HealthChannel.BYEDPI }
-            .distinctUntilChangedBy { it.byedpiUp }
-            .onEach { onByedpiTransition(it, params) }
-            .launchIn(childScope)
-
-        if (params.probe.serverTags.isNotEmpty()) childScope.watchServers(params.probe)
-
-        childScope.launch {
-            var failures = 0
-            var rejections = 0
-            vpnResults.collect { snapshot ->
-                when {
-                    snapshot.vpnHealthy -> {
-                        failures = 0
-                        rejections = 0
-                        params.onVpnUp()
-                    }
-                    snapshot.vpnLoginRejected -> {
-                        rejections++
-                        if (rejections == REJECTIONS_TO_STOP) params.onLoginRejected()
-                    }
-                    else -> {
-                        rejections = 0
-                        failures++
-                        if (failures % RECOVER_EVERY_N_FAILURES == 0) params.onVpnDown()
-                    }
-                }
+        val snapshot = MutableStateFlow(
+            HealthSnapshot(params.vpnActive, null, false, "", params.byeDpiPort != null, false, false)
+        )
+        snapshot.onEach(::publish).launchIn(childScope)
+        if (params.vpnActive) {
+            val country = CountryLookup(params.engine, channels, snapshot, childScope)
+            val liveness = VpnLiveness(params, snapshot, checks, country, log, checkInterval, retryDelay)
+            childScope.launch { liveness.run() }
+            val bound = (params.boundServers - listOfNotNull(params.activeServer).toSet()).toList()
+            if (bound.isNotEmpty()) {
+                val boundServers = BoundServers(bound, stateRepository, checks, log, checkInterval, retryDelay)
+                childScope.launch { boundServers.run() }
             }
+        }
+        params.byeDpiPort?.let { port ->
+            val byeDpi = ByeDpiWatch(port, params, snapshot, channels, log, checkInterval)
+            childScope.launch { byeDpi.run() }
         }
     }
 
@@ -131,26 +91,12 @@ class HealthMonitor(
         scope = null
     }
 
-    private fun CoroutineScope.watchServers(probe: ProbeParams) = launch {
-        val misses = HashMap<Long, Int>()
-        var previous = emptySet<Long>()
-        while (true) {
-            val results = coroutineScope {
-                probe.serverTags.map { (id, tag) -> async { id to probe.engine.probe(tag) } }.awaitAll()
-            }
-            val failed = results.filter { (_, result) -> result !is ProbeResult.Answered }.mapTo(HashSet()) { it.first }
-            val rejected = results.filter { (_, result) -> result == ProbeResult.LoginRejected }.mapTo(HashSet()) { it.first }
-            probe.serverTags.keys.forEach { id -> misses[id] = if (id in failed) (misses[id] ?: 0) + 1 else 0 }
-            val down = misses.filterValues { it >= SERVER_MISSES_TO_DOWN }.keys
-            if (down != previous) log.w(TAG, "servers not responding: ${down.sorted()}")
-            previous = down
-            stateRepository.updateStats { it.copy(unreachableServers = down, loginRejectedServers = rejected) }
-            val suspect = failed.any { id -> id !in down }
-            delay(if (suspect) serverRecheckDelay else serverCheckInterval)
-        }
+    fun close() {
+        stop()
+        checks.forgetBackground()
     }
 
-    private fun publishStats(s: HealthSnapshot) {
+    private fun publish(s: HealthSnapshot) {
         stateRepository.updateStats {
             it.copy(
                 vpnUp = s.vpnUp,
@@ -162,31 +108,6 @@ class HealthMonitor(
         }
         stateRepository.update(s.state)
     }
-
-    private fun logVpnTransition(s: HealthSnapshot) {
-        if (s.vpnUp) {
-            val country = if (s.vpnCountry.isNotEmpty()) " ${s.vpnCountry}" else ""
-            log.i(TAG, "vpn channel up (${s.vpnDelayMs}ms$country)")
-        } else {
-            log.w(TAG, "vpn channel down")
-        }
-    }
-
-    private suspend fun onByedpiTransition(s: HealthSnapshot, params: HealthParams) {
-        if (s.byedpiUp) {
-            log.i(TAG, "byedpi channel up")
-        } else {
-            log.w(TAG, "byedpi channel down")
-        }
-        params.onByedpiChanged()
-    }
-
-    companion object {
-        private const val TAG = "Health"
-        private const val RECOVER_EVERY_N_FAILURES = 4
-        private const val SERVER_MISSES_TO_DOWN = 2
-        private const val REJECTIONS_TO_STOP = 2
-        private val SERVER_CHECK_INTERVAL = 60.seconds
-        private val SERVER_RECHECK_DELAY = 10.seconds
-    }
 }
+
+internal const val HEALTH_TAG = "Health"

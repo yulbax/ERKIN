@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.vpn
 
-import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.SettingsEntity
@@ -24,7 +23,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
@@ -91,8 +89,13 @@ class VpnSessionRecoveryTest {
         byeDpi = NoByeDpi,
         store = store,
         stateRepository = VpnStateRepository(),
-        health = HealthMonitor(VpnStateRepository(), SilentLog, SilentProbe),
-        failover = ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> "{}" }, SilentLog),
+        health = HealthMonitor(
+            VpnStateRepository(),
+            SilentLog,
+            ServerChecks(ServerLatencyProbe(store) { _, _, _, _, _, _ -> awaitCancellation() }, ProbeResults(), SilentLog),
+            SilentChannels
+        ),
+        failover = ServerFailover(store, ServerChecks(ServerLatencyProbe(store) { _, _, _, _, _, _ -> "{}" }, ProbeResults(), SilentLog), SilentLog),
         quality = { _, _ -> ByeDpiReachability(0, 0) },
         log = SilentLog,
         ownPackage = "io.github.yulbax.erkin",
@@ -130,8 +133,6 @@ class VpnSessionRecoveryTest {
             reloads.incrementAndGet()
             reloaded += config
         }
-        override suspend fun probeVpn(): ProbeResult = ProbeResult.NoAnswer
-        override suspend fun probe(tag: String): ProbeResult = ProbeResult.NoAnswer
         override fun stop() = Unit
     }
 
@@ -141,8 +142,9 @@ class VpnSessionRecoveryTest {
         override fun stop() = Unit
     }
 
-    private object SilentProbe : HealthProbe {
-        override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow { awaitCancellation() }
+    private object SilentChannels : ChannelProbe {
+        override suspend fun byeDpiReachable(port: Int): Boolean = false
+        override suspend fun country(engine: VpnEngine): String? = null
     }
 
     private object SilentLog : AppLog {

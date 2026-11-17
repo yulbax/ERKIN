@@ -75,6 +75,7 @@ fun <P> PickerSheet(
     page: P,
     pageKey: (P) -> Any?,
     onBack: (() -> Unit)?,
+    action: (@Composable () -> Unit)? = null,
     content: LazyListScope.(page: P, close: (then: () -> Unit) -> Unit) -> Unit
 ) {
     val sheetState = expandedSheetState()
@@ -94,7 +95,7 @@ fun <P> PickerSheet(
             onBackCompleted = { onBack?.invoke() }
         )
         Row(
-            modifier = Modifier.padding(start = if (nested) 12.dp else 24.dp, end = 24.dp, bottom = 12.dp),
+            modifier = Modifier.padding(start = if (nested) 12.dp else 24.dp, end = if (action != null) 12.dp else 24.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBack != null) {
@@ -102,7 +103,7 @@ fun <P> PickerSheet(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
                 }
             }
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (subtitle != null) {
                     Text(
@@ -114,6 +115,7 @@ fun <P> PickerSheet(
                     )
                 }
             }
+            action?.invoke()
         }
         AppSearchBar(
             query = query,

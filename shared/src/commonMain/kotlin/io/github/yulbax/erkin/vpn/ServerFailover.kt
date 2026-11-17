@@ -8,7 +8,7 @@ import io.github.yulbax.erkin.vpn.core.ProbeResult
 
 class ServerFailover(
     private val store: VpnSessionStore,
-    private val latency: ServerLatencyProbe,
+    private val checks: ServerChecks,
     private val log: AppLog
 ) {
     suspend fun switchToFastest() {
@@ -24,7 +24,7 @@ class ServerFailover(
         val inputs = store.load()
         val candidates = inputs.profiles.filter { it.isLink && it.groupId == group.id }
         val ids = candidates.map { it.id }.toSet()
-        val results = latency.measure(ids).filterKeys { it in ids }
+        val results = checks.check(ids).orEmpty()
         val target = fastest(results)?.let { id -> candidates.first { it.id == id } }
         when {
             target == null -> log.w(TAG, "no server of group ${group.id} answers; keeping the current one")

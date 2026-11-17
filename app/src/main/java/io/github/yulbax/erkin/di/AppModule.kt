@@ -25,6 +25,8 @@ import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
 import io.github.yulbax.erkin.vpn.DownloadRoute
+import io.github.yulbax.erkin.vpn.ProbeResults
+import io.github.yulbax.erkin.vpn.ServerChecks
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConnectionTable
 import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor
@@ -125,8 +127,15 @@ class AppModule {
         route: DownloadRoute,
         siteCheck: ByeDpiSiteCheck,
         log: AppLog,
-        latency: ServerLatencyProbe
-    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log, latency)
+        checks: ServerChecks
+    ): VpnSessionFactory = VpnSessionFactory(store, stateRepository, ruleLists, route, siteCheck, log, checks)
+
+    @Single
+    fun serverChecks(latency: ServerLatencyProbe, results: ProbeResults, log: AppLog): ServerChecks =
+        ServerChecks(latency, results, log)
+
+    @Single
+    fun probeResults(): ProbeResults = ProbeResults()
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =

@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 fun interface ProxyLatencyTester {
-    suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int, byeDpiPort: Int?): String
+    suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int, byeDpiPort: Int?, runningOnly: Boolean): String
 }
 
 class ServerLatencyProbe(
@@ -27,20 +27,14 @@ class ServerLatencyProbe(
 ) {
     suspend fun measure(ids: Collection<Long>? = null): Map<Long, ProbeResult> = measureEach(ids).toList().toMap()
 
-    fun measureEach(queue: Collection<Long>? = null): Flow<Pair<Long, ProbeResult>> = channelFlow {
-        val inputs = store.load()
-        val byId = inputs.profiles.associateBy { it.id }
-        val queued = queue?.mapNotNull(byId::get) ?: inputs.profiles
-        val plans = queued.mapNotNull { profile ->
-            runCatching { EngineConfigComposer.proxiesFor(profile, inputs.profiles) }.getOrNull()?.let { profile.id to it }
-        }
-        val port = byeDpiPort().takeIf { it > 0 }
-        val options = inputs.settings.networkOptions()
+    fun measureEach(queue: Collection<Long>? = null, runningOnly: Boolean = false): Flow<Pair<Long, ProbeResult>> = channelFlow {
+        val (plans, options) = if (runningOnly) runningPlans(queue.orEmpty()) else describedPlans(queue)
+        val port = byeDpiPort().takeIf { it > 0 && !runningOnly }
         val slots = Semaphore(CONCURRENCY)
         plans.forEach { (id, proxies) ->
             slots.acquire()
             launch {
-                val running = async { resultOf(id, proxies, options, port) }
+                val running = async { resultOf(id, proxies, options, port, runningOnly) }
                 try {
                     withTimeoutOrNull(SLOT_HOLD_MS) { running.join() }
                 } finally {
@@ -51,17 +45,32 @@ class ServerLatencyProbe(
         }
     }
 
-    private suspend fun resultOf(id: Long, proxies: List<EngineProxy>, options: NetworkOptions, port: Int?): ProbeResult {
+    private fun runningPlans(ids: Collection<Long>) =
+        Plans(ids.map { id -> id to listOf(EngineProxy(ProxyTag.of(id), LOADED_PROXY)) }, NetworkOptions())
+
+    private suspend fun describedPlans(queue: Collection<Long>?): Plans {
+        val inputs = store.load()
+        val byId = inputs.profiles.associateBy { it.id }
+        val queued = queue?.mapNotNull(byId::get) ?: inputs.profiles
+        val plans = queued.mapNotNull { profile ->
+            runCatching { EngineConfigComposer.proxiesFor(profile, inputs.profiles) }.getOrNull()?.let { profile.id to it }
+        }
+        return Plans(plans, inputs.settings.networkOptions())
+    }
+
+    private data class Plans(val proxies: List<Pair<Long, List<EngineProxy>>>, val options: NetworkOptions)
+
+    private suspend fun resultOf(id: Long, proxies: List<EngineProxy>, options: NetworkOptions, port: Int?, runningOnly: Boolean): ProbeResult {
         val throughByeDpi = proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
         val tested = proxies.map { proxy -> if (port == null && proxy.dialerProxy == BYEDPI_PROXY_TAG) proxy.copy(dialerProxy = null) else proxy }
-        val result = parse(tester.measure(tested, options, ProbeUrls.VPN, TIMEOUT_MS, port))[id] ?: ProbeResult.NoAnswer
+        val result = parse(tester.measure(tested, options, ProbeUrls.VPN, ServerProbePolicy.TIMEOUT_MS, port, runningOnly))[id] ?: ProbeResult.NoAnswer
         return if (result == ProbeResult.NoAnswer && port == null && throughByeDpi) ProbeResult.NeedsConnection else result
     }
 
     companion object {
-        const val TIMEOUT_MS = 5_000
         private const val CONCURRENCY = 10
         private const val SLOT_HOLD_MS = 2_000L
+        private const val LOADED_PROXY = """{"type":"direct"}"""
 
         fun parse(results: String): Map<Long, ProbeResult> =
             Json.parseToJsonElement(results).jsonObject.mapNotNull { (tag, value) ->

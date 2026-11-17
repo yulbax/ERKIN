@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +30,7 @@ fun ChoiceRow(
     checked: Boolean,
     onClick: () -> Unit,
     subtitle: String? = null,
+    subtitleIcon: IconSource? = null,
     padding: PaddingValues = PaddingValues(12.dp),
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null
@@ -43,7 +46,15 @@ fun ChoiceRow(
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (subtitle != null) {
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (subtitleIcon != null) {
+                            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
+                                SourceIcon(subtitleIcon, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
             if (trailing != null) {

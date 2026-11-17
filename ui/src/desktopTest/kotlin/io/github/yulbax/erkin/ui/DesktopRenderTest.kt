@@ -83,6 +83,8 @@ import io.github.yulbax.erkin.util.VersionInfo
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.ByeDpiSiteCheck
 import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
+import io.github.yulbax.erkin.vpn.ProbeResults
+import io.github.yulbax.erkin.vpn.ServerChecks
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -163,7 +165,9 @@ class DesktopRenderTest {
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
                     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass = true) }
-                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _, _ -> "{}" } }
+                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _, _, _ -> "{}" } }
+                    single { ProbeResults() }
+                    single { ServerChecks(get(), get(), get()) }
                     single { VpnStateRepository() }
                     single { IncomingServers() }
                     single { VpnCommandBus() }

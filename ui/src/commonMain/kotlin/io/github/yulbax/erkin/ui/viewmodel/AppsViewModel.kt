@@ -13,6 +13,7 @@ import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

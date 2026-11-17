@@ -1,8 +1,8 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
+import io.github.yulbax.erkin.vpn.ProbeResults
+import io.github.yulbax.erkin.vpn.ServerChecks
 import io.github.yulbax.erkin.vpn.VpnFailure
 import io.github.yulbax.erkin.vpn.VpnState
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -21,10 +21,7 @@ import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.server_group_default
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.redactSensitiveData
-import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.core.ProbeResult
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +32,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,6 +74,7 @@ data class ServersUiState(
     val profiles: List<ProfileEntity> = emptyList(),
     val selected: ProfileEntity? = null,
     val results: Map<Long, ProbeResult> = emptyMap(),
+    val fastest: Long? = null,
     val testingIds: Set<Long> = emptySet(),
     val groups: Map<Long, ServerGroupEntity> = emptyMap(),
     val refreshing: Set<Long> = emptySet(),
@@ -93,7 +90,7 @@ data class ServersUiState(
 class ProfileViewModel(
     private val profileRepository: ProfileRepository,
     private val settingsRepository: SettingsRepository,
-    private val latencyProbe: ServerLatencyProbe,
+    private val serverTests: ServerChecks,
     private val probeResults: ProbeResults,
     private val log: AppLog,
     private val states: VpnStateRepository
@@ -103,8 +100,6 @@ class ProfileViewModel(
     private val _login = MutableStateFlow<LoginRequest?>(null)
     val login: StateFlow<LoginRequest?> = _login
     private val questioned = HashSet<Long>()
-    private val _testingIds = MutableStateFlow<Set<Long>>(emptySet())
-    private var running: Deferred<List<Long>?>? = null
     private val _refreshing = MutableStateFlow<Set<Long>>(emptySet())
     private val _unreachable = MutableSharedFlow<List<Long>>(extraBufferCapacity = 1)
     val unreachable: SharedFlow<List<Long>> = _unreachable
@@ -116,14 +111,17 @@ class ProfileViewModel(
     val uiState: StateFlow<ServersUiState> = combine(
         profileRepository.profiles,
         profileRepository.selected,
-        combine(probeResults.results, _testingIds) { results, testingIds -> results to testingIds },
+        combine(probeResults.results, probeResults.compared, serverTests.testing) { results, compared, testingIds ->
+            Triple(results, ProbeResults.fastest(results, compared), testingIds)
+        },
         groups,
         _error
-    ) { profiles, selected, (results, testingIds), (stored, refreshing), error ->
+    ) { profiles, selected, (results, fastest, testingIds), (stored, refreshing), error ->
         ServersUiState(
             profiles = profiles,
             selected = selected,
             results = results,
+            fastest = fastest,
             testingIds = testingIds,
             groups = stored,
             refreshing = refreshing,
@@ -134,42 +132,21 @@ class ProfileViewModel(
 
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()
-        if (running?.isActive == true || ids.isEmpty()) return CompletableDeferred(null)
-        probeResults.update { it - ids }
-        _testingIds.value = ids
+        val run = serverTests.run(uiState.value.items.testQueue().filter { it in ids })
         return viewModelScope.async(Dispatchers.IO) {
-            val results = mutableMapOf<Long, ProbeResult>()
-            try {
-                latencyProbe.measureEach(uiState.value.items.testQueue().filter { it in ids }).collect { (id, result) ->
-                    results[id] = result
-                    probeResults.update { it + (id to result) }
-                    _testingIds.update { it - id }
-                }
-                val order = if (settingsRepository.settings.first().sortServersByPing) {
-                    val state = uiState.value
-                    state.profiles.orderByDelay(ids, results, state.groups).also { profileRepository.reorder(it) }
-                } else {
-                    null
-                }
-                ids.filter { results[it] == ProbeResult.NoAnswer }.takeIf { it.isNotEmpty() }?.let(_unreachable::tryEmit)
-                ids.firstOrNull { results[it] == ProbeResult.LoginRejected }?.let { askLogin(it) }
-                order
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (t: Throwable) {
-                log.w(TAG, "latency test failed", t)
-                probeResults.update { it + (ids - results.keys).associateWith { ProbeResult.NoAnswer } }
+            val results = run.await() ?: return@async null
+            val order = if (settingsRepository.settings.first().sortServersByPing) {
+                val state = uiState.value
+                state.profiles.orderByDelay(ids, results, state.groups).also { profileRepository.reorder(it) }
+            } else {
                 null
-            } finally {
-                _testingIds.value = emptySet()
             }
-        }.also { running = it }
+            ids.filter { results[it] == ProbeResult.NoAnswer }.takeIf { it.isNotEmpty() }?.let(_unreachable::tryEmit)
+            order
+        }
     }
 
     init {
-        viewModelScope.launch {
-            states.stats.map { it.loginRejectedServers }.distinctUntilChanged().collect { ids -> ids.forEach { askLogin(it) } }
-        }
         viewModelScope.launch {
             states.state.filter { it == VpnState.Error(VpnFailure.LoginRejected) }
                 .collect { profileRepository.selected.first()?.let { askLogin(it.id) } }

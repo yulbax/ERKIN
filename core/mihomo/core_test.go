@@ -157,6 +157,49 @@ rules:
 	}
 }
 
+func TestAServerLoadedInTheTunnelIsMeasuredThroughItsRunningProxy(t *testing.T) {
+	site := listenTCP(t)
+	go http.Serve(site, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	config := `
+mode: rule
+log-level: silent
+ipv6: false
+proxies:
+  - {name: p1, type: direct}
+rules:
+  - MATCH,p1
+`
+	link := fmt.Sprintf("http://127.0.0.1:%d/", site.Addr().(*net.TCPAddr).Port)
+	described := fmt.Sprintf(`[{"name":"p1","type":"socks5","server":"127.0.0.1","port":%d}]`, freePort(t))
+	delayOf := func() int32 {
+		encoded, err := TestProxies(described, link, 2000, false, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var results map[string]int32
+		if err := json.Unmarshal([]byte(encoded), &results); err != nil {
+			t.Fatal(err)
+		}
+		return results["p1"]
+	}
+
+	if delay := delayOf(); delay != delayFailed {
+		t.Fatalf("a server outside the tunnel must be measured as described, got %d", delay)
+	}
+	if err := Apply(config, false, "", ""); err != nil {
+		t.Fatal(err)
+	}
+	if delay := delayOf(); delay <= 0 {
+		t.Fatalf("a loaded server must be measured through the tunnel, got %d", delay)
+	}
+	Shutdown()
+	if delay := delayOf(); delay != delayFailed {
+		t.Fatalf("after shutdown the server must be measured as described again, got %d", delay)
+	}
+}
+
 func listenTCP(t *testing.T) net.Listener {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -194,4 +237,31 @@ func serveDNS(t *testing.T, name string, ip net.IP) int {
 	go func() { _ = server.ActivateAndServe() }()
 	t.Cleanup(func() { _ = server.Shutdown() })
 	return conn.LocalAddr().(*net.UDPAddr).Port
+}
+
+func TestRunningOnlyMeasuresNothingOutsideTheTunnel(t *testing.T) {
+	site := listenTCP(t)
+	go http.Serve(site, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	link := fmt.Sprintf("http://127.0.0.1:%d/", site.Addr().(*net.TCPAddr).Port)
+	described := `[{"name":"p1","type":"direct"}]`
+	delayOf := func(runningOnly bool) int32 {
+		encoded, err := TestProxies(described, link, 2000, false, runningOnly)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var results map[string]int32
+		if err := json.Unmarshal([]byte(encoded), &results); err != nil {
+			t.Fatal(err)
+		}
+		return results["p1"]
+	}
+
+	if delay := delayOf(false); delay <= 0 {
+		t.Fatalf("a described server must be measured, got %d", delay)
+	}
+	if delay := delayOf(true); delay != delayFailed {
+		t.Fatalf("a server outside the tunnel must fail when only running proxies count, got %d", delay)
+	}
 }

@@ -1,7 +1,5 @@
 package io.github.yulbax.erkin.vpn.core
 
-const val VPN_DELAY_TIMEOUT_MS = 6_000
-
 interface VpnEngine {
     val probeSocksPort: Int
     val probeUsername: String
@@ -10,10 +8,6 @@ interface VpnEngine {
     fun start(config: EngineConfig)
 
     fun reloadRouting(config: EngineConfig)
-
-    suspend fun probeVpn(): ProbeResult
-
-    suspend fun probe(tag: String): ProbeResult
 
     fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiPort
 

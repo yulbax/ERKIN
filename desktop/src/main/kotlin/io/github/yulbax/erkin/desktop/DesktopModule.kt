@@ -31,7 +31,9 @@ import io.github.yulbax.erkin.vpn.CiadpiProcess
 import io.github.yulbax.erkin.vpn.ByeDpiSiteCheck
 import io.github.yulbax.erkin.vpn.ByeDpiStrategyRunner
 import io.github.yulbax.erkin.vpn.DownloadRoute
+import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.ProbeUrls
+import io.github.yulbax.erkin.vpn.ServerChecks
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor
 import io.github.yulbax.erkin.vpn.VpnCommandBus
@@ -100,6 +102,8 @@ val desktopModule = module {
         }
     }
 
+    single { ProbeResults() }
+    single { ServerChecks(get(), get(), get()) }
     single { VpnSessionFactory(get(), get(), get(), get(), get<ByeDpiSiteCheck>(), get(), get()) }
     single {
         val log = get<AppLog>()
@@ -113,7 +117,6 @@ val desktopModule = module {
                 engine = ServiceEngine(
                     service = service,
                     directProcesses = listOf(DesktopPaths.ciadpi.name),
-                    delayProbeUrl = ProbeUrls.VPN,
                     listener = controller,
                     log = log
                 ),

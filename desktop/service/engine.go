@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/netip"
 	"sync"
-	"time"
 
 	"github.com/yulbax/erkin/mihomocore"
 )
@@ -68,13 +67,6 @@ func (e *engine) isRunning() bool {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
 	return e.running
-}
-
-func (e *engine) delay(proxy string, link string, timeout time.Duration) int {
-	if !e.isRunning() {
-		return -1
-	}
-	return int(mihomocore.URLTest(proxy, link, int32(timeout/time.Millisecond)))
 }
 
 func (e *engine) traffic() (up int64, down int64, ok bool) {

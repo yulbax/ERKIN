@@ -89,7 +89,6 @@ import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
 import io.github.yulbax.erkin.ui.viewmodel.ServersUiState
 import io.github.yulbax.erkin.vpn.ConnectionStats
 import io.github.yulbax.erkin.vpn.VpnState
-import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -221,7 +220,7 @@ fun ErkinScreen(
             LaunchedEffect(id) { sheetId = null }
         } else {
             GroupSheet(item, content.groups, onDismiss = { sheetId = null }) { profile, close ->
-                ServerListRow(content, ServerListItem.Server(profile), fastestId(servers.results), Modifier, onSelected = close, sheet = item)
+                ServerListRow(content, ServerListItem.Server(profile), servers.fastest, Modifier, onSelected = close, sheet = item)
             }
         }
     }
@@ -643,7 +642,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                val fastestId = fastestId(c.servers.results)
+                val fastestId = c.servers.fastest
                 items(order, key = { it.key }) { item ->
                     ReorderableItem(reorderState, key = item.key) { dragging ->
                         val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
@@ -832,8 +831,3 @@ private fun GroupListRow(
         modifier = modifier
     )
 }
-
-private fun fastestId(results: Map<Long, ProbeResult>): Long? = results
-    .mapNotNull { (id, result) -> (result as? ProbeResult.Answered)?.let { id to it.ms } }
-    .minByOrNull { it.second }
-    ?.first

@@ -6,6 +6,7 @@ import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository

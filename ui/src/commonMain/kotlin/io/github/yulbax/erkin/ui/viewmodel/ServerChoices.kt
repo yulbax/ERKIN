@@ -9,6 +9,7 @@ import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.ProxyRef
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.vpn.core.ProbeResult
@@ -116,37 +117,48 @@ sealed interface ServerPickerRow {
         override val key: Any get() = "group:$id"
     }
 
-    data class Server(val id: Long, val name: String, val checked: Boolean, val group: String? = null, val result: ProbeResult? = null) : ServerPickerRow {
+    data class Server(
+        val id: Long,
+        val name: String,
+        val checked: Boolean,
+        val group: String? = null,
+        val result: ProbeResult? = null,
+        val testing: Boolean = false
+    ) : ServerPickerRow {
         override val key: Any get() = id
     }
 }
 
-data class ServerPickerPage(val openGroup: Long?, val group: String?, val rows: List<ServerPickerRow>)
+data class ServerPickerPage(val openGroup: Long?, val group: String?, val rows: List<ServerPickerRow>, val testQueue: List<Long>)
 
 internal fun serverPickerPage(
     choices: ServerChoices,
     query: String,
     openGroup: Long?,
     current: CurrentServer,
-    lead: PickerLead = PickerLead.MAIN_SERVER
+    lead: PickerLead = PickerLead.MAIN_SERVER,
+    testing: Set<Long> = emptySet()
 ): ServerPickerPage {
     fun row(server: ProfileEntity, group: String? = null) = ServerPickerRow.Server(
         id = server.id,
         name = server.name,
         checked = current == CurrentServer.Bound(server.id),
         group = group,
-        result = choices.resultOf(server.id)
+        result = choices.resultOf(server.id),
+        testing = server.id in testing
     )
     val items = serverListItems(choices.servers, choices.groups)
     val groups = items.filterIsInstance<ServerListItem.Group>()
+    val queue = items.testQueue()
+    fun queueOf(servers: List<ProfileEntity>) = servers.mapTo(HashSet()) { it.id }.let { ids -> queue.filter { it in ids } }
     val needle = query.trim()
     if (needle.isNotEmpty()) {
         val groupNames = groups.flatMap { group -> group.members.map { it.id to group.name } }.toMap()
         val found = choices.servers.filter { it.name.contains(needle, ignoreCase = true) }
-        return ServerPickerPage(openGroup, group = null, rows = found.map { row(it, groupNames[it.id]) })
+        return ServerPickerPage(openGroup, group = null, rows = found.map { row(it, groupNames[it.id]) }, testQueue = queueOf(found))
     }
     groups.firstOrNull { it.id == openGroup }?.let { group ->
-        return ServerPickerPage(openGroup, group = group.name, rows = group.members.map { row(it) })
+        return ServerPickerPage(openGroup, group = group.name, rows = group.members.map { row(it) }, testQueue = queueOf(group.members))
     }
     val leading = when (lead) {
         PickerLead.MAIN_SERVER -> choices.main?.let { ServerPickerRow.Main(it.name, checked = current == CurrentServer.Main) }
@@ -165,7 +177,7 @@ internal fun serverPickerPage(
             )
         }
     }
-    return ServerPickerPage(openGroup, group = null, rows = listOfNotNull(leading) + rows)
+    return ServerPickerPage(openGroup, group = null, rows = listOfNotNull(leading) + rows, testQueue = queue)
 }
 
 private const val STOP_TIMEOUT_MS = 5_000L

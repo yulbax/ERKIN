@@ -1,24 +1,19 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
-import io.github.yulbax.erkin.vpn.core.ProbeResult
 import android.content.Context
 import io.github.yulbax.erkin.util.ErkinLog
-import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.isInstalled
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
 import io.github.yulbax.erkin.vpn.core.TunAddress
 import io.github.yulbax.erkin.vpn.core.TunConfig
 import io.github.yulbax.erkin.vpn.core.TunPlatform
-import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import mihomocore.Mihomocore
 import mihomocore.Platform
 
@@ -33,7 +28,6 @@ class MihomoEngine(
     override val probeUsername: String = randomToken()
     override val probePassword: String = randomToken()
 
-    @Volatile private var activeProxyTag: String = ""
     private var tunConfig: TunConfig? = null
     private var traffic: ScheduledExecutorService? = null
 
@@ -83,19 +77,12 @@ class MihomoEngine(
         runCatching { Mihomocore.stop() }.onFailure { log.w(TAG, "mihomo stop failed", it) }
     }
 
-    override suspend fun probeVpn(): ProbeResult = activeProxyTag.takeIf { it.isNotEmpty() }?.let { probe(it) } ?: ProbeResult.NoAnswer
-
-    override suspend fun probe(tag: String): ProbeResult = withContext(Dispatchers.IO) {
-        ProbeResult.fromWire(Mihomocore.urlTest(tag, ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS))
-    }
-
     private fun launch(config: EngineConfig) {
         val tun = tunConfigOf(config)
         startCore(config, tun, tunPlatform.openTun(tun))
     }
 
     private fun reload(config: EngineConfig) {
-        activeProxyTag = config.activeProxyTag
         log.i(TAG, "reloading the core on the current tun")
         Mihomocore.reload(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
     }
@@ -121,7 +108,6 @@ class MihomoEngine(
     }
 
     private fun startCore(config: EngineConfig, tun: TunConfig, fd: Int) {
-        activeProxyTag = config.activeProxyTag
         log.i(TAG, "system dns: ${MihomoRuntime.describeSystemDns()}")
         val ipv6 = tun.inet6.isNotEmpty()
         val gateway = buildList {

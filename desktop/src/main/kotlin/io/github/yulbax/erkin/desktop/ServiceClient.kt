@@ -20,7 +20,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -83,11 +82,12 @@ class ServiceClient private constructor(
 
     fun removeRuleList(name: String) = call("rulelistRemove") { put("name", name) }.throwIfFailed()
 
-    fun urlTest(proxies: String, url: String, timeoutMs: Int, ipv6: Boolean): String = call("urltest", timeoutMs = URL_TEST_TIMEOUT_MS) {
+    fun urlTest(proxies: String, url: String, timeoutMs: Int, ipv6: Boolean, runningOnly: Boolean): String = call("urltest", timeoutMs = timeoutMs + URL_TEST_MARGIN_MS) {
         put("proxies", proxies)
         put("url", url)
         put("timeout", timeoutMs)
         put("ipv6", ipv6)
+        put("runningOnly", runningOnly)
     }.let { reply ->
         reply.throwIfFailed()
         checkNotNull(reply["delays"]) { "ERKIN service returned no delays" }.toString()
@@ -104,12 +104,6 @@ class ServiceClient private constructor(
             reply.throwIfFailed()
             checkNotNull(reply["sites"]) { "ERKIN service returned no site results" }.toString()
         }
-
-    fun delay(proxy: String, url: String, timeoutMs: Int): Int? = call("delay", timeoutMs = timeoutMs + 2_000L) {
-        put("proxy", proxy)
-        put("url", url)
-        put("timeout", timeoutMs)
-    }.let { reply -> reply["delay"]?.jsonPrimitive?.intOrNull }
 
     fun traffic(): Traffic? = call("traffic").takeIf { it.ok }?.let { reply ->
         Traffic(reply["up"]?.jsonPrimitive?.longOrNull ?: 0, reply["down"]?.jsonPrimitive?.longOrNull ?: 0)
@@ -185,7 +179,7 @@ class ServiceClient private constructor(
         private const val CHECK_TIMEOUT_MS = 30_000L
         private const val START_TIMEOUT_MS = 120_000L
         private const val STOP_TIMEOUT_MS = 30_000L
-        private const val URL_TEST_TIMEOUT_MS = 120_000L
+        private const val URL_TEST_MARGIN_MS = 2_000L
         private const val SITES_TEST_TIMEOUT_MS = 60_000L
         private const val RULE_LIST_TIMEOUT_MS = 60_000L
 

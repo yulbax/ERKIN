@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
 import io.github.yulbax.erkin.rulelist.RuleListDatabase
 import io.github.yulbax.erkin.rulelist.RuleListState
+import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnCommandBus
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.vpn.core.RuleListSource

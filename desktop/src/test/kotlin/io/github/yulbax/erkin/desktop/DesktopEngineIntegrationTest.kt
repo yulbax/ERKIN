@@ -1,9 +1,7 @@
 package io.github.yulbax.erkin.desktop
 
 import io.github.yulbax.erkin.util.AppLog
-import io.github.yulbax.erkin.vpn.HealthSnapshot
 import io.github.yulbax.erkin.vpn.CiadpiProcess
-import io.github.yulbax.erkin.vpn.ProbeParams
 import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.ServerLatencyProbe
 import io.github.yulbax.erkin.vpn.SocksHealthProbe
@@ -13,7 +11,6 @@ import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.ProbeResult
-import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
@@ -24,7 +21,6 @@ import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -120,19 +116,8 @@ class DesktopEngineIntegrationTest {
             client.start(config, "", "")
             assertNotNull(runCatching { client.start(config, "", "") }.exceptionOrNull())
             assertLatencyTestWorks(client)
-            assertNotNull(client.delay("p1", ProbeUrls.VPN, 10_000))
-            val snapshot: HealthSnapshot = runBlocking {
-                withTimeout(30.seconds) {
-                    val engine = FakeEngine(socksPort, user, pass) {
-                        client.delay("p1", ProbeUrls.VPN, VPN_DELAY_TIMEOUT_MS)
-                    }
-                    SocksHealthProbe(ProbeUrls.BYEDPI)
-                        .observe(ProbeParams(engine, byeDpiPort = null, vpnActive = true))
-                        .first()
-                }
-            }
-            assertTrue("health urltest of the active server failed", snapshot.vpnUp)
-            assertEquals("country must resolve through the authenticated probe SOCKS", 2, snapshot.vpnCountry.length)
+            val country = runBlocking { withTimeout(30.seconds) { SocksHealthProbe(ProbeUrls.BYEDPI).country(FakeEngine(socksPort, user, pass)) } }
+            assertEquals("country must resolve through the authenticated probe SOCKS", 2, country?.length)
             assertTrue("traffic must be counted", checkNotNull(client.traffic()).down > 0)
             client.stop()
             assertNull(client.traffic())
@@ -186,7 +171,7 @@ class DesktopEngineIntegrationTest {
 
     private fun assertLatencyTestWorks(client: ServiceClient) {
         val proxies = """[{"name":"p1","type":"direct"},{"name":"p2","type":"socks5","server":"127.0.0.1","port":${freeLoopbackPort()}}]"""
-        val results = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true))
+        val results = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true, runningOnly = false))
         assertTrue("a working server must be measured: $results", results[1L] is ProbeResult.Answered)
         assertEquals(ProbeResult.NoAnswer, results[2L])
     }
@@ -203,13 +188,10 @@ class DesktopEngineIntegrationTest {
     private class FakeEngine(
         override val probeSocksPort: Int,
         override val probeUsername: String,
-        override val probePassword: String,
-        private val measure: () -> Int?
+        override val probePassword: String
     ) : VpnEngine {
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
-        override suspend fun probeVpn(): ProbeResult = measure()?.let(ProbeResult::Answered) ?: ProbeResult.NoAnswer
-        override suspend fun probe(tag: String): ProbeResult = ProbeResult.NoAnswer
         override fun stop() = Unit
     }
 

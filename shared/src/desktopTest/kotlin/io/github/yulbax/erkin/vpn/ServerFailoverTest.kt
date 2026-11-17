@@ -76,7 +76,7 @@ class ServerFailoverTest {
     }
 
     private fun failover(store: FakeStore, results: String) =
-        ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> results }, SilentLog)
+        ServerFailover(store, ServerChecks(ServerLatencyProbe(store) { _, _, _, _, _, _ -> results }, ProbeResults(), SilentLog), SilentLog)
 
     private class FakeStore(
         private val refresh: ProfileOperationResult = ProfileOperationResult.SubscriptionSynced(0, 0, 0, false),

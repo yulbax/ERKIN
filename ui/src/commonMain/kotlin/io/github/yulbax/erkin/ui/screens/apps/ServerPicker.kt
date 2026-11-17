@@ -7,11 +7,18 @@ import io.github.yulbax.erkin.ui.components.serverName
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
-import io.github.yulbax.erkin.ui.components.SourceIcon
 import io.github.yulbax.erkin.ui.screens.erkin.rowIcon
+import io.github.yulbax.erkin.ui.screens.erkin.WaveDots
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.collectAsState
+import io.github.yulbax.erkin.vpn.ServerChecks
+import org.koin.compose.koinInject
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,7 +50,9 @@ internal fun ServerPickerSheet(
     var openGroup by remember {
         mutableStateOf((current as? CurrentServer.Bound)?.let { choices.groupOf(it.serverId) })
     }
-    val page = serverPickerPage(choices, query, openGroup, current, lead)
+    val tests = koinInject<ServerChecks>()
+    val testing by tests.testing.collectAsState()
+    val page = serverPickerPage(choices, query, openGroup, current, lead, testing)
 
     PickerSheet(
         title = page.group ?: stringResource(Res.string.apps_server_title),
@@ -54,7 +63,10 @@ internal fun ServerPickerSheet(
         onDismiss = onDismiss,
         page = page,
         pageKey = { it.openGroup },
-        onBack = if (page.group != null) ({ openGroup = null }) else null
+        onBack = if (page.group != null) ({ openGroup = null }) else null,
+        action = page.testQueue.takeIf { it.isNotEmpty() }?.let { queue ->
+            { TestButton(testing = testing.isNotEmpty()) { tests.run(queue) } }
+        }
     ) { shown, close ->
         items(shown.rows, key = { it.key }) { row ->
             when (row) {
@@ -74,11 +86,26 @@ internal fun ServerPickerSheet(
                     subtitle = row.group,
                     checked = row.checked,
                     onClick = { close { onPick(row.id) } },
-                    trailing = row.result?.let { result ->
-                        { Text(result.label(), style = MaterialTheme.typography.bodySmall, color = result.color()) }
+                    trailing = when {
+                        row.testing -> ({ WaveDots(color = MaterialTheme.colorScheme.onSurfaceVariant) })
+                        else -> row.result?.let { result ->
+                            { Text(result.label(), style = MaterialTheme.typography.bodySmall, color = result.color()) }
+                        }
                     }
                 )
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun TestButton(testing: Boolean, onClick: () -> Unit) {
+    IconButton(onClick = onClick, enabled = !testing) {
+        if (testing) {
+            LoadingIndicator(modifier = Modifier.size(32.dp))
+        } else {
+            Icon(Icons.Default.Speed, contentDescription = stringResource(Res.string.server_test_latency))
         }
     }
 }
@@ -90,10 +117,8 @@ private fun GroupChoice(row: ServerPickerRow.Group, onOpen: () -> Unit) {
         title = row.name,
         subtitle = row.current?.let { "$count · ${serverName(it)}" } ?: count,
         checked = false,
+        subtitleIcon = row.kind.rowIcon.source,
         onClick = onOpen,
-        leading = {
-            SourceIcon(row.kind.rowIcon.source, contentDescription = null, modifier = Modifier.padding(end = 16.dp))
-        },
         trailing = {
             Icon(
                 Icons.AutoMirrored.Filled.KeyboardArrowRight,

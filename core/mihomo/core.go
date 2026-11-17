@@ -110,12 +110,11 @@ func Shutdown() {
 	listener.ReCreateTun(LC.Tun{}, tunnel.Tunnel)
 }
 
-func URLTest(proxyName string, url string, timeoutMs int32) int32 {
-	proxy, loaded := tunnel.Proxies()[proxyName]
-	if !loaded {
-		return delayFailed
+func loadedProxies() map[string]C.Proxy {
+	if !applied.Load() {
+		return nil
 	}
-	return measure(proxy, url, timeoutMs)
+	return tunnel.Proxies()
 }
 
 type testTunnel struct {
@@ -130,7 +129,7 @@ func (t *testTunnel) NatTable() C.NatTable { return nil }
 
 func (t *testTunnel) Proxies() map[string]C.Proxy { return t.proxies }
 
-func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string, error) {
+func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool, runningOnly bool) (string, error) {
 	if !applied.Load() {
 		resolver.DisableIPv6 = !ipv6
 	}
@@ -140,14 +139,25 @@ func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string
 	}
 	results := make(map[string]int32, len(mappings))
 	table := &testTunnel{proxies: make(map[string]C.Proxy, len(mappings))}
+	loaded := loadedProxies()
+	var temporary []C.Proxy
 	for _, mapping := range mappings {
 		name, _ := mapping["name"].(string)
+		if proxy, running := loaded[name]; running {
+			table.proxies[name] = proxy
+			continue
+		}
+		if runningOnly {
+			results[name] = delayFailed
+			continue
+		}
 		proxy, err := adapter.ParseProxy(mapping, adapter.WithTunnelForAPI(table))
 		if err != nil {
 			results[name] = delayFailed
 			continue
 		}
 		table.proxies[name] = proxy
+		temporary = append(temporary, proxy)
 	}
 	var resultsAccess sync.Mutex
 	var group sync.WaitGroup
@@ -165,7 +175,7 @@ func TestProxies(proxies string, url string, timeoutMs int32, ipv6 bool) (string
 		}()
 	}
 	group.Wait()
-	for _, proxy := range table.proxies {
+	for _, proxy := range temporary {
 		_ = proxy.Close()
 	}
 	encoded, err := json.Marshal(results)

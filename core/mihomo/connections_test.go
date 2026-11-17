@@ -146,7 +146,7 @@ func TestALatencyTestFindsTheHopsOfAChainAmongTheTestedProxies(t *testing.T) {
 		`{"name":"p1","type":"http","server":"127.0.0.1","port":%d,"dialer-proxy":"p1h0"},`+
 		`{"name":"p2","type":"http","server":"127.0.0.1","port":%d,"dialer-proxy":"missing"}]`, port, port)
 
-	encoded, err := TestProxies(proxies, target.URL, 2000, false)
+	encoded, err := TestProxies(proxies, target.URL, 2000, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -44,7 +44,7 @@ class ServerLatencyProbeTest {
     fun withoutByeDpiRunningAChainSkipsItsByeDpiHopAndAFailureOnlyMeansItNeedsTheConnection() = runBlocking {
         val tested = mutableListOf<EngineProxy>()
         var port: Int? = -1
-        val probe = ServerLatencyProbe(STORE, { 0 }) { proxies, _, _, _, byeDpiPort ->
+        val probe = ServerLatencyProbe(STORE, { 0 }) { proxies, _, _, _, byeDpiPort, _ ->
             tested += proxies
             port = byeDpiPort
             """{"p1":0,"p2":80,"p9h1":0,"p9":0}"""
@@ -70,7 +70,7 @@ class ServerLatencyProbeTest {
     @Test
     fun eachServerIsMeasuredInItsOwnCallWithItsOwnProxies() = runBlocking {
         val calls = mutableListOf<List<String>>()
-        val probe = ServerLatencyProbe(STORE, { 1080 }) { proxies, _, _, _, _ ->
+        val probe = ServerLatencyProbe(STORE, { 1080 }) { proxies, _, _, _, _, _ ->
             calls += proxies.map { it.tag }
             """{"p1":50,"p2":80,"p9h1":60,"p9":140}"""
         }
@@ -84,7 +84,7 @@ class ServerLatencyProbeTest {
     @Test
     fun aServerIsReportedAsSoonAsItAnswers() = runBlocking {
         val waits = mapOf("p1" to 300L, "p2" to 10L, "p9" to 150L)
-        val probe = ServerLatencyProbe(STORE, { 1080 }) { proxies, _, _, _, _ ->
+        val probe = ServerLatencyProbe(STORE, { 1080 }) { proxies, _, _, _, _, _ ->
             val tag = proxies.last().tag
             delay(waits.getValue(tag))
             """{"$tag":${waits.getValue(tag)}}"""
@@ -97,7 +97,7 @@ class ServerLatencyProbeTest {
     fun aServerThatKeepsUsWaitingGivesItsSlotToTheNextOne() = runBlocking {
         val dead = (1L..10L).map { ProfileEntity(id = it, name = "dead $it") }
         val alive = ProfileEntity(id = 11, name = "alive")
-        val probe = ServerLatencyProbe(Store(dead + alive), { 0 }) { proxies, _, _, _, _ ->
+        val probe = ServerLatencyProbe(Store(dead + alive), { 0 }) { proxies, _, _, _, _, _ ->
             val tag = proxies.single().tag
             if (tag == "p11") """{"p11":40}""" else {
                 delay(2_500)
@@ -114,7 +114,7 @@ class ServerLatencyProbeTest {
     @Test
     fun serversAreTestedInTheOrderTheyAreQueued() = runBlocking {
         val calls = mutableListOf<String>()
-        val probe = ServerLatencyProbe(STORE, { 1080 }) { proxies, _, _, _, _ ->
+        val probe = ServerLatencyProbe(STORE, { 1080 }) { proxies, _, _, _, _, _ ->
             calls += proxies.last().tag
             "{}"
         }
@@ -129,7 +129,7 @@ class ServerLatencyProbeTest {
         val servers = (1L..30L).map { ProfileEntity(id = it, name = "s$it") }
         val queue = servers.map { it.id }.reversed()
         val started = java.util.Collections.synchronizedList(mutableListOf<Long>())
-        val probe = ServerLatencyProbe(Store(servers), { 0 }) { proxies, _, _, _, _ ->
+        val probe = ServerLatencyProbe(Store(servers), { 0 }) { proxies, _, _, _, _, _ ->
             val tag = proxies.single().tag
             started += ProxyTag.profileId(tag)!!
             delay(100)
@@ -142,10 +142,37 @@ class ServerLatencyProbeTest {
     }
 
     private fun probe(byeDpiPort: Int, tested: MutableList<EngineProxy>, results: () -> String) =
-        ServerLatencyProbe(STORE, { byeDpiPort }) { proxies, _, _, _, _ ->
+        ServerLatencyProbe(STORE, { byeDpiPort }) { proxies, _, _, _, _, _ ->
             tested += proxies
             results()
         }
+
+    @Test
+    fun measuringOnlyLoadedServersNeitherReadsTheDatabaseNorDescribesThem() = runBlocking {
+        val tested = mutableListOf<EngineProxy>()
+        val probe = ServerLatencyProbe(UnreadableStore, { 1080 }) { proxies, _, _, _, byeDpiPort, runningOnly ->
+            tested += proxies
+            assertEquals(true, runningOnly)
+            assertNull(byeDpiPort)
+            val tag = proxies.single().tag
+            """{"$tag":${if (tag == "p1") 30 else -1}}"""
+        }
+
+        val results = probe.measureEach(listOf(1L, 2L), runningOnly = true).toList().toMap()
+
+        assertEquals(mapOf(1L to ProbeResult.Answered(30), 2L to ProbeResult.NoAnswer), results)
+        assertEquals(setOf("p1", "p2"), tested.map { it.tag }.toSet())
+    }
+
+    private object UnreadableStore : VpnSessionStore {
+        override suspend fun refreshProfiles() = Unit
+        override suspend fun load(): SessionInputs = error("the background check must not read the database")
+        override fun routingChanges(): Flow<Unit> = emptyFlow()
+        override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
+        override suspend fun selectedGroup(): ServerGroupEntity? = null
+        override suspend fun refreshSubscription(url: String): ProfileOperationResult = ProfileOperationResult.EmptySubscription
+        override suspend fun select(profile: ProfileEntity) = Unit
+    }
 
     private class Store(private val profiles: List<ProfileEntity>) : VpnSessionStore {
         override suspend fun refreshProfiles() = Unit

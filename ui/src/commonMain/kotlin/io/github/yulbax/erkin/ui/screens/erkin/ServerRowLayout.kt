@@ -211,7 +211,7 @@ private fun ResultSuffix(result: ProbeResult?, testing: Boolean) {
 }
 
 @Composable
-private fun WaveDots(color: Color, modifier: Modifier = Modifier) {
+internal fun WaveDots(color: Color, modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "pingWave")
     val phase by transition.animateFloat(
         initialValue = 0f,

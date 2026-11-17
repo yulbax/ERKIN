@@ -1,85 +1,44 @@
 package io.github.yulbax.erkin.vpn
 
-import io.github.yulbax.erkin.vpn.core.ProbeResult
+import io.github.yulbax.erkin.data.SettingsEntity
+import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ProfileOperationResult
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.EngineConfig
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class HealthMonitorTest {
 
     @Test
-    fun aDeadByeDpiChannelNeverReloadsAWorkingVpn() = runBlocking {
-        val (reloads, byedpiChecks) = run(vpnDelayMs = 120, byedpiUp = false)
-
-        assertEquals(0, reloads)
-        assertTrue("the site list check must run even while ByeDPI is down", byedpiChecks >= 1)
-    }
-
-    @Test
-    fun aDeadVpnChannelStillTriggersAReload() = runBlocking {
-        val (reloads, _) = run(vpnDelayMs = null, byedpiUp = true)
-
-        assertTrue(reloads >= 1)
-    }
-
-    @Test
     fun theCardIsConnectedOnlyWhenEveryChannelAnswers() {
-        val vpn = HealthChannel.VPN
-        assertEquals(VpnState.ChannelDown(vpn), HealthSnapshot(true, null, true, "", true, true, true, vpn).state)
-        assertEquals(VpnState.ChannelDown(HealthChannel.BYEDPI), HealthSnapshot(true, 80, true, "", true, false, true, vpn).state)
-        assertEquals(VpnState.Verifying, HealthSnapshot(true, 80, true, "", true, false, false, vpn).state)
-        assertEquals(VpnState.Verifying, HealthSnapshot(true, null, false, "", true, true, true, vpn).state)
-        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", true, true, true, vpn).state)
-        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", false, false, false, vpn).state)
-        assertEquals(VpnState.Connected(0), HealthSnapshot(false, null, false, "", true, true, true, HealthChannel.BYEDPI).state)
-    }
-
-    @Test
-    fun aMainServerThatKeepsRejectingTheLoginStopsInsteadOfReloading() = runBlocking {
-        val rejections = AtomicInteger()
-        val reloads = AtomicInteger()
-        val probe = object : HealthProbe {
-            override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
-                repeat(SNAPSHOTS) {
-                    emit(HealthSnapshot(true, null, true, "", false, false, true, HealthChannel.VPN, vpnLoginRejected = true))
-                    delay(20)
-                }
-            }
-        }
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val monitor = HealthMonitor(VpnStateRepository(), SilentLog, probe)
-        monitor.start(
-            scope,
-            HealthParams(
-                probe = ProbeParams(FakeEngine, byeDpiPort = null, vpnActive = true),
-                onLoginRejected = { rejections.incrementAndGet() },
-                onVpnDown = { reloads.incrementAndGet() },
-                onVpnUp = {},
-                onByedpiChanged = {}
-            )
-        )
-        withTimeoutOrNull(2_000) { while (rejections.get() == 0) delay(10) }
-        delay(100)
-        monitor.stop()
-        scope.cancel()
-
-        assertEquals(1, rejections.get())
-        assertEquals(0, reloads.get())
+        assertEquals(VpnState.ChannelDown(HealthChannel.VPN), HealthSnapshot(true, null, true, "", true, true, true).state)
+        assertEquals(VpnState.ChannelDown(HealthChannel.BYEDPI), HealthSnapshot(true, 80, true, "", true, false, true).state)
+        assertEquals(VpnState.Verifying, HealthSnapshot(true, 80, true, "", true, false, false).state)
+        assertEquals(VpnState.Verifying, HealthSnapshot(true, null, false, "", true, true, true).state)
+        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", true, true, true).state)
+        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", false, false, false).state)
+        assertEquals(VpnState.Connected(0), HealthSnapshot(false, null, false, "", true, true, true).state)
     }
 
     @Test
@@ -91,97 +50,185 @@ class HealthMonitorTest {
     }
 
     @Test
-    fun boundServersThatDoNotAnswerAreReportedWithoutReloadingTheVpn() = runBlocking {
-        val states = VpnStateRepository()
-        val reloads = AtomicInteger()
-        val engine = object : VpnEngine by FakeEngine {
-            override suspend fun probe(tag: String): ProbeResult = if (tag == "p2") ProbeResult.NoAnswer else ProbeResult.Answered(40)
-        }
-        val probe = object : HealthProbe {
-            override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
-                emit(HealthSnapshot(true, 50, true, "", false, false, true, HealthChannel.VPN))
-            }
-        }
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val monitor = HealthMonitor(states, SilentLog, probe, serverCheckInterval = 50.milliseconds, serverRecheckDelay = 10.milliseconds)
-        monitor.start(
-            scope,
-            HealthParams(
-                probe = ProbeParams(engine, byeDpiPort = null, vpnActive = true, serverTags = mapOf(2L to "p2", 3L to "p3")),
-                onLoginRejected = {},
-                onVpnDown = { reloads.incrementAndGet() },
-                onVpnUp = {},
-                onByedpiChanged = {}
-            )
-        )
-        val down = withTimeoutOrNull(2_000) { states.stats.first { it.unreachableServers.isNotEmpty() }.unreachableServers }
-        monitor.stop()
-        scope.cancel()
+    fun aDeadByeDpiChannelNeverReloadsAWorkingVpn() = runBlocking {
+        val run = Run(byeDpiPort = 1, byeDpiUp = false) { 120 }
+        run.watch { run.byedpiChanges.get() >= 1 }
 
-        assertEquals(setOf(2L), down)
-        assertEquals(0, reloads.get())
+        assertEquals(0, run.vpnDowns.get())
+        assertTrue(run.byedpiChanges.get() >= 1)
     }
 
     @Test
-    fun aSingleMissedCheckDoesNotMarkAServerAsDown() = runBlocking {
-        val states = VpnStateRepository()
-        val checks = AtomicInteger()
-        val engine = object : VpnEngine by FakeEngine {
-            override suspend fun probe(tag: String): ProbeResult = if (checks.incrementAndGet() == 1) ProbeResult.NoAnswer else ProbeResult.Answered(40)
-        }
-        val probe = object : HealthProbe {
-            override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
-                emit(HealthSnapshot(true, 50, true, "", false, false, true, HealthChannel.VPN))
-            }
-        }
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val monitor = HealthMonitor(states, SilentLog, probe, serverCheckInterval = 50.milliseconds, serverRecheckDelay = 10.milliseconds)
-        monitor.start(
-            scope,
-            HealthParams(
-                probe = ProbeParams(engine, byeDpiPort = null, vpnActive = true, serverTags = mapOf(2L to "p2")),
-                onLoginRejected = {},
-                onVpnDown = {},
-                onVpnUp = {},
-                onByedpiChanged = {}
-            )
-        )
-        val down = withTimeoutOrNull(500) { states.stats.first { it.unreachableServers.isNotEmpty() } }
-        monitor.stop()
-        scope.cancel()
+    fun aDeadVpnChannelTriggersAReload() = runBlocking {
+        val run = Run { FAILED }
+        run.watch { run.vpnDowns.get() >= 1 }
 
-        assertEquals(null, down)
+        assertTrue(run.vpnDowns.get() >= 1)
+    }
+
+    @Test
+    fun aMainServerThatKeepsRejectingTheLoginStopsInsteadOfReloading() = runBlocking {
+        val run = Run { LOGIN_REJECTED }
+        run.watch { run.rejections.get() >= 1 }
+        delay(200)
+
+        assertEquals(1, run.rejections.get())
+        assertEquals(0, run.vpnDowns.get())
+    }
+
+    @Test
+    fun boundServersThatDoNotAnswerAreReportedWithoutReloadingTheVpn() = runBlocking {
+        val run = Run { id -> if (id == 2L) FAILED else 40 }
+        val stats = run.watch { run.states.stats.value.unreachableServers.isNotEmpty() }
+            .let { run.states.stats.value }
+
+        assertEquals(setOf(2L), stats.unreachableServers)
+        assertEquals(0, run.vpnDowns.get())
+        assertEquals(setOf(1L, 2L, 3L), run.results.results.value.keys)
+    }
+
+    @Test
+    fun aSingleMissedCheckDoesNotMarkABoundServerUnreachable() = runBlocking {
+        val checks = AtomicInteger()
+        val run = Run { id -> if (id == 2L && checks.incrementAndGet() == 1) FAILED else 40 }
+        val reported = run.watch(timeoutMs = 500) { run.states.stats.value.unreachableServers.isNotEmpty() }
+
+        assertEquals(false, reported)
+        assertEquals(emptySet<Long>(), run.states.stats.value.unreachableServers)
         assertTrue(checks.get() >= 2)
     }
 
-    private suspend fun run(vpnDelayMs: Int?, byedpiUp: Boolean): Pair<Int, Int> {
-        val reloads = AtomicInteger()
-        val byedpiChecks = AtomicInteger()
-        val probe = object : HealthProbe {
-            override fun observe(params: ProbeParams): Flow<HealthSnapshot> = flow {
-                repeat(SNAPSHOTS) {
-                    emit(HealthSnapshot(true, vpnDelayMs, true, "", true, byedpiUp, true, HealthChannel.VPN))
-                    emit(HealthSnapshot(true, vpnDelayMs, true, "", true, byedpiUp, true, HealthChannel.BYEDPI))
-                    delay(5)
-                }
-            }
+    @Test
+    fun aBoundServerThatRejectsTheLoginIsShownAsALoginErrorWithoutStoppingTheVpn() = runBlocking {
+        val run = Run { id -> if (id == 3L) LOGIN_REJECTED else 40 }
+        run.watch { run.results.results.value[3L] == ProbeResult.LoginRejected }
+
+        assertEquals(ProbeResult.LoginRejected, run.results.results.value[3L])
+        assertEquals(0, run.rejections.get())
+    }
+
+    @Test
+    fun anUnreachableBoundServerIsNotRetriedQuicklyForever() = runBlocking {
+        val checks = ConcurrentHashMap<Long, AtomicInteger>()
+        val run = Run(checkInterval = 60.seconds) { id ->
+            checks.getOrPut(id) { AtomicInteger() }.incrementAndGet()
+            if (id == 2L) FAILED else 40
         }
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val monitor = HealthMonitor(VpnStateRepository(), SilentLog, probe)
-        monitor.start(
-            scope,
-            HealthParams(
-                probe = ProbeParams(FakeEngine, byeDpiPort = 1, vpnActive = true),
-                onLoginRejected = {},
-                onVpnDown = { reloads.incrementAndGet() },
-                onVpnUp = {},
-                onByedpiChanged = { byedpiChecks.incrementAndGet() }
+        run.watch(timeoutMs = 500) { false }
+
+        assertEquals(2, checks.getValue(2).get())
+    }
+
+    @Test
+    fun theCardShowsTheLatencyOfTheActiveServer() = runBlocking {
+        val run = Run { 40 }
+        run.watch { run.states.state.value == VpnState.Connected(40) }
+
+        assertEquals(VpnState.Connected(40), run.states.state.value)
+        assertTrue(run.states.stats.value.vpnUp)
+    }
+
+    @Test
+    fun theWatchMeasuresOnlyServersLoadedInTheRunningTunnel() = runBlocking {
+        val run = Run { 40 }
+        run.watch { run.runningOnlyFlags.size >= 3 }
+
+        assertTrue(run.runningOnlyFlags.isNotEmpty())
+        assertTrue(run.runningOnlyFlags.all { it })
+    }
+
+    @Test
+    fun closingTheMonitorForgetsTheWatchedServersButStoppingKeepsThem() = runBlocking {
+        val stopped = Run { 40 }
+        stopped.watch { stopped.results.results.value.keys == setOf(1L, 2L, 3L) }
+        val closed = Run(closeAtEnd = true) { 40 }
+        closed.watch { closed.results.results.value.keys == setOf(1L, 2L, 3L) }
+
+        assertEquals(setOf(1L, 2L, 3L), stopped.results.results.value.keys)
+        assertEquals(emptySet<Long>(), closed.results.results.value.keys)
+    }
+
+    @Test
+    fun theActiveServerKeepsItsCadenceWhileABoundServerHangs() = runBlocking {
+        val run = Run(hangOn = 2L) { 40 }
+        run.watch { run.measured.getValue(1).get() >= 3 }
+
+        assertTrue(run.measured.getValue(1).get() >= 3)
+        assertEquals(1, run.measured.getValue(2).get())
+    }
+
+    private class Run(
+        private val byeDpiPort: Int? = null,
+        private val byeDpiUp: Boolean = true,
+        private val checkInterval: Duration = 50.milliseconds,
+        private val closeAtEnd: Boolean = false,
+        private val hangOn: Long? = null,
+        private val delayOf: (Long) -> Int
+    ) {
+        val states = VpnStateRepository()
+        val results = ProbeResults()
+        val vpnDowns = AtomicInteger()
+        val rejections = AtomicInteger()
+        val byedpiChanges = AtomicInteger()
+        val runningOnlyFlags = ConcurrentLinkedQueue<Boolean>()
+        val measured = ConcurrentHashMap<Long, AtomicInteger>().apply { (1L..3L).forEach { put(it, AtomicInteger()) } }
+
+        suspend fun watch(timeoutMs: Long = 2_000, until: () -> Boolean): Boolean {
+            val latency = ServerLatencyProbe(Store) { proxies, _, _, _, _, runningOnly ->
+                runningOnlyFlags += runningOnly
+                val tag = proxies.single().tag
+                val id = checkNotNull(ProxyTag.profileId(tag))
+                measured.getValue(id).incrementAndGet()
+                if (id == hangOn) awaitCancellation()
+                """{"$tag":${delayOf(id)}}"""
+            }
+            val monitor = HealthMonitor(
+                states,
+                SilentLog,
+                ServerChecks(latency, results, SilentLog),
+                Channels(byeDpiUp),
+                checkInterval = checkInterval,
+                retryDelay = 10.milliseconds
             )
-        )
-        withTimeoutOrNull(2_000) { while (true) delay(50) }
-        monitor.stop()
-        scope.cancel()
-        return reloads.get() to byedpiChecks.get()
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            monitor.start(
+                scope,
+                HealthParams(
+                    engine = FakeEngine,
+                    byeDpiPort = byeDpiPort,
+                    vpnActive = true,
+                    activeServer = 1,
+                    boundServers = setOf(2, 3),
+                    onVpnDown = { vpnDowns.incrementAndGet() },
+                    onLoginRejected = { rejections.incrementAndGet() },
+                    onVpnUp = {},
+                    onByedpiChanged = { byedpiChanges.incrementAndGet() }
+                )
+            )
+            val reached = withTimeoutOrNull(timeoutMs) {
+                while (!until()) delay(10)
+                true
+            }
+            if (closeAtEnd) monitor.close() else monitor.stop()
+            scope.cancel()
+            return reached == true
+        }
+    }
+
+    private class Channels(private val byeDpiUp: Boolean) : ChannelProbe {
+        override suspend fun byeDpiReachable(port: Int): Boolean = byeDpiUp
+        override suspend fun country(engine: VpnEngine): String? = null
+    }
+
+    private object Store : VpnSessionStore {
+        private val servers = (1L..3L).map { ProfileEntity(id = it, name = "s$it") }
+        override suspend fun refreshProfiles() = Unit
+        override suspend fun load() = SessionInputs(servers.first(), servers, SettingsEntity(), emptyList())
+        override fun routingChanges(): Flow<Unit> = emptyFlow()
+        override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
+        override suspend fun selectedGroup(): ServerGroupEntity? = null
+        override suspend fun refreshSubscription(url: String): ProfileOperationResult = ProfileOperationResult.EmptySubscription
+        override suspend fun select(profile: ProfileEntity) = Unit
     }
 
     private object FakeEngine : VpnEngine {
@@ -190,8 +237,6 @@ class HealthMonitorTest {
         override val probePassword: String = ""
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) = Unit
-        override suspend fun probeVpn(): ProbeResult = ProbeResult.NoAnswer
-        override suspend fun probe(tag: String): ProbeResult = ProbeResult.NoAnswer
         override fun stop() = Unit
     }
 
@@ -202,6 +247,7 @@ class HealthMonitorTest {
     }
 
     private companion object {
-        const val SNAPSHOTS = 12
+        const val FAILED = -1
+        const val LOGIN_REJECTED = -2
     }
 }

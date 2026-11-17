@@ -131,7 +131,8 @@ class AppsStateTest {
                     ServerPickerRow.Server(2, "Helsinki", checked = false),
                     ServerPickerRow.Group(SUBSCRIPTION, SUBSCRIPTION_KIND, "sub.example", count = 2, current = null),
                     ServerPickerRow.Server(5, "ByeDPI → Helsinki", checked = false)
-                )
+                ),
+                testQueue = listOf(1, 2, 3, 5, 4)
             ),
             page
         )
@@ -152,7 +153,8 @@ class AppsStateTest {
             ServerPickerPage(
                 openGroup = SUBSCRIPTION,
                 group = "sub.example",
-                rows = listOf(ServerPickerRow.Server(3, "Riga", checked = false), ServerPickerRow.Server(4, "Oslo", checked = true))
+                rows = listOf(ServerPickerRow.Server(3, "Riga", checked = false), ServerPickerRow.Server(4, "Oslo", checked = true)),
+                testQueue = listOf(3, 4)
             ),
             page
         )
@@ -170,7 +172,7 @@ class AppsStateTest {
     fun searchListsMatchingServersAcrossGroupsWithTheirGroupName() {
         val page = serverPickerPage(choices, query = " os", openGroup = SUBSCRIPTION, current = CurrentServer.None)
 
-        assertEquals(ServerPickerPage(SUBSCRIPTION, group = null, rows = listOf(ServerPickerRow.Server(4, "Oslo", checked = false, group = "sub.example"))), page)
+        assertEquals(ServerPickerPage(SUBSCRIPTION, group = null, rows = listOf(ServerPickerRow.Server(4, "Oslo", checked = false, group = "sub.example")), testQueue = listOf(4)), page)
     }
 
     @Test

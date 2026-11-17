@@ -1,10 +1,8 @@
 package io.github.yulbax.erkin.desktop
 
-import io.github.yulbax.erkin.vpn.core.ProbeResult
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
-import io.github.yulbax.erkin.vpn.core.VPN_DELAY_TIMEOUT_MS
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
@@ -14,13 +12,10 @@ import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class ServiceEngine(
     private val service: DesktopService,
     private val directProcesses: List<String>,
-    private val delayProbeUrl: String,
     private val listener: EngineListener,
     private val log: AppLog
 ) : VpnEngine {
@@ -31,7 +26,6 @@ class ServiceEngine(
     private val byeDpiProbeSocksPort: Int = freeLoopbackPort()
 
     @Volatile private var client: ServiceClient? = null
-    @Volatile private var activeProxyTag: String = ""
     private var traffic: ScheduledExecutorService? = null
 
     @Synchronized
@@ -46,12 +40,6 @@ class ServiceEngine(
         launch(config)
     }
 
-    override suspend fun probeVpn(): ProbeResult = activeProxyTag.takeIf { it.isNotEmpty() }?.let { probe(it) } ?: ProbeResult.NoAnswer
-
-    override suspend fun probe(tag: String): ProbeResult = withContext(Dispatchers.IO) {
-        client?.runCatching { delay(tag, delayProbeUrl, VPN_DELAY_TIMEOUT_MS) }?.getOrNull()?.let(ProbeResult::fromWire) ?: ProbeResult.NoAnswer
-    }
-
     override fun byeDpiProbePort(byeDpiPort: Int): Int = byeDpiProbeSocksPort
 
     @Synchronized
@@ -61,7 +49,6 @@ class ServiceEngine(
 
     private fun launch(config: EngineConfig) {
         val connected = service.connect()
-        activeProxyTag = config.activeProxyTag
         connected.start(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
         client = connected
         log.i(TAG, "mihomo started by the ERKIN service ${service.hello?.version.orEmpty()}")

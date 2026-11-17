@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
+import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.vpn.connections.AppActivity
 import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor

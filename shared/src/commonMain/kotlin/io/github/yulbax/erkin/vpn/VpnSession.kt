@@ -127,7 +127,7 @@ class VpnSession(
 
     fun rejectLogin() {
         if (!isRunning) return
-        log.w(TAG, "the server keeps rejecting the login; stopping")
+        log.w(TAG, "the server rejected the login; stopping")
         fail(VpnFailure.LoginRejected)
     }
 
@@ -235,7 +235,7 @@ class VpnSession(
             generation++
             runCatching { routeWatchJob?.cancel() }
             routeWatchJob = null
-            runCatching { health.stop() }
+            runCatching { health.close() }
             runCatching { byeDpiCheckJob?.cancel() }
             byeDpiCheckJob = null
             runCatching { failoverJob?.cancel() }
@@ -323,12 +323,11 @@ class VpnSession(
         health.start(
             scope = scope,
             params = HealthParams(
-                probe = ProbeParams(
-                    engine = engine,
-                    byeDpiPort = byeDpiProbePort.takeIf { byeDpi.isRunning },
-                    vpnActive = config.vpnActive,
-                    serverTags = config.engineConfig.serverTags
-                ),
+                engine = engine,
+                byeDpiPort = byeDpiProbePort.takeIf { byeDpi.isRunning },
+                vpnActive = config.vpnActive,
+                activeServer = ProxyTag.profileId(config.engineConfig.activeProxyTag),
+                boundServers = config.engineConfig.serverTags.keys,
                 onVpnDown = { requestWork(Command.Recover) },
                 onLoginRejected = { requestWork(Command.RejectLogin) },
                 onVpnUp = recovery::reset,

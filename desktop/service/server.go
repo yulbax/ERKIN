@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"github.com/yulbax/erkin/mihomocore"
 )
@@ -17,7 +16,6 @@ type request struct {
 	ID       int64  `json:"id"`
 	Op       string `json:"op"`
 	Config   string `json:"config,omitempty"`
-	Proxy    string `json:"proxy,omitempty"`
 	Proxies  string `json:"proxies,omitempty"`
 	Resolved string `json:"resolved,omitempty"`
 	Resolver string `json:"resolver,omitempty"`
@@ -29,6 +27,7 @@ type request struct {
 	Behavior string `json:"behavior,omitempty"`
 	Timeout  int    `json:"timeout,omitempty"`
 	IPv6     bool   `json:"ipv6,omitempty"`
+	Running  bool   `json:"runningOnly,omitempty"`
 	Port     int    `json:"port,omitempty"`
 	Sites    string `json:"sites,omitempty"`
 }
@@ -40,7 +39,6 @@ type response struct {
 	Version string          `json:"version,omitempty"`
 	Core    string          `json:"core,omitempty"`
 	WorkDir string          `json:"workDir,omitempty"`
-	Delay   int             `json:"delay,omitempty"`
 	Delays  json.RawMessage `json:"delays,omitempty"`
 	Sites   json.RawMessage `json:"sites,omitempty"`
 	Table   json.RawMessage `json:"table,omitempty"`
@@ -198,11 +196,8 @@ func (s *server) dispatch(conn net.Conn, message request) response {
 			err = nil
 		}
 		return fail(err)
-	case "delay":
-		result.Delay = s.engine.delay(message.Proxy, message.URL, time.Duration(message.Timeout)*time.Millisecond)
-		result.OK = result.Delay > 0
 	case "urltest":
-		delays, err := mihomocore.TestProxies(message.Proxies, message.URL, int32(message.Timeout), message.IPv6)
+		delays, err := mihomocore.TestProxies(message.Proxies, message.URL, int32(message.Timeout), message.IPv6, message.Running)
 		if err != nil {
 			return fail(err)
 		}
