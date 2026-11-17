@@ -62,6 +62,19 @@ class DesktopEngineIntegrationTest {
     }
 
     @Test
+    fun theServiceExitsOnceTheLastClientLeaves() {
+        val socket = startService()
+        val service = processes.single()
+        ServiceClient.connect(socket).use { client ->
+            Thread.sleep(12_000)
+            assertTrue("the service must stay while a client is connected", service.isAlive)
+            client.hello()
+        }
+        assertTrue("the service must exit once no client is left", service.waitFor(20, TimeUnit.SECONDS))
+        assertEquals(0, service.exitValue())
+    }
+
+    @Test
     fun windowsStyleConfigPassesServiceCheck() {
         val probe = ProbeInbound(2080, "user", "pass")
         val vless = EngineProxy("p1", """{"type":"vless","server":"a.example","port":443,"udp":true,"uuid":"b5e6f6c2-6f5e-4c57-9a1c-1a9a2e2c3d4e","tls":true,"servername":"a.example"}""")
@@ -100,7 +113,7 @@ class DesktopEngineIntegrationTest {
             }
         """.trimIndent()
 
-        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog)
+        val service = DesktopService(socket, log = SilentLog)
         val client = service.connect()
         assertEquals(File(workDir, "svc").absoluteFile, service.hello?.workDir)
         assertTrue(service.hello?.core.orEmpty().isNotEmpty())
@@ -137,7 +150,7 @@ class DesktopEngineIntegrationTest {
     fun onlyTheControlConnectionHoldsTheTunnel() {
         val socket = startService()
         val config = """{"mode": "rule", "log-level": "warning", "proxies": [{"name": "p1", "type": "direct"}], "rules": ["MATCH,p1"]}"""
-        val service = DesktopService(socket, bundled = File(binDir, "erkin-service"), appDir = null, expectedVersion = null, log = SilentLog)
+        val service = DesktopService(socket, log = SilentLog)
         val control = service.control()
         control.start(config, "", "")
 

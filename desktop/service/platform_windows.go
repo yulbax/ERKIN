@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -15,16 +15,30 @@ import (
 const (
 	dataDirSDDL = "D:P(A;OICI;GA;;;SY)(A;OICI;GA;;;BA)(A;OICI;GRGX;;;AU)"
 	socketSDDL  = "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GRGW;;;AU)"
+	serviceSDDL = "D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWRPLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)"
 	stopTimeout = 30 * time.Second
 
-	legacyServiceName = "FRKN"
+	legacyServiceName  = "FRKN"
+	previousAppDirFile = "app-dir"
 )
 
-func installDir() string {
+var serviceCommands = map[string]func() error{
+	"install":   install,
+	"stop":      stop,
+	"uninstall": uninstall,
+}
+
+const serviceUsage = " | install | stop | uninstall"
+
+func defaultWorkDir() string {
+	return filepath.Join(os.Getenv("ProgramData"), "ERKIN")
+}
+
+func previousInstallDir() string {
 	return filepath.Join(os.Getenv("ProgramFiles"), "ERKIN Service")
 }
 
-func defaultWorkDir() string {
+func previousWorkDir() string {
 	return filepath.Join(os.Getenv("ProgramData"), "ERKIN Service")
 }
 
@@ -40,12 +54,27 @@ func defaultSocketPath() string { return filepath.Join(defaultWorkDir(), "erkin.
 
 func allowClients(socketPath string) error { return applySDDL(socketPath, socketSDDL) }
 
-func applySDDL(path string, sddl string) error {
+func inheritedListener() (net.Listener, error) { return nil, nil }
+
+func daclOf(sddl string) (*windows.ACL, error) {
 	descriptor, err := windows.SecurityDescriptorFromString(sddl)
+	if err != nil {
+		return nil, err
+	}
+	dacl, _, err := descriptor.DACL()
+	return dacl, err
+}
+
+func allowUsersToStart(service *mgr.Service) error {
+	dacl, err := daclOf(serviceSDDL)
 	if err != nil {
 		return err
 	}
-	dacl, _, err := descriptor.DACL()
+	return windows.SetSecurityInfo(service.Handle, windows.SE_SERVICE, windows.DACL_SECURITY_INFORMATION, nil, nil, dacl, nil)
+}
+
+func applySDDL(path string, sddl string) error {
+	dacl, err := daclOf(sddl)
 	if err != nil {
 		return err
 	}
@@ -81,9 +110,6 @@ func (h *handler) Execute(_ []string, requests <-chan svc.ChangeRequest, status 
 	}
 	served := make(chan error, 1)
 	go func() { served <- s.serve() }()
-	gone := make(chan struct{})
-	stopWatch := watchApp(h.workDir, func() { close(gone) })
-	defer stopWatch()
 	status <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
 	for {
 		select {
@@ -96,18 +122,13 @@ func (h *handler) Execute(_ []string, requests <-chan svc.ChangeRequest, status 
 				s.shutdown()
 				return false, 0
 			}
-		case <-gone:
-			status <- svc.Status{State: svc.StopPending}
-			s.shutdown()
-			removeSelf()
-			return false, 0
 		case <-served:
 			return false, 0
 		}
 	}
 }
 
-func install(appDir string) error {
+func install() error {
 	self, err := os.Executable()
 	if err != nil {
 		return err
@@ -119,7 +140,6 @@ func install(appDir string) error {
 	defer manager.Disconnect()
 	removeLegacy(manager)
 
-	target := filepath.Join(installDir(), "erkin-service.exe")
 	existing, err := manager.OpenService(serviceName)
 	if err == nil {
 		defer existing.Close()
@@ -127,26 +147,22 @@ func install(appDir string) error {
 			return err
 		}
 	}
-	if err = copyExecutable(self, target); err != nil {
-		return err
-	}
+	removeDir(previousInstallDir(), "erkin-service.exe")
 	workDir := defaultWorkDir()
+	adoptPreviousWorkDir(workDir)
 	if err = os.MkdirAll(workDir, 0o755); err != nil {
 		return err
 	}
 	if err = applySDDL(workDir, dataDirSDDL); err != nil {
 		return err
 	}
-	if err = writeAppDir(workDir, appDir); err != nil {
-		return err
-	}
 
 	service := existing
 	if service == nil {
-		service, err = manager.CreateService(serviceName, target, mgr.Config{
+		service, err = manager.CreateService(serviceName, self, mgr.Config{
 			DisplayName: "ERKIN VPN",
-			Description: "Runs the ERKIN tunnel so the ERKIN app does not need administrator rights.",
-			StartType:   mgr.StartAutomatic,
+			Description: "Runs the ERKIN tunnel while the ERKIN app is open, so the app does not need administrator rights.",
+			StartType:   mgr.StartManual,
 		}, "run")
 		if err != nil {
 			return err
@@ -157,14 +173,57 @@ func install(appDir string) error {
 		if configErr != nil {
 			return configErr
 		}
-		config.BinaryPathName = fmt.Sprintf("%q run", target)
-		config.StartType = mgr.StartAutomatic
+		config.BinaryPathName = windows.EscapeArg(self) + " run"
+		config.StartType = mgr.StartManual
 		if err = service.UpdateConfig(config); err != nil {
 			return err
 		}
 	}
 	_ = service.SetRecoveryActions([]mgr.RecoveryAction{{Type: mgr.ServiceRestart, Delay: 5 * time.Second}}, 86400)
-	return service.Start()
+	return allowUsersToStart(service)
+}
+
+func stop() error {
+	manager, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	defer manager.Disconnect()
+	service, err := manager.OpenService(serviceName)
+	if err != nil {
+		return nil
+	}
+	defer service.Close()
+	return stopService(service)
+}
+
+func uninstall() error {
+	manager, err := mgr.Connect()
+	if err != nil {
+		return err
+	}
+	defer manager.Disconnect()
+	service, err := manager.OpenService(serviceName)
+	if err == nil {
+		_ = stopService(service)
+		err = service.Delete()
+		service.Close()
+		if err != nil {
+			return err
+		}
+	}
+	removeDir(previousInstallDir(), "erkin-service.exe")
+	_ = os.RemoveAll(previousWorkDir())
+	_ = os.RemoveAll(defaultWorkDir())
+	return nil
+}
+
+func adoptPreviousWorkDir(workDir string) {
+	if _, err := os.Stat(workDir); os.IsNotExist(err) {
+		_ = os.Rename(previousWorkDir(), workDir)
+	}
+	_ = os.RemoveAll(previousWorkDir())
+	_ = os.Remove(filepath.Join(workDir, previousAppDirFile))
 }
 
 func removeLegacy(manager *mgr.Mgr) {
@@ -173,12 +232,17 @@ func removeLegacy(manager *mgr.Mgr) {
 		_ = service.Delete()
 		service.Close()
 	}
-	if os.RemoveAll(legacyInstallDir()) != nil {
-		if path, err := windows.UTF16PtrFromString(filepath.Join(legacyInstallDir(), "frkn-service.exe")); err == nil {
-			_ = windows.MoveFileEx(path, nil, windows.MOVEFILE_DELAY_UNTIL_REBOOT)
-		}
-	}
+	removeDir(legacyInstallDir(), "frkn-service.exe")
 	_ = os.RemoveAll(legacyWorkDir())
+}
+
+func removeDir(dir string, executable string) {
+	if os.RemoveAll(dir) == nil {
+		return
+	}
+	if path, err := windows.UTF16PtrFromString(filepath.Join(dir, executable)); err == nil {
+		_ = windows.MoveFileEx(path, nil, windows.MOVEFILE_DELAY_UNTIL_REBOOT)
+	}
 }
 
 func stopService(service *mgr.Service) error {
@@ -206,39 +270,4 @@ func stopService(service *mgr.Service) error {
 		time.Sleep(300 * time.Millisecond)
 	}
 	return errors.New("the ERKIN service did not stop in time")
-}
-
-func uninstall() error {
-	manager, err := mgr.Connect()
-	if err != nil {
-		return err
-	}
-	defer manager.Disconnect()
-	service, err := manager.OpenService(serviceName)
-	if err == nil {
-		_ = stopService(service)
-		err = service.Delete()
-		service.Close()
-		if err != nil {
-			return err
-		}
-	}
-	_ = os.RemoveAll(installDir())
-	_ = os.RemoveAll(defaultWorkDir())
-	return nil
-}
-
-func removeSelf() {
-	if manager, err := mgr.Connect(); err == nil {
-		if service, openErr := manager.OpenService(serviceName); openErr == nil {
-			_ = service.Delete()
-			service.Close()
-		}
-		manager.Disconnect()
-	}
-	target := filepath.Join(installDir(), "erkin-service.exe")
-	if path, err := windows.UTF16PtrFromString(target); err == nil {
-		_ = windows.MoveFileEx(path, nil, windows.MOVEFILE_DELAY_UNTIL_REBOOT)
-	}
-	_ = os.RemoveAll(defaultWorkDir())
 }

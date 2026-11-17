@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.skia.Image
 import org.koin.core.context.startKoin
+import kotlin.concurrent.thread
 
 fun main() {
     val activations = Channel<Unit>(Channel.CONFLATED)
@@ -40,6 +41,7 @@ fun main() {
     if (!instance.claim { activations.trySend(Unit) }) return
 
     val koin = startKoin { modules(desktopModule, uiModule) }.koin
+    thread(isDaemon = true, name = "erkin-service-start") { koin.get<DesktopService>().connectAtLaunch() }
     val controller = koin.get<VpnController>()
     controller.launch()
     autoConnect(koin.get(), koin.get(), koin.get(), koin.get())

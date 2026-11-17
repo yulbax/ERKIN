@@ -19,6 +19,8 @@ contents:
     type: symlink
   - src: ./erkin.service
     dst: /usr/lib/systemd/system/erkin.service
+  - src: ./erkin.socket
+    dst: /usr/lib/systemd/system/erkin.socket
   - src: ./erkin.desktop
     dst: /usr/share/applications/erkin.desktop
   - src: ${ERKIN_ICON}

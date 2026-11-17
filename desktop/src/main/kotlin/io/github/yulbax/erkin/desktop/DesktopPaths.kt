@@ -17,17 +17,12 @@ object DesktopPaths {
         ?: System.getenv("ERKIN_BIN_DIR")?.let(::File)
         ?: File("binaries")
 
-    val serviceBinary: File = File(binDir, executable("erkin-service"))
-
     val serviceSocket: File = System.getenv("ERKIN_SERVICE_SOCKET")?.let(::File)
-        ?: if (isWindows) File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN Service/erkin.sock")
+        ?: if (isWindows) File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN/erkin.sock")
         else File("/run/erkin/erkin.sock")
 
     val protectSocket: File = File(serviceSocket.parentFile, "protect.sock")
 
-    val installDir: File? = System.getProperty("compose.application.resources.dir")?.let {
-        ProcessHandle.current().info().command().map { command -> File(command).parentFile }.orElse(null)
-    }
     val ciadpi: File = File(binDir, executable("ciadpi"))
 
     val ownExecutable: String? = ProcessHandle.current().info().command().map { File(it).name }.orElse(null)

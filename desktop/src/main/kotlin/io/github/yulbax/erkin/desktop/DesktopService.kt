@@ -7,9 +7,6 @@ import java.util.concurrent.TimeUnit
 
 class DesktopService(
     private val socket: File,
-    private val bundled: File,
-    private val appDir: File?,
-    private val expectedVersion: String?,
     private val log: AppLog
 ) {
     @Volatile private var client: ServiceClient? = null
@@ -18,17 +15,10 @@ class DesktopService(
         private set
 
     @Synchronized
-    fun connect(): ServiceClient {
-        client?.takeIf { it.isOpen }?.let { return it }
-        var connected = tryConnect()
-        if (connected == null || isOutdated()) {
-            if (connected != null) log.i(TAG, "service ${hello?.version} is outdated, expected $expectedVersion")
-            connected?.close()
-            install()
-            connected = awaitConnection() ?: error(NOT_RUNNING)
-        }
-        client = connected
-        return connected
+    fun connect(): ServiceClient = running() ?: startService() ?: error(NOT_RUNNING)
+
+    fun connectAtLaunch() {
+        runCatching { connect() }.onFailure { log.w(TAG, "could not start the ERKIN service", it) }
     }
 
     @Synchronized
@@ -41,27 +31,34 @@ class DesktopService(
     @Synchronized
     fun running(): ServiceClient? {
         client?.takeIf { it.isOpen }?.let { return it }
-        val connected = tryConnect() ?: return null
-        if (isOutdated()) {
-            connected.close()
-            return null
-        }
-        client = connected
-        return connected
+        return tryConnect()?.also { client = it }
     }
 
     @Synchronized
-    fun peek(): ServiceClient.Hello? {
-        client?.takeIf { it.isOpen }?.let { return hello }
-        val connected = tryConnect() ?: return null
-        client = connected
-        return hello
-    }
+    fun peek(): ServiceClient.Hello? = running()?.let { hello }
 
     @Synchronized
     fun clearCoreLog() {
         if (peek() == null) return
         runCatching { client?.clearLog() }.onFailure { log.w(TAG, "could not clear the core log", it) }
+    }
+
+    private fun startService(): ServiceClient? {
+        if (!DesktopPaths.isWindows) return null
+        log.i(TAG, "starting the ERKIN service")
+        val process = ProcessBuilder("sc.exe", "start", SERVICE_NAME).redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+        val exit = process.waitFor()
+        if (exit != 0 && exit != ALREADY_RUNNING) {
+            log.w(TAG, "sc start exited with $exit: $output")
+            return null
+        }
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(START_WAIT_S)
+        while (System.nanoTime() < deadline) {
+            tryConnect()?.let { connected -> return connected.also { client = it } }
+            Thread.sleep(300)
+        }
+        return null
     }
 
     private fun open(): ServiceClient = ServiceClient.connect(socket) { level, message -> log.core(level, message) }
@@ -73,56 +70,11 @@ class DesktopService(
         }
     }.getOrNull()
 
-    private fun isOutdated(): Boolean {
-        val running = hello?.version ?: return true
-        return expectedVersion != null && running != expectedVersion && bundled.isFile
-    }
-
-    private fun install() {
-        check(bundled.isFile) { "ERKIN service not found: ${bundled.absolutePath}" }
-        log.i(TAG, "installing the ERKIN service from $bundled")
-        val args = buildList {
-            add("install")
-            appDir?.let { add("--app-dir"); add(it.absolutePath) }
-        }
-        val command = if (DesktopPaths.isWindows) {
-            val argumentList = args.joinToString(",") { "'" + quoteForPowerShell(it) + "'" }
-            listOf(
-                "powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command",
-                "\$p = Start-Process -FilePath '${quoteForPowerShell(bundled.absolutePath)}' " +
-                    "-ArgumentList $argumentList -Verb RunAs -WindowStyle Hidden -Wait -PassThru; exit \$p.ExitCode"
-            )
-        } else {
-            listOf("pkexec", bundled.absolutePath) + args
-        }
-        val process = ProcessBuilder(command).redirectErrorStream(true).start()
-        val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
-        if (!process.waitFor(INSTALL_TIMEOUT_S, TimeUnit.SECONDS)) {
-            process.destroy()
-            error(INSTALL_FAILED)
-        }
-        if (process.exitValue() != 0) {
-            log.w(TAG, "service install exited with ${process.exitValue()}: $output")
-            error(INSTALL_FAILED)
-        }
-    }
-
-    private fun awaitConnection(): ServiceClient? {
-        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(CONNECT_WAIT_S)
-        while (System.nanoTime() < deadline) {
-            tryConnect()?.let { return it }
-            Thread.sleep(300)
-        }
-        return null
-    }
-
-    private fun quoteForPowerShell(value: String): String = value.replace("'", "''").replace("\"", "\\\"")
-
     private companion object {
         const val TAG = "DesktopService"
-        const val INSTALL_TIMEOUT_S = 300L
-        const val CONNECT_WAIT_S = 15L
-        const val INSTALL_FAILED = "The ERKIN background service could not be installed. It needs administrator rights once."
-        const val NOT_RUNNING = "The ERKIN background service is not running."
+        const val SERVICE_NAME = "ERKIN"
+        const val ALREADY_RUNNING = 1056
+        const val START_WAIT_S = 15L
+        const val NOT_RUNNING = "The ERKIN background service is not running. Reinstall ERKIN."
     }
 }

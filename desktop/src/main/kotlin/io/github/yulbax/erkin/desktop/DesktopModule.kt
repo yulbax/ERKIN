@@ -85,9 +85,6 @@ val desktopModule = module {
     single {
         DesktopService(
             socket = DesktopPaths.serviceSocket,
-            bundled = DesktopPaths.serviceBinary,
-            appDir = DesktopPaths.installDir,
-            expectedVersion = System.getProperty("erkin.version"),
             log = get()
         )
     }

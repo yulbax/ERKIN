@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/yulbax/erkin/mihomocore"
 )
@@ -54,7 +55,10 @@ type logEvent struct {
 	Message string `json:"message"`
 }
 
-const maxMessageSize = 16 << 20
+const (
+	maxMessageSize = 16 << 20
+	idleExit       = 10 * time.Second
+)
 
 type server struct {
 	engine    engine
@@ -67,6 +71,10 @@ type server struct {
 
 	logMutex       sync.Mutex
 	logSubscribers map[net.Conn]func(response)
+
+	clientsMutex sync.Mutex
+	clients      int
+	idle         *time.Timer
 }
 
 func listen(socketPath string, workDir string) (*server, error) {
@@ -85,13 +93,8 @@ func listen(socketPath string, workDir string) (*server, error) {
 		return nil, err
 	}
 	removeLegacyGeoIP(workDir)
-	_ = os.Remove(socketPath)
-	listener, err := net.Listen("unix", relativeTo(workDir, socketPath))
+	listener, err := clientListener(workDir, socketPath)
 	if err != nil {
-		return nil, err
-	}
-	if err = allowClients(socketPath); err != nil {
-		_ = listener.Close()
 		return nil, err
 	}
 	protectPath := protectSocketPath(socketPath)
@@ -107,9 +110,27 @@ func listen(socketPath string, workDir string) (*server, error) {
 		return nil, err
 	}
 	s := &server{workDir: workDir, listener: listener, protector: protector, logSubscribers: map[net.Conn]func(response){}}
+	s.idle = time.AfterFunc(idleExit, s.shutdown)
 	mihomocore.SetLogSink(s)
 	mihomocore.Init(workDir, filepath.Join(workDir, coreLogName), "")
 	return s, nil
+}
+
+func clientListener(workDir string, socketPath string) (net.Listener, error) {
+	inherited, err := inheritedListener()
+	if inherited != nil || err != nil {
+		return inherited, err
+	}
+	_ = os.Remove(socketPath)
+	listener, err := net.Listen("unix", relativeTo(workDir, socketPath))
+	if err != nil {
+		return nil, err
+	}
+	if err = allowClients(socketPath); err != nil {
+		_ = listener.Close()
+		return nil, err
+	}
+	return listener, nil
 }
 
 func (s *server) serve() error {
@@ -122,7 +143,24 @@ func (s *server) serve() error {
 			}
 			return err
 		}
+		s.connected()
 		go s.handle(conn)
+	}
+}
+
+func (s *server) connected() {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+	s.clients++
+	s.idle.Stop()
+}
+
+func (s *server) disconnected() {
+	s.clientsMutex.Lock()
+	defer s.clientsMutex.Unlock()
+	s.clients--
+	if s.clients == 0 {
+		s.idle.Reset(idleExit)
 	}
 }
 
@@ -133,6 +171,7 @@ func (s *server) shutdown() {
 }
 
 func (s *server) handle(conn net.Conn) {
+	defer s.disconnected()
 	defer s.release(conn)
 	defer s.unsubscribeLog(conn)
 	defer conn.Close()
