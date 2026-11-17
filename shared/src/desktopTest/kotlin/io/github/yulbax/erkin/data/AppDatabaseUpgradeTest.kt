@@ -8,6 +8,10 @@ import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.vpn.core.ByeDpiDns
 import java.io.File
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -88,6 +92,21 @@ class AppDatabaseUpgradeTest {
         }
     }
 
+    @Test
+    fun pendingAppsMoveIntoTheAppsTable() = runBlocking {
+        seedVersion27()
+
+        open().useDatabase { database ->
+            val pending = requireNotNull(database.appDao().getApp("org.pending"))
+            assertEquals("org.pending", pending.name)
+            assertEquals(ConnectionType.BYEDPI, pending.connectionType)
+            assertNull(pending.serverId)
+            val installed = requireNotNull(database.appDao().getApp("org.installed"))
+            assertEquals("Installed", installed.name)
+            assertEquals(ConnectionType.VPN, installed.connectionType)
+        }
+    }
+
     private suspend fun assertSeededRows(database: AppDatabase) {
         assertEquals(ConnectionType.BYEDPI, database.appDao().getApp("com.example.app")?.connectionType)
         assertNull(database.appDao().getApp("com.example.app")?.path)
@@ -158,6 +177,24 @@ class AppDatabaseUpgradeTest {
                     "('Example', 'vless', 'vless://id@example.com:443', '{\"type\":\"vless\"}', 1, '')"
             )
             connection.execSQL("PRAGMA user_version = $version")
+        }
+    }
+
+    private fun seedVersion27() {
+        val schema = Json.parseToJsonElement(File("schemas/${AppDatabase::class.qualifiedName}/27.json").readText())
+            .jsonObject.getValue("database").jsonObject
+        BundledSQLiteDriver().open(dbFile.absolutePath).use { connection ->
+            for (entity in schema.getValue("entities").jsonArray.map { it.jsonObject }) {
+                val table = entity.getValue("tableName").jsonPrimitive.content
+                connection.execSQL(entity.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table))
+                entity["indices"]?.jsonArray?.forEach { index ->
+                    connection.execSQL(index.jsonObject.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table))
+                }
+            }
+            schema.getValue("setupQueries").jsonArray.forEach { connection.execSQL(it.jsonPrimitive.content) }
+            connection.execSQL("INSERT INTO `pending_apps` VALUES ('org.pending', 'BYEDPI', NULL)")
+            connection.execSQL("INSERT INTO `apps` VALUES ('org.installed', 'Installed', 0, 'VPN', NULL, NULL)")
+            connection.execSQL("PRAGMA user_version = 27")
         }
     }
 

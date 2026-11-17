@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -103,6 +104,8 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val selectedCount = (mode as? AppsMode.Selecting)?.packages?.size ?: 0
+
+    LaunchedEffect(Unit) { viewModel.refresh() }
 
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),

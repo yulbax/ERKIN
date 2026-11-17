@@ -467,5 +467,6 @@ class DesktopRenderTest {
         override val isLoading: StateFlow<Boolean> = MutableStateFlow(false)
         override val error: StateFlow<String?> = MutableStateFlow(null)
         override fun retry() = Unit
+        override fun refresh() = Unit
     }
 }

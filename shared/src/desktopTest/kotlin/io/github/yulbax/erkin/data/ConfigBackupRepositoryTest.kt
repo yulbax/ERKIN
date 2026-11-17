@@ -222,7 +222,6 @@ class ConfigBackupRepositoryTest {
 
             fresh.appDao().addApps(listOf(App("org.later", "Later", isSystemApp = false)))
             assertEquals(ConnectionType.BYEDPI, fresh.appDao().getApp("org.later")?.connectionType)
-            assertEquals(emptyList<PendingApp>(), fresh.appDao().getPending(listOf("org.later")))
         } finally {
             fresh.close()
         }

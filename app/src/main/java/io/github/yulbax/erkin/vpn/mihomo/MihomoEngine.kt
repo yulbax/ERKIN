@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.vpn.core.ProbeResult
 import android.content.Context
 import io.github.yulbax.erkin.util.ErkinLog
 import io.github.yulbax.erkin.vpn.ProbeUrls
+import io.github.yulbax.erkin.vpn.isInstalled
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
 import io.github.yulbax.erkin.vpn.core.TunAddress
@@ -107,9 +108,16 @@ class MihomoEngine(
             inet6 = if (ipv6) listOf(TunAddress(TUN_INET6, TUN_INET6_PREFIX)) else emptyList(),
             autoRoute = true,
             dnsServers = listOf(TUN_DNS),
-            includePackages = config.tunneledPackages.sorted(),
+            includePackages = installedIncludePackages(config),
             excludePackages = emptyList()
         )
+    }
+
+    private fun installedIncludePackages(config: EngineConfig): List<String> {
+        val (installed, skipped) = config.tunneledPackages.partition { appContext.packageManager.isInstalled(it) }
+        if (skipped.isNotEmpty()) log.i(TAG, "skipping apps that are not installed: $skipped")
+        if (config.tunneledPackages.isNotEmpty() && installed.isEmpty()) return listOf(appContext.packageName)
+        return installed.sorted()
     }
 
     private fun startCore(config: EngineConfig, tun: TunConfig, fd: Int) {

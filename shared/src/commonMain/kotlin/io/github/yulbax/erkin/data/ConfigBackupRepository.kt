@@ -130,14 +130,14 @@ class ConfigBackupRepository(
         val appDao = database.appDao()
         val existing = appDao.getAllAppsSnapshot().associateBy { it.packageName }
         val updates = mutableListOf<App>()
-        val pending = mutableListOf<PendingApp>()
+        val created = mutableListOf<App>()
         var applied = 0
         for ((packageName, typeWire) in apps) {
             val type = ConnectionType.fromWire(typeWire) ?: continue
             val serverId = servers[packageName]?.let(ids::get)?.takeIf { type == ConnectionType.VPN }
             val app = existing[packageName]
             if (app == null) {
-                pending.add(PendingApp(packageName, type, serverId))
+                created.add(App(packageName, name = packageName, isSystemApp = false, connectionType = type, serverId = serverId))
                 continue
             }
             if (app.connectionType != type || app.serverId != serverId) {
@@ -146,8 +146,8 @@ class ConfigBackupRepository(
             applied++
         }
         if (updates.isNotEmpty()) appDao.upsertApps(updates)
-        if (pending.isNotEmpty()) appDao.upsertPending(pending)
-        return SectionResult(applied, pending.size)
+        if (created.isNotEmpty()) appDao.addApps(created)
+        return SectionResult(applied, created.size)
     }
 
     private suspend fun applyRules(rules: List<RoutingRuleEntity>, ids: Map<Long, Long>): SectionResult {

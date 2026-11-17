@@ -19,6 +19,7 @@ sealed interface Command {
     }
     data object Stop : Command
     data object RejectLogin : Command
+    data object ReapplyApps : Command
 }
 
 class VpnCommandBus {
@@ -34,6 +35,7 @@ class VpnCommandBus {
     fun recover() { mutableCommands.tryEmit(Command.Recover) }
     fun checkByeDpi() { mutableCommands.tryEmit(Command.CheckByeDpi) }
     fun stop() { mutableCommands.tryEmit(Command.Stop) }
+    fun reapplyApps() { mutableCommands.tryEmit(Command.ReapplyApps) }
 
     private companion object {
         const val BUFFER_CAPACITY = 16

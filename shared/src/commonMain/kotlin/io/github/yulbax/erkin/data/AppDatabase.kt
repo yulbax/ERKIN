@@ -32,8 +32,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
-    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, ServerGroupEntity::class, PendingApp::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
-    version = 27,
+    entities = [App::class, SettingsEntity::class, ProfileEntity::class, RoutingRuleEntity::class, RuleListEntity::class, ServerGroupEntity::class, ByeDpiArgsEntity::class, ByeDpiSiteResultEntity::class, SiteListEntity::class],
+    version = 28,
     exportSchema = true
 )
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -261,7 +261,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         )
 
-        fun migrations(appsCanBypass: Boolean): Array<Migration> = MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION
+        fun migrations(appsCanBypass: Boolean): Array<Migration> = MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {
@@ -302,6 +302,16 @@ abstract class AppDatabase : RoomDatabase() {
                 connection.execSQL("ALTER TABLE profiles_new RENAME TO profiles")
                 connection.execSQL("CREATE INDEX IF NOT EXISTS `index_profiles_groupId` ON `profiles` (`groupId`)")
                 connection.execSQL("DROP TABLE subscriptions")
+            }
+        }
+
+        private val PENDING_APPS_MIGRATION = object : Migration(27, 28) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "INSERT OR IGNORE INTO apps (packageName, name, isSystemApp, connectionType, path, serverId) " +
+                        "SELECT packageName, packageName, 0, connectionType, NULL, serverId FROM pending_apps"
+                )
+                connection.execSQL("DROP TABLE pending_apps")
             }
         }
 

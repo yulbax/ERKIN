@@ -32,7 +32,9 @@ class BootReceiver : BroadcastReceiver(), KoinComponent {
                 withTimeout(RECEIVER_TIMEOUT_MS.milliseconds) {
                     val settings = database.settingsDao().observeSettings().first() ?: SettingsEntity()
                     val serverSelected = database.profileDao().getSelected() != null
-                    val runsWithoutServer = RoutedApps.from(database.appDao().getAllAppsSnapshot()).runsWithoutServer
+                    val runsWithoutServer = RoutedApps.from(
+                        database.appDao().getAllAppsSnapshot().filter { context.packageManager.isInstalled(it.packageName) }
+                    ).runsWithoutServer
                     val consentGranted = VpnService.prepare(context) == null
                     if (settings.autoConnect && (serverSelected || runsWithoutServer) && consentGranted) {
                         log.i(TAG, "boot received: starting VPN")

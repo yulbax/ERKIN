@@ -15,13 +15,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.vpn.VpnCommandBus
 import org.koin.core.annotation.Single
 
 @Single(createdAtStart = true, binds = [InstalledAppsSource::class])
 class InstalledAppsRepository(
     context: Context,
     private val appDao: AppDao,
-    private val settingsDao: SettingsDao
+    private val settingsDao: SettingsDao,
+    private val log: AppLog,
+    private val commandBus: VpnCommandBus
 ) : InstalledAppsSource {
     private val appContext = context.applicationContext
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
@@ -44,7 +48,7 @@ class InstalledAppsRepository(
             scope.launch {
                 try {
                     when (intent.action) {
-                        Intent.ACTION_PACKAGE_ADDED -> addOrUpdatePackage(packageName)
+                        Intent.ACTION_PACKAGE_ADDED -> addOrUpdatePackage(packageName, replacing)
                         Intent.ACTION_PACKAGE_FULLY_REMOVED -> if (!replacing) removePackage(packageName)
                     }
                     _error.value = null
@@ -68,18 +72,24 @@ class InstalledAppsRepository(
         sync()
     }
 
+    override fun refresh() {
+        scope.launch { syncCatching() }
+    }
+
     private fun sync() {
-        scope.launch {
-            try {
-                fullSync()
-                _error.value = null
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                _error.value = error.message ?: "Failed to load apps"
-            } finally {
-                _isLoading.value = false
-            }
+        scope.launch { syncCatching() }
+    }
+
+    private suspend fun syncCatching() {
+        try {
+            if (fullSync()) _isLoading.value = false
+            _error.value = null
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            log.w(TAG, "listing apps failed", error)
+            _error.value = error.message ?: "Failed to load apps"
+            _isLoading.value = false
         }
     }
 
@@ -96,24 +106,31 @@ class InstalledAppsRepository(
         }
     }
 
-    private suspend fun fullSync() {
+    private suspend fun fullSync(): Boolean {
         val packageManager = appContext.packageManager
         val launchablePackages = packageManager.queryIntentActivities(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
             0
         ).mapNotNull { it.activityInfo?.packageName }.toSet()
-        val installed = packageManager.getInstalledApplications(0)
+        val systemList = packageManager.getInstalledApplications(0)
+        if (systemList.none { it.packageName == appContext.packageName }) {
+            log.w(TAG, "the system hid the app list (${systemList.size} apps returned)")
+            return false
+        }
+        val installed = systemList
             .asSequence()
             .filter { it.packageName != appContext.packageName }
             .map { it.toInstalledApp(packageManager, it.packageName in launchablePackages) }
             .sortedBy { it.name.lowercase() }
             .toList()
+        log.i(TAG, "listed ${installed.size} apps: ${installed.count { !it.isSystemApp }} user, ${installed.count { it.isLaunchable }} launchable")
 
         reconcile(installed)
         _installedApps.value = installed
+        return true
     }
 
-    private suspend fun addOrUpdatePackage(packageName: String) {
+    private suspend fun addOrUpdatePackage(packageName: String, replacing: Boolean) {
         val packageManager = appContext.packageManager
         val installed = runCatching {
             val info = packageManager.getApplicationInfo(packageName, 0)
@@ -129,6 +146,7 @@ class InstalledAppsRepository(
         val existing = appDao.getApp(packageName)
         if (existing != null) {
             appDao.upsertApp(existing.copy(name = installed.name, isSystemApp = installed.isSystemApp))
+            if (!replacing && RoutedApps.from(listOf(existing)).tunneledPackages.isNotEmpty()) commandBus.reapplyApps()
         } else {
             appDao.addApps(listOf(installed.toStoredApp(newAppsType())))
         }
@@ -137,16 +155,11 @@ class InstalledAppsRepository(
     }
 
     private suspend fun removePackage(packageName: String) {
-        appDao.deleteApp(packageName)
         _installedApps.value = _installedApps.value.filterNot { it.packageName == packageName }
     }
 
     private suspend fun reconcile(installed: List<InstalledApp>) {
         val existing = appDao.getAllAppsSnapshot().associateBy { it.packageName }
-        val installedPackages = installed.mapTo(HashSet()) { it.packageName }
-
-        val orphaned = existing.keys.filter { it !in installedPackages }
-        if (orphaned.isNotEmpty()) appDao.deleteApps(orphaned)
 
         val newAppsType = newAppsType()
         val added = installed.filter { it.packageName !in existing }.map { it.toStoredApp(newAppsType) }
@@ -185,6 +198,7 @@ class InstalledAppsRepository(
     )
 
     companion object {
+        private const val TAG = "Apps"
         private val DIRECT_PACKAGE_SEGMENTS = setOf("ru", "yandex", "vkontakte", "vk")
 
         fun usesDirectRouting(packageName: String): Boolean = packageName.split('.').any { segment ->

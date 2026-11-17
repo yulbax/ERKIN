@@ -41,20 +41,7 @@ class VpnSessionRecoveryTest {
         val engine = Engine()
         val requested = CopyOnWriteArrayList<Command>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        val session = VpnSession(
-            engine = engine,
-            byeDpi = NoByeDpi,
-            store = store,
-            stateRepository = VpnStateRepository(),
-            health = HealthMonitor(VpnStateRepository(), SilentLog, SilentProbe),
-            failover = ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> "{}" }, SilentLog),
-            quality = { _, _ -> ByeDpiReachability(0, 0) },
-            log = SilentLog,
-            ownPackage = "io.github.yulbax.erkin",
-            scope = scope,
-            requestWork = { requested += it },
-            onByeDpiExit = { _, _ -> }
-        )
+        val session = sessionOf(store, engine, scope, requested)
         try {
             session.start(systemInitiated = false)
             repeat(RecoveryLadder.RECONNECTS_BEFORE_SWITCH) { session.recover() }
@@ -74,6 +61,45 @@ class VpnSessionRecoveryTest {
             scope.cancel()
         }
     }
+
+    @Test
+    fun reapplyingTheAppsReloadsTheRoutingOnlyWhileRunning() = runBlocking {
+        val store = Store(CompletableDeferred(), CompletableDeferred())
+        val engine = Engine()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val session = sessionOf(store, engine, scope, CopyOnWriteArrayList())
+        try {
+            session.reapplyApps()
+            assertTrue(engine.reloaded.isEmpty())
+
+            session.start(systemInitiated = false)
+            session.reapplyApps()
+            assertEquals(1, engine.reloaded.size)
+            assertEquals(listOf("org.vpn"), engine.reloaded.single().tunneledPackages)
+
+            session.stop(VpnState.Disconnected)
+            session.reapplyApps()
+            assertEquals(1, engine.reloaded.size)
+        } finally {
+            session.stop(VpnState.Disconnected)
+            scope.cancel()
+        }
+    }
+
+    private fun sessionOf(store: Store, engine: Engine, scope: CoroutineScope, requested: CopyOnWriteArrayList<Command>) = VpnSession(
+        engine = engine,
+        byeDpi = NoByeDpi,
+        store = store,
+        stateRepository = VpnStateRepository(),
+        health = HealthMonitor(VpnStateRepository(), SilentLog, SilentProbe),
+        failover = ServerFailover(store, ServerLatencyProbe(store) { _, _, _, _, _ -> "{}" }, SilentLog),
+        quality = { _, _ -> ByeDpiReachability(0, 0) },
+        log = SilentLog,
+        ownPackage = "io.github.yulbax.erkin",
+        scope = scope,
+        requestWork = { requested += it },
+        onByeDpiExit = { _, _ -> }
+    )
 
     private class Store(private val refreshing: CompletableDeferred<Unit>, private val release: CompletableDeferred<Unit>) : VpnSessionStore {
         private val profile = requireNotNull(LinkParser.parse(VLESS)).let {
@@ -95,12 +121,14 @@ class VpnSessionRecoveryTest {
 
     private class Engine : VpnEngine {
         val reloads = AtomicInteger()
+        val reloaded = CopyOnWriteArrayList<EngineConfig>()
         override val probeSocksPort: Int = 0
         override val probeUsername: String = ""
         override val probePassword: String = ""
         override fun start(config: EngineConfig) = Unit
         override fun reloadRouting(config: EngineConfig) {
             reloads.incrementAndGet()
+            reloaded += config
         }
         override suspend fun probeVpn(): ProbeResult = ProbeResult.NoAnswer
         override suspend fun probe(tag: String): ProbeResult = ProbeResult.NoAnswer

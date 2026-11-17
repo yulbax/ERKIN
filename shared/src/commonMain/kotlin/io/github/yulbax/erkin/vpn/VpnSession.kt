@@ -115,6 +115,16 @@ class VpnSession(
         return ReloadOutcome.Done
     }
 
+    fun reapplyApps() {
+        if (!isRunning) return
+        val config = appliedConfig ?: return
+        try {
+            engine.reloadRouting(config.engineConfig)
+        } catch (t: Throwable) {
+            log.w(TAG, "could not re-apply the apps", t)
+        }
+    }
+
     fun rejectLogin() {
         if (!isRunning) return
         log.w(TAG, "the server keeps rejecting the login; stopping")

@@ -39,7 +39,7 @@ class ProcessInstalledApps(
     init {
         scope.launch {
             while (true) {
-                refresh()
+                discoverApps()
                 delay(REFRESH_INTERVAL)
             }
         }
@@ -47,10 +47,14 @@ class ProcessInstalledApps(
 
     override fun retry() {
         _isLoading.value = true
-        scope.launch { refresh() }
+        scope.launch { discoverApps() }
     }
 
-    private suspend fun refresh() = refreshMutex.withLock {
+    override fun refresh() {
+        scope.launch { discoverApps() }
+    }
+
+    private suspend fun discoverApps() = refreshMutex.withLock {
         try {
             val running = discover(runningExecutables(), ownExecutable, systemRoots)
             val saved = appDao.getAllAppsSnapshot()
@@ -64,7 +68,6 @@ class ProcessInstalledApps(
                 .forEach { appDao.updatePath(it.packageName, it.path) }
             val runningIds = running.mapTo(HashSet()) { it.packageName }
             val removed = removedApps(saved, runningIds)
-            if (removed.isNotEmpty()) appDao.deleteApps(removed)
             val remembered = saved
                 .filter { it.packageName !in runningIds && it.packageName !in removed && File(it.packageName).name != ownExecutable }
                 .map { InstalledApp(it.packageName, it.name, it.isSystemApp, isLaunchable = true, path = it.path) }

@@ -149,6 +149,10 @@ class AppsViewModel(
         installedAppsRepository.retry()
     }
 
+    fun refresh() {
+        installedAppsRepository.refresh()
+    }
+
     private fun mergeSaved(installed: List<AppInfo>, saved: List<App>): List<AppInfo> {
         val savedApps = saved.associateBy { it.packageName }
         return installed.map { app ->

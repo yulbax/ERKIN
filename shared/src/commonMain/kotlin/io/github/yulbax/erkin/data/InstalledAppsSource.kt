@@ -18,4 +18,5 @@ interface InstalledAppsSource {
     val error: StateFlow<String?>
 
     fun retry()
+    fun refresh()
 }
