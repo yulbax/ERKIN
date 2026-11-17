@@ -14,8 +14,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
@@ -212,7 +212,7 @@ class VpnSession(
 
         val config = appliedConfig ?: return
         if (!isRunning || !config.needsByeDpi) return
-        val stable = (byeDpiStartedAt?.elapsedNow() ?: 0.seconds) >= BYEDPI_STABLE_RUNTIME
+        val stable = (byeDpiStartedAt?.elapsedNow() ?: Duration.ZERO) >= BYEDPI_STABLE_RUNTIME
         rapidByeDpiExits = if (stable) 1 else rapidByeDpiExits + 1
         if (rapidByeDpiExits > MAX_RAPID_BYEDPI_EXITS) fail(VpnFailure.ByeDpiCrashed(code))
         startByeDpi()
@@ -338,7 +338,7 @@ class VpnSession(
 
     private companion object {
         const val TAG = "VpnSession"
-        val BYEDPI_STABLE_RUNTIME = 30.seconds
+        val BYEDPI_STABLE_RUNTIME = 30_000.milliseconds
         const val MAX_RAPID_BYEDPI_EXITS = 3
     }
 }

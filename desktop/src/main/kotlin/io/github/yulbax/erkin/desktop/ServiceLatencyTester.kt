@@ -6,11 +6,12 @@ import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration
 
 class ServiceLatencyTester(private val service: DesktopService) : ProxyLatencyTester {
-    override suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int, byeDpiPort: Int?, runningOnly: Boolean): String =
+    override suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeout: Duration, byeDpiPort: Int?, runningOnly: Boolean): String =
         withContext(Dispatchers.IO) {
             val client = if (runningOnly) checkNotNull(service.running()) { "ERKIN service is not running" } else service.connect()
-            client.urlTest(MihomoConfigBuilder.proxiesForTest(proxies, options, byeDpiPort), url, timeoutMs, options.ipv6Mode.ipv6Enabled, runningOnly)
+            client.urlTest(MihomoConfigBuilder.proxiesForTest(proxies, options, byeDpiPort), url, timeout, options.ipv6Mode.ipv6Enabled, runningOnly)
         }
 }

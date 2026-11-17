@@ -8,10 +8,11 @@ import kotlinx.coroutines.runInterruptible
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration.Companion.milliseconds
 
 object GitHubReleases {
     private const val RELEASES_URL = "https://api.github.com/repos/yulbax/ERKIN/releases?per_page=30"
-    private const val TIMEOUT_MS = 15_000
+    private val TIMEOUT = 15_000.milliseconds
     private const val MAX_BYTES = 1L shl 20
     private const val SHA256_PREFIX = "sha256:"
     private val BUILD_LABEL = Regex("""\(([0-9a-f]{7,40})\)$""")
@@ -41,8 +42,8 @@ object GitHubReleases {
     }
 
     private fun download(route: DownloadRoute): String = route.fetch(RELEASES_URL) { connection ->
-        connection.connectTimeout = TIMEOUT_MS
-        connection.readTimeout = TIMEOUT_MS
+        connection.connectTimeout = TIMEOUT.inWholeMilliseconds.toInt()
+        connection.readTimeout = TIMEOUT.inWholeMilliseconds.toInt()
         connection.setRequestProperty("Accept", "application/vnd.github+json")
         try {
             val code = connection.responseCode

@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 interface RuleListStore {
     fun installed(fileName: String): File?
@@ -114,7 +115,7 @@ class RuleListDatabase(
     suspend fun refreshStale(now: Long = System.currentTimeMillis()): Boolean {
         val stale = withContext(Dispatchers.IO) {
             dao.observeAll().first().map { it.source }.filter { url ->
-                installed(url)?.let { now - it.updatedAt >= REFRESH_AFTER_MS } ?: true
+                installed(url)?.let { now - it.updatedAt >= REFRESH_AFTER.inWholeMilliseconds } ?: true
             }
         }
         return stale.map { download(it) }.any { it.isSuccess }
@@ -188,8 +189,8 @@ class RuleListDatabase(
         val context = currentCoroutineContext()
         try {
             route.fetch(url) { connection ->
-                connection.connectTimeout = TIMEOUT_MS
-                connection.readTimeout = TIMEOUT_MS
+                connection.connectTimeout = TIMEOUT.inWholeMilliseconds.toInt()
+                connection.readTimeout = TIMEOUT.inWholeMilliseconds.toInt()
                 try {
                     val code = connection.responseCode
                     if (code !in 200..299) throw RuleListException(RuleListFailure.DOWNLOAD, "HTTP $code")
@@ -222,8 +223,8 @@ class RuleListDatabase(
 
     companion object {
         const val MAX_BYTES = 32L shl 20
-        const val REFRESH_AFTER_MS = 24L * 60 * 60 * 1000
-        private const val TIMEOUT_MS = 30_000
+        val REFRESH_AFTER = 86_400_000.milliseconds
+        private val TIMEOUT = 30_000.milliseconds
         private const val BUFFER_SIZE = 64 * 1024
         private const val HTML_TYPE = "text/html"
         private const val DOWNLOAD_SUFFIX = ".download"

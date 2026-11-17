@@ -17,6 +17,7 @@ import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.time.Duration
 
 class ByeDpiStrategyRunnerTest {
 
@@ -79,7 +80,7 @@ class ByeDpiStrategyRunnerTest {
         private val processes: List<FakeProcess>,
         private val blocked: CountDownLatch
     ) : ByeDpiSiteTester {
-        override suspend fun test(port: Int, resolver: String, sites: List<String>, timeoutMs: Int, ipv6: Boolean): Map<String, Boolean> {
+        override suspend fun test(port: Int, resolver: String, sites: List<String>, timeout: Duration, ipv6: Boolean): Map<String, Boolean> {
             val process = synchronized(processes) { processes.first { it.port == port } }
             blocked.countDown()
             process.stopped.await(BLOCK_MS, TimeUnit.MILLISECONDS)

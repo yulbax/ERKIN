@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 class ProcessInstalledApps(
     private val appDao: AppDao,
@@ -90,7 +90,7 @@ class ProcessInstalledApps(
             .map(::executableOf)
 
     companion object {
-        private val REFRESH_INTERVAL = 15.seconds
+        private val REFRESH_INTERVAL = 15_000.milliseconds
         private const val DELETED_SUFFIX = " (deleted)"
 
         fun executableOf(command: String): File = File(command.removeSuffix(DELETED_SUFFIX))

@@ -11,7 +11,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration
 
 data class SocksCredentials(val username: String, val password: String)
 
@@ -24,17 +24,17 @@ object SocksHttp {
         socksPort: Int,
         url: String,
         method: String,
-        timeoutMs: Int,
+        timeout: Duration,
         credentials: SocksCredentials? = null,
         read: (HttpURLConnection) -> T
     ): T? = try {
-        withTimeoutOrNull(timeoutMs.milliseconds) {
+        withTimeoutOrNull(timeout) {
             runInterruptible(Dispatchers.IO) {
                 val connection = open(url, SocksEndpoint(socksPort, credentials))
                 connection.requestMethod = method
                 connection.setRequestProperty("Connection", "close")
-                connection.connectTimeout = timeoutMs
-                connection.readTimeout = timeoutMs
+                connection.connectTimeout = timeout.inWholeMilliseconds.toInt()
+                connection.readTimeout = timeout.inWholeMilliseconds.toInt()
                 connection.instanceFollowRedirects = false
                 read(connection)
             }

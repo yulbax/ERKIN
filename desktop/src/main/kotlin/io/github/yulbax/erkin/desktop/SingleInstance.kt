@@ -12,6 +12,7 @@ import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.nio.file.StandardOpenOption
 import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.milliseconds
 
 class SingleInstance(dir: File) {
     private val lockFile = File(dir, "instance.lock")
@@ -63,7 +64,7 @@ class SingleInstance(dir: File) {
                 }
                 return
             } catch (_: IOException) {
-                Thread.sleep(CONNECT_RETRY_MS)
+                Thread.sleep(CONNECT_RETRY.inWholeMilliseconds)
             }
         }
     }
@@ -71,6 +72,6 @@ class SingleInstance(dir: File) {
     private companion object {
         const val ACTIVATE: Byte = 1
         const val CONNECT_ATTEMPTS = 20
-        const val CONNECT_RETRY_MS = 100L
+        val CONNECT_RETRY = 100.milliseconds
     }
 }

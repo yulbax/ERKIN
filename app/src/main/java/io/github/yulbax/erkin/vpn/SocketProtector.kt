@@ -8,6 +8,7 @@ import android.os.ParcelFileDescriptor
 import io.github.yulbax.erkin.util.AppLog
 import java.io.FileDescriptor
 import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.milliseconds
 
 class SocketProtector(
     val name: String,
@@ -50,7 +51,7 @@ class SocketProtector(
     private fun handle(socket: LocalSocket) {
         var fds: Array<FileDescriptor>? = null
         try {
-            socket.soTimeout = IO_TIMEOUT_MS
+            socket.soTimeout = IO_TIMEOUT.inWholeMilliseconds.toInt()
             check(socket.peerCredentials.uid == Process.myUid()) { "unexpected peer uid" }
             check(socket.inputStream.read() >= 0) { "protect request ended before fd transfer" }
             val receivedFds = socket.ancillaryFileDescriptors
@@ -83,7 +84,7 @@ class SocketProtector(
         unblockAccept()
         runCatching { serverSocket?.close() }
         val thread = worker
-        runCatching { thread?.join(STOP_TIMEOUT_MS) }
+        runCatching { thread?.join(STOP_TIMEOUT.inWholeMilliseconds) }
         check(thread?.isAlive != true) { "socket protector worker did not stop" }
         activeSocket = null
         serverSocket = null
@@ -105,7 +106,7 @@ class SocketProtector(
 
     companion object {
         private const val TAG = "SocketProtector"
-        private const val IO_TIMEOUT_MS = 5_000
-        private const val STOP_TIMEOUT_MS = 2_000L
+        private val IO_TIMEOUT = 5_000.milliseconds
+        private val STOP_TIMEOUT = 2_000.milliseconds
     }
 }

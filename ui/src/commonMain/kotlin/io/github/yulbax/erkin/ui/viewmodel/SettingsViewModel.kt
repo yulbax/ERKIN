@@ -23,7 +23,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
@@ -32,7 +34,7 @@ class SettingsViewModel(
 
     val uiState: StateFlow<SettingsUiState> = settingsRepository.settings
         .map { it.toUiState() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsEntity().toUiState())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), SettingsEntity().toUiState())
 
     fun toggleShowSystemApps() = update { it.copy(showSystemApps = !it.showSystemApps) }
     fun setAutoConnect(value: Boolean) = update { it.copy(autoConnect = value) }

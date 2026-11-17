@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class StrategyRunKind { Single, Saved, Search }
 
@@ -119,9 +120,9 @@ class ByeDpiStrategyRunner(
 
     private suspend fun awaitPort(port: Int): Boolean = withContext(Dispatchers.IO) {
         repeat(PORT_ATTEMPTS) {
-            val open = runCatching { Socket().use { it.connect(InetSocketAddress(LOOPBACK, port), PORT_CONNECT_MS) } }.isSuccess
+            val open = runCatching { Socket().use { it.connect(InetSocketAddress(LOOPBACK, port), PORT_CONNECT.inWholeMilliseconds.toInt()) } }.isSuccess
             if (open) return@withContext true
-            delay(PORT_RETRY_MS)
+            delay(PORT_RETRY)
         }
         false
     }
@@ -131,7 +132,7 @@ class ByeDpiStrategyRunner(
         const val PARALLEL_PROCESSES = 5
         const val LOOPBACK = "127.0.0.1"
         const val PORT_ATTEMPTS = 40
-        const val PORT_CONNECT_MS = 200
-        const val PORT_RETRY_MS = 50L
+        val PORT_CONNECT = 200.milliseconds
+        val PORT_RETRY = 50.milliseconds
     }
 }

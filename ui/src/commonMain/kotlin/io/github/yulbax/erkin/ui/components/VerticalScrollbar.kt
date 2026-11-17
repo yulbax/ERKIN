@@ -39,6 +39,7 @@ import io.github.yulbax.erkin.ui.platform.scrollbarEdgeInset
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun VerticalScrollbar(state: ScrollState, modifier: Modifier = Modifier) {
@@ -124,7 +125,7 @@ private fun Scrollbar(
         if (active) {
             recentlyActive = true
         } else {
-            delay(1_500)
+            delay(1_500.milliseconds)
             recentlyActive = false
         }
     }

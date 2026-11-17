@@ -22,7 +22,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 data class AppInfo(
     val packageName: String,
@@ -47,7 +49,7 @@ class AppsViewModel(
 
     val appsHintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.appsHintSeen }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), true)
 
     fun dismissAppsHint() {
         viewModelScope.launch {
@@ -64,7 +66,7 @@ class AppsViewModel(
         settingsRepository.settings.map { it.showSystemApps }
     ) { installed, saved, showSystem ->
         mergeSaved(installed.filter { showSystem || it.isRegular }.map { it.toAppInfo() }, saved)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     var query by mutableStateOf("")
         private set
@@ -80,7 +82,7 @@ class AppsViewModel(
         snapshotFlow { query },
         filter,
         ::filterApps
-    ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     fun updateQuery(value: String) {
         query = value

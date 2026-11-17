@@ -29,7 +29,7 @@ class BootReceiver : BroadcastReceiver(), KoinComponent {
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                withTimeout(RECEIVER_TIMEOUT_MS.milliseconds) {
+                withTimeout(RECEIVER_TIMEOUT) {
                     val settings = database.settingsDao().observeSettings().first() ?: SettingsEntity()
                     val serverSelected = database.profileDao().getSelected() != null
                     val runsWithoutServer = RoutedApps.from(
@@ -59,6 +59,6 @@ class BootReceiver : BroadcastReceiver(), KoinComponent {
 
     private companion object {
         const val TAG = "Autostart"
-        const val RECEIVER_TIMEOUT_MS = 8_000L
+        val RECEIVER_TIMEOUT = 8_000.milliseconds
     }
 }

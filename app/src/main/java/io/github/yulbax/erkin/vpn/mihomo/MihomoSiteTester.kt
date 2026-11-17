@@ -6,11 +6,12 @@ import io.github.yulbax.erkin.vpn.core.ByeDpiSiteTester
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import mihomocore.Mihomocore
+import kotlin.time.Duration
 
 class MihomoSiteTester(private val appContext: Context, private val log: AppLog) : ByeDpiSiteTester {
-    override suspend fun test(port: Int, resolver: String, sites: List<String>, timeoutMs: Int, ipv6: Boolean): Map<String, Boolean> =
+    override suspend fun test(port: Int, resolver: String, sites: List<String>, timeout: Duration, ipv6: Boolean): Map<String, Boolean> =
         runInterruptible(Dispatchers.IO) {
             MihomoRuntime.ensureSetup(appContext, log)
-            ByeDpiSiteTester.decode(Mihomocore.testSites(port, resolver, sites.joinToString(" "), timeoutMs, ipv6))
+            ByeDpiSiteTester.decode(Mihomocore.testSites(port, resolver, sites.joinToString(" "), timeout.inWholeMilliseconds.toInt(), ipv6))
         }
 }

@@ -8,12 +8,14 @@ import io.github.yulbax.erkin.data.byedpi.SiteListDraft
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class SiteListsViewModel(private val siteLists: ByeDpiSiteLists) : ViewModel() {
 
     val lists: StateFlow<List<SiteList>> = siteLists.lists
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     fun setActive(id: Long, active: Boolean) {
         viewModelScope.launch { siteLists.setActive(id, active) }

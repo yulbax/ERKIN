@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 data class ConnectionApp(
     val id: String,
@@ -43,13 +45,13 @@ class ConnectionsViewModel(
 ) : ViewModel() {
 
     val running: StateFlow<Boolean> = vpnStateRepository.state.map { it.isActive }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), false)
 
     val apps: StateFlow<List<ConnectionApp>> = combine(monitor.activity, appDao.getAllApps()) { activity, apps ->
         val byId = apps.associateBy { it.packageName }
         val byPath = apps.filter { it.path != null }.associateBy { it.path }
         activity.map { app -> app.resolve(byId[app.app] ?: byPath[app.path.ifEmpty { null }]) }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, probeResults)
 

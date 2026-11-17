@@ -33,10 +33,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.InputStream
 import org.jetbrains.compose.resources.getString
+import kotlin.time.Duration.Companion.milliseconds
 
 sealed interface LoginRequest {
     class NewServer(val raw: String, val fileName: String?, val groupId: Long?) : LoginRequest
@@ -128,7 +130,7 @@ class ProfileViewModel(
             items = serverListItems(profiles, stored),
             error = error
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ServersUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), ServersUiState())
 
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()

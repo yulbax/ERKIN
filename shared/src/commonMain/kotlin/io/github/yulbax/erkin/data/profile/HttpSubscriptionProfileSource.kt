@@ -8,6 +8,7 @@ import java.io.IOException
 import java.net.URI
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
+import kotlin.time.Duration.Companion.milliseconds
 
 class HttpSubscriptionProfileSource(
     private val route: DownloadRoute = DownloadRoute(),
@@ -26,8 +27,8 @@ class HttpSubscriptionProfileSource(
 
     private fun download(url: String, redirectsLeft: Int): Body {
         val reply = route.fetch(url) { connection ->
-            connection.connectTimeout = TIMEOUT_MS
-            connection.readTimeout = TIMEOUT_MS
+            connection.connectTimeout = TIMEOUT.inWholeMilliseconds.toInt()
+            connection.readTimeout = TIMEOUT.inWholeMilliseconds.toInt()
             connection.instanceFollowRedirects = false
             device?.headers?.forEach(connection::setRequestProperty)
             try {
@@ -61,7 +62,7 @@ class HttpSubscriptionProfileSource(
     private class Redirect(val location: String) : Reply
 
     private companion object {
-        const val TIMEOUT_MS = 15_000
+        val TIMEOUT = 15_000.milliseconds
         const val MAX_REDIRECTS = 5
         const val MAX_BYTES = 10L shl 20
     }

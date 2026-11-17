@@ -21,7 +21,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class RuleSetsViewModel(
     private val ruleListDatabase: RuleListDatabase,
@@ -39,11 +41,11 @@ class RuleSetsViewModel(
     val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, probeResults)
 
     val states: StateFlow<Map<String, RuleListState>> =
-        ruleListDatabase.states.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+        ruleListDatabase.states.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyMap())
 
     val usage: StateFlow<Map<String, Int>> = ruleRepository.rules
         .map { rules -> rules.mapNotNull { it.toRule()?.let(RuleLists::url) }.groupingBy { it }.eachCount() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyMap())
 
     fun normalizeLink(raw: String): String? = RuleValues.Link.normalize(raw)
 

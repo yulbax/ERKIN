@@ -58,6 +58,7 @@ import kotlin.math.PI
 import kotlin.math.sin
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Duration.Companion.milliseconds
 
 internal class RowIcon(val source: IconSource, val description: StringResource)
 
@@ -216,7 +217,7 @@ internal fun WaveDots(color: Color, modifier: Modifier = Modifier) {
     val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(WAVE_PERIOD_MS, easing = LinearEasing)),
+        animationSpec = infiniteRepeatable(tween(WAVE_PERIOD.inWholeMilliseconds.toInt(), easing = LinearEasing)),
         label = "pingWavePhase"
     )
     val lift = with(LocalDensity.current) { WAVE_LIFT.toPx() }
@@ -240,6 +241,6 @@ internal fun WaveDots(color: Color, modifier: Modifier = Modifier) {
 }
 
 private const val WAVE_DOTS = 3
-private const val WAVE_PERIOD_MS = 1_000
+private val WAVE_PERIOD = 1_000.milliseconds
 private const val WAVE_DOT_SHIFT = 0.15f
 private val WAVE_LIFT = 4.dp

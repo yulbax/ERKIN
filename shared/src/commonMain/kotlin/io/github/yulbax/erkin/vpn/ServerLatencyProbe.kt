@@ -15,9 +15,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 fun interface ProxyLatencyTester {
-    suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeoutMs: Int, byeDpiPort: Int?, runningOnly: Boolean): String
+    suspend fun measure(proxies: List<EngineProxy>, options: NetworkOptions, url: String, timeout: Duration, byeDpiPort: Int?, runningOnly: Boolean): String
 }
 
 class ServerLatencyProbe(
@@ -36,7 +38,7 @@ class ServerLatencyProbe(
             launch {
                 val running = async { resultOf(id, proxies, options, port, runningOnly) }
                 try {
-                    withTimeoutOrNull(SLOT_HOLD_MS) { running.join() }
+                    withTimeoutOrNull(SLOT_HOLD) { running.join() }
                 } finally {
                     slots.release()
                 }
@@ -63,13 +65,13 @@ class ServerLatencyProbe(
     private suspend fun resultOf(id: Long, proxies: List<EngineProxy>, options: NetworkOptions, port: Int?, runningOnly: Boolean): ProbeResult {
         val throughByeDpi = proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
         val tested = proxies.map { proxy -> if (port == null && proxy.dialerProxy == BYEDPI_PROXY_TAG) proxy.copy(dialerProxy = null) else proxy }
-        val result = parse(tester.measure(tested, options, ProbeUrls.VPN, ServerProbePolicy.TIMEOUT_MS, port, runningOnly))[id] ?: ProbeResult.NoAnswer
+        val result = parse(tester.measure(tested, options, ProbeUrls.VPN, ServerProbePolicy.TIMEOUT, port, runningOnly))[id] ?: ProbeResult.NoAnswer
         return if (result == ProbeResult.NoAnswer && port == null && throughByeDpi) ProbeResult.NeedsConnection else result
     }
 
     companion object {
         private const val CONCURRENCY = 10
-        private const val SLOT_HOLD_MS = 2_000L
+        private val SLOT_HOLD = 2_000.milliseconds
         private const val LOADED_PROXY = """{"type":"direct"}"""
 
         fun parse(results: String): Map<Long, ProbeResult> =

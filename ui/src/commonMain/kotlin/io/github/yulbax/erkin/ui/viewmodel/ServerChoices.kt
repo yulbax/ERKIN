@@ -22,9 +22,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.WhileSubscribed
+import kotlin.time.Duration.Companion.milliseconds
 
 internal fun ViewModel.serverChoicesOf(profiles: ProfileRepository, states: VpnStateRepository, results: ProbeResults): StateFlow<ServerChoices> =
-    profiles.serverChoices(states, results).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), ServerChoices())
+    profiles.serverChoices(states, results).stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), ServerChoices())
 
 private fun ProfileRepository.serverChoices(states: VpnStateRepository, results: ProbeResults): Flow<ServerChoices> =
     combine(
@@ -180,4 +182,4 @@ internal fun serverPickerPage(
     return ServerPickerPage(openGroup, group = null, rows = listOfNotNull(leading) + rows, testQueue = queue)
 }
 
-private const val STOP_TIMEOUT_MS = 5_000L
+private val STOP_TIMEOUT = 5_000.milliseconds

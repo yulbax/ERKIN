@@ -119,7 +119,7 @@ class RuleListDatabaseTest {
         val missing = RuleListSource(url("/missing.txt"), null)
         lists.add(missing)
         val now = System.currentTimeMillis()
-        store.modifiedAt(stale.url, now - RuleListDatabase.REFRESH_AFTER_MS)
+        store.modifiedAt(stale.url, now - RuleListDatabase.REFRESH_AFTER.inWholeMilliseconds)
         serve("/missing.txt", "missing.example.com\n")
         serve("/fresh.txt", "changed.example.com\n")
         serve("/stale.txt", "updated.example.com\n")

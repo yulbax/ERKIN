@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlin.time.Duration.Companion.milliseconds
 
 class ConnectionMonitor(
@@ -31,13 +32,13 @@ class ConnectionMonitor(
             } else {
                 emit(emptyList())
             }
-            delay(POLL_INTERVAL_MS.milliseconds)
+            delay(POLL_INTERVAL)
         }
-    }.stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MS), emptyList())
+    }.stateIn(scope, SharingStarted.WhileSubscribed(STOP_TIMEOUT), emptyList())
 
     private companion object {
         const val TAG = "Connections"
-        const val POLL_INTERVAL_MS = 1_000L
-        const val STOP_TIMEOUT_MS = 5_000L
+        val POLL_INTERVAL = 1_000.milliseconds
+        val STOP_TIMEOUT = 5_000.milliseconds
     }
 }

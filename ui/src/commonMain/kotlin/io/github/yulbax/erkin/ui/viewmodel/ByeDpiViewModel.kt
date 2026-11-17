@@ -21,7 +21,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class ByeDpiViewModel(
     private val settingsRepository: SettingsRepository,
@@ -89,7 +91,7 @@ class ByeDpiViewModel(
                 .map { SearchRow(it.args, it.score, it.args in saved) }
                 .sortedByDescending { it.score.percent }
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), UiState())
 
     init {
         viewModelScope.launch { history.remember(settingsRepository.settings.first().byeDpiArgs) }

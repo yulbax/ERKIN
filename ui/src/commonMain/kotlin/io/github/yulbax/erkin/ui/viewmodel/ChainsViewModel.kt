@@ -15,8 +15,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 class ChainsViewModel(
     private val profileRepository: ProfileRepository,
@@ -29,7 +31,7 @@ class ChainsViewModel(
 
     val hintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.chainsHintSeen }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), true)
 
     fun dismissHint() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -38,7 +40,7 @@ class ChainsViewModel(
     }
 
     val profiles: StateFlow<List<ProfileEntity>> =
-        profileRepository.profiles.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        profileRepository.profiles.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     fun save(existing: ProfileEntity?, name: String, chain: ProxyChain, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {

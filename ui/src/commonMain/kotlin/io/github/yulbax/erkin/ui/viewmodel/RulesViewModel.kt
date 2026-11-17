@@ -19,7 +19,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 class RulesViewModel(
     private val repository: RoutingRuleRepository,
@@ -37,14 +39,14 @@ class RulesViewModel(
     val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, probeResults)
 
     val rules: StateFlow<List<RoutingRuleEntity>> =
-        repository.rules.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        repository.rules.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     val listStates: StateFlow<Map<String, RuleListState>> =
-        ruleListDatabase.states.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+        ruleListDatabase.states.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyMap())
 
     val hintSeen: StateFlow<Boolean> = settingsRepository.settings
         .map { it.rulesHintSeen }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), true)
 
     fun dismissHint() {
         viewModelScope.launch(Dispatchers.IO) {

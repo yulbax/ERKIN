@@ -7,6 +7,7 @@ import java.security.MessageDigest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
 
 class UpdateDownloader(private val route: DownloadRoute = DownloadRoute()) {
     suspend fun download(asset: ReleaseAsset, dir: File, onProgress: (Float?) -> Unit): File =
@@ -17,8 +18,8 @@ class UpdateDownloader(private val route: DownloadRoute = DownloadRoute()) {
             val partial = File(dir, asset.name + PARTIAL_SUFFIX)
             val context = coroutineContext
             val actual = route.fetch(asset.url) { connection ->
-                connection.connectTimeout = TIMEOUT_MS
-                connection.readTimeout = TIMEOUT_MS
+                connection.connectTimeout = TIMEOUT.inWholeMilliseconds.toInt()
+                connection.readTimeout = TIMEOUT.inWholeMilliseconds.toInt()
                 val digest = MessageDigest.getInstance("SHA-256")
                 try {
                     val code = connection.responseCode
@@ -53,7 +54,7 @@ class UpdateDownloader(private val route: DownloadRoute = DownloadRoute()) {
         }
 
     private companion object {
-        const val TIMEOUT_MS = 30_000
+        val TIMEOUT = 30_000.milliseconds
         const val BUFFER_SIZE = 64 * 1024
         const val PARTIAL_SUFFIX = ".part"
     }

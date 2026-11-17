@@ -33,6 +33,7 @@ import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 class DesktopEngineIntegrationTest {
     private val binDir = System.getenv("ERKIN_TEST_BIN_DIR")?.let(::File)
@@ -171,7 +172,7 @@ class DesktopEngineIntegrationTest {
 
     private fun assertLatencyTestWorks(client: ServiceClient) {
         val proxies = """[{"name":"p1","type":"direct"},{"name":"p2","type":"socks5","server":"127.0.0.1","port":${freeLoopbackPort()}}]"""
-        val results = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000, ipv6 = true, runningOnly = false))
+        val results = ServerLatencyProbe.parse(client.urlTest(proxies, ProbeUrls.VPN, 10_000.milliseconds, ipv6 = true, runningOnly = false))
         assertTrue("a working server must be measured: $results", results[1L] is ProbeResult.Answered)
         assertEquals(ProbeResult.NoAnswer, results[2L])
     }

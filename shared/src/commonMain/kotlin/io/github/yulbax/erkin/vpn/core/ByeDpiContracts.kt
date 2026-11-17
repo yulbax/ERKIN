@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.vpn.core
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.json.Json
+import kotlin.time.Duration
 
 interface ByeDpiProcess : AutoCloseable {
     val isRunning: Boolean
@@ -102,7 +103,7 @@ interface TestNetworkSource {
 }
 
 fun interface ByeDpiSiteTester {
-    suspend fun test(port: Int, resolver: String, sites: List<String>, timeoutMs: Int, ipv6: Boolean): Map<String, Boolean>
+    suspend fun test(port: Int, resolver: String, sites: List<String>, timeout: Duration, ipv6: Boolean): Map<String, Boolean>
 
     companion object {
         fun decode(results: String): Map<String, Boolean> = Json.decodeFromString(results)

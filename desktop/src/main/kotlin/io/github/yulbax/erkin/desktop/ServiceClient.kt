@@ -24,6 +24,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 class ServiceClient private constructor(
     private val channel: SocketChannel,
@@ -54,22 +56,22 @@ class ServiceClient private constructor(
         )
     }
 
-    fun check(config: String) = call("check", timeoutMs = CHECK_TIMEOUT_MS) { put("config", config) }.throwIfFailed()
+    fun check(config: String) = call("check", timeout = CHECK_TIMEOUT) { put("config", config) }.throwIfFailed()
 
-    fun start(config: String, resolvedProxy: String, resolver: String) = call("start", timeoutMs = START_TIMEOUT_MS) {
+    fun start(config: String, resolvedProxy: String, resolver: String) = call("start", timeout = START_TIMEOUT) {
         put("config", config)
         put("resolved", resolvedProxy)
         put("resolver", resolver)
     }.throwIfFailed()
 
-    fun stop() = call("stop", timeoutMs = STOP_TIMEOUT_MS).throwIfFailed()
+    fun stop() = call("stop", timeout = STOP_TIMEOUT).throwIfFailed()
 
     fun clearLog() = call("clearLog").throwIfFailed()
 
     fun subscribeLog() = call("logs").throwIfFailed()
 
     fun importRuleList(key: String, path: String, format: RuleSetFormat, kind: RuleSetKind?): InstalledSet {
-        val reply = call("rulelist", timeoutMs = RULE_LIST_TIMEOUT_MS) {
+        val reply = call("rulelist", timeout = RULE_LIST_TIMEOUT) {
             put("key", key)
             put("path", path)
             put("format", format.wire)
@@ -82,10 +84,10 @@ class ServiceClient private constructor(
 
     fun removeRuleList(name: String) = call("rulelistRemove") { put("name", name) }.throwIfFailed()
 
-    fun urlTest(proxies: String, url: String, timeoutMs: Int, ipv6: Boolean, runningOnly: Boolean): String = call("urltest", timeoutMs = timeoutMs + URL_TEST_MARGIN_MS) {
+    fun urlTest(proxies: String, url: String, timeout: Duration, ipv6: Boolean, runningOnly: Boolean): String = call("urltest", timeout = timeout + URL_TEST_MARGIN) {
         put("proxies", proxies)
         put("url", url)
-        put("timeout", timeoutMs)
+        put("timeout", timeout.inWholeMilliseconds.toInt())
         put("ipv6", ipv6)
         put("runningOnly", runningOnly)
     }.let { reply ->
@@ -93,12 +95,12 @@ class ServiceClient private constructor(
         checkNotNull(reply["delays"]) { "ERKIN service returned no delays" }.toString()
     }
 
-    fun testSites(port: Int, resolver: String, sites: List<String>, timeoutMs: Int, ipv6: Boolean): String =
-        call("sites", timeoutMs = SITES_TEST_TIMEOUT_MS) {
+    fun testSites(port: Int, resolver: String, sites: List<String>, timeout: Duration, ipv6: Boolean): String =
+        call("sites", timeout = SITES_TEST_TIMEOUT) {
             put("port", port)
             put("resolver", resolver)
             put("sites", sites.joinToString(" "))
-            put("timeout", timeoutMs)
+            put("timeout", timeout.inWholeMilliseconds.toInt())
             put("ipv6", ipv6)
         }.let { reply ->
             reply.throwIfFailed()
@@ -123,7 +125,7 @@ class ServiceClient private constructor(
 
     private fun call(
         op: String,
-        timeoutMs: Long = DEFAULT_TIMEOUT_MS,
+        timeout: Duration = DEFAULT_TIMEOUT,
         fields: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit = {}
     ): JsonObject {
         check(isOpen) { "ERKIN service connection closed" }
@@ -141,7 +143,7 @@ class ServiceClient private constructor(
                 val buffer = ByteBuffer.wrap(bytes)
                 while (buffer.hasRemaining()) channel.write(buffer)
             }
-            return future.get(timeoutMs, TimeUnit.MILLISECONDS)
+            return future.get(timeout.inWholeMilliseconds, TimeUnit.MILLISECONDS)
         } catch (t: Throwable) {
             pending.remove(id)
             throw (t.cause as? IOException) ?: t
@@ -175,13 +177,13 @@ class ServiceClient private constructor(
     }
 
     companion object {
-        private const val DEFAULT_TIMEOUT_MS = 10_000L
-        private const val CHECK_TIMEOUT_MS = 30_000L
-        private const val START_TIMEOUT_MS = 120_000L
-        private const val STOP_TIMEOUT_MS = 30_000L
-        private const val URL_TEST_MARGIN_MS = 2_000L
-        private const val SITES_TEST_TIMEOUT_MS = 60_000L
-        private const val RULE_LIST_TIMEOUT_MS = 60_000L
+        private val DEFAULT_TIMEOUT = 10_000.milliseconds
+        private val CHECK_TIMEOUT = 30_000.milliseconds
+        private val START_TIMEOUT = 120_000.milliseconds
+        private val STOP_TIMEOUT = 30_000.milliseconds
+        private val URL_TEST_MARGIN = 2_000.milliseconds
+        private val SITES_TEST_TIMEOUT = 60_000.milliseconds
+        private val RULE_LIST_TIMEOUT = 60_000.milliseconds
 
         fun connect(socket: File, onLog: (level: String, message: String) -> Unit = { _, _ -> }): ServiceClient {
             val channel = SocketChannel.open(StandardProtocolFamily.UNIX)

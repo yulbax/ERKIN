@@ -16,7 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 
 data class ErkinUiState(
     val homeHintSeen: Boolean = true,
@@ -41,7 +43,7 @@ class ConnectionViewModel(
     ) { settings, apps ->
         val routed = RoutedApps.from(apps)
         ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi, settings.bypassLan, routed.runsWithoutServer)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ErkinUiState())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), ErkinUiState())
 
     init {
         viewModelScope.launch {

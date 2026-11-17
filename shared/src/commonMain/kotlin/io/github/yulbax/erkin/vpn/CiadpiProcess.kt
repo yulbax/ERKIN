@@ -5,6 +5,7 @@ import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
 import java.io.File
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
+import kotlin.time.Duration.Companion.milliseconds
 
 class CiadpiProcess(
     private val binary: File,
@@ -46,7 +47,7 @@ class CiadpiProcess(
         thread(isDaemon = true, name = "ciadpi-exit") {
             val code = runCatching { started.waitFor() }.getOrElse { return@thread }
             if (process !== started) return@thread
-            reader.join(OUTPUT_WAIT_MS)
+            reader.join(OUTPUT_WAIT.inWholeMilliseconds)
             val tail = synchronized(output) { output.joinToString(" | ") }
             log.w(TAG, "ciadpi exited with code $code" + if (tail.isNotBlank()) ": $tail" else "")
             onUnexpectedExit(code)
@@ -58,13 +59,13 @@ class CiadpiProcess(
         val current = process ?: return
         process = null
         current.destroy()
-        if (!current.waitFor(STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS)) current.destroyForcibly()
+        if (!current.waitFor(STOP_TIMEOUT.inWholeMilliseconds, TimeUnit.MILLISECONDS)) current.destroyForcibly()
     }
 
     private companion object {
         const val TAG = "Ciadpi"
-        const val STOP_TIMEOUT_MS = 3_000L
-        const val OUTPUT_WAIT_MS = 500L
+        val STOP_TIMEOUT = 3_000.milliseconds
+        val OUTPUT_WAIT = 500.milliseconds
         const val OUTPUT_LINES = 10
     }
 }
