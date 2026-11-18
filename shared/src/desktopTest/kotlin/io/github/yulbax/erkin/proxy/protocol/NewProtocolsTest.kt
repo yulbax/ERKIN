@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.proxy.protocol
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.proxy.ShareLink
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
@@ -81,6 +82,15 @@ class NewProtocolsTest {
 
         assertNull(LinkParser.parse("client\nremote vpn.example.com 1194\nca ca.crt\n"))
         assertNull(LinkParser.parse("$config\nauth-user-pass\n"))
+    }
+
+    @Test
+    fun openVpnResolvesNamesThroughTheTunnel() {
+        val config = "client\nremote vpn.example.com 1194 udp\n<ca>\nCA\n</ca>\n"
+        val descriptor = parse(config, ProxyProtocol.OPENVPN).toString()
+        val engine = Json.parseToJsonElement(ProxyProtocol.OPENVPN.engineProxy("p1", descriptor).descriptor) as JsonObject
+        assertEquals("true", engine.text("remote-dns-resolve"))
+        assertEquals("vpn.example.com", engine.text("server"))
     }
 
     private fun parse(input: String, protocol: ProxyProtocol): JsonObject {

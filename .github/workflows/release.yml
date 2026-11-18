@@ -100,7 +100,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/libs/mihomo.aar
-          key: aar-${{ env.CORE_CACHE_REV }}-${{ env.GO_VERSION }}-${{ hashFiles('core/mihomo/**', 'scripts/build-mihomo.sh') }}
+          key: aar-${{ env.CORE_CACHE_REV }}-${{ env.GO_VERSION }}-${{ hashFiles('core/mihomo/**', 'scripts/build-mihomo.sh', 'scripts/mihomo-patched.sh') }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: actions/setup-go@v5
         with:
@@ -147,7 +147,7 @@ jobs:
             desktop/libs/windows/mihomo-LICENSE.txt
             desktop/libs/linux/erkin-service
             desktop/libs/linux/mihomo-LICENSE.txt
-          key: service-${{ env.CORE_CACHE_REV }}-${{ env.GO_VERSION }}-${{ needs.check.outputs.version }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-service.sh') }}
+          key: service-${{ env.CORE_CACHE_REV }}-${{ env.GO_VERSION }}-${{ needs.check.outputs.version }}-${{ hashFiles('core/mihomo/**', 'desktop/service/**', 'scripts/build-service.sh', 'scripts/mihomo-patched.sh') }}
       - id: ciadpi-cache
         uses: actions/cache@v4
         with:

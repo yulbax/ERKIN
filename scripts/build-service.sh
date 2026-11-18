@@ -13,10 +13,16 @@ TARGETS="${TARGETS:-windows linux}"
 
 say() { printf '\033[1;36m>>> %s\033[0m\n' "$*"; }
 
+source "${SCRIPT_DIR}/mihomo-patched.sh"
 cd "${REPO_ROOT}/desktop/service"
 go mod download github.com/metacubex/mihomo
 MIHOMO_VERSION="$(go list -m -f '{{.Version}}' github.com/metacubex/mihomo)"
 MIHOMO_DIR="$(go list -m -f '{{.Dir}}' github.com/metacubex/mihomo)"
+PATCHED="$(mihomo_patched "$REPO_ROOT" "$MIHOMO_DIR")"
+MODFILE="${REPO_ROOT}/build/mihomo-patched/service.mod"
+cp go.mod "$MODFILE"
+cp go.sum "${MODFILE%.mod}.sum"
+go mod edit -modfile="$MODFILE" -replace "github.com/metacubex/mihomo=${PATCHED}"
 for os in $TARGETS; do
   suffix=""
   [ "$os" = "windows" ] && suffix=".exe"
@@ -27,7 +33,7 @@ for os in $TARGETS; do
   fi
   say "Building erkin-service ${APP_VERSION} for ${os}/amd64 with mihomo ${MIHOMO_VERSION}"
   mkdir -p "$(dirname "$out")"
-  CGO_ENABLED=0 GOOS="$os" GOARCH=amd64 go build -trimpath -buildvcs=false -tags "with_gvisor,no_tailscale,no_easytier,no_zerotier,no_fake_tcp" \
+  CGO_ENABLED=0 GOOS="$os" GOARCH=amd64 go build -trimpath -buildvcs=false -modfile="$MODFILE" -tags "with_gvisor,no_tailscale,no_easytier,no_zerotier,no_fake_tcp" \
     -ldflags "-X github.com/metacubex/mihomo/constant.Version=${MIHOMO_VERSION} -X main.version=${APP_VERSION} -s -w -buildid=" \
     -o "$out" .
   install -m644 "${MIHOMO_DIR}/LICENSE" "$(dirname "$out")/mihomo-LICENSE.txt"

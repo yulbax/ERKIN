@@ -6,6 +6,7 @@ import io.github.yulbax.erkin.proxy.LinkHandler
 import io.github.yulbax.erkin.proxy.ShareLink
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -15,6 +16,7 @@ object OpenVpn : LinkHandler, DocumentHandler {
     override val coreType = "openvpn"
     override val schemes: List<String> = listOf("ovpn")
     private const val DEFAULT_PORT = 1194
+    private const val TUNNEL_DNS = "remote-dns-resolve"
     private val WHITESPACE = Regex("\\s+")
     private val BLOCK = Regex("<([a-z0-9-]+)>(.*?)</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
     private val REMOTE = Regex("^\\s*remote\\s+\\S+", RegexOption.MULTILINE)
@@ -88,4 +90,7 @@ object OpenVpn : LinkHandler, DocumentHandler {
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
+
+    override fun engineDescriptor(descriptor: JsonObject): JsonObject =
+        if (TUNNEL_DNS in descriptor) descriptor else JsonObject(descriptor + (TUNNEL_DNS to JsonPrimitive(true)))
 }

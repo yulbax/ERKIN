@@ -25,8 +25,17 @@ command -v gomobile >/dev/null || die "gomobile not in PATH (go install golang.o
 command -v gobind >/dev/null || die "gobind not in PATH (go install golang.org/x/mobile/cmd/gobind@v0.0.0-20250808145247-395d808d53cd)"
 [ -n "${ANDROID_NDK_HOME:-}" ] && [ -d "$ANDROID_NDK_HOME" ] || die "ANDROID_NDK_HOME unset or missing"
 
+source "${SCRIPT_DIR}/mihomo-patched.sh"
 cd "${REPO_ROOT}/core/mihomo"
+go mod download github.com/metacubex/mihomo
 MIHOMO_VERSION="$(go list -m -f '{{.Version}}' github.com/metacubex/mihomo)"
+PATCHED="$(mihomo_patched "$REPO_ROOT" "$(go list -m -f '{{.Dir}}' github.com/metacubex/mihomo)")"
+WORK="${REPO_ROOT}/build/mihomo-patched/mihomocore"
+rm -rf "$WORK"
+mkdir -p "$WORK"
+cp "${REPO_ROOT}"/core/mihomo/*.go "${REPO_ROOT}/core/mihomo/go.mod" "${REPO_ROOT}/core/mihomo/go.sum" "$WORK"
+cd "$WORK"
+go mod edit -replace "github.com/metacubex/mihomo=${PATCHED}"
 say "Building mihomo ${MIHOMO_VERSION} for android/arm64, android/amd64, android/arm"
 mkdir -p "$(dirname "$OUT_AAR")"
 GOFLAGS="${GOFLAGS:-} -buildvcs=false" gomobile bind -v \

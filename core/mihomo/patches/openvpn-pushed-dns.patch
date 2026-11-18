@@ -1,0 +1,49 @@
+--- a/adapter/outbound/openvpn.go
++++ b/adapter/outbound/openvpn.go
+@@ -347,20 +347,41 @@
+ 	o.client = client
+ 	o.tunDevice = tunDevice
+ 	o.running = true
+-	if o.option.RemoteDnsResolve && len(o.dns) > 0 && o.resolver == nil {
++	if o.option.RemoteDnsResolve && o.resolver == nil {
+ 		nss := append([]dns.NameServer(nil), o.dns...)
++		if len(nss) == 0 {
++			nss = o.pushedNameServers(push.DNS)
++		}
+ 		for i := range nss {
+ 			nss[i].ProxyAdapter = o
+ 		}
+-		o.resolver = dns.NewResolver(dns.Config{
+-			Main: nss,
+-			IPv6: openVPNPrefixesHas6(push.Prefixes),
+-		})
++		if len(nss) > 0 {
++			o.resolver = dns.NewResolver(dns.Config{
++				Main: nss,
++				IPv6: openVPNPrefixesHas6(push.Prefixes),
++			})
++		}
+ 	}
+ 	o.startPacketLoops()
+ 	return o.tunDevice, o.resolver, nil
+ }
+ 
++func (o *OpenVPN) pushedNameServers(addrs []netip.Addr) []dns.NameServer {
++	servers := make([]string, 0, len(addrs))
++	for _, addr := range addrs {
++		servers = append(servers, addr.String())
++	}
++	if len(servers) == 0 {
++		return nil
++	}
++	nss, err := dns.ParseNameServer(servers)
++	if err != nil {
++		log.Warnln("[OpenVPN](%s) ignoring the DNS servers pushed by the server: %v", o.name, err)
++		return nil
++	}
++	return nss
++}
++
+ func openVPNPrefixesHas6(prefixes []netip.Prefix) bool {
+ 	for _, prefix := range prefixes {
+ 		if !prefix.Addr().Unmap().Is4() {

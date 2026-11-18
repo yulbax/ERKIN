@@ -53,7 +53,8 @@ enum class ProxyProtocol(val wire: String, val handler: ProtocolHandler) {
 
     fun engineProxy(tag: String, descriptor: String): EngineProxy {
         val parsed = descriptorJson.parseToJsonElement(descriptor) as JsonObject
-        return EngineProxy(tag, descriptor, handler.requirements(parsed))
+        val engine = handler.engineDescriptor(parsed)
+        return EngineProxy(tag, if (engine == parsed) descriptor else engine.toString(), handler.requirements(parsed))
     }
 
     companion object {
@@ -90,6 +91,8 @@ interface ProtocolHandler {
     }
 
     fun requirements(descriptor: JsonObject): Set<EngineRequirement>
+
+    fun engineDescriptor(descriptor: JsonObject): JsonObject = descriptor
 }
 
 interface LinkHandler : ProtocolHandler {
