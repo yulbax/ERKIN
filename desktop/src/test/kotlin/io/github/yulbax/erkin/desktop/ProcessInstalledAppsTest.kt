@@ -8,23 +8,29 @@ import org.junit.Test
 
 class ProcessInstalledAppsTest {
 
-    private fun discover(vararg paths: String) =
-        ProcessInstalledApps.discover(paths.map(::File), ownExecutable = "ERKIN", systemRoots = listOf("/usr/"))
+    private fun discover(vararg paths: String, saved: List<App> = emptyList()) =
+        ProcessInstalledApps.discover(paths.map(::File), saved, ownExecutable = "ERKIN", systemRoots = listOf("/usr/"))
 
     @Test
-    fun aSingleCopyIsKeyedByNameAndShowsItsPath() {
+    fun aProgramIsKeyedByItsPath() {
         val apps = discover("/opt/telegram/Telegram", "/opt/telegram/Telegram", "/opt/erkin/bin/ERKIN")
-        assertEquals(1, apps.size)
-        assertEquals("Telegram", apps.single().packageName)
-        assertEquals("/opt/telegram/Telegram", apps.single().path)
+        assertEquals(listOf("/opt/telegram/Telegram"), apps.map { it.packageName })
+        assertEquals(listOf("Telegram"), apps.map { it.name })
     }
 
     @Test
-    fun copiesWithTheSameNameGetTheirOwnPathEntriesNextToTheNameEntry() {
+    fun copiesWithTheSameNameAreSeparatePrograms() {
         val apps = discover("/usr/bin/python3", "/home/u/venv/bin/python3")
-        assertEquals(listOf("python3", "/usr/bin/python3", "/home/u/venv/bin/python3"), apps.map { it.packageName })
-        assertEquals(listOf(null, "/usr/bin/python3", "/home/u/venv/bin/python3"), apps.map { it.path })
-        assertEquals(listOf(true, true, false), apps.map { it.isSystemApp })
+        assertEquals(listOf("/usr/bin/python3", "/home/u/venv/bin/python3"), apps.map { it.packageName })
+        assertEquals(listOf(true, false), apps.map { it.isSystemApp })
+    }
+
+    @Test
+    fun aProgramSavedByNameKeepsItsEntryOnlyAtItsOwnPath() {
+        val saved = listOf(App("Telegram", "Telegram", isSystemApp = false, path = "/opt/telegram/Telegram"))
+        val apps = discover("/opt/telegram/Telegram", "/tmp/x/Telegram", saved = saved)
+        assertEquals(listOf("Telegram", "/tmp/x/Telegram"), apps.map { it.packageName })
+        assertEquals(listOf("/opt/telegram/Telegram", "/tmp/x/Telegram"), apps.map { it.path })
     }
 
     @Test
@@ -57,9 +63,10 @@ class ProcessInstalledAppsTest {
     fun aProgramUpdatedWhileRunningIsTheSameProgram() {
         val apps = ProcessInstalledApps.discover(
             listOf("/usr/bin/Hyprland (deleted)", "/usr/bin/Hyprland").map(ProcessInstalledApps::executableOf),
+            saved = emptyList(),
             ownExecutable = "ERKIN",
             systemRoots = listOf("/usr/")
         )
-        assertEquals(listOf("Hyprland"), apps.map { it.packageName })
+        assertEquals(listOf("/usr/bin/Hyprland"), apps.map { it.packageName })
     }
 }

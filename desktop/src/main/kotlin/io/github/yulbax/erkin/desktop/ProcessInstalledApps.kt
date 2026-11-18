@@ -5,6 +5,7 @@ import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
+import io.github.yulbax.erkin.data.isExecutablePath
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -56,16 +57,14 @@ class ProcessInstalledApps(
 
     private suspend fun discoverApps() = refreshMutex.withLock {
         try {
-            val running = discover(runningExecutables(), ownExecutable, systemRoots)
             val saved = appDao.getAllAppsSnapshot()
+            val running = discover(runningExecutables(), saved, ownExecutable, systemRoots)
             val savedById = saved.associateBy { it.packageName }
             val discovered = running.filter { it.packageName !in savedById }
             if (discovered.isNotEmpty()) {
                 val type = newAppsType()
                 appDao.addApps(discovered.map { App(it.packageName, it.name, it.isSystemApp, type, it.path) })
             }
-            running.filter { it.path != null && savedById[it.packageName]?.let { app -> app.path != it.path } == true }
-                .forEach { appDao.updatePath(it.packageName, it.path) }
             val runningIds = running.mapTo(HashSet()) { it.packageName }
             val removed = removedApps(saved, runningIds)
             val remembered = saved
@@ -109,25 +108,20 @@ class ProcessInstalledApps(
             return existing.parentFile == null || !existing.list().isNullOrEmpty()
         }
 
-        fun discover(executables: List<File>, ownExecutable: String?, systemRoots: List<String>): List<InstalledApp> =
-            executables
+        fun discover(executables: List<File>, saved: List<App>, ownExecutable: String?, systemRoots: List<String>): List<InstalledApp> {
+            val legacyByPath = saved.filter { !isExecutablePath(it.packageName) && it.path != null }.associateBy { it.path?.lowercase() }
+            return executables
                 .filter { it.name.isNotBlank() && it.name != ownExecutable }
                 .distinctBy { it.path.lowercase() }
-                .groupBy { it.name }
-                .flatMap { (name, copies) ->
-                    fun app(id: String, path: String?, file: File) = InstalledApp(
-                        packageName = id,
+                .map { file ->
+                    InstalledApp(
+                        packageName = legacyByPath[file.path.lowercase()]?.packageName ?: file.path,
                         name = file.nameWithoutExtension,
                         isSystemApp = systemRoots.any { file.path.startsWith(it, ignoreCase = true) },
                         isLaunchable = true,
-                        path = path
+                        path = file.path
                     )
-                    val first = copies.first()
-                    if (copies.size == 1) {
-                        listOf(app(name, first.path, first))
-                    } else {
-                        listOf(app(name, null, first)) + copies.map { app(it.path, it.path, it) }
-                    }
                 }
+        }
     }
 }

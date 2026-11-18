@@ -51,7 +51,4 @@ interface AppDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun addApps(apps: List<App>)
-
-    @Query("UPDATE apps SET path = :path WHERE packageName = :packageName")
-    suspend fun updatePath(packageName: String, path: String?)
 }
