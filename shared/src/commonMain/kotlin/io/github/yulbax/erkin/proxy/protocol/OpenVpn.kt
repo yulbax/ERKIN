@@ -1,7 +1,7 @@
 package io.github.yulbax.erkin.proxy.protocol
 
 import io.github.yulbax.erkin.proxy.ParsedLink
-import io.github.yulbax.erkin.proxy.ProtocolHandler
+import io.github.yulbax.erkin.proxy.DocumentHandler
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -9,7 +9,8 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-object OpenVpn : ProtocolHandler {
+object OpenVpn : DocumentHandler {
+    override val coreType = "openvpn"
     private const val DEFAULT_PORT = 1194
     private val WHITESPACE = Regex("\\s+")
     private val BLOCK = Regex("<([a-z0-9-]+)>(.*?)</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
@@ -21,10 +22,8 @@ object OpenVpn : ProtocolHandler {
     private val INLINE = listOf("ca", "cert", "key", "tls-auth", "tls-crypt", "tls-crypt-v2")
     private val PASSTHROUGH = listOf("dev", "cipher", "auth", "data-ciphers-fallback", "key-direction")
 
-    override val schemes: List<String> = emptyList()
-
-    override fun recognizes(input: String): Boolean =
-        "://" !in input.lineSequence().first() && REMOTE.containsMatchIn(input) && (CLIENT.containsMatchIn(input) || "<ca>" in input)
+    override fun recognizes(text: String): Boolean =
+        "://" !in text.lineSequence().first() && REMOTE.containsMatchIn(text) && (CLIENT.containsMatchIn(text) || "<ca>" in text)
 
     fun asksForLogin(input: String): Boolean =
         recognizes(input) && ASKS_LOGIN.containsMatchIn(input) && LOGIN_BLOCK !in input.lowercase()
@@ -35,9 +34,9 @@ object OpenVpn : ProtocolHandler {
     fun username(input: String): String? =
         LOGIN.find(input)?.groupValues?.get(1)?.lines()?.map { it.trim() }?.firstOrNull { it.isNotEmpty() }
 
-    override fun parse(input: String): ParsedLink {
-        val blocks = BLOCK.findAll(input).associate { it.groupValues[1].lowercase() to it.groupValues[2].trim() }
-        val directives = BLOCK.replace(input, "").lineSequence()
+    override fun parse(text: String): ParsedLink {
+        val blocks = BLOCK.findAll(text).associate { it.groupValues[1].lowercase() to it.groupValues[2].trim() }
+        val directives = BLOCK.replace(text, "").lineSequence()
             .map { it.substringBefore('#').substringBefore(';').trim() }
             .filter { it.isNotEmpty() }
             .map { it.split(WHITESPACE) }
@@ -54,7 +53,7 @@ object OpenVpn : ProtocolHandler {
         require(first("auth-user-pass") == null || credentials?.size == 2) { "OpenVPN login and password must be inline" }
 
         val descriptor = buildJsonObject {
-            proxy("openvpn", host, port)
+            proxy(coreType, host, port)
             (remote.getOrNull(3) ?: first("proto")?.getOrNull(1))?.let { put("proto", it) }
             PASSTHROUGH.forEach { name -> first(name)?.getOrNull(1)?.let { put(name, it) } }
             first("data-ciphers")?.getOrNull(1)?.let { ciphers ->

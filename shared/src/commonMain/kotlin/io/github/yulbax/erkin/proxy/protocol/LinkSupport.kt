@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.proxy.protocol
 
+import io.github.yulbax.erkin.proxy.ShareLink
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -10,8 +11,6 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
-import java.net.URI
-import java.net.URLDecoder
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -42,7 +41,7 @@ internal enum class TlsStyle(val sniKey: String, val flagged: Boolean) {
 
 internal data class Reality(val publicKey: String, val shortId: String)
 
-internal val URI.hostName: String get() = host.orEmpty().removeSurrounding("[", "]")
+internal val ShareLink.title: String get() = name ?: host
 
 internal fun JsonObjectBuilder.proxy(type: String, host: String, port: Int) {
     put("type", type)
@@ -131,28 +130,12 @@ internal fun tlsRequirements(enabled: Boolean): Set<EngineRequirement> =
 
 internal fun JsonObject.flag(key: String): Boolean = (this[key] as? JsonPrimitive)?.booleanOrNull == true
 
-internal fun URI.queryMap(): Map<String, String> {
-    val raw = rawQuery ?: return emptyMap()
-    return raw.split('&').mapNotNull {
-        val k = it.substringBefore('=')
-        val v = it.substringAfter('=', "")
-        if (k.isEmpty()) null else k to decodeComponent(v)
-    }.toMap()
-}
-
 private val TRUE_VALUES = setOf("1", "true")
 private val INSECURE_KEYS = listOf("insecure", "allowInsecure", "allow_insecure", "skip-cert-verify")
 
 internal fun Map<String, String>.enabled(key: String): Boolean = this[key]?.lowercase() in TRUE_VALUES
 
 internal fun Map<String, String>.insecure(): Boolean = INSECURE_KEYS.any(::enabled)
-
-internal fun linkUri(input: String): URI = URI(input.substringBefore('#'))
-
-internal fun linkName(input: String, fallback: String): String =
-    input.substringAfter('#', "").takeIf { it.isNotEmpty() }?.let(::decodeComponent) ?: fallback
-
-internal fun decodeComponent(s: String): String = runCatching { URLDecoder.decode(s, "UTF-8") }.getOrDefault(s)
 
 @OptIn(ExperimentalEncodingApi::class)
 internal fun decodeBase64Lenient(input: String): String? {

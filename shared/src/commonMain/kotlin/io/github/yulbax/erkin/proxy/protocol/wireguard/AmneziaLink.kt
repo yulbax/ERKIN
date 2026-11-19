@@ -1,7 +1,7 @@
 package io.github.yulbax.erkin.proxy.protocol.wireguard
 
 import io.github.yulbax.erkin.proxy.ParsedLink
-import io.github.yulbax.erkin.proxy.protocol.decodeComponent
+import io.github.yulbax.erkin.proxy.ShareLink
 import java.io.ByteArrayOutputStream
 import java.util.zip.Inflater
 import kotlinx.serialization.json.Json
@@ -21,11 +21,9 @@ internal object AmneziaLink {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    fun parse(link: String): ParsedLink {
-        val body = link.substringAfter("://").trim()
-        val payload = decode(body.substringBefore('#'))
-        val name = body.substringAfter('#', "").trim().takeIf { it.isNotEmpty() }?.let(::decodeComponent)
-        return if (WgIni.looksLikeConfig(payload)) configProfile(payload, name) else jsonProfile(payload, name)
+    fun parse(link: ShareLink): ParsedLink {
+        val payload = decode(link.body.trim())
+        return if (WgIni.looksLikeConfig(payload)) configProfile(payload, link.name) else jsonProfile(payload, link.name)
     }
 
     private fun configProfile(payload: String, fragmentName: String?): ParsedLink {

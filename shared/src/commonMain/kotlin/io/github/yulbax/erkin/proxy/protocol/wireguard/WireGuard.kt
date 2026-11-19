@@ -1,15 +1,16 @@
 package io.github.yulbax.erkin.proxy.protocol.wireguard
 
+import io.github.yulbax.erkin.proxy.DocumentHandler
+import io.github.yulbax.erkin.proxy.LinkHandler
 import io.github.yulbax.erkin.proxy.ParsedLink
-import io.github.yulbax.erkin.proxy.ProtocolHandler
-import io.github.yulbax.erkin.proxy.protocol.linkName
-import io.github.yulbax.erkin.proxy.protocol.linkUri
-import io.github.yulbax.erkin.proxy.protocol.queryMap
+import io.github.yulbax.erkin.proxy.ShareLink
+import io.github.yulbax.erkin.proxy.protocol.title
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import java.util.Base64
 
-object WireGuard : ProtocolHandler {
+object WireGuard : LinkHandler, DocumentHandler {
+    override val coreType = "wireguard"
     override val schemes: List<String> = listOf("wireguard")
 
     private const val DEFAULT_PORT = 51820
@@ -18,30 +19,29 @@ object WireGuard : ProtocolHandler {
     private const val KEY_BYTES = 32
     private val FULL_TUNNEL = listOf("0.0.0.0/0", "::/0")
 
-    override fun recognizes(input: String): Boolean =
-        super.recognizes(input) || WgIni.parseOrNull(input)?.let { !AmneziaWg.isAmnezia(it) } == true
+    override fun normalize(proxy: JsonObject): JsonObject? =
+        if (AMNEZIA_OPTION !in proxy && "private-key" in proxy) super<LinkHandler>.normalize(proxy) else null
 
-    override fun parse(input: String): ParsedLink =
-        if (WgIni.looksLikeConfig(input)) {
-            val config = WgIni.parse(input)
-            ParsedLink(config.host, wgProxy(config))
-        } else {
-            parseLink(input)
-        }
+    override fun recognizes(text: String): Boolean =
+        WgIni.parseOrNull(text)?.let { !AmneziaWg.isAmnezia(it) } == true
 
-    private fun parseLink(input: String): ParsedLink {
-        val uri = linkUri(input)
-        val q = uri.queryMap()
-        val host = requireNotNull(uri.host?.trim('[', ']')?.takeIf { it.isNotEmpty() }) { "missing host" }
+    override fun parse(text: String): ParsedLink {
+        val config = WgIni.parse(text)
+        return ParsedLink(config.host, wgProxy(config))
+    }
+
+    override fun parse(link: ShareLink): ParsedLink {
+        val q = link.query
+        val host = requireNotNull(link.host.takeIf { it.isNotEmpty() }) { "missing host" }
         val config = WgConfig(
-            privateKey = requireKey(uri.userInfo, "private key"),
+            privateKey = requireKey(link.userInfo, "private key"),
             addresses = (q["address"]?.takeIf { it.isNotBlank() } ?: DEFAULT_ADDRESS)
                 .split(',').map { it.trim() }.filter { it.isNotEmpty() }.map(::withPrefix),
             mtu = q["mtu"]?.toIntOrNull()?.takeIf { it > 0 } ?: DEFAULT_MTU,
             peers = listOf(
                 WgPeer(
                     host = host,
-                    port = uri.port.takeIf { it > 0 } ?: DEFAULT_PORT,
+                    port = link.port ?: DEFAULT_PORT,
                     publicKey = requireKey(q["publickey"], "publickey"),
                     presharedKey = q["presharedkey"]?.takeIf { it.isNotEmpty() }?.let { requireKey(it, "presharedkey") },
                     allowedIps = FULL_TUNNEL,
@@ -51,7 +51,7 @@ object WireGuard : ProtocolHandler {
             ),
             interfaceValues = emptyMap()
         )
-        return ParsedLink(linkName(input, host), wgProxy(config))
+        return ParsedLink(link.title, wgProxy(config))
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> =

@@ -35,9 +35,22 @@ class ProtocolContractTest {
     fun everyInputFormIsRecognizedByItsOwnProtocolOnly() {
         FORMS.forEach { (protocol, forms) ->
             forms.forEach { sample ->
-                val recognizers = ProxyProtocol.entries.filter { it.handler.recognizes(sample) }
-                assertEquals("recognizers of a $protocol form", listOf(protocol), recognizers)
+                assertEquals("recognizers of a $protocol form", listOf(protocol), recognizersOf(sample))
             }
+        }
+    }
+
+    @Test
+    fun everyProtocolHasACoreProxyForm() {
+        ProxyProtocol.entries.forEach { protocol ->
+            val descriptor = requireNotNull(LinkParser.parse(SAMPLES.getValue(protocol))).proxy
+            val link = CoreProxySource.encode("Core ${protocol.wire}", descriptor)
+            assertEquals("scheme of $protocol", CoreProxySource.SCHEME, ShareLink.parse(link)?.scheme)
+            val parsed = requireNotNull(LinkParser.parse(link)) { "$protocol core form did not parse" }
+            assertEquals(protocol, parsed.protocol)
+            assertEquals("Core ${protocol.wire}", parsed.name)
+            assertEquals(descriptor, parsed.proxy)
+            assertEquals(link, parsed.link)
         }
     }
 
@@ -109,6 +122,14 @@ class ProtocolContractTest {
         }
     }
 
+    private fun recognizersOf(sample: String): List<ProxyProtocol> {
+        val documents = ProxyProtocol.entries.filter { (it.handler as? DocumentHandler)?.recognizes(sample) == true }
+        val link = ShareLink.parse(sample) ?: return documents
+        val links = ProxyProtocol.entries.filter { (it.handler as? LinkHandler)?.recognizes(link) == true }
+        assertTrue("a link form is also read as a document: $sample", documents.isEmpty() || links.isEmpty())
+        return documents + links
+    }
+
     private fun parsedSamples(): List<Pair<ProxyProtocol, ParsedProfile>> =
         ProxyProtocol.entries.map { it to requireNotNull(LinkParser.parse(SAMPLES.getValue(it))) }
 
@@ -123,7 +144,7 @@ class ProtocolContractTest {
     private fun JsonObject.names(section: String): List<String> =
         this[section]?.jsonArray?.mapNotNull { it.jsonObject["name"]?.jsonPrimitive?.content }.orEmpty()
 
-    private companion object {
+    internal companion object {
         val VMESS = "vmess://" + Base64.getEncoder().encodeToString(
             """{"v":"2","ps":"Vienna","add":"vm.example.com","port":"443","id":"0b3f1a2c-1111-4222-8333-444455556666","aid":"0","net":"ws","host":"vm.example.com","path":"/ws","tls":"tls"}"""
                 .toByteArray()
@@ -133,11 +154,11 @@ class ProtocolContractTest {
         val AMNEZIAWG = """
             [Interface]
             Address = 10.8.1.2/32
-            PrivateKey = aPrivateKey=
+            PrivateKey = lfifzx2jzHHCjtXnW+j5Bc7XeY0CIVO7nz5oaI8Z2Bg=
             Jc = 4
 
             [Peer]
-            PublicKey = aPublicKey=
+            PublicKey = OXX78VOGhF/LETadWXqWz7lKHDWRrYOTbuXgO6P8I0M=
             AllowedIPs = 0.0.0.0/0
             Endpoint = awg.example.com:51820
         """.trimIndent()
@@ -167,12 +188,34 @@ class ProtocolContractTest {
             key-direction 1
             <ca>
             -----BEGIN CERTIFICATE-----
-            MIIB
+            MIIBXjCCAQSgAwIBAgIUa+7Khhu02W70eFypjHNC1mxxpBwwCgYIKoZIzj0EAwIw
+            FTETMBEGA1UEAwwKZXJraW4tdGVzdDAeFw0yNjExMTkxMDA3MTVaFw0zNjExMTYx
+            MDA3MTVaMBUxEzARBgNVBAMMCmVya2luLXRlc3QwWTATBgcqhkjOPQIBBggqhkjO
+            PQMBBwNCAAQf1Tr1UhLr3mmHeXfpSAamAVSlj3/S6T/czNPKPm++SEHYocMNsNWY
+            d806tm3Et8M7N5OSPPm1dcGtcsG+D3wGozIwMDAdBgNVHQ4EFgQUhyPqNNLm0fd+
+            oR9LpDdnwFtHNJwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiAi
+            a9nQB/6oqxHdLBhrkoPEWETaPvJto0cDpdbStHDp3gIhAJw3ID+aLdZANhCAFEV/
+            afR0gUHd6jfgiARlG0kNK9LZ
             -----END CERTIFICATE-----
             </ca>
             <tls-auth>
             -----BEGIN OpenVPN Static key V1-----
-            00
+            8e4f376c09c866d9e8a6ec3fd0dc2656
+            d8e131d2cce6effdcacab831692a816d
+            60efc1db93368f895596a1e8fc799979
+            6ec789a5a25dc5c28761f59772e1a7e4
+            d7ef0964e27ddee4731cc55bbbea6467
+            d104fb5c60405bba576f77a8f0f89b5b
+            3998858ae3d7bbb6ea1ed05c6965f9ca
+            ad66c217871b58762656a73009a855f5
+            e3a3c217fe7206b5afd4cbbe8e73dacc
+            fb7a111b76cc08b31932c7f79ba13c59
+            3f7532e92c7cf89190131229315c7a61
+            30feca3c72bd12b5396d170d162bb8ea
+            30659cd13c90a62e4bfa90444e931238
+            dd62bdde96c5d024a2bc8a0557990203
+            d91c711d01325a7e3de94116837c0c04
+            337600ceec6e2d9ab25efc3e5435dfc8
             -----END OpenVPN Static key V1-----
             </tls-auth>
             <auth-user-pass>

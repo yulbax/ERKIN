@@ -1,0 +1,178 @@
+[
+    {
+        "wire": "amneziawg",
+        "proxy": {
+            "type": "wireguard",
+            "server": "awg.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "10.8.1.2/32",
+            "private-key": "lfifzx2jzHHCjtXnW+j5Bc7XeY0CIVO7nz5oaI8Z2Bg=",
+            "public-key": "OXX78VOGhF/LETadWXqWz7lKHDWRrYOTbuXgO6P8I0M=",
+            "allowed-ips": [
+                "0.0.0.0/0"
+            ],
+            "amnezia-wg-option": {
+                "jc": 4
+            }
+        }
+    },
+    {
+        "wire": "anytls",
+        "proxy": {
+            "type": "anytls",
+            "server": "at.example.org",
+            "port": 443,
+            "udp": true,
+            "password": "secret",
+            "sni": "at.example.org",
+            "skip-cert-verify": true
+        }
+    },
+    {
+        "wire": "https",
+        "proxy": {
+            "type": "http",
+            "server": "proxy.example.com",
+            "port": 8443,
+            "udp": false,
+            "tls": true,
+            "sni": "proxy.example.com",
+            "username": "alice",
+            "password": "secret"
+        }
+    },
+    {
+        "wire": "hysteria2",
+        "proxy": {
+            "type": "hysteria2",
+            "server": "hy.example.net",
+            "port": 8443,
+            "udp": true,
+            "password": "secret",
+            "sni": "hy.example.net"
+        }
+    },
+    {
+        "wire": "openvpn",
+        "proxy": {
+            "type": "openvpn",
+            "server": "ovpn.example.com",
+            "port": 1194,
+            "udp": true,
+            "proto": "udp",
+            "dev": "tun",
+            "cipher": "AES-256-GCM",
+            "auth": "SHA256",
+            "key-direction": "1",
+            "data-ciphers": [
+                "AES-256-GCM",
+                "AES-128-GCM"
+            ],
+            "ca": "-----BEGIN CERTIFICATE-----\nMIIBXjCCAQSgAwIBAgIUa+7Khhu02W70eFypjHNC1mxxpBwwCgYIKoZIzj0EAwIw\nFTETMBEGA1UEAwwKZXJraW4tdGVzdDAeFw0yNjExMTkxMDA3MTVaFw0zNjExMTYx\nMDA3MTVaMBUxEzARBgNVBAMMCmVya2luLXRlc3QwWTATBgcqhkjOPQIBBggqhkjO\nPQMBBwNCAAQf1Tr1UhLr3mmHeXfpSAamAVSlj3/S6T/czNPKPm++SEHYocMNsNWY\nd806tm3Et8M7N5OSPPm1dcGtcsG+D3wGozIwMDAdBgNVHQ4EFgQUhyPqNNLm0fd+\noR9LpDdnwFtHNJwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiAi\na9nQB/6oqxHdLBhrkoPEWETaPvJto0cDpdbStHDp3gIhAJw3ID+aLdZANhCAFEV/\nafR0gUHd6jfgiARlG0kNK9LZ\n-----END CERTIFICATE-----",
+            "tls-auth": "-----BEGIN OpenVPN Static key V1-----\n8e4f376c09c866d9e8a6ec3fd0dc2656\nd8e131d2cce6effdcacab831692a816d\n60efc1db93368f895596a1e8fc799979\n6ec789a5a25dc5c28761f59772e1a7e4\nd7ef0964e27ddee4731cc55bbbea6467\nd104fb5c60405bba576f77a8f0f89b5b\n3998858ae3d7bbb6ea1ed05c6965f9ca\nad66c217871b58762656a73009a855f5\ne3a3c217fe7206b5afd4cbbe8e73dacc\nfb7a111b76cc08b31932c7f79ba13c59\n3f7532e92c7cf89190131229315c7a61\n30feca3c72bd12b5396d170d162bb8ea\n30659cd13c90a62e4bfa90444e931238\ndd62bdde96c5d024a2bc8a0557990203\nd91c711d01325a7e3de94116837c0c04\n337600ceec6e2d9ab25efc3e5435dfc8\n-----END OpenVPN Static key V1-----",
+            "username": "alice",
+            "password": "secret"
+        }
+    },
+    {
+        "wire": "shadowsocks",
+        "proxy": {
+            "type": "ss",
+            "server": "203.0.113.5",
+            "port": 8388,
+            "udp": true,
+            "cipher": "aes-256-gcm",
+            "password": "secret"
+        }
+    },
+    {
+        "wire": "socks5",
+        "proxy": {
+            "type": "socks5",
+            "server": "203.0.113.7",
+            "port": 1080,
+            "udp": true,
+            "username": "alice",
+            "password": "secret"
+        }
+    },
+    {
+        "wire": "trojan",
+        "proxy": {
+            "type": "trojan",
+            "server": "tr.example.org",
+            "port": 443,
+            "udp": true,
+            "password": "secret",
+            "sni": "tr.example.org"
+        }
+    },
+    {
+        "wire": "tuic",
+        "proxy": {
+            "type": "tuic",
+            "server": "tu.example.net",
+            "port": 443,
+            "udp": true,
+            "uuid": "0b3f1a2c-1111-4222-8333-444455556666",
+            "password": "secret",
+            "congestion-controller": "bbr",
+            "udp-relay-mode": "native",
+            "sni": "tu.example.net",
+            "alpn": [
+                "h3"
+            ]
+        }
+    },
+    {
+        "wire": "vless",
+        "proxy": {
+            "type": "vless",
+            "server": "vl.example.com",
+            "port": 443,
+            "udp": true,
+            "uuid": "0b3f1a2c-1111-4222-8333-444455556666",
+            "tls": true,
+            "servername": "vl.example.com"
+        }
+    },
+    {
+        "wire": "vmess",
+        "proxy": {
+            "type": "vmess",
+            "server": "vm.example.com",
+            "port": 443,
+            "udp": true,
+            "uuid": "0b3f1a2c-1111-4222-8333-444455556666",
+            "alterId": 0,
+            "cipher": "auto",
+            "tls": true,
+            "servername": "vm.example.com",
+            "network": "ws",
+            "ws-opts": {
+                "path": "/ws",
+                "headers": {
+                    "Host": "vm.example.com"
+                }
+            }
+        }
+    },
+    {
+        "wire": "wireguard",
+        "proxy": {
+            "type": "wireguard",
+            "server": "wg.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "10.9.0.2/32",
+            "private-key": "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec=",
+            "public-key": "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ=",
+            "allowed-ips": [
+                "0.0.0.0/0",
+                "::/0"
+            ],
+            "mtu": 1280
+        }
+    }
+]

@@ -40,18 +40,29 @@ enum class ProxyProtocol(val wire: String, val handler: ProtocolHandler) {
     }
 
     companion object {
-        val allSchemes: List<String> get() = entries.flatMap { it.handler.schemes }
+        val allSchemes: List<String> get() =
+            entries.flatMap { (it.handler as? LinkHandler)?.schemes.orEmpty() } + CoreProxySource.SCHEME
+
+        fun ofCore(proxy: JsonObject): Pair<ProxyProtocol, JsonObject>? =
+            entries.firstNotNullOfOrNull { protocol -> protocol.handler.normalize(proxy)?.let { protocol to it } }
 
         fun fromWire(value: String): ProxyProtocol? = entries.firstOrNull { it.wire == value }
     }
 }
 
+private val FOREIGN_KEYS = setOf("name", "dialer-proxy", "interface-name", "routing-mark")
+private const val MAX_PORT = 65535
+
 interface ProtocolHandler {
-    val schemes: List<String>
+    val coreType: String
 
-    fun recognizes(input: String): Boolean = schemes.any { input.startsWith("$it://") }
-
-    fun parse(input: String): ParsedLink
+    fun normalize(proxy: JsonObject): JsonObject? {
+        val type = (proxy["type"] as? JsonPrimitive)?.contentOrNull
+        val server = (proxy["server"] as? JsonPrimitive)?.takeIf { it.isString }?.content
+        val port = (proxy["port"] as? JsonPrimitive)?.intOrNull
+        val usable = type == coreType && !server.isNullOrBlank() && port != null && port in 1..MAX_PORT
+        return if (usable) JsonObject(proxy - FOREIGN_KEYS) else null
+    }
 
     fun server(descriptor: JsonObject): ServerAddress? {
         val host = (descriptor["server"] as? JsonPrimitive)?.contentOrNull ?: return null
@@ -60,6 +71,20 @@ interface ProtocolHandler {
     }
 
     fun requirements(descriptor: JsonObject): Set<EngineRequirement>
+}
+
+interface LinkHandler : ProtocolHandler {
+    val schemes: List<String>
+
+    fun recognizes(link: ShareLink): Boolean = link.scheme in schemes
+
+    fun parse(link: ShareLink): ParsedLink
+}
+
+interface DocumentHandler : ProtocolHandler {
+    fun recognizes(text: String): Boolean
+
+    fun parse(text: String): ParsedLink
 }
 
 data class ParsedLink(val name: String, val proxy: JsonObject)

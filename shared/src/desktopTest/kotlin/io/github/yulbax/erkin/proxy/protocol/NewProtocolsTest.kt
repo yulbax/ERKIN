@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.proxy.protocol
 
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
+import io.github.yulbax.erkin.proxy.ShareLink
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
@@ -60,7 +61,7 @@ class NewProtocolsTest {
             "https://sub.example.com:8443/s/abc",
             "https://example.com",
             "https://example.com:443"
-        ).forEach { subscription -> assertFalse(subscription, Https.recognizes(subscription)) }
+        ).forEach { subscription -> assertFalse(subscription, Https.recognizes(requireNotNull(ShareLink.parse(subscription)))) }
     }
 
     @Test

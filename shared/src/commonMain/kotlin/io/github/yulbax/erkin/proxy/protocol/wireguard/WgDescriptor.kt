@@ -7,9 +7,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
+internal const val AMNEZIA_OPTION = "amnezia-wg-option"
+
 internal fun wgProxy(config: WgConfig, amneziaOptions: JsonObject? = null): JsonObject = buildJsonObject {
     val peer = config.peers.first()
-    proxy("wireguard", peer.host, peer.port)
+    proxy(WireGuard.coreType, peer.host, peer.port)
     config.addresses.firstOrNull { !it.contains(':') }?.let { put("ip", it) }
     config.addresses.firstOrNull { it.contains(':') }?.let { put("ipv6", it) }
     put("private-key", config.privateKey)
@@ -21,7 +23,7 @@ internal fun wgProxy(config: WgConfig, amneziaOptions: JsonObject? = null): Json
         putJsonArray("reserved") { bytes.forEach { add(it) } }
     }
     config.mtu?.let { put("mtu", it) }
-    amneziaOptions?.let { put("amnezia-wg-option", it) }
+    amneziaOptions?.let { put(AMNEZIA_OPTION, it) }
 }
 
 internal fun JsonObject.hasIpv6Address(): Boolean = containsKey("ipv6")

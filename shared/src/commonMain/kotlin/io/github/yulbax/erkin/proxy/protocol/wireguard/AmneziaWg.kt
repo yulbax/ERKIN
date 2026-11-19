@@ -1,13 +1,16 @@
 package io.github.yulbax.erkin.proxy.protocol.wireguard
 
+import io.github.yulbax.erkin.proxy.DocumentHandler
+import io.github.yulbax.erkin.proxy.LinkHandler
 import io.github.yulbax.erkin.proxy.ParsedLink
-import io.github.yulbax.erkin.proxy.ProtocolHandler
+import io.github.yulbax.erkin.proxy.ShareLink
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-object AmneziaWg : ProtocolHandler {
+object AmneziaWg : LinkHandler, DocumentHandler {
+    override val coreType = WireGuard.coreType
     override val schemes: List<String> = AmneziaLink.SCHEMES
 
     private const val VERSION_3 = 3
@@ -31,16 +34,17 @@ object AmneziaWg : ProtocolHandler {
 
     internal fun isAmnezia(config: WgConfig): Boolean = config.interfaceValues.keys.any { it in OBFUSCATION_KEYS }
 
-    override fun recognizes(input: String): Boolean =
-        super.recognizes(input) || WgIni.parseOrNull(input)?.let(::isAmnezia) == true
+    override fun normalize(proxy: JsonObject): JsonObject? =
+        if (AMNEZIA_OPTION in proxy) super<LinkHandler>.normalize(proxy) else null
 
-    override fun parse(input: String): ParsedLink =
-        if (WgIni.looksLikeConfig(input)) {
-            val config = WgIni.parse(input)
-            ParsedLink(config.host, descriptor(config))
-        } else {
-            AmneziaLink.parse(input)
-        }
+    override fun recognizes(text: String): Boolean = WgIni.parseOrNull(text)?.let(::isAmnezia) == true
+
+    override fun parse(link: ShareLink): ParsedLink = AmneziaLink.parse(link)
+
+    override fun parse(text: String): ParsedLink {
+        val config = WgIni.parse(text)
+        return ParsedLink(config.host, descriptor(config))
+    }
 
     internal fun descriptor(config: WgConfig): JsonObject = wgProxy(config, options(config.interfaceValues))
 

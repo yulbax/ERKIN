@@ -1,7 +1,8 @@
 package io.github.yulbax.erkin.proxy.protocol
 
+import io.github.yulbax.erkin.proxy.LinkHandler
 import io.github.yulbax.erkin.proxy.ParsedLink
-import io.github.yulbax.erkin.proxy.ProtocolHandler
+import io.github.yulbax.erkin.proxy.ShareLink
 import io.github.yulbax.erkin.proxy.descriptorJson
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
@@ -9,11 +10,12 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
-object Vmess : ProtocolHandler {
+object Vmess : LinkHandler {
+    override val coreType = "vmess"
     override val schemes: List<String> = listOf("vmess")
 
-    override fun parse(input: String): ParsedLink {
-        val decoded = decodeBase64Lenient(input.removePrefix("vmess://")) ?: error("invalid vmess payload")
+    override fun parse(link: ShareLink): ParsedLink {
+        val decoded = decodeBase64Lenient(link.body) ?: error("invalid vmess payload")
         val obj = descriptorJson.parseToJsonElement(decoded).let { it as JsonObject }
         fun str(key: String): String = obj[key]?.jsonPrimitive?.content?.takeIf { it.isNotEmpty() } ?: ""
         val name = str("ps").ifEmpty { str("add") }
@@ -24,7 +26,7 @@ object Vmess : ProtocolHandler {
         val sni = str("sni").ifEmpty { host }.ifEmpty { str("add") }
 
         val descriptor = buildJsonObject {
-            proxy("vmess", str("add"), str("port").toIntOrNull() ?: 443)
+            proxy(coreType, str("add"), str("port").toIntOrNull() ?: 443)
             put("uuid", str("id"))
             put("alterId", str("aid").toIntOrNull() ?: 0)
             put("cipher", str("scy").ifEmpty { "auto" })

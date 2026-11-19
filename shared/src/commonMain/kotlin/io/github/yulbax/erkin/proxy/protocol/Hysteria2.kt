@@ -1,30 +1,31 @@
 package io.github.yulbax.erkin.proxy.protocol
 
+import io.github.yulbax.erkin.proxy.LinkHandler
 import io.github.yulbax.erkin.proxy.ParsedLink
-import io.github.yulbax.erkin.proxy.ProtocolHandler
+import io.github.yulbax.erkin.proxy.ShareLink
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-object Hysteria2 : ProtocolHandler {
+object Hysteria2 : LinkHandler {
+    override val coreType = "hysteria2"
     override val schemes: List<String> = listOf("hysteria2", "hy2")
 
-    override fun parse(input: String): ParsedLink {
-        val uri = linkUri(input.replaceFirst("hy2://", "hysteria2://"))
-        val q = uri.queryMap()
-        val sni = q["sni"] ?: uri.hostName
+    override fun parse(link: ShareLink): ParsedLink {
+        val q = link.query
+        val sni = q["sni"] ?: link.host
 
         val descriptor = buildJsonObject {
-            proxy("hysteria2", uri.hostName, if (uri.port > 0) uri.port else 443)
-            put("password", uri.userInfo ?: "")
+            proxy(coreType, link.host, link.port ?: 443)
+            put("password", link.userInfo.orEmpty())
             q["obfs"]?.takeIf { it.isNotEmpty() }?.let { obfs ->
                 put("obfs", obfs)
                 q["obfs-password"]?.takeIf { it.isNotEmpty() }?.let { put("obfs-password", it) }
             }
             tls(TlsStyle.SNI, sni, fp = "", insecure = q["insecure"] == "1", alpn = q["alpn"] ?: "")
         }
-        return ParsedLink(linkName(input, uri.hostName), descriptor)
+        return ParsedLink(link.title, descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()

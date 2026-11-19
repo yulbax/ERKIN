@@ -29,13 +29,13 @@ class ProfileRepository(
 
     suspend fun add(raw: String, fileName: String?, target: AddTarget): ProfileOperationResult {
         val input = raw.trim()
-        val parsed = LinkParser.parse(input)
+        val profiles = SubscriptionParser.parseBody(input)
         val fileTitle = fileName?.let(::nameOfFile)
         return when {
-            parsed != null && !input.listsSeveralLinks() ->
-                insert(listOf(fileTitle?.let { parsed.copy(name = it) } ?: parsed), target)
-            input.isHttpUrl() -> refreshSubscription(input)
-            else -> insert(SubscriptionParser.parseBody(input), fileTitle?.let { target.named(it) } ?: target)
+            profiles.size == 1 ->
+                insert(listOf(fileTitle?.let { profiles.single().copy(name = it) } ?: profiles.single()), target)
+            profiles.isEmpty() && input.isHttpUrl() -> refreshSubscription(input)
+            else -> insert(profiles, fileTitle?.let { target.named(it) } ?: target)
         }
     }
 
@@ -398,11 +398,6 @@ class ProfileRepository(
 
     private fun String.isHttpUrl(): Boolean =
         startsWith("http://", ignoreCase = true) || startsWith("https://", ignoreCase = true)
-
-    private fun String.listsSeveralLinks(): Boolean {
-        val lines = lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
-        return lines.size > 1 && LinkParser.parse(lines.first()) != null
-    }
 
     private fun String.serverKey(): String = trim().let { if ('\n' in it) it else it.substringBefore('#') }
 
