@@ -28,6 +28,9 @@ private object Base64LinksReader : FormatReader {
 }
 
 enum class SubscriptionFormat(val reader: FormatReader) {
+    SING_BOX_JSON(SingBoxJsonReader),
+    XRAY_JSON(XrayJsonReader),
+    SIP008_JSON(Sip008JsonReader),
     CLASH_YAML(ClashYamlReader),
     DOCUMENT(DocumentReader),
     BASE64_LINKS(Base64LinksReader),
