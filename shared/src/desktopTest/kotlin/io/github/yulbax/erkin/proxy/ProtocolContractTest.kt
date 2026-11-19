@@ -138,6 +138,7 @@ class ProtocolContractTest {
     private fun recognizersOf(sample: String): List<ProxyProtocol> {
         val documents = ProxyProtocol.entries.filter { (it.handler as? DocumentHandler)?.recognizes(sample) == true }
         val link = ShareLink.parse(sample) ?: return documents
+        if (link.scheme == CoreProxySource.SCHEME) return listOfNotNull(LinkParser.parse(sample)?.protocol)
         val links = ProxyProtocol.entries.filter { (it.handler as? LinkHandler)?.recognizes(link) == true }
         assertTrue("a link form is also read as a document: $sample", documents.isEmpty() || links.isEmpty())
         return documents + links
@@ -162,8 +163,9 @@ class ProtocolContractTest {
             """{"v":"2","ps":"Vienna","add":"vm.example.com","port":"443","id":"0b3f1a2c-1111-4222-8333-444455556666","aid":"0","net":"ws","host":"vm.example.com","path":"/ws","tls":"tls"}"""
                 .toByteArray()
         )
-        val SHADOWSOCKS = "ss://" + Base64.getEncoder().encodeToString("aes-256-gcm:secret".toByteArray()) +
-            "@203.0.113.5:8388#Oslo"
+        val SHADOWSOCKS_BASE = "ss://" + Base64.getEncoder().encodeToString("aes-256-gcm:secret".toByteArray()) +
+            "@203.0.113.5:8388"
+        val SHADOWSOCKS = "$SHADOWSOCKS_BASE#Oslo"
         val AMNEZIAWG = """
             [Interface]
             Address = 10.8.1.2/32
@@ -237,18 +239,63 @@ class ProtocolContractTest {
             </auth-user-pass>
         """.trimIndent()
 
+        const val WG_PRIVATE = "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec%3D"
+        const val WG_PUBLIC = "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ%3D"
+        const val SSH_HOST_KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMjPI8DwxA1Ka9qk21jWbBiAo65Z6tAsNtp02eMBddIx"
+        const val MASQUE_PRIVATE_KEY =
+            "MHcCAQEEIEK7TVwhn8YHS4/0/wZasp/+2npAtmrOTvfquXHH5vTpoAoGCCqGSM49AwEHoUQDQgAEwfP6CezVdQp98slUACJGSMfKwwo3V0alxc6gvSQYWh1UPfwmTfqZFOBmUk5x8qww1Ysh3DzhK3C1sXcO6IXRPw=="
+        const val MASQUE_PUBLIC_KEY =
+            "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExLsKluZJ4CpUqCf1FUUR1c/PhxQl0Kr0bgoJr1eUA9GpiuhL/7QcQ4S7OkZJJtEB45sHrA32BL71VuSi2w3sgA=="
+
+        val SSH_PRIVATE_KEY = """
+            -----BEGIN OPENSSH PRIVATE KEY-----
+            b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+            QyNTUxOQAAACBC2YGICKmnHTK90nOPXmwtoOw6ZoTpA5UzcVGFbWJHyAAAAIghVhzSIVYc
+            0gAAAAtzc2gtZWQyNTUxOQAAACBC2YGICKmnHTK90nOPXmwtoOw6ZoTpA5UzcVGFbWJHyA
+            AAAECRSJ8fV7AUkWeo48Rhy4mQhLSvgKEgL2qX6WEPvOGRQ0LZgYgIqacdMr3Sc49ebC2g
+            7DpmhOkDlTNxUYVtYkfIAAAAAAECAwQF
+            -----END OPENSSH PRIVATE KEY-----
+        """.trimIndent()
+
+        val SSR = "ssr://" + urlSafe(
+            "ssr.example.com:8388:auth_aes128_md5:aes-256-cfb:tls1.2_ticket_auth:" + urlSafe("secret") +
+                "/?obfsparam=" + urlSafe("cdn.example.com") + "&protoparam=" + urlSafe("32:abc") +
+                "&remarks=" + urlSafe("Sofia") + "&group=" + urlSafe("Sample")
+        )
+
+        val OVPN_LINK = "ovpn://" + urlSafe(OPENVPN) + "?user=bob&pass=hunter2#Prague"
+
+        fun urlSafe(text: String): String = Base64.getUrlEncoder().withoutPadding().encodeToString(text.encodeToByteArray())
+
+        fun core(name: String, descriptor: String): String =
+            CoreProxySource.encode(name, Json.parseToJsonElement(descriptor) as JsonObject)
+
         val FORMS: Map<ProxyProtocol, List<String>> = mapOf(
             ProxyProtocol.VMESS to listOf(VMESS),
             ProxyProtocol.VLESS to listOf(
                 "vless://0b3f1a2c-1111-4222-8333-444455556666@vl.example.com:443?security=tls&sni=vl.example.com#Amsterdam"
             ),
             ProxyProtocol.TROJAN to listOf("trojan://secret@tr.example.org:443#Frankfurt"),
-            ProxyProtocol.SHADOWSOCKS to listOf(SHADOWSOCKS),
-            ProxyProtocol.HYSTERIA2 to listOf("hysteria2://secret@hy.example.net:8443?sni=hy.example.net#Helsinki"),
-            ProxyProtocol.AMNEZIAWG to listOf(AMNEZIAWG, AMNEZIAWG_LINK),
+            ProxyProtocol.SHADOWSOCKS to listOf(
+                SHADOWSOCKS,
+                "$SHADOWSOCKS_BASE/?plugin=obfs-local%3Bobfs%3Dhttp%3Bobfs-host%3Dcdn.example.com#Bergen",
+                "$SHADOWSOCKS_BASE/?plugin=v2ray-plugin%3Btls%3Bhost%3Dcdn.example.com%3Bpath%3D%2Fws&uot=1&udp-over-tcp-version=2#Stavanger"
+            ),
+            ProxyProtocol.HYSTERIA2 to listOf(
+                "hysteria2://secret@hy.example.net:8443?sni=hy.example.net#Helsinki",
+                "hysteria2://secret@hy.example.net:8443,20000-30000?sni=hy.example.net#Hopping",
+                "hysteria2://secret@hy.example.net:8443?sni=hy.example.net&mport=40000-50000#Mport"
+            ),
+            ProxyProtocol.AMNEZIAWG to listOf(
+                AMNEZIAWG,
+                AMNEZIAWG_LINK,
+                "awg://$WG_PRIVATE@awg2.example.com:51820?publickey=$WG_PUBLIC&address=10.8.1.3%2F32&jc=4&jmin=40&jmax=70#Kyiv",
+                "wireguard://$WG_PRIVATE@awg3.example.com:51820?publickey=$WG_PUBLIC&jc=4&s1=15&h1=1#Lviv",
+                "wg://$WG_PRIVATE@awg4.example.com:51820?publickey=$WG_PUBLIC&i1=%3Cr+8%3E#Odesa"
+            ),
             ProxyProtocol.WIREGUARD to listOf(
-                "wireguard://qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec%3D@wg.example.com:51820" +
-                    "?publickey=7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ%3D&address=10.9.0.2%2F32&mtu=1280#Warsaw",
+                "wireguard://$WG_PRIVATE@wg.example.com:51820?publickey=$WG_PUBLIC&address=10.9.0.2%2F32&mtu=1280#Warsaw",
+                "wg://$WG_PRIVATE@wg2.example.com:51820?publickey=$WG_PUBLIC#Krakow",
                 PLAIN_WIREGUARD_CONF
             ),
             ProxyProtocol.TUIC to listOf(
@@ -261,7 +308,56 @@ class ProtocolContractTest {
                 "socks://" + Base64.getEncoder().encodeToString("alice:secret".toByteArray()) + "@203.0.113.8:1080#Minsk"
             ),
             ProxyProtocol.HTTPS to listOf("https://alice:secret@proxy.example.com:8443#Prague"),
-            ProxyProtocol.OPENVPN to listOf(OPENVPN)
+            ProxyProtocol.HTTP to listOf("http://alice:secret@203.0.113.9:3128#Lisbon"),
+            ProxyProtocol.HYSTERIA to listOf(
+                "hysteria://hy1.example.net:8443?protocol=udp&auth=secret&peer=hy1.example.net&insecure=1" +
+                    "&upmbps=50&downmbps=100&alpn=h3&obfs=xplus&obfsParam=mask&mport=20000-30000#Madrid",
+                "hysteria://hy1.example.net:443?protocol=faketcp&auth=secret&up=20&down=40&obfs=mask#Seville"
+            ),
+            ProxyProtocol.SSR to listOf(SSR),
+            ProxyProtocol.MIERU to listOf(
+                "mierus://alice:secret@mi.example.com?port=2999&protocol=TCP&multiplexing=MULTIPLEXING_LOW" +
+                    "&handshake-mode=HANDSHAKE_NO_WAIT&profile=Sample#Brno",
+                "mierus://alice:secret@mi.example.com?port=2090-2099&protocol=UDP#Ostrava"
+            ),
+            ProxyProtocol.SSH to listOf(
+                "ssh://alice:secret@ssh.example.com:2222?hk=${java.net.URLEncoder.encode(SSH_HOST_KEY, "UTF-8")}#Nice",
+                "ssh://alice@ssh.example.com?pk=${java.net.URLEncoder.encode(SSH_PRIVATE_KEY, "UTF-8")}#Lyon"
+            ),
+            ProxyProtocol.OPENVPN to listOf(OPENVPN, OVPN_LINK),
+            ProxyProtocol.SNELL to listOf(
+                core("Zurich", """{"type":"snell","server":"sn.example.org","port":443,"psk":"secret","version":3,"udp":true}""")
+            ),
+            ProxyProtocol.SUDOKU to listOf(
+                core(
+                    "Geneva",
+                    """{"type":"sudoku","server":"su.example.org","port":8443,"key":"secret-key","aead-method":"chacha20-poly1305","table-type":"prefer_ascii"}"""
+                )
+            ),
+            ProxyProtocol.MASQUE to listOf(
+                core(
+                    "Basel",
+                    """{"type":"masque","server":"mq.example.org","port":443,"private-key":"$MASQUE_PRIVATE_KEY","public-key":"$MASQUE_PUBLIC_KEY","ip":"172.16.0.2","udp":true}"""
+                )
+            ),
+            ProxyProtocol.TRUSTTUNNEL to listOf(
+                core(
+                    "Bern",
+                    """{"type":"trusttunnel","server":"tt.example.org","port":443,"username":"alice","password":"secret","sni":"tt.example.org","udp":true}"""
+                )
+            ),
+            ProxyProtocol.SHADOWQUIC to listOf(
+                core(
+                    "Lugano",
+                    """{"type":"shadowquic","server":"sq.example.org","port":443,"username":"alice","password":"secret","sni":"sq.example.org"}"""
+                )
+            ),
+            ProxyProtocol.GOST_RELAY to listOf(
+                core(
+                    "Lausanne",
+                    """{"type":"gost-relay","server":"gr.example.org","port":8421,"username":"alice","password":"secret","tls":true,"sni":"gr.example.org"}"""
+                )
+            )
         )
 
         val SAMPLES: Map<ProxyProtocol, String> = FORMS.mapValues { it.value.first() }

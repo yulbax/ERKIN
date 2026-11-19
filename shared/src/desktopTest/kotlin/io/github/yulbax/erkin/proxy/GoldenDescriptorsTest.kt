@@ -21,14 +21,16 @@ class GoldenDescriptorsTest {
     }
 
     private fun descriptors(): JsonArray = JsonArray(
-        ProtocolContractTest.SAMPLES.entries.sortedBy { it.key.wire }.map { (protocol, sample) ->
-            JsonObject(
-                mapOf(
-                    "wire" to JsonPrimitive(protocol.wire),
-                    "proxy" to requireNotNull(LinkParser.parse(sample)) { protocol.wire }.proxy
+        ProtocolContractTest.FORMS.entries.sortedBy { it.key.wire }
+            .flatMap { (protocol, forms) -> forms.map { protocol to it } }
+            .map { (protocol, form) ->
+                JsonObject(
+                    mapOf(
+                        "wire" to JsonPrimitive(protocol.wire),
+                        "proxy" to requireNotNull(LinkParser.parse(form)) { protocol.wire }.proxy
+                    )
                 )
-            )
-        }
+            }
     )
 
     private companion object {

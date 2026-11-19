@@ -50,6 +50,11 @@ internal fun JsonObjectBuilder.proxy(type: String, host: String, port: Int) {
     put("udp", true)
 }
 
+internal fun JsonObjectBuilder.putHopPorts(link: ShareLink) {
+    val spec = link.portSpec?.takeIf { ',' in it || '-' in it } ?: link.query["mport"]?.takeIf { it.isNotEmpty() }
+    spec?.let { put("ports", it) }
+}
+
 internal fun JsonObjectBuilder.transport(
     net: String,
     path: String,

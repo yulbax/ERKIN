@@ -18,6 +18,88 @@
         }
     },
     {
+        "wire": "amneziawg",
+        "proxy": {
+            "type": "wireguard",
+            "server": "awg.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "10.8.1.2/32",
+            "private-key": "lfifzx2jzHHCjtXnW+j5Bc7XeY0CIVO7nz5oaI8Z2Bg=",
+            "public-key": "OXX78VOGhF/LETadWXqWz7lKHDWRrYOTbuXgO6P8I0M=",
+            "allowed-ips": [
+                "0.0.0.0/0"
+            ],
+            "amnezia-wg-option": {
+                "jc": 4
+            }
+        }
+    },
+    {
+        "wire": "amneziawg",
+        "proxy": {
+            "type": "wireguard",
+            "server": "awg2.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "10.8.1.3/32",
+            "private-key": "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec=",
+            "public-key": "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ=",
+            "allowed-ips": [
+                "0.0.0.0/0",
+                "::/0"
+            ],
+            "mtu": 1420,
+            "amnezia-wg-option": {
+                "jc": 4,
+                "jmin": 40,
+                "jmax": 70
+            }
+        }
+    },
+    {
+        "wire": "amneziawg",
+        "proxy": {
+            "type": "wireguard",
+            "server": "awg3.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "172.16.0.2/32",
+            "private-key": "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec=",
+            "public-key": "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ=",
+            "allowed-ips": [
+                "0.0.0.0/0",
+                "::/0"
+            ],
+            "mtu": 1420,
+            "amnezia-wg-option": {
+                "jc": 4,
+                "s1": 15,
+                "h1": "1"
+            }
+        }
+    },
+    {
+        "wire": "amneziawg",
+        "proxy": {
+            "type": "wireguard",
+            "server": "awg4.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "172.16.0.2/32",
+            "private-key": "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec=",
+            "public-key": "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ=",
+            "allowed-ips": [
+                "0.0.0.0/0",
+                "::/0"
+            ],
+            "mtu": 1420,
+            "amnezia-wg-option": {
+                "i1": "<r 8>"
+            }
+        }
+    },
+    {
         "wire": "anytls",
         "proxy": {
             "type": "anytls",
@@ -27,6 +109,29 @@
             "password": "secret",
             "sni": "at.example.org",
             "skip-cert-verify": true
+        }
+    },
+    {
+        "wire": "gost-relay",
+        "proxy": {
+            "type": "gost-relay",
+            "server": "gr.example.org",
+            "port": 8421,
+            "username": "alice",
+            "password": "secret",
+            "tls": true,
+            "sni": "gr.example.org"
+        }
+    },
+    {
+        "wire": "http",
+        "proxy": {
+            "type": "http",
+            "server": "203.0.113.9",
+            "port": 3128,
+            "udp": false,
+            "username": "alice",
+            "password": "secret"
         }
     },
     {
@@ -43,6 +148,41 @@
         }
     },
     {
+        "wire": "hysteria",
+        "proxy": {
+            "type": "hysteria",
+            "server": "hy1.example.net",
+            "port": 8443,
+            "udp": true,
+            "ports": "20000-30000",
+            "protocol": "udp",
+            "auth-str": "secret",
+            "up": "50",
+            "down": "100",
+            "obfs": "mask",
+            "sni": "hy1.example.net",
+            "skip-cert-verify": true,
+            "alpn": [
+                "h3"
+            ]
+        }
+    },
+    {
+        "wire": "hysteria",
+        "proxy": {
+            "type": "hysteria",
+            "server": "hy1.example.net",
+            "port": 443,
+            "udp": true,
+            "protocol": "faketcp",
+            "auth-str": "secret",
+            "up": "20",
+            "down": "40",
+            "obfs": "mask",
+            "sni": "hy1.example.net"
+        }
+    },
+    {
         "wire": "hysteria2",
         "proxy": {
             "type": "hysteria2",
@@ -51,6 +191,68 @@
             "udp": true,
             "password": "secret",
             "sni": "hy.example.net"
+        }
+    },
+    {
+        "wire": "hysteria2",
+        "proxy": {
+            "type": "hysteria2",
+            "server": "hy.example.net",
+            "port": 8443,
+            "udp": true,
+            "ports": "8443,20000-30000",
+            "password": "secret",
+            "sni": "hy.example.net"
+        }
+    },
+    {
+        "wire": "hysteria2",
+        "proxy": {
+            "type": "hysteria2",
+            "server": "hy.example.net",
+            "port": 8443,
+            "udp": true,
+            "ports": "40000-50000",
+            "password": "secret",
+            "sni": "hy.example.net"
+        }
+    },
+    {
+        "wire": "masque",
+        "proxy": {
+            "type": "masque",
+            "server": "mq.example.org",
+            "port": 443,
+            "private-key": "MHcCAQEEIEK7TVwhn8YHS4/0/wZasp/+2npAtmrOTvfquXHH5vTpoAoGCCqGSM49AwEHoUQDQgAEwfP6CezVdQp98slUACJGSMfKwwo3V0alxc6gvSQYWh1UPfwmTfqZFOBmUk5x8qww1Ysh3DzhK3C1sXcO6IXRPw==",
+            "public-key": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAExLsKluZJ4CpUqCf1FUUR1c/PhxQl0Kr0bgoJr1eUA9GpiuhL/7QcQ4S7OkZJJtEB45sHrA32BL71VuSi2w3sgA==",
+            "ip": "172.16.0.2",
+            "udp": true
+        }
+    },
+    {
+        "wire": "mieru",
+        "proxy": {
+            "type": "mieru",
+            "server": "mi.example.com",
+            "port": 2999,
+            "udp": true,
+            "username": "alice",
+            "password": "secret",
+            "transport": "TCP",
+            "multiplexing": "MULTIPLEXING_LOW",
+            "handshake-mode": "HANDSHAKE_NO_WAIT"
+        }
+    },
+    {
+        "wire": "mieru",
+        "proxy": {
+            "type": "mieru",
+            "server": "mi.example.com",
+            "udp": true,
+            "username": "alice",
+            "password": "secret",
+            "transport": "UDP",
+            "port-range": "2090-2099"
         }
     },
     {
@@ -76,6 +278,39 @@
         }
     },
     {
+        "wire": "openvpn",
+        "proxy": {
+            "type": "openvpn",
+            "server": "ovpn.example.com",
+            "port": 1194,
+            "udp": true,
+            "proto": "udp",
+            "dev": "tun",
+            "cipher": "AES-256-GCM",
+            "auth": "SHA256",
+            "key-direction": "1",
+            "data-ciphers": [
+                "AES-256-GCM",
+                "AES-128-GCM"
+            ],
+            "ca": "-----BEGIN CERTIFICATE-----\nMIIBXjCCAQSgAwIBAgIUa+7Khhu02W70eFypjHNC1mxxpBwwCgYIKoZIzj0EAwIw\nFTETMBEGA1UEAwwKZXJraW4tdGVzdDAeFw0yNjExMTkxMDA3MTVaFw0zNjExMTYx\nMDA3MTVaMBUxEzARBgNVBAMMCmVya2luLXRlc3QwWTATBgcqhkjOPQIBBggqhkjO\nPQMBBwNCAAQf1Tr1UhLr3mmHeXfpSAamAVSlj3/S6T/czNPKPm++SEHYocMNsNWY\nd806tm3Et8M7N5OSPPm1dcGtcsG+D3wGozIwMDAdBgNVHQ4EFgQUhyPqNNLm0fd+\noR9LpDdnwFtHNJwwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBFAiAi\na9nQB/6oqxHdLBhrkoPEWETaPvJto0cDpdbStHDp3gIhAJw3ID+aLdZANhCAFEV/\nafR0gUHd6jfgiARlG0kNK9LZ\n-----END CERTIFICATE-----",
+            "tls-auth": "-----BEGIN OpenVPN Static key V1-----\n8e4f376c09c866d9e8a6ec3fd0dc2656\nd8e131d2cce6effdcacab831692a816d\n60efc1db93368f895596a1e8fc799979\n6ec789a5a25dc5c28761f59772e1a7e4\nd7ef0964e27ddee4731cc55bbbea6467\nd104fb5c60405bba576f77a8f0f89b5b\n3998858ae3d7bbb6ea1ed05c6965f9ca\nad66c217871b58762656a73009a855f5\ne3a3c217fe7206b5afd4cbbe8e73dacc\nfb7a111b76cc08b31932c7f79ba13c59\n3f7532e92c7cf89190131229315c7a61\n30feca3c72bd12b5396d170d162bb8ea\n30659cd13c90a62e4bfa90444e931238\ndd62bdde96c5d024a2bc8a0557990203\nd91c711d01325a7e3de94116837c0c04\n337600ceec6e2d9ab25efc3e5435dfc8\n-----END OpenVPN Static key V1-----",
+            "username": "bob",
+            "password": "hunter2"
+        }
+    },
+    {
+        "wire": "shadowquic",
+        "proxy": {
+            "type": "shadowquic",
+            "server": "sq.example.org",
+            "port": 443,
+            "username": "alice",
+            "password": "secret",
+            "sni": "sq.example.org"
+        }
+    },
+    {
         "wire": "shadowsocks",
         "proxy": {
             "type": "ss",
@@ -84,6 +319,53 @@
             "udp": true,
             "cipher": "aes-256-gcm",
             "password": "secret"
+        }
+    },
+    {
+        "wire": "shadowsocks",
+        "proxy": {
+            "type": "ss",
+            "server": "203.0.113.5",
+            "port": 8388,
+            "udp": true,
+            "cipher": "aes-256-gcm",
+            "password": "secret",
+            "plugin": "obfs",
+            "plugin-opts": {
+                "mode": "http",
+                "host": "cdn.example.com"
+            }
+        }
+    },
+    {
+        "wire": "shadowsocks",
+        "proxy": {
+            "type": "ss",
+            "server": "203.0.113.5",
+            "port": 8388,
+            "udp": true,
+            "cipher": "aes-256-gcm",
+            "password": "secret",
+            "plugin": "v2ray-plugin",
+            "plugin-opts": {
+                "mode": "websocket",
+                "host": "cdn.example.com",
+                "path": "/ws",
+                "tls": true
+            },
+            "udp-over-tcp": true,
+            "udp-over-tcp-version": 2
+        }
+    },
+    {
+        "wire": "snell",
+        "proxy": {
+            "type": "snell",
+            "server": "sn.example.org",
+            "port": 443,
+            "psk": "secret",
+            "version": 3,
+            "udp": true
         }
     },
     {
@@ -98,6 +380,68 @@
         }
     },
     {
+        "wire": "socks5",
+        "proxy": {
+            "type": "socks5",
+            "server": "203.0.113.8",
+            "port": 1080,
+            "udp": true,
+            "username": "alice",
+            "password": "secret"
+        }
+    },
+    {
+        "wire": "ssh",
+        "proxy": {
+            "type": "ssh",
+            "server": "ssh.example.com",
+            "port": 2222,
+            "udp": true,
+            "username": "alice",
+            "password": "secret",
+            "host-key": [
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMjPI8DwxA1Ka9qk21jWbBiAo65Z6tAsNtp02eMBddIx"
+            ]
+        }
+    },
+    {
+        "wire": "ssh",
+        "proxy": {
+            "type": "ssh",
+            "server": "ssh.example.com",
+            "port": 22,
+            "udp": true,
+            "username": "alice",
+            "private-key": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACBC2YGICKmnHTK90nOPXmwtoOw6ZoTpA5UzcVGFbWJHyAAAAIghVhzSIVYc\n0gAAAAtzc2gtZWQyNTUxOQAAACBC2YGICKmnHTK90nOPXmwtoOw6ZoTpA5UzcVGFbWJHyA\nAAAECRSJ8fV7AUkWeo48Rhy4mQhLSvgKEgL2qX6WEPvOGRQ0LZgYgIqacdMr3Sc49ebC2g\n7DpmhOkDlTNxUYVtYkfIAAAAAAECAwQF\n-----END OPENSSH PRIVATE KEY-----"
+        }
+    },
+    {
+        "wire": "ssr",
+        "proxy": {
+            "type": "ssr",
+            "server": "ssr.example.com",
+            "port": 8388,
+            "udp": true,
+            "cipher": "aes-256-cfb",
+            "password": "secret",
+            "obfs": "tls1.2_ticket_auth",
+            "protocol": "auth_aes128_md5",
+            "obfs-param": "cdn.example.com",
+            "protocol-param": "32:abc"
+        }
+    },
+    {
+        "wire": "sudoku",
+        "proxy": {
+            "type": "sudoku",
+            "server": "su.example.org",
+            "port": 8443,
+            "key": "secret-key",
+            "aead-method": "chacha20-poly1305",
+            "table-type": "prefer_ascii"
+        }
+    },
+    {
         "wire": "trojan",
         "proxy": {
             "type": "trojan",
@@ -106,6 +450,18 @@
             "udp": true,
             "password": "secret",
             "sni": "tr.example.org"
+        }
+    },
+    {
+        "wire": "trusttunnel",
+        "proxy": {
+            "type": "trusttunnel",
+            "server": "tt.example.org",
+            "port": 443,
+            "username": "alice",
+            "password": "secret",
+            "sni": "tt.example.org",
+            "udp": true
         }
     },
     {
@@ -173,6 +529,38 @@
                 "::/0"
             ],
             "mtu": 1280
+        }
+    },
+    {
+        "wire": "wireguard",
+        "proxy": {
+            "type": "wireguard",
+            "server": "wg2.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "172.16.0.2/32",
+            "private-key": "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec=",
+            "public-key": "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ=",
+            "allowed-ips": [
+                "0.0.0.0/0",
+                "::/0"
+            ],
+            "mtu": 1420
+        }
+    },
+    {
+        "wire": "wireguard",
+        "proxy": {
+            "type": "wireguard",
+            "server": "wg.example.com",
+            "port": 51820,
+            "udp": true,
+            "ip": "10.9.0.2/32",
+            "private-key": "qJ3Dt9VHrsHZmRxRZ1rH0hqTJ1zBBpK1ZnpT6YBr4Ec=",
+            "public-key": "7PjU0wTXBPX0CUHKCCgPLZ2fDLxTzBBpK1ZnpT6YBrQ=",
+            "allowed-ips": [
+                "0.0.0.0/0"
+            ]
         }
     }
 ]

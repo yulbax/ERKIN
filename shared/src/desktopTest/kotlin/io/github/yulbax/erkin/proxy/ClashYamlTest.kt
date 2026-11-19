@@ -17,11 +17,11 @@ class ClashYamlTest {
 
         assertEquals(SubscriptionFormat.CLASH_YAML, SubscriptionFormat.detect(SUBSCRIPTION))
         assertEquals(
-            listOf("Amsterdam WS", "Helsinki", "Frankfurt Trojan", "Chained", "🇩🇪 Berlin Fast"),
+            listOf("Amsterdam WS", "Helsinki", "Frankfurt Trojan", "Chained", "Zurich", "🇩🇪 Berlin Fast"),
             profiles.map { it.name }
         )
         assertEquals(
-            listOf(ProxyProtocol.VLESS, ProxyProtocol.HYSTERIA2, ProxyProtocol.TROJAN, ProxyProtocol.TROJAN, ProxyProtocol.TROJAN),
+            listOf(ProxyProtocol.VLESS, ProxyProtocol.HYSTERIA2, ProxyProtocol.TROJAN, ProxyProtocol.TROJAN, ProxyProtocol.SNELL, ProxyProtocol.TROJAN),
             profiles.map { it.protocol }
         )
     }
@@ -155,11 +155,15 @@ class ClashYamlTest {
                 dialer-proxy: Helsinki
                 interface-name: eth0
                 routing-mark: 6666
-              - name: Skipped
+              - name: Zurich
                 type: snell
                 server: sn.example.org
                 port: 443
                 psk: secret
+              - name: Skipped
+                type: tailscale
+                server: ts.example.org
+                port: 443
               - <<: *base
                 name: "🇩🇪 Berlin Fast"
                 server: be.example.org

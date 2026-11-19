@@ -48,6 +48,18 @@ class LinkParserTest {
     }
 
     @Test
+    fun shadowsocksCarriesUdpOverTcpAndItsVersion() {
+        val base = "ss://YWVzLTEyOC1nY206c2VjcmV0@203.0.113.5:8388/?"
+        val versioned = requireNotNull(LinkParser.parse("${base}uot=1&udp-over-tcp-version=2#A")).proxy
+        assertEquals("true", versioned["udp-over-tcp"]?.jsonPrimitive?.content)
+        assertEquals("2", versioned["udp-over-tcp-version"]?.jsonPrimitive?.content)
+        val plain = requireNotNull(LinkParser.parse("${base}udp-over-tcp=true#B")).proxy
+        assertEquals("true", plain["udp-over-tcp"]?.jsonPrimitive?.content)
+        assertNull(plain["udp-over-tcp-version"])
+        assertNull(requireNotNull(LinkParser.parse("${base}udp-over-tcp-version=2#C")).proxy["udp-over-tcp"])
+    }
+
+    @Test
     fun transportPathIsDecodedOnce() {
         for (scheme in listOf("vless://id", "trojan://secret")) {
             val parsed = requireNotNull(LinkParser.parse("$scheme@example.com:443?security=tls&type=ws&path=%2Fa%252Fb%2Bc#P"))

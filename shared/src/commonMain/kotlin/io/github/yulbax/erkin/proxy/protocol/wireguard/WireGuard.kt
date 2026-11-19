@@ -11,7 +11,7 @@ import java.util.Base64
 
 object WireGuard : LinkHandler, DocumentHandler {
     override val coreType = "wireguard"
-    override val schemes: List<String> = listOf("wireguard")
+    override val schemes: List<String> = listOf("wireguard", "wg")
 
     private const val DEFAULT_PORT = 51820
     private const val DEFAULT_MTU = 1420
@@ -30,10 +30,15 @@ object WireGuard : LinkHandler, DocumentHandler {
         return ParsedLink(config.host, wgProxy(config))
     }
 
-    override fun parse(link: ShareLink): ParsedLink {
+    override fun recognizes(link: ShareLink): Boolean =
+        super<LinkHandler>.recognizes(link) && !AmneziaWg.carriesObfuscation(link)
+
+    override fun parse(link: ShareLink): ParsedLink = ParsedLink(link.title, wgProxy(config(link)))
+
+    internal fun config(link: ShareLink): WgConfig {
         val q = link.query
         val host = requireNotNull(link.host.takeIf { it.isNotEmpty() }) { "missing host" }
-        val config = WgConfig(
+        return WgConfig(
             privateKey = requireKey(link.userInfo, "private key"),
             addresses = (q["address"]?.takeIf { it.isNotBlank() } ?: DEFAULT_ADDRESS)
                 .split(',').map { it.trim() }.filter { it.isNotEmpty() }.map(::withPrefix),
@@ -51,7 +56,6 @@ object WireGuard : LinkHandler, DocumentHandler {
             ),
             interfaceValues = emptyMap()
         )
-        return ParsedLink(link.title, wgProxy(config))
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> =

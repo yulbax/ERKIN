@@ -18,6 +18,7 @@ object Hysteria2 : LinkHandler {
 
         val descriptor = buildJsonObject {
             proxy(coreType, link.host, link.port ?: 443)
+            putHopPorts(link)
             put("password", link.userInfo.orEmpty())
             q["obfs"]?.takeIf { it.isNotEmpty() }?.let { obfs ->
                 put("obfs", obfs)

@@ -28,31 +28,46 @@ object Socks : LinkHandler {
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
 }
 
-object Https : LinkHandler {
-    private const val SCHEME = "https"
-    private val ROOT_PATHS = setOf("", "/")
+private val ROOT_PATHS = setOf("", "/")
 
+private fun ShareLink.isProxyEndpoint(): Boolean =
+    port != null && path in ROOT_PATHS && query.isEmpty() && (user != null || name != null)
+
+private fun httpProxy(link: ShareLink, tls: Boolean): JsonObject {
+    val credentials = Credentials.of(link.userInfo)
+    return buildJsonObject {
+        proxy("http", link.host, requireNotNull(link.port) { "missing port" })
+        put("udp", false)
+        if (tls) {
+            put("tls", true)
+            put("sni", link.host)
+        }
+        credentials?.let { putCredentials(it.username, it.password) }
+    }
+}
+
+object Https : LinkHandler {
     override val coreType = "http"
-    override val schemes: List<String> = listOf(SCHEME)
+    override val schemes: List<String> = listOf("https")
 
     override fun normalize(proxy: JsonObject): JsonObject? = if (proxy.flag("tls")) super.normalize(proxy) else null
 
-    override fun recognizes(link: ShareLink): Boolean =
-        super.recognizes(link) && link.port != null && link.path in ROOT_PATHS && link.query.isEmpty() &&
-            (link.user != null || link.name != null)
+    override fun recognizes(link: ShareLink): Boolean = super.recognizes(link) && link.isProxyEndpoint()
 
-    override fun parse(link: ShareLink): ParsedLink {
-        val credentials = Credentials.of(link.userInfo)
+    override fun parse(link: ShareLink): ParsedLink = ParsedLink(link.title, httpProxy(link, tls = true))
 
-        val descriptor = buildJsonObject {
-            proxy(coreType, link.host, requireNotNull(link.port) { "missing port" })
-            put("udp", false)
-            put("tls", true)
-            put("sni", link.host)
-            credentials?.let { putCredentials(it.username, it.password) }
-        }
-        return ParsedLink(link.title, descriptor)
-    }
+    override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
+}
+
+object Http : LinkHandler {
+    override val coreType = "http"
+    override val schemes: List<String> = listOf("http")
+
+    override fun normalize(proxy: JsonObject): JsonObject? = if (proxy.flag("tls")) null else super.normalize(proxy)
+
+    override fun recognizes(link: ShareLink): Boolean = super.recognizes(link) && link.isProxyEndpoint()
+
+    override fun parse(link: ShareLink): ParsedLink = ParsedLink(link.title, httpProxy(link, tls = false))
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
 }

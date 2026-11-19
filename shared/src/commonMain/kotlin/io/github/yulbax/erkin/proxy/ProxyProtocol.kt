@@ -1,11 +1,17 @@
 package io.github.yulbax.erkin.proxy
 
 import io.github.yulbax.erkin.proxy.protocol.AnyTls
+import io.github.yulbax.erkin.proxy.protocol.CoreOnlyHandler
+import io.github.yulbax.erkin.proxy.protocol.Http
 import io.github.yulbax.erkin.proxy.protocol.Https
+import io.github.yulbax.erkin.proxy.protocol.Hysteria
 import io.github.yulbax.erkin.proxy.protocol.Hysteria2
+import io.github.yulbax.erkin.proxy.protocol.Mieru
 import io.github.yulbax.erkin.proxy.protocol.OpenVpn
 import io.github.yulbax.erkin.proxy.protocol.Shadowsocks
 import io.github.yulbax.erkin.proxy.protocol.Socks
+import io.github.yulbax.erkin.proxy.protocol.Ssh
+import io.github.yulbax.erkin.proxy.protocol.Ssr
 import io.github.yulbax.erkin.proxy.protocol.Trojan
 import io.github.yulbax.erkin.proxy.protocol.Tuic
 import io.github.yulbax.erkin.proxy.protocol.Vless
@@ -32,7 +38,18 @@ enum class ProxyProtocol(val wire: String, val handler: ProtocolHandler) {
     ANYTLS("anytls", AnyTls),
     SOCKS5("socks5", Socks),
     HTTPS("https", Https),
-    OPENVPN("openvpn", OpenVpn);
+    HTTP("http", Http),
+    HYSTERIA("hysteria", Hysteria),
+    SSR("ssr", Ssr),
+    MIERU("mieru", Mieru),
+    SSH("ssh", Ssh),
+    OPENVPN("openvpn", OpenVpn),
+    SNELL("snell", CoreOnlyHandler("snell")),
+    SUDOKU("sudoku", CoreOnlyHandler("sudoku")),
+    MASQUE("masque", CoreOnlyHandler("masque")),
+    TRUSTTUNNEL("trusttunnel", CoreOnlyHandler("trusttunnel")),
+    SHADOWQUIC("shadowquic", CoreOnlyHandler("shadowquic")),
+    GOST_RELAY("gost-relay", CoreOnlyHandler("gost-relay"));
 
     fun engineProxy(tag: String, descriptor: String): EngineProxy {
         val parsed = descriptorJson.parseToJsonElement(descriptor) as JsonObject
@@ -56,17 +73,19 @@ private const val MAX_PORT = 65535
 interface ProtocolHandler {
     val coreType: String
 
+    fun portOf(proxy: JsonObject): Int? = (proxy["port"] as? JsonPrimitive)?.intOrNull
+
     fun normalize(proxy: JsonObject): JsonObject? {
         val type = (proxy["type"] as? JsonPrimitive)?.contentOrNull
         val server = (proxy["server"] as? JsonPrimitive)?.takeIf { it.isString }?.content
-        val port = (proxy["port"] as? JsonPrimitive)?.intOrNull
+        val port = portOf(proxy)
         val usable = type == coreType && !server.isNullOrBlank() && port != null && port in 1..MAX_PORT
         return if (usable) JsonObject(proxy - FOREIGN_KEYS) else null
     }
 
     fun server(descriptor: JsonObject): ServerAddress? {
         val host = (descriptor["server"] as? JsonPrimitive)?.contentOrNull ?: return null
-        val port = (descriptor["port"] as? JsonPrimitive)?.intOrNull ?: return null
+        val port = portOf(descriptor) ?: return null
         return ServerAddress(host, port)
     }
 

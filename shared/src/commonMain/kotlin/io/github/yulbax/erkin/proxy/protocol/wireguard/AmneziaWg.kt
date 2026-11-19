@@ -4,6 +4,7 @@ import io.github.yulbax.erkin.proxy.DocumentHandler
 import io.github.yulbax.erkin.proxy.LinkHandler
 import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.ShareLink
+import io.github.yulbax.erkin.proxy.protocol.title
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -11,7 +12,7 @@ import kotlinx.serialization.json.put
 
 object AmneziaWg : LinkHandler, DocumentHandler {
     override val coreType = WireGuard.coreType
-    override val schemes: List<String> = AmneziaLink.SCHEMES
+    override val schemes: List<String> = AmneziaLink.SCHEMES + "awg"
 
     private const val VERSION_3 = 3
     private val OBFUSCATION_NUMBERS = listOf("jc", "jmin", "jmax", "s1", "s2", "s3", "s4")
@@ -39,7 +40,20 @@ object AmneziaWg : LinkHandler, DocumentHandler {
 
     override fun recognizes(text: String): Boolean = WgIni.parseOrNull(text)?.let(::isAmnezia) == true
 
-    override fun parse(link: ShareLink): ParsedLink = AmneziaLink.parse(link)
+    override fun recognizes(link: ShareLink): Boolean =
+        super<LinkHandler>.recognizes(link) || (link.scheme in WireGuard.schemes && carriesObfuscation(link))
+
+    override fun parse(link: ShareLink): ParsedLink =
+        if (link.scheme in AmneziaLink.SCHEMES) {
+            AmneziaLink.parse(link)
+        } else {
+            ParsedLink(link.title, descriptor(WireGuard.config(link).copy(interfaceValues = obfuscationValues(link))))
+        }
+
+    internal fun carriesObfuscation(link: ShareLink): Boolean = obfuscationValues(link).isNotEmpty()
+
+    private fun obfuscationValues(link: ShareLink): Map<String, String> =
+        link.query.mapKeys { it.key.lowercase() }.filterKeys { it in OBFUSCATION_KEYS }
 
     override fun parse(text: String): ParsedLink {
         val config = WgIni.parse(text)

@@ -2,6 +2,8 @@ package io.github.yulbax.erkin.proxy.protocol
 
 import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.DocumentHandler
+import io.github.yulbax.erkin.proxy.LinkHandler
+import io.github.yulbax.erkin.proxy.ShareLink
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
@@ -9,8 +11,9 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-object OpenVpn : DocumentHandler {
+object OpenVpn : LinkHandler, DocumentHandler {
     override val coreType = "openvpn"
+    override val schemes: List<String> = listOf("ovpn")
     private const val DEFAULT_PORT = 1194
     private val WHITESPACE = Regex("\\s+")
     private val BLOCK = Regex("<([a-z0-9-]+)>(.*?)</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
@@ -25,14 +28,31 @@ object OpenVpn : DocumentHandler {
     override fun recognizes(text: String): Boolean =
         "://" !in text.lineSequence().first() && REMOTE.containsMatchIn(text) && (CLIENT.containsMatchIn(text) || "<ca>" in text)
 
-    fun asksForLogin(input: String): Boolean =
-        recognizes(input) && ASKS_LOGIN.containsMatchIn(input) && LOGIN_BLOCK !in input.lowercase()
+    fun document(source: String): String =
+        ShareLink.parse(source.trim())?.takeIf { it.scheme in schemes }?.let(::linkDocument) ?: source
+
+    private fun linkDocument(link: ShareLink): String? {
+        val text = decodeBase64Lenient(link.body.substringBefore('?')) ?: return null
+        val user = link.query["user"]
+        val pass = link.query["pass"]
+        return if (user != null && pass != null) withLogin(text, user, pass) else text
+    }
+
+    fun asksForLogin(input: String): Boolean {
+        val text = document(input)
+        return recognizes(text) && ASKS_LOGIN.containsMatchIn(text) && LOGIN_BLOCK !in text.lowercase()
+    }
 
     fun withLogin(input: String, username: String, password: String): String =
-        LOGIN.replace(input, "").trimEnd() + "\n$LOGIN_BLOCK\n$username\n$password\n</auth-user-pass>\n"
+        LOGIN.replace(document(input), "").trimEnd() + "\n$LOGIN_BLOCK\n$username\n$password\n</auth-user-pass>\n"
 
     fun username(input: String): String? =
-        LOGIN.find(input)?.groupValues?.get(1)?.lines()?.map { it.trim() }?.firstOrNull { it.isNotEmpty() }
+        LOGIN.find(document(input))?.groupValues?.get(1)?.lines()?.map { it.trim() }?.firstOrNull { it.isNotEmpty() }
+
+    override fun parse(link: ShareLink): ParsedLink {
+        val parsed = parse(requireNotNull(linkDocument(link)) { "invalid ovpn payload" })
+        return ParsedLink(link.name ?: parsed.name, parsed.proxy)
+    }
 
     override fun parse(text: String): ParsedLink {
         val blocks = BLOCK.findAll(text).associate { it.groupValues[1].lowercase() to it.groupValues[2].trim() }
