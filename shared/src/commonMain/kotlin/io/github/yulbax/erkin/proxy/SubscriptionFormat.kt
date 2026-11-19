@@ -28,6 +28,7 @@ private object Base64LinksReader : FormatReader {
 }
 
 enum class SubscriptionFormat(val reader: FormatReader) {
+    CLASH_YAML(ClashYamlReader),
     DOCUMENT(DocumentReader),
     BASE64_LINKS(Base64LinksReader),
     LINKS(LinksReader);

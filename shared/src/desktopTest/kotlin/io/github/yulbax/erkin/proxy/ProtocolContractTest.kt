@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -51,6 +52,18 @@ class ProtocolContractTest {
             assertEquals("Core ${protocol.wire}", parsed.name)
             assertEquals(descriptor, parsed.proxy)
             assertEquals(link, parsed.link)
+        }
+    }
+
+    @Test
+    fun everyProtocolSurvivesAClashYamlDocument() {
+        ProxyProtocol.entries.forEach { protocol ->
+            val descriptor = requireNotNull(LinkParser.parse(SAMPLES.getValue(protocol))).proxy
+            val named = JsonObject(descriptor + ("name" to JsonPrimitive("Sample")))
+            val yaml = "proxies:\n  - " + Json.encodeToString(JsonObject.serializer(), named)
+            val parsed = SubscriptionParser.parseBody(yaml).single()
+            assertEquals(protocol, parsed.protocol)
+            assertEquals("descriptor of $protocol", descriptor, parsed.proxy)
         }
     }
 

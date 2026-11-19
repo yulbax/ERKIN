@@ -29,6 +29,7 @@ jetbrainsNavigationEvent = "1.1.0"
 reorderable = "3.1.0"
 kotlinxSerializationJson = "1.11.0"
 kotlinxCoroutines = "1.11.0"
+snakeyamlEngine = "2.9"
 
 [libraries]
 androidx-compose-material3-v150alpha21 = { module = "androidx.compose.material3:material3", version.ref = "material3Version" }
@@ -70,6 +71,7 @@ koin-annotations = { module = "io.insert-koin:koin-annotations", version.ref = "
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+snakeyaml-engine = { module = "org.snakeyaml:snakeyaml-engine", version.ref = "snakeyamlEngine" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
 androidx-sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqliteVersion" }

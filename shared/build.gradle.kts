@@ -28,6 +28,7 @@ kotlin {
             api(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.snakeyaml.engine)
         }
         getByName("desktopTest").dependencies {
             implementation(libs.junit)
