@@ -6,13 +6,12 @@ import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.net.URI
 
 object Tuic : ProtocolHandler {
     override val schemes: List<String> = listOf("tuic")
 
     override fun parse(input: String): ParsedLink {
-        val uri = URI(input)
+        val uri = linkUri(input)
         val q = uri.queryMap()
         val userInfo = uri.rawUserInfo.orEmpty()
         val uuid = decodeComponent(userInfo.substringBefore(':'))
@@ -29,7 +28,7 @@ object Tuic : ProtocolHandler {
             if (q.enabled("disable_sni")) put("disable-sni", true)
             tls(TlsStyle.SNI, q["sni"] ?: uri.hostName, fp = "", insecure = q.insecure(), alpn = q["alpn"] ?: "")
         }
-        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
+        return ParsedLink(linkName(input, uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()

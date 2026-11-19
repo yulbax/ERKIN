@@ -147,8 +147,10 @@ internal fun Map<String, String>.enabled(key: String): Boolean = this[key]?.lowe
 
 internal fun Map<String, String>.insecure(): Boolean = INSECURE_KEYS.any(::enabled)
 
-internal fun URI.fragmentName(fallback: String): String =
-    fragment?.takeIf { it.isNotEmpty() }?.let { decodeComponent(it) } ?: fallback
+internal fun linkUri(input: String): URI = URI(input.substringBefore('#'))
+
+internal fun linkName(input: String, fallback: String): String =
+    input.substringAfter('#', "").takeIf { it.isNotEmpty() }?.let(::decodeComponent) ?: fallback
 
 internal fun decodeComponent(s: String): String = runCatching { URLDecoder.decode(s, "UTF-8") }.getOrDefault(s)
 

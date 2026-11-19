@@ -7,7 +7,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.net.URI
 
 object Socks : ProtocolHandler {
     private const val DEFAULT_PORT = 1080
@@ -15,14 +14,14 @@ object Socks : ProtocolHandler {
     override val schemes: List<String> = listOf("socks5", "socks")
 
     override fun parse(input: String): ParsedLink {
-        val uri = URI(input)
+        val uri = linkUri(input)
         val credentials = Credentials.of(uri.rawUserInfo)
 
         val descriptor = buildJsonObject {
             proxy("socks5", uri.hostName, if (uri.port > 0) uri.port else DEFAULT_PORT)
             credentials?.let { putCredentials(it.username, it.password) }
         }
-        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
+        return ParsedLink(linkName(input, uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()
@@ -36,13 +35,13 @@ object Https : ProtocolHandler {
 
     override fun recognizes(input: String): Boolean {
         if (!input.startsWith("$SCHEME://")) return false
-        val uri = runCatching { URI(input) }.getOrNull() ?: return false
+        val uri = runCatching { linkUri(input) }.getOrNull() ?: return false
         return uri.port > 0 && uri.rawPath.orEmpty() in ROOT_PATHS && uri.rawQuery == null &&
-            (uri.rawUserInfo != null || uri.rawFragment != null)
+            (uri.rawUserInfo != null || '#' in input)
     }
 
     override fun parse(input: String): ParsedLink {
-        val uri = URI(input)
+        val uri = linkUri(input)
         val credentials = Credentials.of(uri.rawUserInfo)
 
         val descriptor = buildJsonObject {
@@ -52,7 +51,7 @@ object Https : ProtocolHandler {
             put("sni", uri.hostName)
             credentials?.let { putCredentials(it.username, it.password) }
         }
-        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
+        return ParsedLink(linkName(input, uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()

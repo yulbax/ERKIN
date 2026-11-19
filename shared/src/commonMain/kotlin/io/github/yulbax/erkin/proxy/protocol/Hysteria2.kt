@@ -6,13 +6,12 @@ import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import java.net.URI
 
 object Hysteria2 : ProtocolHandler {
     override val schemes: List<String> = listOf("hysteria2", "hy2")
 
     override fun parse(input: String): ParsedLink {
-        val uri = URI(input.replaceFirst("hy2://", "hysteria2://"))
+        val uri = linkUri(input.replaceFirst("hy2://", "hysteria2://"))
         val q = uri.queryMap()
         val sni = q["sni"] ?: uri.hostName
 
@@ -25,7 +24,7 @@ object Hysteria2 : ProtocolHandler {
             }
             tls(TlsStyle.SNI, sni, fp = "", insecure = q["insecure"] == "1", alpn = q["alpn"] ?: "")
         }
-        return ParsedLink(uri.fragmentName(uri.hostName), descriptor)
+        return ParsedLink(linkName(input, uri.hostName), descriptor)
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> = emptySet()

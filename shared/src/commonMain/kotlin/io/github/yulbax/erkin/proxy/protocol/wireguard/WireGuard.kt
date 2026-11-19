@@ -2,11 +2,11 @@ package io.github.yulbax.erkin.proxy.protocol.wireguard
 
 import io.github.yulbax.erkin.proxy.ParsedLink
 import io.github.yulbax.erkin.proxy.ProtocolHandler
-import io.github.yulbax.erkin.proxy.protocol.fragmentName
+import io.github.yulbax.erkin.proxy.protocol.linkName
+import io.github.yulbax.erkin.proxy.protocol.linkUri
 import io.github.yulbax.erkin.proxy.protocol.queryMap
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
 import kotlinx.serialization.json.JsonObject
-import java.net.URI
 import java.util.Base64
 
 object WireGuard : ProtocolHandler {
@@ -30,7 +30,7 @@ object WireGuard : ProtocolHandler {
         }
 
     private fun parseLink(input: String): ParsedLink {
-        val uri = URI(input)
+        val uri = linkUri(input)
         val q = uri.queryMap()
         val host = requireNotNull(uri.host?.trim('[', ']')?.takeIf { it.isNotEmpty() }) { "missing host" }
         val config = WgConfig(
@@ -51,7 +51,7 @@ object WireGuard : ProtocolHandler {
             ),
             interfaceValues = emptyMap()
         )
-        return ParsedLink(uri.fragmentName(host), wgProxy(config))
+        return ParsedLink(linkName(input, host), wgProxy(config))
     }
 
     override fun requirements(descriptor: JsonObject): Set<EngineRequirement> =

@@ -30,6 +30,24 @@ class LinkParserTest {
     }
 
     @Test
+    fun namesWithSpacesAndHashesAreKeptAsWritten() {
+        val links = listOf(
+            "vless://id@example.com:443?type=ws&path=/al/2&security=tls&fp=firefox&alpn=http/1.1",
+            "trojan://secret@example.com:443?security=tls",
+            "tuic://uuid:pass@example.com:443?congestion_control=bbr",
+            "hy2://pass@example.com:443",
+            "anytls://pass@example.com:443",
+            "socks5://example.com:1080"
+        )
+        for (link in links) {
+            val parsed = requireNotNull(LinkParser.parse("$link#\uD83C\uDDE6\uD83C\uDDF1 Albania - Tirana #2")) { link }
+            assertEquals(link, "\uD83C\uDDE6\uD83C\uDDF1 Albania - Tirana #2", parsed.name)
+            assertEquals(link, "example.com", parsed.proxy["server"]?.jsonPrimitive?.content)
+        }
+        assertEquals("Tirana 2", LinkParser.parse("trojan://secret@example.com:443#Tirana%202")?.name)
+    }
+
+    @Test
     fun transportPathIsDecodedOnce() {
         for (scheme in listOf("vless://id", "trojan://secret")) {
             val parsed = requireNotNull(LinkParser.parse("$scheme@example.com:443?security=tls&type=ws&path=%2Fa%252Fb%2Bc#P"))
