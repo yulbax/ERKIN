@@ -112,9 +112,8 @@ ERKIN combines two engines behind a single tunnel interface:
   per app — *VPN* apps to the upstream server, *ByeDPI* apps to the local bypass proxy,
   *Direct* apps straight out; on Android *Bypass* apps never enter the tunnel. ERKIN uses
   the official mihomo release behind a thin wrapper (`core/mihomo`). The same core runs
-  everywhere: as a Go Mobile library inside the app on Android (wired to the VPN service the
-  way ClashMetaForAndroid does it), and inside the `erkin-service` background service on the
-  desktop — a Windows service or a systemd unit that starts with the app and stops shortly
+  everywhere: as a Go Mobile library inside the app on Android, and inside the `erkin-service`
+  background service on the desktop — a Windows service or a systemd unit that starts with the app and stops shortly
   after it closes. The portable Windows build runs the same core as a child process. The
   desktop app talks to it over a local connection; if the app goes away, the tunnel is torn
   down.
