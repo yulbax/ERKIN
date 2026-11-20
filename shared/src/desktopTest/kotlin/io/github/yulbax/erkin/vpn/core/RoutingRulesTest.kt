@@ -44,6 +44,20 @@ class RoutingRulesTest {
     }
 
     @Test
+    fun aCountryWithADomainListAlsoLoadsIt() {
+        val russia = RuleLists.country("RU")
+        assertEquals(
+            listOf(RuleListSource(RuleLists.COUNTRY_DOMAINS_URL_PREFIX + "category-ru.mrs", RuleSetKind.DOMAIN), russia),
+            RuleLists.parts(russia)
+        )
+        assertEquals(RuleLists.COUNTRY_DOMAINS_URL_PREFIX + "cn.mrs", RuleLists.parts(RuleLists.country("CN")).first().url)
+        val germany = RuleLists.country("DE")
+        assertEquals(listOf(germany), RuleLists.parts(germany))
+        val list = RuleListSource("https://example.com/ru.mrs", null)
+        assertEquals(listOf(list), RuleLists.parts(list))
+    }
+
+    @Test
     fun legacyCountryAndListRulesBecomeRuleSets() {
         val country = RoutingRuleEntity(type = "country", value = "RU", target = "DIRECT").upgraded()
         val list = RoutingRuleEntity(type = "list", value = "https://example.com/ads.txt", target = "BLOCK").upgraded()

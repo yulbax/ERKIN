@@ -246,7 +246,7 @@ object MihomoConfigBuilder {
     ) {
         val conditions = when (val url = RuleLists.url(rule)) {
             null -> listOf("${rule.match.mihomo},${rule.value}")
-            else -> ruleLists[url].orEmpty().map { kind -> "${rule.match.mihomo},${RuleLists.providerName(url, kind)}" }
+            else -> ruleLists[url].orEmpty().sorted().map { kind -> "${rule.match.mihomo},${RuleLists.providerName(url, kind)}" }
         }
         val app = rule.app
         conditions.forEach { condition ->

@@ -142,6 +142,43 @@ class RuleListDatabaseTest {
     }
 
     @Test
+    fun aCountryListAlsoInstallsItsDomainList() = runBlocking {
+        val country = RuleListSource(serve("/geoip/ru.mrs", MRS).url, RuleSetKind.IPCIDR)
+        val domains = RuleListSource(serve("/geosite/category-ru.mrs", MRS).url, RuleSetKind.DOMAIN)
+        val countries = RuleListDatabase(store, database.ruleListDao(), parts = { if (it.url == country.url) listOf(domains, it) else listOf(it) })
+
+        assertTrue(countries.add(country).isSuccess)
+
+        assertEquals(setOf(RuleSetKind.DOMAIN, RuleSetKind.IPCIDR), countries.installed(country.url)?.kinds)
+        assertNull(countries.installed(domains.url))
+    }
+
+    @Test
+    fun aCountryListWithoutItsDomainPartIsRefreshedEvenWhenFresh() = runBlocking {
+        val country = RuleListSource(serve("/geoip/ru.mrs", MRS).url, RuleSetKind.IPCIDR)
+        assertTrue(lists.add(country).isSuccess)
+        val domains = RuleListSource(serve("/geosite/category-ru.mrs", MRS).url, RuleSetKind.DOMAIN)
+        val countries = RuleListDatabase(store, database.ruleListDao(), parts = { if (it.url == country.url) listOf(domains, it) else listOf(it) })
+
+        assertTrue(countries.refreshStale())
+
+        assertEquals(setOf(RuleSetKind.DOMAIN, RuleSetKind.IPCIDR), countries.installed(country.url)?.kinds)
+        assertFalse(countries.refreshStale())
+    }
+
+    @Test
+    fun aMissingDomainPartFailsTheCountryAndKeepsItsAddresses() = runBlocking {
+        val country = RuleListSource(serve("/geoip/ru.mrs", MRS).url, RuleSetKind.IPCIDR)
+        assertTrue(lists.add(country).isSuccess)
+        val domains = RuleListSource(url("/geosite/missing.mrs"), RuleSetKind.DOMAIN)
+        val countries = RuleListDatabase(store, database.ruleListDao(), parts = { if (it.url == country.url) listOf(domains, it) else listOf(it) })
+
+        assertTrue(countries.download(country.url).isFailure)
+
+        assertEquals(setOf(RuleSetKind.IPCIDR), countries.installed(country.url)?.kinds)
+    }
+
+    @Test
     fun aDeletedSetLeavesTheLibrary() = runBlocking {
         val kept = serve("/kept.txt", "kept.example.com\n")
         val dropped = serve("/dropped.txt", "dropped.example.com\n")
@@ -154,6 +191,8 @@ class RuleListDatabaseTest {
         assertNull(lists.installed(dropped.url))
         assertEquals(setOf(kept.url), lists.states.first().keys)
     }
+
+    private val MRS = byteArrayOf(0x28, 0xB5.toByte(), 0x2F, 0xFD.toByte(), 0x01)
 
     private suspend fun failureOf(source: RuleListSource): RuleListFailure? =
         (lists.add(source).exceptionOrNull() as? RuleListException)?.failure

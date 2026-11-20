@@ -306,6 +306,24 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun aListsDomainRuleComesBeforeItsAddressRule() {
+        val countryUrl = RuleLists.country("RU").url
+        val rules = listOf(RoutingRule(RuleMatch.RULE_SET, countryUrl, RuleTarget.DIRECT))
+        val engine = engine(listOf(vless), "p1", listOf("org.dpi"), emptyList(), rules = rules)
+            .copy(ruleLists = mapOf(countryUrl to setOf(RuleSetKind.IPCIDR, RuleSetKind.DOMAIN)))
+
+        val listed = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE)).jsonObject.rules().filter { it.startsWith("RULE-SET") }
+
+        assertEquals(
+            listOf(
+                "RULE-SET,${RuleLists.providerName(countryUrl, RuleSetKind.DOMAIN)},DIRECT",
+                "RULE-SET,${RuleLists.providerName(countryUrl, RuleSetKind.IPCIDR)},DIRECT"
+            ),
+            listed
+        )
+    }
+
+    @Test
     fun androidResolvesDirectTrafficWithThePhonesPrivateDns() {
         val config = build(platform = MihomoPlatform.Android(SystemDns.Tls("dns.google")))
         assertEquals("tls://dns.google", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)

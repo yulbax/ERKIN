@@ -50,7 +50,8 @@ data class RuleListState(
 class RuleListDatabase(
     private val store: RuleListStore,
     private val dao: RuleListDao,
-    private val route: DownloadRoute = DownloadRoute()
+    private val route: DownloadRoute = DownloadRoute(),
+    private val parts: (RuleListSource) -> List<RuleListSource> = RuleLists::parts
 ) {
     private val mutex = Mutex()
     private val downloading = MutableStateFlow(emptySet<String>())
@@ -114,9 +115,10 @@ class RuleListDatabase(
 
     suspend fun refreshStale(now: Long = System.currentTimeMillis()): Boolean {
         val stale = withContext(Dispatchers.IO) {
-            dao.observeAll().first().map { it.source }.filter { url ->
-                installed(url)?.let { now - it.updatedAt >= REFRESH_AFTER.inWholeMilliseconds } ?: true
-            }
+            dao.observeAll().first().filter { record ->
+                val installed = installed(record.source) ?: return@filter true
+                now - installed.updatedAt >= REFRESH_AFTER.inWholeMilliseconds || !installed.kinds.containsAll(expectedKinds(record))
+            }.map { it.source }
         }
         return stale.map { download(it) }.any { it.isSuccess }
     }
@@ -133,33 +135,38 @@ class RuleListDatabase(
         }
     }
 
+    private fun expectedKinds(record: RuleListEntity): Set<RuleSetKind> =
+        parts(RuleListSource(record.source, RuleSetKind.fromBehavior(record.kind))).mapNotNullTo(HashSet()) { it.kind }
+
     private suspend fun install(source: RuleListSource) {
         val url = source.url
         val key = RuleLists.key(url)
         val dir = store.stagingDir().apply { mkdirs() }
-        val raw = File(dir, key + DOWNLOAD_SUFFIX)
-        val staged = mutableListOf(raw)
+        val staged = mutableListOf<File>()
         try {
-            fetch(url, raw)
             var title: String? = null
-            val sets = when (RuleListContent.of(raw)) {
-                RuleListContent.MRS -> listOf(installSet(key, raw, RuleSetFormat.MRS, source.kind))
-                RuleListContent.TEXT -> {
-                    val parsed = raw.bufferedReader().useLines(RuleListParser::parse)
-                    title = parsed.title
-                    val parts = RuleSetKind.entries.filter { source.kind == null || it == source.kind }
-                        .associateWith { kind -> parsed.entries(kind) }
-                        .filterValues { it.isNotEmpty() }
-                    if (parts.isEmpty()) {
-                        throw RuleListException(if (parsed.size > 0) RuleListFailure.WRONG_KIND else RuleListFailure.EMPTY)
+            val sets = parts(source).withIndex().flatMap { (index, part) ->
+                val raw = File(dir, "$key.$index$DOWNLOAD_SUFFIX").also(staged::add)
+                fetch(part.url, raw)
+                when (RuleListContent.of(raw)) {
+                    RuleListContent.MRS -> listOf(installSet(key, raw, RuleSetFormat.MRS, part.kind))
+                    RuleListContent.TEXT -> {
+                        val parsed = raw.bufferedReader().useLines(RuleListParser::parse)
+                        title = parsed.title ?: title
+                        val byKind = RuleSetKind.entries.filter { part.kind == null || it == part.kind }
+                            .associateWith { kind -> parsed.entries(kind) }
+                            .filterValues { it.isNotEmpty() }
+                        if (byKind.isEmpty()) {
+                            throw RuleListException(if (parsed.size > 0) RuleListFailure.WRONG_KIND else RuleListFailure.EMPTY)
+                        }
+                        byKind.map { (kind, entries) ->
+                            val text = File(dir, "$key.${kind.behavior}$TEXT_SUFFIX").also(staged::add)
+                            text.bufferedWriter().use { out -> entries.forEach { out.appendLine(it) } }
+                            installSet(key, text, RuleSetFormat.TEXT, kind)
+                        }
                     }
-                    parts.map { (kind, entries) ->
-                        val text = File(dir, "$key.${kind.behavior}$TEXT_SUFFIX").also(staged::add)
-                        text.bufferedWriter().use { out -> entries.forEach { out.appendLine(it) } }
-                        installSet(key, text, RuleSetFormat.TEXT, kind)
-                    }
+                    RuleListContent.OTHER -> throw RuleListException(RuleListFailure.NOT_A_LIST)
                 }
-                RuleListContent.OTHER -> throw RuleListException(RuleListFailure.NOT_A_LIST)
             }
             val kinds = sets.mapTo(HashSet()) { it.kind }
             RuleSetKind.entries.filterNot { it in kinds }.forEach { store.remove(RuleLists.fileName(url, it)) }

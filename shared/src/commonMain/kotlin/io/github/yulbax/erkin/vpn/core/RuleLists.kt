@@ -23,6 +23,14 @@ object RuleLists {
     const val DIRECTORY = "lists"
     const val COUNTRY_URL_PREFIX = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/"
     const val COUNTRY_URL_SUFFIX = ".mrs"
+    const val COUNTRY_DOMAINS_URL_PREFIX = "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/"
+    private val COUNTRY_DOMAIN_LISTS = mapOf(
+        "RU" to "category-ru",
+        "IR" to "category-ir",
+        "PT" to "category-pt",
+        "TM" to "category-tm",
+        "CN" to "cn"
+    )
     private const val KEY_BYTES = 8
     private const val EXTENSION = "mrs"
 
@@ -33,6 +41,11 @@ object RuleLists {
 
     fun country(code: String): RuleListSource =
         RuleListSource(COUNTRY_URL_PREFIX + code.lowercase(Locale.ROOT) + COUNTRY_URL_SUFFIX, RuleSetKind.IPCIDR)
+
+    fun parts(source: RuleListSource): List<RuleListSource> {
+        val domains = countryOf(source.url)?.let(COUNTRY_DOMAIN_LISTS::get) ?: return listOf(source)
+        return listOf(RuleListSource(COUNTRY_DOMAINS_URL_PREFIX + domains + COUNTRY_URL_SUFFIX, RuleSetKind.DOMAIN), source)
+    }
 
     fun countryOf(url: String): String? =
         url.takeIf { it.startsWith(COUNTRY_URL_PREFIX) && it.endsWith(COUNTRY_URL_SUFFIX) }
