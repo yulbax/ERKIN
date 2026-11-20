@@ -6,6 +6,7 @@ import io.github.yulbax.erkin.vpn.core.EngineListener
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
+import io.github.yulbax.erkin.vpn.mihomo.DesktopOs
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
 import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
@@ -24,6 +25,7 @@ class ServiceEngine(
     override val probeUsername: String = randomToken()
     override val probePassword: String = randomToken()
     private val byeDpiProbeSocksPort: Int = freeLoopbackPort()
+    private val desktopOs = if (DesktopPaths.isWindows) DesktopOs.WINDOWS else DesktopOs.LINUX
 
     @Volatile private var client: ServiceClient? = null
     private var traffic: ScheduledExecutorService? = null
@@ -78,7 +80,7 @@ class ServiceEngine(
     private fun buildConfig(config: EngineConfig): String = MihomoConfigBuilder.build(
         engine = config,
         probe = ProbeInbound(probeSocksPort, probeUsername, probePassword),
-        platform = MihomoPlatform.Desktop(directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort)
+        platform = MihomoPlatform.Desktop(desktopOs, directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort)
     )
 
     private companion object {

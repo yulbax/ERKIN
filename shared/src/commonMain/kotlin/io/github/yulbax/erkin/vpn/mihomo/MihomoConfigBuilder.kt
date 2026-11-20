@@ -32,14 +32,28 @@ sealed interface SystemDns {
 
 data class ProbeInbound(val port: Int, val username: String, val password: String)
 
+enum class DesktopOs(private val replacedExecutableSuffix: String?) {
+    WINDOWS(null),
+    LINUX(" (deleted)");
+
+    fun processIds(app: String): List<String> = listOfNotNull(app, replacedExecutableSuffix?.let { app + it })
+}
+
 sealed interface MihomoPlatform {
-    data class Android(val systemDns: SystemDns = SystemDns.Local) : MihomoPlatform
+    fun processIds(app: String): List<String>
+
+    data class Android(val systemDns: SystemDns = SystemDns.Local) : MihomoPlatform {
+        override fun processIds(app: String): List<String> = listOf(app)
+    }
 
     data class Desktop(
+        val os: DesktopOs,
         val directProcesses: List<String>,
         val systemDns: SystemDns = SystemDns.Local,
         val byeDpiProbePort: Int? = null
-    ) : MihomoPlatform
+    ) : MihomoPlatform {
+        override fun processIds(app: String): List<String> = os.processIds(app)
+    }
 }
 
 object MihomoConfigBuilder {
@@ -195,28 +209,28 @@ object MihomoConfigBuilder {
             putJsonArray("rules") {
                 add("IN-NAME,$PROBE_LISTENER,$vpnTarget")
                 if (byeDpiProbePort != null) add("IN-NAME,$BYEDPI_PROBE_LISTENER,$BYEDPI_PROXY")
-                desktop?.directProcesses?.forEach { add("$PROCESS_NAME,$it,$DIRECT") }
+                desktop?.directProcesses?.forEach { name -> platform.processIds(name).forEach { add("$PROCESS_NAME,$it,$DIRECT") } }
                 val blocked = engine.blockedPackages.toSet()
                 val (blockedAppRules, listedRules) = rules.partition { it.app in blocked }
                 engine.blockedPackages.forEach { app ->
-                    blockedAppRules.filter { it.app == app }.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
-                    add("${processMatch(app)},$app,$REJECT")
+                    blockedAppRules.filter { it.app == app }.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists, platform) }
+                    platform.processIds(app).forEach { add("${processMatch(app)},$it,$REJECT") }
                 }
                 if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
-                listedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists) }
+                listedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists, platform) }
                 if (desktop != null) {
                     val channels = listOf<Pair<List<String>, (String) -> String>>(
                         byeDpiPackages to { BYEDPI_PROXY },
                         vpnPackages to vpnTargetOf,
                         directPaths to { DIRECT }
                     )
-                    channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), target) }
-                    channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), target) }
+                    channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), platform, target) }
+                    channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), platform, target) }
                 } else {
-                    processRules(PROCESS_NAME, byeDpiPackages) { BYEDPI_PROXY }
-                    processRules(PROCESS_NAME, vpnPackages, vpnTargetOf)
-                    processRules(PROCESS_NAME, engine.directPackages) { DIRECT }
+                    processRules(PROCESS_NAME, byeDpiPackages, platform) { BYEDPI_PROXY }
+                    processRules(PROCESS_NAME, vpnPackages, platform, vpnTargetOf)
+                    processRules(PROCESS_NAME, engine.directPackages, platform) { DIRECT }
                 }
                 add("MATCH,$defaultTarget")
             }
@@ -224,7 +238,12 @@ object MihomoConfigBuilder {
         return json.encodeToString(JsonObject.serializer(), config)
     }
 
-    private fun JsonArrayBuilder.addRule(rule: RoutingRule, target: String, ruleLists: Map<String, Set<RuleSetKind>>) {
+    private fun JsonArrayBuilder.addRule(
+        rule: RoutingRule,
+        target: String,
+        ruleLists: Map<String, Set<RuleSetKind>>,
+        platform: MihomoPlatform
+    ) {
         val conditions = when (val url = RuleLists.url(rule)) {
             null -> listOf("${rule.match.mihomo},${rule.value}")
             else -> ruleLists[url].orEmpty().map { kind -> "${rule.match.mihomo},${RuleLists.providerName(url, kind)}" }
@@ -234,7 +253,7 @@ object MihomoConfigBuilder {
             if (app == null) {
                 add("$condition,$target")
             } else {
-                add("AND,((${processMatch(app)},$app),($condition)),$target")
+                add("AND,(${appCondition(app, platform)},($condition)),$target")
             }
         }
     }
@@ -255,7 +274,17 @@ object MihomoConfigBuilder {
 
     private fun processMatch(app: String): String = if (isExecutablePath(app)) PROCESS_PATH else PROCESS_NAME
 
-    private fun JsonArrayBuilder.processRules(type: String, apps: List<String>, target: (String) -> String) {
-        apps.forEach { add("$type,$it,${target(it)}") }
+    private fun appCondition(app: String, platform: MihomoPlatform): String {
+        val matches = platform.processIds(app).map { "(${processMatch(app)},$it)" }
+        return matches.singleOrNull() ?: "(OR,(${matches.joinToString(",")}))"
+    }
+
+    private fun JsonArrayBuilder.processRules(
+        type: String,
+        apps: List<String>,
+        platform: MihomoPlatform,
+        target: (String) -> String
+    ) {
+        apps.forEach { app -> platform.processIds(app).forEach { add("$type,$it,${target(app)}") } }
     }
 }

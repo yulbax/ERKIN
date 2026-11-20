@@ -149,6 +149,40 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun linuxAlsoMatchesAProgramReplacedOnDiskWhileRunning() {
+        val engine = engine(
+            listOf(vless), "p1", emptyList(), listOf("/opt/zen/zen-bin"),
+            rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.DIRECT, app = "/opt/zen/zen-bin"))
+        ).copy(blockedPackages = listOf("/usr/bin/tracker"))
+        val platform = MihomoPlatform.Desktop(DesktopOs.LINUX, listOf("ciadpi"))
+        val rules = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, platform)).jsonObject.rules()
+
+        assertEquals(
+            listOf(
+                "IN-NAME,probe-in,p1",
+                "PROCESS-NAME,ciadpi,DIRECT",
+                "PROCESS-NAME,ciadpi (deleted),DIRECT",
+                "PROCESS-PATH,/usr/bin/tracker,REJECT",
+                "PROCESS-PATH,/usr/bin/tracker (deleted),REJECT",
+                "AND,((OR,((PROCESS-PATH,/opt/zen/zen-bin),(PROCESS-PATH,/opt/zen/zen-bin (deleted)))),(DOMAIN-SUFFIX,example.org)),DIRECT",
+                "PROCESS-PATH,/opt/zen/zen-bin,p1",
+                "PROCESS-PATH,/opt/zen/zen-bin (deleted),p1",
+                "MATCH,DIRECT"
+            ),
+            rules
+        )
+    }
+
+    @Test
+    fun windowsKeepsOneRulePerProgram() {
+        val engine = engine(listOf(vless), "p1", emptyList(), listOf("C:\\Apps\\app.exe"))
+        val platform = MihomoPlatform.Desktop(DesktopOs.WINDOWS, emptyList())
+        val rules = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, platform)).jsonObject.rules()
+
+        assertEquals(listOf("PROCESS-PATH,C:\\Apps\\app.exe,p1"), rules.filter { "app.exe" in it })
+    }
+
+    @Test
     fun blockedExecutablePathsAreMatchedByPath() {
         val engine = engine(listOf(vless), "p1", emptyList(), emptyList())
             .copy(blockedPackages = listOf("C:\\Games\\ads.exe", "tracker.exe"))
@@ -182,7 +216,7 @@ class MihomoConfigBuilderTest {
     @Test
     fun desktopOwnsTheTunAndRoutesEachProcessToItsChannel() {
         val config = build(
-            platform = MihomoPlatform.Desktop(listOf("ciadpi"), SystemDns.Server("192.168.1.1"), byeDpiProbePort = 3080),
+            platform = MihomoPlatform.Desktop(DesktopOs.WINDOWS, listOf("ciadpi"), SystemDns.Server("192.168.1.1"), byeDpiProbePort = 3080),
             byeDpi = listOf("discord.exe", "C:\\Games\\game.exe"),
             vpn = listOf("telegram.exe"),
             directPaths = listOf("C:\\venv\\python.exe")
@@ -319,7 +353,7 @@ class MihomoConfigBuilderTest {
 
     @Test
     fun desktopUsesTheSystemResolverWhenItIsSafe() {
-        val config = build(platform = MihomoPlatform.Desktop(emptyList(), SystemDns.Local))
+        val config = build(platform = MihomoPlatform.Desktop(DesktopOs.WINDOWS, emptyList(), SystemDns.Local))
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("direct-nameserver").jsonArray.single().jsonPrimitive.content)
         assertEquals("system://", config.getValue("dns").jsonObject.getValue("nameserver-policy").jsonObject.values.single().jsonPrimitive.content)
     }

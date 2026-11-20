@@ -11,9 +11,13 @@ import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.NetworkOptions
 import io.github.yulbax.erkin.vpn.core.ProbeResult
+import io.github.yulbax.erkin.vpn.core.RoutingRule
+import io.github.yulbax.erkin.vpn.core.RuleMatch
+import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import io.github.yulbax.erkin.vpn.core.randomToken
+import io.github.yulbax.erkin.vpn.mihomo.DesktopOs
 import io.github.yulbax.erkin.vpn.mihomo.MihomoConfigBuilder
 import io.github.yulbax.erkin.vpn.mihomo.MihomoPlatform
 import io.github.yulbax.erkin.vpn.mihomo.ProbeInbound
@@ -113,7 +117,7 @@ class DesktopEngineIntegrationTest {
         val config = MihomoConfigBuilder.build(
             EngineConfig(listOf(EngineProxy("p1", """{"type":"direct"}""")), "p1", emptyList(), listOf(curl), listOf(curl), 1081, NetworkOptions()),
             ProbeInbound(freeLoopbackPort(), randomToken(), randomToken()),
-            MihomoPlatform.Desktop(listOf(binary("ciadpi").name))
+            MihomoPlatform.Desktop(if (DesktopPaths.isWindows) DesktopOs.WINDOWS else DesktopOs.LINUX, listOf(binary("ciadpi").name))
         )
         val service = portableService(installedSocket = File(workDir, "none.sock"))
         val client = service.control()
@@ -167,16 +171,25 @@ class DesktopEngineIntegrationTest {
         val config = MihomoConfigBuilder.build(
             EngineConfig(listOf(vless), "p1", listOf("Discord.exe"), listOf("Telegram.exe"), listOf("Discord.exe", "Telegram.exe"), 1081, NetworkOptions()),
             probe,
-            MihomoPlatform.Desktop(listOf("ciadpi.exe"), byeDpiProbePort = 3080)
+            MihomoPlatform.Desktop(DesktopOs.WINDOWS, listOf("ciadpi.exe"), byeDpiProbePort = 3080)
         )
         val noServers = MihomoConfigBuilder.build(
             EngineConfig(emptyList(), "", listOf("Discord.exe"), emptyList(), listOf("Discord.exe"), 1081, NetworkOptions(), listOf("C:\\venv\\python.exe")),
             probe,
-            MihomoPlatform.Desktop(listOf("ciadpi.exe"))
+            MihomoPlatform.Desktop(DesktopOs.WINDOWS, listOf("ciadpi.exe"))
+        )
+        val linux = MihomoConfigBuilder.build(
+            EngineConfig(
+                listOf(vless), "p1", emptyList(), listOf("/opt/zen/zen-bin"), listOf("/opt/zen/zen-bin"), 1081, NetworkOptions(),
+                rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.DIRECT, app = "/opt/zen/zen-bin"))
+            ),
+            probe,
+            MihomoPlatform.Desktop(DesktopOs.LINUX, listOf("ciadpi"))
         )
         ServiceClient.connect(startService()).use { client ->
             client.check(config)
             client.check(noServers)
+            client.check(linux)
             val failure = runCatching { client.check("""{"proxies": [{"name": "x", "type": "no-such-type"}]}""") }.exceptionOrNull()
             assertNotNull("an invalid config must be rejected", failure)
         }
