@@ -388,7 +388,7 @@ private fun ScoreBadge(score: ByeDpiReachability) {
     val color = score.quality.color()
     Surface(shape = RoundedCornerShape(8.dp), color = color.copy(alpha = 0.15f)) {
         Text(
-            text = "${score.percent}%",
+            text = "${score.reachable}/${score.total}",
             style = MaterialTheme.typography.labelLarge,
             color = color,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
