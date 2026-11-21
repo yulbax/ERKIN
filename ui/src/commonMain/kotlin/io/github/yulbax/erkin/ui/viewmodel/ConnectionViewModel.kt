@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import io.github.yulbax.erkin.data.HomeCardPosition
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.AppDao
@@ -26,7 +28,8 @@ data class ErkinUiState(
     val hasVpnApps: Boolean = false,
     val hasByedpiApps: Boolean = false,
     val bypassLan: Boolean = false,
-    val runsWithoutServer: Boolean = false
+    val runsWithoutServer: Boolean = false,
+    val cardPosition: HomeCardPosition = HomeCardPosition.DEFAULT
 )
 
 class ConnectionViewModel(
@@ -42,7 +45,7 @@ class ConnectionViewModel(
         appDao.getAllApps()
     ) { settings, apps ->
         val routed = RoutedApps.from(apps)
-        ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi, settings.bypassLan, routed.runsWithoutServer)
+        ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi, settings.bypassLan, routed.runsWithoutServer, settings.homeCardPosition())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), ErkinUiState())
 
     init {

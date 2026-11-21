@@ -34,8 +34,11 @@ data class SettingsEntity(
     val rulesHintSeen: Boolean = false,
     val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic,
     val chainsHintSeen: Boolean = false,
-    val serverSort: String = ServerSort.DEFAULT.wire
+    val serverSort: String = ServerSort.DEFAULT.wire,
+    val homeCardPosition: String = HomeCardPosition.DEFAULT.wire
 ) {
+    fun homeCardPosition(): HomeCardPosition = HomeCardPosition.fromWire(homeCardPosition) ?: HomeCardPosition.DEFAULT
+
     fun serverSort(): ServerSort = ServerSort.fromWire(serverSort) ?: ServerSort.DEFAULT
 
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
@@ -65,4 +68,15 @@ data class SettingsEntity(
         blockQuic = options.blockQuic,
         preferredFingerprint = options.preferredFingerprint?.wire ?: ""
     )
+}
+
+enum class HomeCardPosition(val wire: String) {
+    TOP("top"),
+    BOTTOM("bottom");
+
+    companion object {
+        val DEFAULT = TOP
+
+        fun fromWire(wire: String): HomeCardPosition? = entries.firstOrNull { it.wire == wire }
+    }
 }

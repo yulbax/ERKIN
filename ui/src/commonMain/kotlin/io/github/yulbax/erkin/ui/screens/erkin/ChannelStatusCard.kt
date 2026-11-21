@@ -3,7 +3,6 @@ package io.github.yulbax.erkin.ui.screens.erkin
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,6 +37,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import io.github.yulbax.erkin.vpn.ExitCountry
+import androidx.compose.foundation.layout.RowScope
+import io.github.yulbax.erkin.ui.screens.apps.warningColor
+import io.github.yulbax.erkin.ui.screens.apps.channelColor
 
 @Composable
 internal fun ChannelStatusCard(
@@ -49,6 +50,7 @@ internal fun ChannelStatusCard(
     shape: Shape,
     topInset: Dp,
     modifier: Modifier = Modifier,
+    bottomInset: Dp = 0.dp,
     latencyMs: Int = 0,
     noServers: Boolean = false,
     country: ExitCountry = ExitCountry.Unknown,
@@ -75,14 +77,16 @@ internal fun ChannelStatusCard(
     Surface(
         shape = shape,
         color = if (LocalDarkTheme.current) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .heightIn(min = topInset + MIN_VISIBLE_HEIGHT)
-                .padding(start = 14.dp, end = 14.dp, top = topInset + 8.dp, bottom = 8.dp),
+                .padding(top = topInset, bottom = bottomInset)
+                .heightIn(min = MIN_VISIBLE_HEIGHT)
+                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -90,24 +94,27 @@ internal fun ChannelStatusCard(
                 ConnectionTypeIcon(type, Modifier.size(18.dp))
             }
             Text(type.label(), style = MaterialTheme.typography.labelLarge, maxLines = 1)
-            Spacer(Modifier.weight(1f))
-            when {
-                noServers -> Status(stringResource(Res.string.channel_status_no_servers), muted)
-                !hasApps -> Status(stringResource(Res.string.channel_status_no_apps), muted)
-                !active -> Status(stringResource(Res.string.channel_status_off), muted)
-                byedpiBlocked -> Status("$reachable/$total", muted)
-                !up -> WaveDots(color = muted)
-                type == ConnectionType.VPN && country == ExitCountry.Pending && !waitedForCountry -> WaveDots(color = muted)
-                type == ConnectionType.BYEDPI -> when {
-                    total > 0 -> Status("$reachable/$total", muted)
-                    checking -> WaveDots(color = muted)
-                }
-                else -> {
-                    Status(
-                        if (latencyMs > 0) ProbeResult.Answered(latencyMs).label() else stringResource(Res.string.channel_status_ready),
-                        muted
-                    )
-                    if (country is ExitCountry.Known) CountryFlag(country.code, fontSize = 18.sp, framed = false)
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+            ) {
+                when {
+                    noServers -> Status(stringResource(Res.string.channel_status_no_servers), muted)
+                    !hasApps -> Status(stringResource(Res.string.channel_status_no_apps), muted)
+                    !active -> Status(stringResource(Res.string.channel_status_off), muted)
+                    byedpiBlocked -> Status("$reachable/$total", muted)
+                    !up -> WaveDots(color = muted)
+                    type == ConnectionType.VPN && country == ExitCountry.Pending && !waitedForCountry -> WaveDots(color = muted)
+                    type == ConnectionType.BYEDPI -> when {
+                        total > 0 -> Status("$reachable/$total", muted)
+                        checking -> WaveDots(color = muted)
+                        else -> Status(stringResource(Res.string.channel_status_choose_lists), muted)
+                    }
+                    else -> {
+                        Status(ProbeResult.Answered(latencyMs).label(), muted)
+                        if (country is ExitCountry.Known) CountryFlag(country.code, fontSize = 18.sp, framed = false)
+                    }
                 }
             }
         }
@@ -115,19 +122,30 @@ internal fun ChannelStatusCard(
 }
 
 @Composable
-private fun Status(text: String, color: Color) {
-    Text(text, style = MaterialTheme.typography.labelMedium, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+private fun RowScope.Status(text: String, color: Color) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelMedium,
+        color = color,
+        maxLines = 1,
+        modifier = Modifier.weight(1f, fill = false).overflowMarquee()
+    )
 }
 
 private val MIN_VISIBLE_HEIGHT = 40.dp
 private val COUNTRY_WAIT = 1_500.milliseconds
 
-private enum class ChannelTone(private val light: Color?, private val dark: Color?) {
-    OFF(null, null),
-    WAITING(Color(0xFF9A6B00), Color(0xFFFFC94D)),
-    UP(Color(0xFF237A3D), Color(0xFF7ADC94)),
-    BLOCKED(Color(0xFFB3261E), Color(0xFFFFB4AB));
+private enum class ChannelTone {
+    OFF,
+    WAITING,
+    UP,
+    BLOCKED;
 
     @Composable
-    fun color(): Color = (if (LocalDarkTheme.current) dark else light) ?: MaterialTheme.colorScheme.outline
+    fun color(): Color = when (this) {
+        OFF -> MaterialTheme.colorScheme.outline
+        WAITING -> warningColor()
+        UP -> channelColor(ConnectionType.VPN)
+        BLOCKED -> channelColor(ConnectionType.BLOCK)
+    }
 }

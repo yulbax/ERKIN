@@ -72,12 +72,14 @@
     <string name="setup_step_apps">Вибрати застосунки для VPN і ByeDPI</string>
 
     <string name="setup_step_connect">Підключитися</string>
-    <string name="servers_title">Сервери</string>
-    <string name="servers_test">Перевірити</string>
     <string name="servers_search_empty">Сервери не знайдено</string>
     <string name="hide_server">Приховати</string>
     <string name="show_server">Показати</string>
     <string name="hidden_servers">Приховані · %1$d</string>
+    <string name="interface_section">Інтерфейс</string>
+    <string name="home_card_position">Картка підключення</string>
+    <string name="home_card_top">Зверху</string>
+    <string name="home_card_bottom">Знизу</string>
     <string name="server_sort">Сортування серверів</string>
     <string name="server_sort_ping">За пінгом</string>
     <string name="server_sort_name">За абеткою</string>
@@ -115,7 +117,7 @@
     <string name="vpn_tap_to_disconnect">Натисніть, щоб відключитися</string>
     <string name="toggle_connection_cd">Перемкнути підключення</string>
     <string name="channel_status_off">вимк</string>
-    <string name="channel_status_ready">локальний канал готовий</string>
+    <string name="channel_status_choose_lists">оберіть списки</string>
     <string name="channel_status_no_apps">немає застосунків</string>
     <string name="byedpi_site_lists">Списки сайтів</string>
     <string name="byedpi_site_lists_hint">Тести стратегій та індикатор ByeDPI перевіряють сайти з увімкнених списків</string>

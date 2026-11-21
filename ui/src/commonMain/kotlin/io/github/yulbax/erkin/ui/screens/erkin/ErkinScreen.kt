@@ -57,6 +57,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.HomeCardPosition
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.GroupKind
@@ -125,7 +126,7 @@ fun ErkinScreen(
     var renamingId by remember { mutableStateOf<Long?>(null) }
     val selection = rememberSelection(servers.profiles.map { it.id })
     var query by rememberSaveable { mutableStateOf<String?>(null) }
-    val found = query?.let(servers::search)
+    val found = query?.takeIf { it.isNotBlank() }?.let(servers::search)
     NavigationBackHandler(
         state = rememberNavigationEventState(NavigationEventInfo.None),
         isBackEnabled = query != null && !selection.active,
@@ -416,10 +417,13 @@ internal class ErkinScreenContent(
     val onSetHidden: (ids: Collection<Long>, hidden: Boolean) -> Unit
 ) {
     val searching: Boolean get() = query != null
+    val filtering: Boolean get() = !query.isNullOrBlank()
+    val showsAppsHint: Boolean get() = ui.homeHintSeen && !connected && !ui.hasRoutedApps
 }
 
 @Composable
 private fun ErkinScreenPortrait(c: ErkinScreenContent) {
+    val cardBelow = c.ui.cardPosition == HomeCardPosition.BOTTOM
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -428,16 +432,23 @@ private fun ErkinScreenPortrait(c: ErkinScreenContent) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(8.dp))
-        ConnectionSection(c)
-
-        Spacer(Modifier.height(16.dp))
+        if (cardBelow) {
+            Hints(c)
+        } else {
+            ConnectionSection(c)
+            Spacer(Modifier.height(16.dp))
+        }
         ServerListPanel(
             c = c,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         )
-        if (c.servers.profiles.isNotEmpty()) Spacer(Modifier.height(8.dp))
+        if (cardBelow && !c.searching) {
+            Spacer(Modifier.height(16.dp))
+            ConnectionSection(c, cardBelow = true)
+        }
+        if (c.servers.profiles.isNotEmpty() || cardBelow) Spacer(Modifier.height(8.dp))
     }
 }
 
@@ -452,10 +463,11 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxHeight(),
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            ConnectionSection(c, landscape = true)
+            ConnectionSection(c)
         }
 
         Spacer(Modifier.width(16.dp))
@@ -472,43 +484,45 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
 }
 
 @Composable
-private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Boolean = false) {
-    val hasServers = c.servers.profiles.isNotEmpty()
-    if (!c.ui.homeHintSeen) {
-        SetupChecklist(
-            done = { step ->
-                when (step) {
-                    SetupStep.Server -> hasServers
-                    SetupStep.Apps -> c.ui.hasByedpiApps || (hasServers && c.ui.hasVpnApps)
-                    SetupStep.Connect -> c.connected
-                }
-            },
-            onStep = { step ->
-                when (step) {
-                    SetupStep.Server -> c.onAddServerClick
-                    SetupStep.Apps -> c.onNavigateToApps
-                    SetupStep.Connect -> null
-                }
-            },
-            onDismiss = c.onDismissHint
-        )
+private fun ColumnScope.Hints(c: ErkinScreenContent) {
+    SetupHint(c)
+    if (c.showsAppsHint) {
+        AddAppsCard(onClick = c.onNavigateToApps)
         Spacer(Modifier.height(12.dp))
     }
+}
+
+@Composable
+private fun ColumnScope.SetupHint(c: ErkinScreenContent) {
+    if (c.ui.homeHintSeen) return
+    val hasServers = c.servers.profiles.isNotEmpty()
+    SetupChecklist(
+        done = { step ->
+            when (step) {
+                SetupStep.Server -> hasServers
+                SetupStep.Apps -> c.ui.hasByedpiApps || (hasServers && c.ui.hasVpnApps)
+                SetupStep.Connect -> c.connected
+            }
+        },
+        onStep = { step ->
+            when (step) {
+                SetupStep.Server -> c.onAddServerClick
+                SetupStep.Apps -> c.onNavigateToApps
+                SetupStep.Connect -> null
+            }
+        },
+        onDismiss = c.onDismissHint
+    )
+    Spacer(Modifier.height(12.dp))
+}
+
+@Composable
+private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, cardBelow: Boolean = false) {
+    if (!cardBelow) SetupHint(c)
 
     val canStart = c.ui.runsWithoutServer || (c.servers.selected != null && c.ui.hasRoutedApps)
     val enabled = c.state != VpnState.Connecting && (c.connected || canStart)
-
-    if (landscape) {
-        ConnectionCard(
-            state = c.state,
-            stats = c.stats,
-            connected = c.connected,
-            enabled = enabled,
-            onToggle = c.onToggle,
-            modifier = Modifier.weight(2f).fillMaxWidth().zIndex(1f)
-        )
-        ChannelsRow(c, modifier = Modifier.weight(1f).fillMaxWidth(), fillHeight = true)
-    } else {
+    val card: @Composable () -> Unit = {
         ConnectionCard(
             state = c.state,
             stats = c.stats,
@@ -517,22 +531,32 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Bool
             onToggle = c.onToggle,
             modifier = Modifier.zIndex(1f)
         )
+    }
+
+    if (cardBelow) {
+        ChannelsRow(c, cardBelow = true)
+        card()
+    } else {
+        card()
         ChannelsRow(c)
     }
 
-    if (c.ui.homeHintSeen && !c.connected && !c.ui.hasRoutedApps) {
+    if (!cardBelow && c.showsAppsHint) {
         Spacer(Modifier.height(12.dp))
         AddAppsCard(onClick = c.onNavigateToApps)
     }
 }
 
 @Composable
-private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fillHeight: Boolean = false) {
+private fun ChannelsRow(c: ErkinScreenContent, cardBelow: Boolean = false) {
+    val corner = CONNECTION_CARD_CORNER
+    val topInset = if (cardBelow) 0.dp else corner
+    val bottomInset = if (cardBelow) corner else 0.dp
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .tuckedUnder(CONNECTION_CARD_CORNER)
-            .then(if (fillHeight) Modifier else Modifier.height(IntrinsicSize.Min)),
+            .tucked(corner, underCard = !cardBelow)
+            .height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         val cardModifier = Modifier.weight(1f).fillMaxHeight()
@@ -544,8 +568,9 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
             noServers = c.servers.profiles.isEmpty(),
             latencyMs = c.stats.vpnLatencyMs,
             country = c.stats.vpnCountry,
-            shape = RoundedCornerShape(bottomStart = CONNECTION_CARD_CORNER),
-            topInset = CONNECTION_CARD_CORNER,
+            shape = if (cardBelow) RoundedCornerShape(topStart = corner) else RoundedCornerShape(bottomStart = corner),
+            topInset = topInset,
+            bottomInset = bottomInset,
             modifier = cardModifier
         )
         ChannelStatusCard(
@@ -553,8 +578,9 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
             active = c.stats.byedpiActive,
             up = c.stats.byedpiUp,
             hasApps = c.ui.hasByedpiApps,
-            shape = RoundedCornerShape(bottomEnd = CONNECTION_CARD_CORNER),
-            topInset = CONNECTION_CARD_CORNER,
+            shape = if (cardBelow) RoundedCornerShape(topEnd = corner) else RoundedCornerShape(bottomEnd = corner),
+            topInset = topInset,
+            bottomInset = bottomInset,
             modifier = cardModifier,
             reachable = c.stats.byedpiReachable,
             total = c.stats.byedpiTotal,
@@ -564,7 +590,7 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
     }
 }
 
-private fun Modifier.tuckedUnder(depth: Dp): Modifier = layout { measurable, constraints ->
+private fun Modifier.tucked(depth: Dp, underCard: Boolean): Modifier = layout { measurable, constraints ->
     val shift = depth.roundToPx()
     val placeable = measurable.measure(
         constraints.copy(
@@ -572,7 +598,7 @@ private fun Modifier.tuckedUnder(depth: Dp): Modifier = layout { measurable, con
             maxHeight = if (constraints.hasBoundedHeight) constraints.maxHeight + shift else Constraints.Infinity
         )
     )
-    layout(placeable.width, placeable.height - shift) { placeable.place(0, -shift) }
+    layout(placeable.width, placeable.height - shift) { placeable.place(0, if (underCard) -shift else 0) }
 }
 
 @Composable

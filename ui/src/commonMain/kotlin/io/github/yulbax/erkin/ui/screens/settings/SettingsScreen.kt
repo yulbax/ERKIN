@@ -39,6 +39,8 @@ fun Settings(
             items = listOf { LanguagePicker() }
         )
 
+        InterfaceSection(ui, viewModel)
+
         GroupCard(
             title = stringResource(Res.string.applications),
             items = listOfNotNull(
@@ -57,7 +59,6 @@ fun Settings(
             )
         )
 
-        ServersSection(ui, viewModel)
         AutostartSection(ui, viewModel)
         NetworkSection(ui, viewModel)
         BackupSection(viewModel)

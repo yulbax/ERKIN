@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -19,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -68,8 +68,8 @@ internal fun ServerListPanel(c: ErkinScreenContent, modifier: Modifier) {
             row = { node, check, handle -> FolderNodeRow(c, node, check, handle) },
             modifier = Modifier.fillMaxSize(),
             listState = listState,
-            onReorder = c.onReorder.takeIf { c.servers.manualOrder && !c.searching },
-            emptyText = if (c.searching) stringResource(Res.string.servers_search_empty) else null,
+            onReorder = c.onReorder.takeIf { c.servers.manualOrder && !c.filtering },
+            emptyText = if (c.filtering) stringResource(Res.string.servers_search_empty) else null,
             sidePadding = 6.dp,
             topPadding = 6.dp,
             keepBarRoom = true
@@ -118,11 +118,13 @@ private fun BoxScope.ServerToolbar(c: ErkinScreenContent, visible: Boolean, onTe
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                IconButton(onClick = { c.onQueryChange("") }) {
+                IconButton(onClick = { c.onQueryChange("") }, modifier = Modifier.size(TOOLBAR_BUTTON)) {
                     Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.search_servers))
                 }
-                ToolbarTestButton(testing = c.servers.testing, onClick = onTest)
-                IconButton(onClick = c.onAddServerClick) {
+                FilledRowButton(onClick = onTest, enabled = !c.servers.testing) {
+                    PingIcon(testing = c.servers.testing, contentDescription = stringResource(Res.string.server_test_latency))
+                }
+                IconButton(onClick = c.onAddServerClick, modifier = Modifier.size(TOOLBAR_BUTTON)) {
                     Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_server))
                 }
             }
@@ -136,28 +138,6 @@ private fun BoxScope.ServerToolbar(c: ErkinScreenContent, visible: Boolean, onTe
             .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
     ) {
         ServerSearchField(query = c.query.orEmpty(), onQueryChange = c.onQueryChange)
-    }
-}
-
-@Composable
-private fun ToolbarTestButton(testing: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        enabled = !testing,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondary,
-        contentColor = MaterialTheme.colorScheme.onSecondary
-    ) {
-        Row(
-            modifier = Modifier
-                .height(40.dp)
-                .padding(start = 12.dp, end = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            PingIcon(testing = testing, contentDescription = null)
-            Text(stringResource(Res.string.servers_test), style = MaterialTheme.typography.labelLarge)
-        }
     }
 }
 
@@ -191,6 +171,7 @@ private fun ServerSearchField(query: String, onQueryChange: (String?) -> Unit) {
 }
 
 private val TOOLBAR_SHADOW = 3.dp
+private val TOOLBAR_BUTTON = 40.dp
 private const val HIDDEN_ALPHA = 0.6f
 
 @Composable
@@ -243,7 +224,7 @@ private fun ServerListRow(
         isBest = profile.id == c.servers.fastest,
         chainLabel = chainLabel,
         groupIcon = group?.kind?.rowIcon,
-        groupName = group?.displayName?.takeIf { c.searching },
+        groupName = group?.displayName?.takeIf { c.filtering },
         mode = mode
     )
 }

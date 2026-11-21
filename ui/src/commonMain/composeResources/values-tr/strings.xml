@@ -72,12 +72,14 @@
     <string name="setup_step_apps">VPN ve ByeDPI için uygulama seçin</string>
 
     <string name="setup_step_connect">Bağlanın</string>
-    <string name="servers_title">Sunucular</string>
-    <string name="servers_test">Test et</string>
     <string name="servers_search_empty">Sunucu bulunamadı</string>
     <string name="hide_server">Gizle</string>
     <string name="show_server">Göster</string>
     <string name="hidden_servers">Gizlenenler · %1$d</string>
+    <string name="interface_section">Arayüz</string>
+    <string name="home_card_position">Bağlantı kartı</string>
+    <string name="home_card_top">Üstte</string>
+    <string name="home_card_bottom">Altta</string>
     <string name="server_sort">Sunucu sırası</string>
     <string name="server_sort_ping">Ping’e göre</string>
     <string name="server_sort_name">Ada göre</string>
@@ -115,7 +117,7 @@
     <string name="vpn_tap_to_disconnect">Bağlantıyı kesmek için dokunun</string>
     <string name="toggle_connection_cd">Bağlantıyı aç/kapat</string>
     <string name="channel_status_off">kapalı</string>
-    <string name="channel_status_ready">yerel uç nokta hazır</string>
+    <string name="channel_status_choose_lists">liste seçin</string>
     <string name="channel_status_no_apps">uygulama seçilmedi</string>
     <string name="byedpi_site_lists">Site listeleri</string>
     <string name="byedpi_site_lists_hint">Strateji testleri ve ByeDPI göstergesi etkin listelerdeki siteleri kontrol eder</string>

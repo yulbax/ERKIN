@@ -72,12 +72,14 @@
     <string name="setup_step_apps">选择走 VPN 和 ByeDPI 的应用</string>
 
     <string name="setup_step_connect">连接</string>
-    <string name="servers_title">服务器</string>
-    <string name="servers_test">测试</string>
     <string name="servers_search_empty">未找到服务器</string>
     <string name="hide_server">隐藏</string>
     <string name="show_server">显示</string>
     <string name="hidden_servers">已隐藏 · %1$d</string>
+    <string name="interface_section">界面</string>
+    <string name="home_card_position">连接卡片</string>
+    <string name="home_card_top">顶部</string>
+    <string name="home_card_bottom">底部</string>
     <string name="server_sort">服务器排序</string>
     <string name="server_sort_ping">按延迟</string>
     <string name="server_sort_name">按名称</string>
@@ -115,7 +117,7 @@
     <string name="vpn_tap_to_disconnect">点按以断开</string>
     <string name="toggle_connection_cd">切换连接</string>
     <string name="channel_status_off">关闭</string>
-    <string name="channel_status_ready">本地通道已就绪</string>
+    <string name="channel_status_choose_lists">选择列表</string>
     <string name="channel_status_no_apps">未选择应用</string>
     <string name="byedpi_site_lists">网站列表</string>
     <string name="byedpi_site_lists_hint">策略测试和 ByeDPI 指示器会检测已启用列表中的网站</string>

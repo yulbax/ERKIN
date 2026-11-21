@@ -72,12 +72,14 @@
     <string name="setup_step_apps">VPN va ByeDPI uchun ilovalarni tanlang</string>
 
     <string name="setup_step_connect">Ulaning</string>
-    <string name="servers_title">Serverlar</string>
-    <string name="servers_test">Tekshirish</string>
     <string name="servers_search_empty">Serverlar topilmadi</string>
     <string name="hide_server">Yashirish</string>
     <string name="show_server">Koʻrsatish</string>
     <string name="hidden_servers">Yashirilganlar · %1$d</string>
+    <string name="interface_section">Interfeys</string>
+    <string name="home_card_position">Ulanish kartasi</string>
+    <string name="home_card_top">Yuqorida</string>
+    <string name="home_card_bottom">Pastda</string>
     <string name="server_sort">Serverlar tartibi</string>
     <string name="server_sort_ping">Ping boʻyicha</string>
     <string name="server_sort_name">Alifbo boʻyicha</string>
@@ -115,7 +117,7 @@
     <string name="vpn_tap_to_disconnect">Uzish uchun bosing</string>
     <string name="toggle_connection_cd">Ulanishni yoqish/oʻchirish</string>
     <string name="channel_status_off">oʻchiq</string>
-    <string name="channel_status_ready">lokal nuqta tayyor</string>
+    <string name="channel_status_choose_lists">roʻyxatlarni tanlang</string>
     <string name="channel_status_no_apps">ilovalar tanlanmagan</string>
     <string name="byedpi_site_lists">Saytlar roʻyxatlari</string>
     <string name="byedpi_site_lists_hint">Strategiya testlari va ByeDPI koʻrsatkichi yoqilgan roʻyxatlardagi saytlarni tekshiradi</string>

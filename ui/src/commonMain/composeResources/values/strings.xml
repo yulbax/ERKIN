@@ -74,12 +74,14 @@
     <string name="setup_step_apps">Choose apps for VPN and ByeDPI</string>
 
     <string name="setup_step_connect">Connect</string>
-    <string name="servers_title">Servers</string>
-    <string name="servers_test">Test</string>
     <string name="servers_search_empty">No servers found</string>
     <string name="hide_server">Hide</string>
     <string name="show_server">Show</string>
     <string name="hidden_servers">Hidden · %1$d</string>
+    <string name="interface_section">Interface</string>
+    <string name="home_card_position">Connection card</string>
+    <string name="home_card_top">At the top</string>
+    <string name="home_card_bottom">At the bottom</string>
     <string name="server_sort">Server order</string>
     <string name="server_sort_ping">By ping</string>
     <string name="server_sort_name">By name</string>
@@ -118,7 +120,7 @@
     <string name="vpn_tap_to_disconnect">Tap to disconnect</string>
     <string name="toggle_connection_cd">Toggle connection</string>
     <string name="channel_status_off">off</string>
-    <string name="channel_status_ready">local endpoint ready</string>
+    <string name="channel_status_choose_lists">choose lists</string>
     <string name="channel_status_no_apps">no apps selected</string>
     <string name="byedpi_site_lists">Site lists</string>
     <string name="byedpi_site_lists_hint">Strategy tests and the ByeDPI indicator check the sites of the enabled lists</string>

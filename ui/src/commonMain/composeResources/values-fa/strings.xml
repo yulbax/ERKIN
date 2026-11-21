@@ -72,12 +72,14 @@
     <string name="setup_step_apps">انتخاب برنامه‌ها برای VPN و ByeDPI</string>
 
     <string name="setup_step_connect">اتصال</string>
-    <string name="servers_title">سرورها</string>
-    <string name="servers_test">بررسی</string>
     <string name="servers_search_empty">سروری پیدا نشد</string>
     <string name="hide_server">پنهان کردن</string>
     <string name="show_server">نمایش</string>
     <string name="hidden_servers">پنهان‌شده‌ها · %1$d</string>
+    <string name="interface_section">رابط کاربری</string>
+    <string name="home_card_position">کارت اتصال</string>
+    <string name="home_card_top">بالا</string>
+    <string name="home_card_bottom">پایین</string>
     <string name="server_sort">ترتیب سرورها</string>
     <string name="server_sort_ping">بر اساس پینگ</string>
     <string name="server_sort_name">بر اساس نام</string>
@@ -115,7 +117,7 @@
     <string name="vpn_tap_to_disconnect">برای قطع بزنید</string>
     <string name="toggle_connection_cd">تغییر وضعیت اتصال</string>
     <string name="channel_status_off">خاموش</string>
-    <string name="channel_status_ready">کانال محلی آماده است</string>
+    <string name="channel_status_choose_lists">فهرست‌ها را انتخاب کنید</string>
     <string name="channel_status_no_apps">برنامه‌ای انتخاب نشده</string>
     <string name="byedpi_site_lists">فهرست‌های سایت</string>
     <string name="byedpi_site_lists_hint">آزمایش راهبردها و نشانگر ByeDPI سایت‌های فهرست‌های فعال را بررسی می‌کنند</string>

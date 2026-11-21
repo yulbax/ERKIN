@@ -117,6 +117,7 @@ object BackupCodec {
             DnsTransport.isKnownWire(settings.byeDpiDnsTransport) &&
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
             ServerSort.fromWire(settings.serverSort) != null &&
+            HomeCardPosition.fromWire(settings.homeCardPosition) != null &&
             (settings.preferredFingerprint.isBlank() ||
                 TlsFingerprint.fromWire(settings.preferredFingerprint) != null)
 

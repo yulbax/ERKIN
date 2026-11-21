@@ -54,23 +54,42 @@ import io.github.yulbax.erkin.vpn.core.Ipv6Mode
 import io.github.yulbax.erkin.data.profile.ServerSort
 import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
+import io.github.yulbax.erkin.data.HomeCardPosition
 
 @Composable
-internal fun ServersSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
+internal fun InterfaceSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
+    val positions = HomeCardPosition.entries.associateWith { stringResource(it.label) }
+    val sorts = ServerSort.entries.associateWith { stringResource(it.label) }
     GroupCard(
-        title = stringResource(Res.string.servers_title),
-        items = listOf {
-            val labels = ServerSort.entries.associateWith { stringResource(it.label) }
-            DropdownSetting(
-                label = stringResource(Res.string.server_sort),
-                options = ServerSort.entries,
-                selected = ui.serverSort,
-                optionLabel = labels::getValue,
-                onSelect = viewModel::setServerSort
-            )
-        }
+        title = stringResource(Res.string.interface_section),
+        items = listOf(
+            {
+                DropdownSetting(
+                    label = stringResource(Res.string.home_card_position),
+                    options = HomeCardPosition.entries,
+                    selected = ui.homeCardPosition,
+                    optionLabel = positions::getValue,
+                    onSelect = viewModel::setHomeCardPosition
+                )
+            },
+            {
+                DropdownSetting(
+                    label = stringResource(Res.string.server_sort),
+                    options = ServerSort.entries,
+                    selected = ui.serverSort,
+                    optionLabel = sorts::getValue,
+                    onSelect = viewModel::setServerSort
+                )
+            }
+        )
     )
 }
+
+private val HomeCardPosition.label: StringResource
+    get() = when (this) {
+        HomeCardPosition.TOP -> Res.string.home_card_top
+        HomeCardPosition.BOTTOM -> Res.string.home_card_bottom
+    }
 
 private val ServerSort.label: StringResource
     get() = when (this) {

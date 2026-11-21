@@ -95,7 +95,7 @@ internal fun ServerRowLayout(
 ) {
     val pingColor = result?.color()
     val shape = RoundedCornerShape(18.dp)
-    val marquee = if (isSelected) Modifier.basicMarquee(iterations = Int.MAX_VALUE, spacing = MarqueeSpacing(MARQUEE_GAP)) else Modifier
+    val marquee = if (isSelected) Modifier.overflowMarquee() else Modifier
     Surface(
         shape = shape,
         color = when {
@@ -194,13 +194,16 @@ internal fun MenuTrailingButton(expanded: Boolean, onExpandedChange: (Boolean) -
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun FilledRowButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+internal fun FilledRowButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, content: @Composable () -> Unit) {
     FilledIconButton(
         onClick = onClick,
+        enabled = enabled,
         shapes = IconButtonDefaults.shapes(),
         colors = IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+            disabledContainerColor = MaterialTheme.colorScheme.secondary,
+            disabledContentColor = MaterialTheme.colorScheme.onSecondary
         ),
         modifier = modifier.size(rowButtonSize()),
         content = content
@@ -230,6 +233,8 @@ private fun rowButtonSize(): DpSize = IconButtonDefaults.smallContainerSize(Icon
 
 private val ROW_CONTENT_MIN_HEIGHT = 48.dp
 private val MARQUEE_GAP = 24.dp
+
+internal fun Modifier.overflowMarquee(): Modifier = basicMarquee(iterations = Int.MAX_VALUE, spacing = MarqueeSpacing(MARQUEE_GAP))
 
 @Composable
 internal fun splitButtonColors() = ButtonColors(
