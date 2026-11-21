@@ -26,10 +26,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
+import io.github.yulbax.erkin.data.profile.ServerSort
+import io.github.yulbax.erkin.data.profile.ProfileRepository
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
-    private val backupRepository: ConfigBackupRepository
+    private val backupRepository: ConfigBackupRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = settingsRepository.settings
@@ -38,7 +41,12 @@ class SettingsViewModel(
 
     fun toggleShowSystemApps() = update { it.copy(showSystemApps = !it.showSystemApps) }
     fun setAutoConnect(value: Boolean) = update { it.copy(autoConnect = value) }
-    fun setSortServersByPing(value: Boolean) = update { it.copy(sortServersByPing = value) }
+    fun setServerSort(value: ServerSort) {
+        viewModelScope.launch {
+            settingsRepository.update { it.copy(serverSort = value.wire) }
+            profileRepository.applySort()
+        }
+    }
     fun setNewAppsConnectionType(value: ConnectionType) = update { it.copy(newAppsConnectionType = value.wire) }
 
     fun setMtu(value: Int) = updateNetwork { it.copy(mtu = value.coerceIn(NetworkOptions.MTU_RANGE)) }
@@ -102,7 +110,7 @@ class SettingsViewModel(
 data class SettingsUiState(
     val showSystemApps: Boolean = false,
     val autoConnect: Boolean = false,
-    val sortServersByPing: Boolean = true,
+    val serverSort: ServerSort = ServerSort.DEFAULT,
     val newAppsConnectionType: ConnectionType = ConnectionType.DIRECT,
     val network: NetworkOptions = NetworkOptions.DEFAULT
 )
@@ -110,7 +118,7 @@ data class SettingsUiState(
 private fun SettingsEntity.toUiState() = SettingsUiState(
     showSystemApps = showSystemApps,
     autoConnect = autoConnect,
-    sortServersByPing = sortServersByPing,
+    serverSort = serverSort(),
     newAppsConnectionType = newAppsConnectionType(platformNewAppsConnectionType),
     network = networkOptions()
 )

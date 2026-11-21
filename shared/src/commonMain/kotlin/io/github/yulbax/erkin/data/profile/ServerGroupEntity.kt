@@ -27,6 +27,10 @@ data class ServerGroupEntity(
 
     val displayName: String get() = name ?: title ?: url?.let(::hostOf).orEmpty()
 
+    val hidesServers: Boolean get() = kind is GroupKind.Subscription
+
+    fun showsAsServer(memberCount: Int): Boolean = memberCount == 1 && kind is GroupKind.Subscription
+
     companion object {
         fun hostOf(url: String): String = runCatching { URI(url).host }.getOrNull() ?: url
     }

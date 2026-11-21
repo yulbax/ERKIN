@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import io.github.yulbax.erkin.data.profile.ServerSort
 import io.github.yulbax.erkin.vpn.core.ByeDpiDns
 import io.github.yulbax.erkin.vpn.core.DnsTransport
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
@@ -33,8 +34,10 @@ data class SettingsEntity(
     val rulesHintSeen: Boolean = false,
     val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic,
     val chainsHintSeen: Boolean = false,
-    val sortServersByPing: Boolean = true
+    val serverSort: String = ServerSort.DEFAULT.wire
 ) {
+    fun serverSort(): ServerSort = ServerSort.fromWire(serverSort) ?: ServerSort.DEFAULT
+
     fun newAppsConnectionType(platformDefault: ConnectionType): ConnectionType =
         ConnectionType.fromWire(newAppsConnectionType)?.takeIf { it in ConnectionType.FOR_NEW_APPS } ?: platformDefault
 

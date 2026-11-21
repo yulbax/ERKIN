@@ -51,6 +51,8 @@ import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rememberSystemVpnSettings
 import kotlinx.coroutines.launch
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
+import io.github.yulbax.erkin.data.profile.ServerSort
+import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 
 @Composable
@@ -58,12 +60,24 @@ internal fun ServersSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
     GroupCard(
         title = stringResource(Res.string.servers_title),
         items = listOf {
-            SwitchRow(stringResource(Res.string.sort_servers_by_ping), ui.sortServersByPing) {
-                viewModel.setSortServersByPing(it)
-            }
+            val labels = ServerSort.entries.associateWith { stringResource(it.label) }
+            DropdownSetting(
+                label = stringResource(Res.string.server_sort),
+                options = ServerSort.entries,
+                selected = ui.serverSort,
+                optionLabel = labels::getValue,
+                onSelect = viewModel::setServerSort
+            )
         }
     )
 }
+
+private val ServerSort.label: StringResource
+    get() = when (this) {
+        ServerSort.PING -> Res.string.server_sort_ping
+        ServerSort.NAME -> Res.string.server_sort_name
+        ServerSort.MANUAL -> Res.string.server_sort_manual
+    }
 
 @Composable
 internal fun AutostartSection(ui: SettingsUiState, viewModel: SettingsViewModel) {

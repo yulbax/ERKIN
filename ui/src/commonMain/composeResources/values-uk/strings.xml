@@ -75,7 +75,13 @@
     <string name="servers_title">Сервери</string>
     <string name="servers_test">Перевірити</string>
     <string name="servers_search_empty">Сервери не знайдено</string>
-    <string name="sort_servers_by_ping">Сортувати за пінгом</string>
+    <string name="hide_server">Приховати</string>
+    <string name="show_server">Показати</string>
+    <string name="hidden_servers">Приховані · %1$d</string>
+    <string name="server_sort">Сортування серверів</string>
+    <string name="server_sort_ping">За пінгом</string>
+    <string name="server_sort_name">За абеткою</string>
+    <string name="server_sort_manual">Вручну</string>
     <string name="servers_empty">Серверів поки немає. Додайте посилання-конфіг або підписку.</string>
     <string name="server_test_latency">Перевірити затримку</string>
     <string name="server_ping_timeout">тайм-аут</string>
@@ -154,7 +160,6 @@
     <string name="more_options_cd">Більше</string>
     <string name="share">Поділитися</string>
     <string name="refresh_subscription">Оновити</string>
-    <string name="test_subscription">Перевірити пінг</string>
     <plurals name="unreachable_servers">
         <item quantity="one">%1$d сервер недоступний</item>
         <item quantity="few">%1$d сервери недоступні</item>
@@ -186,7 +191,7 @@
     <string name="apps_filter_all">Усі</string>
     <string name="apps_select_cd">Вибрати застосунки</string>
     <string name="apps_server_title">Сервер</string>
-    <string name="apps_server_search">Пошук серверів</string>
+    <string name="search_servers">Пошук серверів</string>
     <string name="apps_choose_server_cd">Вибрати сервер</string>
     <string name="apps_server_unreachable_cd">Сервер не відповідає</string>
     <string name="apps_server_unreachable">Не відповідає</string>

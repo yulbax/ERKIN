@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.Flow
 
 const val SYNC_REMEMBERED_SQL =
     "UPDATE server_groups SET currentId = " +
-        "(SELECT id FROM profiles WHERE groupId = server_groups.id ORDER BY selected DESC, position, id LIMIT 1) " +
+        "(SELECT id FROM profiles WHERE groupId = server_groups.id ORDER BY selected DESC, hidden, position, id LIMIT 1) " +
         "WHERE currentId IS NULL " +
-        "OR currentId NOT IN (SELECT id FROM profiles WHERE groupId = server_groups.id) " +
+        "OR currentId NOT IN (SELECT id FROM profiles WHERE groupId = server_groups.id AND hidden = 0) " +
         "OR EXISTS (SELECT 1 FROM profiles WHERE groupId = server_groups.id AND selected = 1 AND id != server_groups.currentId)"
 
 @Dao

@@ -54,7 +54,6 @@ import io.github.yulbax.erkin.ui.components.label
 import io.github.yulbax.erkin.ui.components.transparentFieldColors
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ServerChoiceText
-import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.screens.apps.menuServer
 import io.github.yulbax.erkin.ui.viewmodel.RuleAppChoice
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
@@ -64,6 +63,9 @@ import java.text.DateFormat
 import java.text.NumberFormat
 import java.util.Date
 import org.jetbrains.compose.resources.stringResource
+import io.github.yulbax.erkin.data.profile.ServerFolder
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheetMode
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheet
 
 private val TARGET_ORDER = listOf(RuleTarget.BLOCK, RuleTarget.DIRECT, RuleTarget.BYEDPI, RuleTarget.VPN)
 private val GROUP_HEIGHT = 48.dp
@@ -294,12 +296,12 @@ internal fun RuleDialog(
     }
 
     if (pickingServer) {
-        ServerPickerSheet(
-            subtitle = text.ifBlank { stringResource(if (isNew) Res.string.new_rule else Res.string.edit_rule) },
+        ServerSheet(
+            folder = ServerFolder.Root,
             choices = choices,
-            current = choices.current(target.channel, serverId),
-            onPick = { serverId = it },
-            onDismiss = { pickingServer = false }
+            mode = ServerSheetMode.Pick(choices.current(target.channel, serverId), onPick = { serverId = it }),
+            onDismiss = { pickingServer = false },
+            subtitle = text.ifBlank { stringResource(if (isNew) Res.string.new_rule else Res.string.edit_rule) }
         )
     }
 }

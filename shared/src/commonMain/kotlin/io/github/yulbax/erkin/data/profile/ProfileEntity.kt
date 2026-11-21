@@ -26,7 +26,8 @@ data class ProfileEntity(
     val outboundJson: String = "",
     val selected: Boolean = false,
     val groupId: Long? = null,
-    val position: Int = 0
+    val position: Int = 0,
+    val hidden: Boolean = false
 ) {
     val protocol: ProxyProtocol? get() = ProxyProtocol.fromWire(type)
 }

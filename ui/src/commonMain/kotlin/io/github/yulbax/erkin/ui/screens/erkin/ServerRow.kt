@@ -22,12 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.ProfileEntity
+import io.github.yulbax.erkin.data.profile.ServerGroupEntity
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
 import io.github.yulbax.erkin.ui.components.ChainIcon
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.material.icons.filled.MoreVert
 
 internal class ServerActions(
     val onEdit: () -> Unit,
@@ -35,8 +39,27 @@ internal class ServerActions(
     val onRefreshSubscription: (() -> Unit)?,
     val onRemoveFromGroup: (() -> Unit)?,
     val onEditLogin: (() -> Unit)?,
-    val onDelete: () -> Unit
+    val onMenuEnd: () -> Unit,
+    val menuEnd: ServerMenuEnd = ServerMenuEnd.DELETE,
+    val menuEndEnabled: Boolean = true
 )
+
+internal enum class ServerMenuEnd(val label: StringResource, val icon: ImageVector) {
+    DELETE(Res.string.delete, Icons.Default.Delete),
+    HIDE(Res.string.hide_server, Icons.Default.VisibilityOff),
+    SHOW(Res.string.show_server, Icons.Default.Visibility);
+
+    companion object {
+        fun of(profile: ProfileEntity, group: ServerGroupEntity?, groupServers: List<ProfileEntity>): ServerMenuEnd = when {
+            profile.hidden -> SHOW
+            group?.hidesServers == true && groupServers.size > 1 -> HIDE
+            else -> DELETE
+        }
+    }
+
+    fun allowedFor(profile: ProfileEntity, groupServers: List<ProfileEntity>): Boolean =
+        this != HIDE || BulkAction.HIDE.keepsAServerVisible(listOf(profile.id), groupServers.filterNot { it.hidden }.mapTo(HashSet()) { it.id })
+}
 
 @Composable
 internal fun ServerRow(
@@ -56,7 +79,8 @@ internal fun ServerRow(
 ) {
     ServerRowLayout(
         title = serverName(profile.name),
-        subtitle = listOfNotNull(groupName, chainLabel ?: profile.type).joinToString(" · "),
+        subtitle = listOfNotNull(groupName, chainLabel).joinToString(" · "),
+        details = profile.type.takeIf { chainLabel == null },
         isSelected = isSelected,
         mode = mode,
         result = result,
@@ -77,12 +101,9 @@ internal fun ServerRow(
 private fun ServerMenu(actions: ServerActions) {
     var expanded by remember { mutableStateOf(false) }
     Box {
-        MenuTrailingButton(
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            shapes = STANDALONE_MENU_SHAPES,
-            modifier = Modifier.padding(horizontal = 4.dp)
-        )
+        FilledRowButton(onClick = { expanded = true }, modifier = Modifier.padding(horizontal = 4.dp)) {
+            Icon(Icons.Default.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
+        }
         AppDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             val close = { expanded = false }
             ServerMenuItem(Res.string.edit, Icons.Default.Edit, actions.onEdit, close)
@@ -90,16 +111,17 @@ private fun ServerMenu(actions: ServerActions) {
             actions.onRefreshSubscription?.let { ServerMenuItem(Res.string.refresh_subscription, Icons.Default.Refresh, it, close) }
             actions.onRemoveFromGroup?.let { ServerMenuItem(Res.string.remove_from_group, Icons.Default.FolderOff, it, close) }
             actions.onEditLogin?.let { ServerMenuItem(Res.string.login_menu, Icons.Default.Key, it, close) }
-            ServerMenuItem(Res.string.delete, Icons.Default.Delete, actions.onDelete, close)
+            ServerMenuItem(actions.menuEnd.label, actions.menuEnd.icon, actions.onMenuEnd, close, enabled = actions.menuEndEnabled)
         }
     }
 }
 
 @Composable
-private fun ServerMenuItem(label: StringResource, icon: ImageVector, action: () -> Unit, close: () -> Unit) {
+private fun ServerMenuItem(label: StringResource, icon: ImageVector, action: () -> Unit, close: () -> Unit, enabled: Boolean = true) {
     DropdownMenuItem(
         text = { Text(stringResource(label)) },
         leadingIcon = { Icon(icon, contentDescription = null) },
+        enabled = enabled,
         onClick = {
             action()
             close()

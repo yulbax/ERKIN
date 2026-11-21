@@ -269,7 +269,7 @@ class ProfileRefreshTest {
     private fun link(host: String, name: String) = "vless://$UUID@$host.example:443?security=tls&sni=$host.example#$name"
 
     private suspend fun followProviderOrder() {
-        database.settingsDao().upsertSettings(SettingsEntity(sortServersByPing = false))
+        database.settingsDao().upsertSettings(SettingsEntity(serverSort = ServerSort.MANUAL.wire))
     }
 
     private suspend fun refreshed(profile: ProfileEntity): ProfileEntity =
@@ -321,6 +321,52 @@ class ProfileRefreshTest {
         repository.refreshSubscription(SUBSCRIPTION_URL)
 
         assertTrue(refreshed(profile).outboundJson.contains("c.example"))
+    }
+
+    @Test
+    fun sortingByNameKeepsTheListInNaturalOrder() = runBlocking {
+        database.settingsDao().upsertSettings(SettingsEntity(serverSort = ServerSort.NAME.wire))
+
+        repository.add("vless://id@b.example:443?security=tls#Server%2010")
+        repository.add("vless://id@c.example:443?security=tls#Server%209")
+        repository.add("vless://id@a.example:443?security=tls#alpha")
+
+        assertEquals(listOf("alpha", "Server 9", "Server 10"), names())
+    }
+
+    @Test
+    fun hiddenServerStaysHiddenAfterRefresh() = runBlocking {
+        val hidden = storedSubscriptionServer(link("b", "Germany"))
+        storedSubscriptionServer(link("c", "France"))
+        repository.setHidden(listOf(hidden.id), hidden = true)
+        subscription.links = listOf(link("b", "Germany"), link("c", "France"), link("a", "Netherlands"))
+
+        repository.refreshSubscription(SUBSCRIPTION_URL)
+
+        assertEquals(listOf("Germany"), database.profileDao().getAll().filter { it.hidden }.map { it.name })
+    }
+
+    @Test
+    fun hidingTheSelectedServerSelectsTheFirstVisibleOneOfItsSubscription() = runBlocking {
+        repository.add("vless://id@own.example:443?security=tls#Own")
+        val first = storedSubscriptionServer(link("b", "Germany"), selected = true)
+        val second = storedSubscriptionServer(link("c", "France"))
+        database.profileDao().clearSelection()
+        database.profileDao().markSelected(first.id)
+
+        repository.setHidden(listOf(first.id), hidden = true)
+
+        assertEquals(second.id, database.profileDao().getSelected()?.id)
+    }
+
+    @Test
+    fun onlySubscriptionServersCanBeHidden() = runBlocking {
+        repository.add("vless://id@own.example:443?security=tls#Own")
+        val own = database.profileDao().getAll().single { it.name == "Own" }
+
+        repository.setHidden(listOf(own.id), hidden = true)
+
+        assertFalse(refreshed(own).hidden)
     }
 
     @Test

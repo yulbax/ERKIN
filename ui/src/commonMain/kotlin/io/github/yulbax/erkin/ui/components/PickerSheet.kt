@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -60,7 +62,17 @@ fun PickerSheet(
         page = Unit,
         pageKey = { it },
         onBack = null
-    ) { _, close -> content(close) }
+    ) { _, close -> PickerList { content(close) } }
+}
+
+@Composable
+fun PickerList(state: LazyListState = rememberLazyListState(), content: LazyListScope.() -> Unit) {
+    LazyColumn(
+        state = state,
+        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        content = content
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +88,8 @@ fun <P> PickerSheet(
     pageKey: (P) -> Any?,
     onBack: (() -> Unit)?,
     action: (@Composable () -> Unit)? = null,
-    content: LazyListScope.(page: P, close: (then: () -> Unit) -> Unit) -> Unit
+    extra: (@Composable () -> Unit)? = null,
+    content: @Composable (page: P, close: (then: () -> Unit) -> Unit) -> Unit
 ) {
     val sheetState = expandedSheetState()
     val scope = rememberCoroutineScope()
@@ -117,6 +130,7 @@ fun <P> PickerSheet(
             }
             action?.invoke()
         }
+        extra?.invoke()
         AppSearchBar(
             query = query,
             onQueryChange = onQueryChange,
@@ -132,12 +146,7 @@ fun <P> PickerSheet(
                 (slideInHorizontally { width -> towards * width } togetherWith slideOutHorizontally { width -> -towards * width })
                     .using(SizeTransform(clip = true))
             }
-        ) { shown ->
-            LazyColumn(
-                contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) { content(shown, close) }
-        }
+        ) { shown -> content(shown, close) }
     }
 }
 

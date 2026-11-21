@@ -75,7 +75,13 @@
     <string name="servers_title">Sunucular</string>
     <string name="servers_test">Test et</string>
     <string name="servers_search_empty">Sunucu bulunamadı</string>
-    <string name="sort_servers_by_ping">Ping’e göre sırala</string>
+    <string name="hide_server">Gizle</string>
+    <string name="show_server">Göster</string>
+    <string name="hidden_servers">Gizlenenler · %1$d</string>
+    <string name="server_sort">Sunucu sırası</string>
+    <string name="server_sort_ping">Ping’e göre</string>
+    <string name="server_sort_name">Ada göre</string>
+    <string name="server_sort_manual">Elle</string>
     <string name="servers_empty">Henüz sunucu yok. Bir yapılandırma bağlantısı veya abonelik ekleyin.</string>
     <string name="server_test_latency">Gecikmeyi test et</string>
     <string name="server_ping_timeout">zaman aşımı</string>
@@ -152,7 +158,6 @@
     <string name="more_options_cd">Diğer seçenekler</string>
     <string name="share">Paylaş</string>
     <string name="refresh_subscription">Yenile</string>
-    <string name="test_subscription">Ping testi</string>
     <plurals name="unreachable_servers">
         <item quantity="one">%1$d sunucuya erişilemiyor</item>
         <item quantity="other">%1$d sunucuya erişilemiyor</item>
@@ -180,7 +185,7 @@
     <string name="apps_filter_all">Tümü</string>
     <string name="apps_select_cd">Uygulamaları seç</string>
     <string name="apps_server_title">Sunucu</string>
-    <string name="apps_server_search">Sunucu ara</string>
+    <string name="search_servers">Sunucu ara</string>
     <string name="apps_choose_server_cd">Sunucu seç</string>
     <string name="apps_server_unreachable_cd">Sunucu yanıt vermiyor</string>
     <string name="apps_server_unreachable">Yanıt vermiyor</string>

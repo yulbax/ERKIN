@@ -1,12 +1,10 @@
-package io.github.yulbax.erkin.ui.viewmodel
+package io.github.yulbax.erkin.data.profile
 
-import io.github.yulbax.erkin.data.profile.ProfileEntity
-import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.vpn.core.ProbeResult
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class ServerOrderTest {
+class ServerDelayOrderTest {
 
     private val profiles = listOf(
         ProfileEntity(id = 1, name = "own slow"),
@@ -24,24 +22,29 @@ class ServerOrderTest {
 
     @Test
     fun aGroupThatRemembersItsFastestServerStandsWhereThatServerDoes() {
-        assertEquals(listOf(3L, 4L, 2L, 1L), profiles.orderByDelay(everything, results, groups(currentId = 4)))
+        assertEquals(listOf(3L, 4L, 2L, 1L), ServerTree(profiles, groups(currentId = 4)).orderedByDelay(everything, results))
     }
 
     @Test
     fun aGroupStandsWhereTheServerItShowsDoesNotWhereItsFastestDoes() {
-        assertEquals(listOf(3L, 1L, 4L, 2L), profiles.orderByDelay(everything, results, groups(currentId = 2)))
+        assertEquals(listOf(3L, 1L, 4L, 2L), ServerTree(profiles, groups(currentId = 2)).orderedByDelay(everything, results))
     }
 
     @Test
     fun testingOneGroupOnlySortsItsServersAndLeavesTheListInPlace() {
-        assertEquals(listOf(1L, 4L, 2L, 3L), profiles.orderByDelay(setOf(2L, 4L), results, groups(currentId = 2)))
+        assertEquals(listOf(1L, 4L, 2L, 3L), ServerTree(profiles, groups(currentId = 2)).orderedByDelay(setOf(2L, 4L), results))
+    }
+
+    @Test
+    fun hiddenServersKeepTheirPlaceAfterTheVisibleOnesOfTheirGroup() {
+        val withHidden = profiles + ProfileEntity(id = 5, name = "sub hidden", groupId = GROUP_ID, hidden = true)
+
+        assertEquals(listOf(3L, 4L, 2L, 5L, 1L), ServerTree(withHidden, groups(currentId = 4)).orderedByDelay(everything, results))
     }
 
     @Test
     fun theServersTheListShowsAreTestedBeforeTheOnesInsideGroups() {
-        val items = serverListItems(profiles, groups(currentId = 4))
-
-        assertEquals(listOf(1L, 4L, 3L, 2L), items.testQueue())
+        assertEquals(listOf(1L, 4L, 3L, 2L), ServerTree(profiles, groups(currentId = 4)).testQueue())
     }
 
     private fun groups(currentId: Long) =

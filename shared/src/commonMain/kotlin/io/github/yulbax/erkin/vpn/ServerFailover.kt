@@ -22,7 +22,7 @@ class ServerFailover(
             GroupKind.Local -> Unit
         }
         val inputs = store.load()
-        val candidates = inputs.profiles.filter { it.isLink && it.groupId == group.id }
+        val candidates = inputs.profiles.filter { it.isLink && !it.hidden && it.groupId == group.id }
         val ids = candidates.map { it.id }.toSet()
         val results = checks.check(ids).orEmpty()
         val target = fastest(results)?.let { id -> candidates.first { it.id == id } }

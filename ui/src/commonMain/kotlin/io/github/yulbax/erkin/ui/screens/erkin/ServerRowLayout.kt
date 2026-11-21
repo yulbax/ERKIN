@@ -6,6 +6,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.MarqueeSpacing
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,20 +17,20 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SplitButtonDefaults
-import androidx.compose.material3.SplitButtonShapes
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TriStateCheckbox
@@ -40,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -59,6 +60,13 @@ import kotlin.math.sin
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.FilledIconToggleButton
+import androidx.compose.material3.FilledIconButton
 
 internal class RowIcon(val source: IconSource, val description: StringResource)
 
@@ -82,10 +90,12 @@ internal fun ServerRowLayout(
     modifier: Modifier = Modifier,
     titleIcon: RowIcon? = null,
     subtitleIcon: RowIcon? = null,
+    details: String? = null,
     menu: @Composable RowScope.() -> Unit
 ) {
     val pingColor = result?.color()
     val shape = RoundedCornerShape(18.dp)
+    val marquee = if (isSelected) Modifier.basicMarquee(iterations = Int.MAX_VALUE, spacing = MarqueeSpacing(MARQUEE_GAP)) else Modifier
     Surface(
         shape = shape,
         color = when {
@@ -103,7 +113,8 @@ internal fun ServerRowLayout(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
+                .padding(start = 8.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
+                .heightIn(min = ROW_CONTENT_MIN_HEIGHT),
             verticalAlignment = Alignment.CenterVertically
         ) {
             when (mode) {
@@ -125,19 +136,29 @@ internal fun ServerRowLayout(
                         style = MaterialTheme.typography.bodyLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
+                        modifier = Modifier.weight(1f, fill = false).then(marquee)
                     )
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     subtitleIcon?.let { LeadingIcon(it, size = 14.dp, gap = 4.dp) }
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
+                    if (subtitle.isNotEmpty()) {
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false).then(marquee)
+                        )
+                    }
+                    if (details != null) {
+                        Text(
+                            if (subtitle.isEmpty()) details else " · $details",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
                     ResultSuffix(result = result, testing = testing)
                 }
             }
@@ -159,30 +180,56 @@ private fun LeadingIcon(icon: RowIcon, size: Dp, gap: Dp) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun MenuTrailingButton(
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    shapes: SplitButtonShapes? = null,
-    modifier: Modifier = Modifier
-) {
-    val icon: @Composable RowScope.() -> Unit = {
-        Icon(
-            imageVector = Icons.Filled.KeyboardArrowDown,
-            contentDescription = stringResource(Res.string.more_options_cd)
-        )
-    }
-    if (shapes == null) {
-        SplitButtonDefaults.TrailingButton(expanded, onExpandedChange, modifier, colors = splitButtonColors(), content = icon)
-    } else {
-        SplitButtonDefaults.TrailingButton(expanded, onExpandedChange, modifier, shapes = shapes, colors = splitButtonColors(), content = icon)
+internal fun MenuTrailingButton(expanded: Boolean, onExpandedChange: (Boolean) -> Unit) {
+    SplitButtonDefaults.TrailingButton(
+        checked = expanded,
+        onCheckedChange = onExpandedChange,
+        modifier = Modifier.width(rowButtonSize().width),
+        colors = splitButtonColors(),
+        contentPadding = PaddingValues(0.dp)
+    ) {
+        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(Res.string.more_options_cd))
     }
 }
 
-internal val STANDALONE_MENU_SHAPES = SplitButtonShapes(
-    shape = RoundedCornerShape(50),
-    pressedShape = RoundedCornerShape(8.dp),
-    checkedShape = RoundedCornerShape(50)
-)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun FilledRowButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    FilledIconButton(
+        onClick = onClick,
+        shapes = IconButtonDefaults.shapes(),
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary
+        ),
+        modifier = modifier.size(rowButtonSize()),
+        content = content
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun FilledRowToggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    FilledIconToggleButton(
+        checked = checked,
+        onCheckedChange = onCheckedChange,
+        shapes = IconButtonDefaults.toggleableShapes(),
+        colors = IconButtonDefaults.filledIconToggleButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+            checkedContainerColor = MaterialTheme.colorScheme.secondary,
+            checkedContentColor = MaterialTheme.colorScheme.onSecondary
+        ),
+        modifier = modifier.size(rowButtonSize()),
+        content = content
+    )
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+private fun rowButtonSize(): DpSize = IconButtonDefaults.smallContainerSize(IconButtonDefaults.IconButtonWidthOption.Uniform)
+
+private val ROW_CONTENT_MIN_HEIGHT = 48.dp
+private val MARQUEE_GAP = 24.dp
 
 @Composable
 internal fun splitButtonColors() = ButtonColors(
@@ -208,6 +255,18 @@ private fun ResultSuffix(result: ProbeResult?, testing: Boolean) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun PingIcon(testing: Boolean, contentDescription: String?) {
+    Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        if (testing) {
+            LoadingIndicator(color = LocalContentColor.current, modifier = Modifier.size(28.dp))
+        } else {
+            Icon(Icons.Default.Speed, contentDescription = contentDescription)
+        }
     }
 }
 

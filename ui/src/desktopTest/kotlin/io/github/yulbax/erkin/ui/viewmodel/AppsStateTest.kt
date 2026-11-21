@@ -1,5 +1,8 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import io.github.yulbax.erkin.data.profile.ServerFolder
+import io.github.yulbax.erkin.data.profile.ServerTree
+
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.GroupKind
@@ -27,8 +30,10 @@ class AppsStateTest {
         outboundJson = ProxyChain(ChainEntry.ByeDpi, helsinki.id).encode()
     )
     private val choices = ServerChoices(
-        listOf(main, helsinki, riga, oslo, chain),
-        mapOf(SUBSCRIPTION to ServerGroupEntity(id = SUBSCRIPTION, url = "https://sub.example/list"))
+        ServerTree(
+            listOf(main, helsinki, riga, oslo, chain),
+            mapOf(SUBSCRIPTION to ServerGroupEntity(id = SUBSCRIPTION, url = "https://sub.example/list"))
+        )
     )
 
     @Test
@@ -104,7 +109,7 @@ class AppsStateTest {
 
     @Test
     fun aServerThatDoesNotAnswerIsFlaggedOnItsLabel() {
-        val down = ServerChoices(choices.servers, choices.groups, unreachable = setOf(helsinki.id))
+        val down = ServerChoices(choices.tree, unreachable = setOf(helsinki.id))
 
         assertEquals(ServerLabel("Helsinki", isChain = false, unreachable = true), down.labelFor(telegram.copy(serverId = helsinki.id)))
         assertEquals(ServerLabel("Riga", isChain = false), down.labelFor(telegram.copy(serverId = riga.id)))
@@ -113,17 +118,17 @@ class AppsStateTest {
     @Test
     fun serversCanBeChosenOnlyWhenThereIsMoreThanOne() {
         assertTrue(choices.canChoose)
-        assertFalse(ServerChoices(listOf(main)).canChoose)
+        assertFalse(ServerChoices(ServerTree(listOf(main))).canChoose)
         assertFalse(ServerChoices().vpnEnabled)
     }
 
     @Test
     fun theTopPageShowsASubscriptionAsOneRowAndMarksTheMainServer() {
-        val page = serverPickerPage(choices, query = "", openGroup = null, current = CurrentServer.Main)
+        val page = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.Main)
 
         assertEquals(
             ServerPickerPage(
-                openGroup = null,
+                folder = ServerFolder.Root,
                 group = null,
                 rows = listOf(
                     ServerPickerRow.Main("Main", checked = true),
@@ -140,18 +145,18 @@ class AppsStateTest {
 
     @Test
     fun aGroupHoldingTheBoundServerNamesItOnTheTopPage() {
-        val page = serverPickerPage(choices, query = "", openGroup = null, current = CurrentServer.Bound(oslo.id))
+        val page = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.Bound(oslo.id))
 
         assertEquals("Oslo", page.rows.filterIsInstance<ServerPickerRow.Group>().single().current)
     }
 
     @Test
     fun anOpenGroupListsOnlyItsServersAndMarksTheBoundOne() {
-        val page = serverPickerPage(choices, query = "", openGroup = SUBSCRIPTION, current = CurrentServer.Bound(oslo.id))
+        val page = serverPickerPage(choices, query = "", folder = ServerFolder.Group(SUBSCRIPTION), current = CurrentServer.Bound(oslo.id))
 
         assertEquals(
             ServerPickerPage(
-                openGroup = SUBSCRIPTION,
+                folder = ServerFolder.Group(SUBSCRIPTION),
                 group = "sub.example",
                 rows = listOf(ServerPickerRow.Server(3, "Riga", checked = false), ServerPickerRow.Server(4, "Oslo", checked = true)),
                 testQueue = listOf(3, 4)
@@ -161,8 +166,19 @@ class AppsStateTest {
     }
 
     @Test
+    fun aPageOpensOneRowAboveWhatIsCurrentlyChosen() {
+        val bound = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.Bound(helsinki.id))
+        val inGroup = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.Bound(oslo.id))
+        val nothing = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.None, lead = PickerLead.NONE)
+
+        assertEquals(1, bound.firstShownRow)
+        assertEquals(2, inGroup.firstShownRow)
+        assertEquals(0, nothing.firstShownRow)
+    }
+
+    @Test
     fun aGroupThatIsNotListedFallsBackToTheTopPage() {
-        val page = serverPickerPage(choices, query = "", openGroup = 99, current = CurrentServer.Main)
+        val page = serverPickerPage(choices, query = "", folder = ServerFolder.Group(99), current = CurrentServer.Main)
 
         assertNull(page.group)
         assertEquals(ServerPickerRow.Main("Main", checked = true), page.rows.first())
@@ -170,14 +186,14 @@ class AppsStateTest {
 
     @Test
     fun searchListsMatchingServersAcrossGroupsWithTheirGroupName() {
-        val page = serverPickerPage(choices, query = " os", openGroup = SUBSCRIPTION, current = CurrentServer.None)
+        val page = serverPickerPage(choices, query = " os", folder = ServerFolder.Group(SUBSCRIPTION), current = CurrentServer.None)
 
-        assertEquals(ServerPickerPage(SUBSCRIPTION, group = null, rows = listOf(ServerPickerRow.Server(4, "Oslo", checked = false, group = "sub.example")), testQueue = listOf(4)), page)
+        assertEquals(ServerPickerPage(ServerFolder.Group(SUBSCRIPTION), group = null, rows = listOf(ServerPickerRow.Server(4, "Oslo", checked = false, group = "sub.example")), testQueue = listOf(4)), page)
     }
 
     @Test
     fun byeDpiLeadReplacesTheMainRow() {
-        val rows = serverPickerPage(choices, query = "", openGroup = null, current = CurrentServer.ByeDpi, lead = PickerLead.BYEDPI).rows
+        val rows = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.ByeDpi, lead = PickerLead.BYEDPI).rows
 
         assertEquals(ServerPickerRow.ByeDpi(checked = true), rows.first())
         assertTrue(rows.none { it is ServerPickerRow.Main })
@@ -185,15 +201,15 @@ class AppsStateTest {
 
     @Test
     fun noLeadListsServersOnly() {
-        val rows = serverPickerPage(choices, query = "", openGroup = null, current = CurrentServer.None, lead = PickerLead.NONE).rows
+        val rows = serverPickerPage(choices, query = "", folder = ServerFolder.Root, current = CurrentServer.None, lead = PickerLead.NONE).rows
 
         assertTrue(rows.none { it is ServerPickerRow.Main || it is ServerPickerRow.ByeDpi })
     }
 
     @Test
     fun aServerRowCarriesItsMeasuredDelay() {
-        val measured = ServerChoices(choices.servers, choices.groups, results = mapOf(helsinki.id to ProbeResult.Answered(120)))
-        val rows = serverPickerPage(measured, query = "", openGroup = null, current = CurrentServer.None).rows
+        val measured = ServerChoices(choices.tree, results = mapOf(helsinki.id to ProbeResult.Answered(120)))
+        val rows = serverPickerPage(measured, query = "", folder = ServerFolder.Root, current = CurrentServer.None).rows
 
         assertEquals(ProbeResult.Answered(120), rows.filterIsInstance<ServerPickerRow.Server>().first { it.id == helsinki.id }.result)
         assertNull(rows.filterIsInstance<ServerPickerRow.Server>().first { it.id == main.id }.result)

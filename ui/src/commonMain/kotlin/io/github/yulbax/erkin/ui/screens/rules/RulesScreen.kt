@@ -52,7 +52,6 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.apps.ChannelButton
 import io.github.yulbax.erkin.ui.screens.apps.ChannelMenu
 import io.github.yulbax.erkin.ui.screens.apps.ruleChannelChoices
-import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.screens.apps.menuServer
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleAppChoice
@@ -64,6 +63,9 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import io.github.yulbax.erkin.data.profile.ServerFolder
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheetMode
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheet
 
 @Composable
 fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel()) {
@@ -212,12 +214,15 @@ fun Rules(onOpenRuleSets: () -> Unit, viewModel: RulesViewModel = koinViewModel(
     }
 
     pickingServer?.let { rule ->
-        ServerPickerSheet(
-            subtitle = rule.displayValue(stateOf(rule)),
+        ServerSheet(
+            folder = ServerFolder.Root,
             choices = choices,
-            current = choices.current(ConnectionType.fromWire(rule.target) ?: ConnectionType.VPN, rule.serverId),
-            onPick = { serverId -> viewModel.setServer(rule, serverId) },
-            onDismiss = { pickingServer = null }
+            mode = ServerSheetMode.Pick(
+                current = choices.current(ConnectionType.fromWire(rule.target) ?: ConnectionType.VPN, rule.serverId),
+                onPick = { serverId -> viewModel.setServer(rule, serverId) }
+            ),
+            onDismiss = { pickingServer = null },
+            subtitle = rule.displayValue(stateOf(rule))
         )
     }
 

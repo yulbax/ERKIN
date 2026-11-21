@@ -75,7 +75,13 @@
     <string name="servers_title">Serverlar</string>
     <string name="servers_test">Tekshirish</string>
     <string name="servers_search_empty">Serverlar topilmadi</string>
-    <string name="sort_servers_by_ping">Ping boʻyicha saralash</string>
+    <string name="hide_server">Yashirish</string>
+    <string name="show_server">Koʻrsatish</string>
+    <string name="hidden_servers">Yashirilganlar · %1$d</string>
+    <string name="server_sort">Serverlar tartibi</string>
+    <string name="server_sort_ping">Ping boʻyicha</string>
+    <string name="server_sort_name">Alifbo boʻyicha</string>
+    <string name="server_sort_manual">Qoʻlda</string>
     <string name="servers_empty">Hozircha serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshing.</string>
     <string name="server_test_latency">Kechikishni tekshirish</string>
     <string name="server_ping_timeout">vaqt tugadi</string>
@@ -152,7 +158,6 @@
     <string name="more_options_cd">Boshqa amallar</string>
     <string name="share">Ulashish</string>
     <string name="refresh_subscription">Yangilash</string>
-    <string name="test_subscription">Pingni tekshirish</string>
     <plurals name="unreachable_servers">
         <item quantity="one">%1$d ta server mavjud emas</item>
         <item quantity="other">%1$d ta server mavjud emas</item>
@@ -180,7 +185,7 @@
     <string name="apps_filter_all">Barchasi</string>
     <string name="apps_select_cd">Ilovalarni tanlash</string>
     <string name="apps_server_title">Server</string>
-    <string name="apps_server_search">Serverlarni qidirish</string>
+    <string name="search_servers">Serverlarni qidirish</string>
     <string name="apps_choose_server_cd">Serverni tanlash</string>
     <string name="apps_server_unreachable_cd">Server javob bermayapti</string>
     <string name="apps_server_unreachable">Javob bermayapti</string>

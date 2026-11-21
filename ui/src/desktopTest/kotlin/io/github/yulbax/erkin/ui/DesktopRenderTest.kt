@@ -49,11 +49,16 @@ import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import io.github.yulbax.erkin.data.profile.AddTarget
 import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.ui.screens.erkin.GroupActions
-import io.github.yulbax.erkin.ui.screens.erkin.GroupSheet
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheet
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheetMode
+import io.github.yulbax.erkin.ui.screens.erkin.ServerBulkActions
+import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
+import io.github.yulbax.erkin.data.profile.ServerFolder
+import io.github.yulbax.erkin.data.profile.ServerTree
 import io.github.yulbax.erkin.ui.screens.erkin.MoveToGroupDialog
 import io.github.yulbax.erkin.ui.screens.erkin.ServerActions
 import io.github.yulbax.erkin.ui.screens.erkin.ServerRow
-import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
+import io.github.yulbax.erkin.data.profile.ServerNode
 import kotlinx.coroutines.CompletableDeferred
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.FetchedSubscription
@@ -261,17 +266,18 @@ class DesktopRenderTest {
             repository.add(links, null, AddTarget.Main("Group 1"))
             val stored = repository.groups.first().single { it.kind == GroupKind.Local }
             val members = repository.profiles.first().filter { it.groupId == stored.id }
-            ServerListItem.Group(stored.id, stored.kind, stored.displayName, null, members, rememberedId = null)
+            ServerNode.Group(stored.id, stored.kind, stored.displayName, null, members, rememberedId = null)
         }
         val actions = GroupActions(
-            refreshing = emptySet(), testing = false, onOpen = {}, onTest = { CompletableDeferred(null) }, onRefresh = {},
+            refreshing = emptySet(), onOpen = {}, onTest = { CompletableDeferred(null) }, onRefresh = {},
             onAdd = {}, onRename = {}, onShare = {}, onUngroup = {}, onDelete = {}
         )
         render("server-groups", width = 420, height = 860) { MainScreen() }
         render("server-group-sheet", width = 420, height = 700) {
-            GroupSheet(group, actions, onDismiss = {}) { profile, _ ->
-                ServerRow(profile, isSelected = false, ServerActions({}, {}, null, {}, null, {}), onSelect = {}, onLongClick = {})
-            }
+            val choices = ServerChoices(ServerTree(group.members, mapOf(group.id to runBlocking { repository.groups.first().single { it.id == group.id } })))
+            ServerSheet(ServerFolder.Group(group.id), choices, ServerSheetMode.Manage(actions, ServerBulkActions({ _, _ -> }, {}, {}, { _, _ -> }, { false })) { node, _, _, _ ->
+                ServerRow(node.server, isSelected = false, ServerActions({}, {}, null, {}, null, {}), onSelect = {}, onLongClick = {})
+            }, onDismiss = {})
         }
         render("move-to-group", width = 420, height = 600) { MoveToGroupDialog(listOf(group), onDismiss = {}, onNewGroup = {}, onGroup = {}) }
     }

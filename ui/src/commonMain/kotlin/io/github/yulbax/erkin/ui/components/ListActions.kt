@@ -37,7 +37,7 @@ fun BoxScope.SelectionBar(
     count: Int,
     onClear: () -> Unit,
     onSelectAll: () -> Unit,
-    onDelete: () -> Unit,
+    onDelete: (() -> Unit)?,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     FloatingVisibility(
@@ -66,12 +66,14 @@ fun BoxScope.SelectionBar(
                     Icon(Icons.Default.SelectAll, contentDescription = stringResource(Res.string.select_all))
                 }
                 actions()
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(Res.string.delete),
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                if (onDelete != null) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = stringResource(Res.string.delete),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

@@ -1,5 +1,8 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import io.github.yulbax.erkin.data.profile.ServerNode
+import io.github.yulbax.erkin.data.profile.ServerTree
+import io.github.yulbax.erkin.data.profile.ServerFolder
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.GroupKind
@@ -35,7 +38,7 @@ private fun ProfileRepository.serverChoices(states: VpnStateRepository, results:
         states.stats.map { it.unreachableServers }.distinctUntilChanged(),
         results.results
     ) { servers, groups, down, resultMap ->
-        ServerChoices(servers, groups.associateBy { it.id }, down, resultMap)
+        ServerChoices(ServerTree(servers, groups.associateBy { it.id }), down, resultMap)
     }
 
 data class ServerLabel(val name: String, val isChain: Boolean, val unreachable: Boolean = false)
@@ -48,14 +51,15 @@ sealed interface CurrentServer {
 }
 
 class ServerChoices(
-    val servers: List<ProfileEntity> = emptyList(),
-    val groups: Map<Long, ServerGroupEntity> = emptyMap(),
+    val tree: ServerTree = ServerTree(),
     private val unreachable: Set<Long> = emptySet(),
     private val results: Map<Long, ProbeResult> = emptyMap()
 ) {
     private val byId = servers.associateBy { it.id }
     private val labels = servers.associate { it.id to labelOf(it) }
 
+    val servers: List<ProfileEntity> get() = tree.profiles
+    val groups: Map<Long, ServerGroupEntity> get() = tree.groups
     val main: ProfileEntity? = servers.firstOrNull { it.selected }
     val vpnEnabled: Boolean = servers.isNotEmpty()
     val canChoose: Boolean = servers.size > 1
@@ -89,9 +93,11 @@ class ServerChoices(
 
     fun groupOf(serverId: Long): Long? = byId[serverId]?.groupId
 
+    fun group(id: Long): ServerNode.Group? = tree.group(id)
+
     fun resultOf(id: Long): ProbeResult? = results[id]
 
-    fun linksOnly(): ServerChoices = ServerChoices(servers.filter { it.isLink }, groups, unreachable, results)
+    fun linksOnly(): ServerChoices = ServerChoices(ServerTree(servers.filter { it.isLink }, groups), unreachable, results)
 
     private fun labelOf(server: ProfileEntity): ServerLabel = when (val kind = server.kind) {
         is ServerKind.Link -> ServerLabel(server.name, isChain = false)
@@ -106,17 +112,21 @@ enum class PickerLead { MAIN_SERVER, BYEDPI, NONE }
 
 sealed interface ServerPickerRow {
     val key: Any
+    val holdsCurrent: Boolean
 
     data class Main(val name: String, val checked: Boolean) : ServerPickerRow {
         override val key: Any get() = "main"
+        override val holdsCurrent: Boolean get() = checked
     }
 
     data class ByeDpi(val checked: Boolean) : ServerPickerRow {
         override val key: Any get() = "byedpi"
+        override val holdsCurrent: Boolean get() = checked
     }
 
     data class Group(val id: Long, val kind: GroupKind, val name: String, val count: Int, val current: String?) : ServerPickerRow {
         override val key: Any get() = "group:$id"
+        override val holdsCurrent: Boolean get() = current != null
     }
 
     data class Server(
@@ -125,60 +135,80 @@ sealed interface ServerPickerRow {
         val checked: Boolean,
         val group: String? = null,
         val result: ProbeResult? = null,
-        val testing: Boolean = false
+        val testing: Boolean = false,
+        val protocol: String? = null
     ) : ServerPickerRow {
         override val key: Any get() = id
+        override val holdsCurrent: Boolean get() = checked
     }
 }
 
-data class ServerPickerPage(val openGroup: Long?, val group: String?, val rows: List<ServerPickerRow>, val testQueue: List<Long>)
+data class ServerPickerPage(
+    val folder: ServerFolder,
+    val group: String?,
+    val rows: List<ServerPickerRow>,
+    val testQueue: List<Long>
+) {
+    val firstShownRow: Int get() = (rows.indexOfFirst { it.holdsCurrent } - ROWS_ABOVE_CURRENT).coerceAtLeast(0)
+
+    private companion object {
+        const val ROWS_ABOVE_CURRENT = 1
+    }
+}
 
 internal fun serverPickerPage(
     choices: ServerChoices,
     query: String,
-    openGroup: Long?,
+    folder: ServerFolder,
     current: CurrentServer,
     lead: PickerLead = PickerLead.MAIN_SERVER,
     testing: Set<Long> = emptySet()
 ): ServerPickerPage {
+    val tree = choices.tree
     fun row(server: ProfileEntity, group: String? = null) = ServerPickerRow.Server(
         id = server.id,
         name = server.name,
         checked = current == CurrentServer.Bound(server.id),
         group = group,
         result = choices.resultOf(server.id),
-        testing = server.id in testing
+        testing = server.id in testing,
+        protocol = server.type.takeIf { server.isLink && it.isNotEmpty() }
     )
-    val items = serverListItems(choices.servers, choices.groups)
-    val groups = items.filterIsInstance<ServerListItem.Group>()
-    val queue = items.testQueue()
-    fun queueOf(servers: List<ProfileEntity>) = servers.mapTo(HashSet()) { it.id }.let { ids -> queue.filter { it in ids } }
     if (query.isNotBlank()) {
-        val groupNames = groups.flatMap { group -> group.members.map { it.id to group.name } }.toMap()
-        val found = choices.servers.matching(query)
-        return ServerPickerPage(openGroup, group = null, rows = found.map { row(it, groupNames[it.id]) }, testQueue = queueOf(found))
+        val found = tree.search(ServerFolder.Root, query)
+        return ServerPickerPage(
+            folder = folder,
+            group = null,
+            rows = found.map { row(it.profile, it.group?.displayName) },
+            testQueue = tree.testQueue(found.map { it.profile.id })
+        )
     }
-    groups.firstOrNull { it.id == openGroup }?.let { group ->
-        return ServerPickerPage(openGroup, group = group.name, rows = group.members.map { row(it) }, testQueue = queueOf(group.members))
+    (folder as? ServerFolder.Group)?.let { tree.group(it.id) }?.let { group ->
+        return ServerPickerPage(
+            folder = folder,
+            group = group.name,
+            rows = group.members.map { row(it) },
+            testQueue = tree.testQueue(group.profileIds)
+        )
     }
     val leading = when (lead) {
         PickerLead.MAIN_SERVER -> choices.main?.let { ServerPickerRow.Main(it.name, checked = current == CurrentServer.Main) }
         PickerLead.BYEDPI -> ServerPickerRow.ByeDpi(checked = current == CurrentServer.ByeDpi)
         PickerLead.NONE -> null
     }
-    val rows = items.map { item ->
-        when (item) {
-            is ServerListItem.Server -> row(item.profile)
-            is ServerListItem.Group -> ServerPickerRow.Group(
-                id = item.id,
-                kind = item.kind,
-                name = item.name,
-                count = item.members.size,
-                current = item.members.firstOrNull { current == CurrentServer.Bound(it.id) }?.name
+    val rows = tree.root.map { node ->
+        when (node) {
+            is ServerNode.Server -> row(node.profile)
+            is ServerNode.Group -> ServerPickerRow.Group(
+                id = node.id,
+                kind = node.kind,
+                name = node.name,
+                count = node.members.size,
+                current = node.members.firstOrNull { current == CurrentServer.Bound(it.id) }?.name
             )
         }
     }
-    return ServerPickerPage(openGroup, group = null, rows = listOfNotNull(leading) + rows, testQueue = queue)
+    return ServerPickerPage(folder, group = null, rows = listOfNotNull(leading) + rows, testQueue = tree.testQueue())
 }
 
 private val STOP_TIMEOUT = 5_000.milliseconds

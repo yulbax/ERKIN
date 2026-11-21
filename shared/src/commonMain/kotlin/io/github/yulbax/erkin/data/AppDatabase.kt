@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "erkin.db"
-        const val VERSION = 28
+        const val VERSION = 30
 
         fun isNewerThanThisBuild(database: File): Boolean {
             if (!database.isFile) return false
@@ -273,7 +273,23 @@ abstract class AppDatabase : RoomDatabase() {
             }
         )
 
-        fun migrations(appsCanBypass: Boolean): Array<Migration> = MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION
+        private val HIDDEN_SERVERS_MIGRATION = object : Migration(28, 29) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE profiles ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        private val SERVER_SORT_MIGRATION = object : Migration(29, 30) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE settings ADD COLUMN serverSort TEXT NOT NULL DEFAULT 'ping'")
+                connection.execSQL("UPDATE settings SET serverSort = 'manual' WHERE sortServersByPing = 0")
+                connection.execSQL("ALTER TABLE settings DROP COLUMN sortServersByPing")
+            }
+        }
+
+        fun migrations(appsCanBypass: Boolean): Array<Migration> =
+            MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION +
+                HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {

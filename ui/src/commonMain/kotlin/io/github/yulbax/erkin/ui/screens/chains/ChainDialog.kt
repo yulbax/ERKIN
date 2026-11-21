@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.ui.text.style.TextOverflow
-import io.github.yulbax.erkin.ui.screens.apps.ServerPickerSheet
 import io.github.yulbax.erkin.ui.viewmodel.CurrentServer
 import io.github.yulbax.erkin.ui.viewmodel.PickerLead
 import io.github.yulbax.erkin.ui.viewmodel.ServerChoices
@@ -54,6 +53,9 @@ import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.ui.components.GroupCard
 import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.stringResource
+import io.github.yulbax.erkin.data.profile.ServerFolder
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheetMode
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheet
 
 @Composable
 internal fun ChainDialog(
@@ -168,16 +170,19 @@ internal fun ChainDialog(
 
     picking?.let { index ->
         draft.nodes.getOrNull(index)?.let { node ->
-            ServerPickerSheet(
-                subtitle = hopLabel(index, draft.lastIndex),
+            ServerSheet(
+                folder = ServerFolder.Root,
                 choices = links,
-                current = when (node) {
-                    ChainEntry.ByeDpi -> CurrentServer.ByeDpi
-                    is ChainEntry.Server -> CurrentServer.Bound(node.profileId)
-                },
-                lead = if (draft.acceptsByeDpi(index)) PickerLead.BYEDPI else PickerLead.NONE,
-                onPick = { id -> draft = draft.select(index, id?.let(ChainEntry::Server) ?: ChainEntry.ByeDpi) },
-                onDismiss = { picking = null }
+                mode = ServerSheetMode.Pick(
+                    current = when (node) {
+                        ChainEntry.ByeDpi -> CurrentServer.ByeDpi
+                        is ChainEntry.Server -> CurrentServer.Bound(node.profileId)
+                    },
+                    onPick = { id -> draft = draft.select(index, id?.let(ChainEntry::Server) ?: ChainEntry.ByeDpi) },
+                    lead = if (draft.acceptsByeDpi(index)) PickerLead.BYEDPI else PickerLead.NONE
+                ),
+                onDismiss = { picking = null },
+                subtitle = hopLabel(index, draft.lastIndex)
             )
         }
     }

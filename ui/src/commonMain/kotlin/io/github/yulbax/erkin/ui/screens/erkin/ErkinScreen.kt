@@ -1,17 +1,14 @@
 package io.github.yulbax.erkin.ui.screens.erkin
 
+import io.github.yulbax.erkin.ui.components.Selection
 import io.github.yulbax.erkin.ui.components.LoginDialog
-import io.github.yulbax.erkin.ui.components.FloatingVisibility
 import io.github.yulbax.erkin.ui.components.rememberSelection
 import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -21,33 +18,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.exclude
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -79,15 +64,9 @@ import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.canJoinGroup
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.data.profile.kind
-import io.github.yulbax.erkin.ui.components.AppSearchBar
-import io.github.yulbax.erkin.ui.components.EmptyAction
-import io.github.yulbax.erkin.ui.components.EmptyState
-import io.github.yulbax.erkin.ui.components.SelectionBar
 import io.github.yulbax.erkin.ui.components.RenameDialog
-import androidx.compose.ui.state.ToggleableState
 import io.github.yulbax.erkin.ui.platform.rememberSharer
 import io.github.yulbax.erkin.ui.screens.chains.ChainDialog
-import io.github.yulbax.erkin.ui.screens.chains.chainLabel
 import io.github.yulbax.erkin.ui.platform.rememberLocalNetworkRequest
 import io.github.yulbax.erkin.ui.platform.rememberShowMessage
 import io.github.yulbax.erkin.ui.platform.rememberVpnStartRequest
@@ -99,25 +78,17 @@ import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
 import io.github.yulbax.erkin.ui.viewmodel.LoginRequest
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import org.koin.compose.koinInject
-import io.github.yulbax.erkin.proxy.ProxyProtocol
-import io.github.yulbax.erkin.ui.viewmodel.ServerListItem
+import io.github.yulbax.erkin.data.profile.ServerNode
+import io.github.yulbax.erkin.data.profile.ServerFolder
 import io.github.yulbax.erkin.ui.viewmodel.ServersUiState
 import io.github.yulbax.erkin.vpn.ConnectionStats
 import io.github.yulbax.erkin.vpn.VpnState
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import kotlinx.coroutines.Deferred
-import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.graphics.Color
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyListState
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.SnackbarDuration
-import io.github.yulbax.erkin.ui.components.SwipeableSnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.text.style.TextOverflow
@@ -146,14 +117,13 @@ fun ErkinScreen(
     val shareChooserTitle = stringResource(Res.string.share_server_chooser)
 
     var adding by remember { mutableStateOf<AddRequest?>(null) }
-    var movingToGroup by remember { mutableStateOf(false) }
+    var moving by remember { mutableStateOf<MoveRequest?>(null) }
     var editing by remember { mutableStateOf<ProfileEntity?>(null) }
     var editingChain by remember { mutableStateOf<ProfileEntity?>(null) }
     var deleting by remember { mutableStateOf<List<ProfileEntity>?>(null) }
     var sheetId by remember { mutableStateOf<Long?>(null) }
     var renamingId by remember { mutableStateOf<Long?>(null) }
     val selection = rememberSelection(servers.profiles.map { it.id })
-    val checked = selection.checked
     var query by rememberSaveable { mutableStateOf<String?>(null) }
     val found = query?.let(servers::search)
     NavigationBackHandler(
@@ -184,13 +154,24 @@ fun ErkinScreen(
         }
     }
 
+    val bulk = ServerBulkActions(
+        onSetHidden = profileViewModel::setHidden,
+        onDelete = { ids -> deleting = servers.profiles.filter { it.id in ids } },
+        onRemoveFromGroup = profileViewModel::removeFromGroup,
+        onMove = { ids, done -> moving = MoveRequest(ids, done) },
+        canMove = { ids ->
+            servers.profiles.filter { it.id in ids }
+                .let { picked -> picked.isNotEmpty() && picked.all { it.canJoinGroup(it.groupId?.let(servers.groups::get)) } }
+        }
+    )
+
     val content = ErkinScreenContent(
         ui = ui,
         state = state,
         stats = stats,
         servers = servers,
         query = query,
-        shown = found ?: servers.items,
+        shown = found ?: servers.tree.root,
         onQueryChange = { query = it },
         connected = connected,
         onToggle = { if (connected) viewModel.stopVpn() else onConnectClick() },
@@ -211,7 +192,6 @@ fun ErkinScreen(
         onDelete = { deleting = listOf(it) },
         groups = GroupActions(
             refreshing = servers.refreshing,
-            testing = servers.testing,
             onOpen = { sheetId = it },
             onTest = profileViewModel::test,
             onRefresh = profileViewModel::refreshSubscription,
@@ -224,15 +204,9 @@ fun ErkinScreen(
         onRemoveFromGroup = { profileViewModel.removeFromGroup(listOf(it.id)) },
         onEditLogin = profileViewModel::editLogin,
         snackbarHostState = snackbarHostState,
-        checked = checked,
-        onToggleCheck = { profile -> selection.toggle(profile.id) },
-        onToggleChecks = { profiles -> selection.toggleAll(profiles.map { it.id }) },
-        onCheckAll = { found?.let { hits -> selection.select(hits.flatMap { it.profileIds }) } ?: selection.selectAll() },
-        onClearChecks = selection::clear,
-        onDeleteChecked = { deleting = servers.profiles.filter { it.id in checked } },
-        canMoveChecked = servers.profiles.filter { it.id in checked }
-            .let { picked -> picked.isNotEmpty() && picked.all { it.canJoinGroup(it.groupId?.let(servers.groups::get)) } },
-        onMoveChecked = { movingToGroup = true }
+        selection = selection,
+        bulk = bulk,
+        onSetHidden = profileViewModel::setHidden
     )
 
     val windowSize = LocalWindowInfo.current.containerSize
@@ -244,9 +218,14 @@ fun ErkinScreen(
         if (item == null) {
             LaunchedEffect(id) { sheetId = null }
         } else {
-            GroupSheet(item, content.groups, onDismiss = { sheetId = null }) { profile, close ->
-                ServerListRow(content, ServerListItem.Server(profile), servers.fastest, Modifier, onSelected = close, sheet = item)
-            }
+            ServerSheet(
+                folder = ServerFolder.Group(id),
+                choices = servers.choices,
+                mode = ServerSheetMode.Manage(content.groups, bulk) { node, check, handle, close ->
+                    FolderNodeRow(content, node, check, handle, sheet = item, onSelected = close)
+                },
+                onDismiss = { sheetId = null }
+            )
         }
     }
 
@@ -258,20 +237,19 @@ fun ErkinScreen(
         )
     }
 
-    if (movingToGroup) {
-        val ids = checked.toList()
+    moving?.let { request ->
         MoveToGroupDialog(
-            groups = servers.items.filterIsInstance<ServerListItem.Group>().filter { it.kind == GroupKind.Local },
-            onDismiss = { movingToGroup = false },
+            groups = servers.tree.root.filterIsInstance<ServerNode.Group>().filter { it.kind == GroupKind.Local },
+            onDismiss = { moving = null },
             onNewGroup = {
-                profileViewModel.moveToNewGroup(ids)
-                selection.clear()
-                movingToGroup = false
+                profileViewModel.moveToNewGroup(request.ids)
+                request.done()
+                moving = null
             },
             onGroup = { groupId ->
-                profileViewModel.moveToGroup(ids, groupId)
-                selection.clear()
-                movingToGroup = false
+                profileViewModel.moveToGroup(request.ids, groupId)
+                request.done()
+                moving = null
             }
         )
     }
@@ -401,19 +379,21 @@ fun ErkinScreen(
 
 private class AddRequest(val groupId: Long?)
 
+private class MoveRequest(val ids: List<Long>, val done: () -> Unit)
+
 private fun shareText(servers: ServersUiState, groupId: Long): String? = when (val kind = servers.groups[groupId]?.kind) {
     is GroupKind.Subscription -> kind.url
     GroupKind.Local -> servers.profiles.filter { it.groupId == groupId }.joinToString("\n") { it.link }
     null -> null
 }
 
-private class ErkinScreenContent(
+internal class ErkinScreenContent(
     val ui: ErkinUiState,
     val state: VpnState,
     val stats: ConnectionStats,
     val servers: ServersUiState,
     val query: String?,
-    val shown: List<ServerListItem>,
+    val shown: List<ServerNode>,
     val onQueryChange: (String?) -> Unit,
     val connected: Boolean,
     val onToggle: () -> Unit,
@@ -431,23 +411,11 @@ private class ErkinScreenContent(
     val onRemoveFromGroup: (ProfileEntity) -> Unit,
     val onEditLogin: (ProfileEntity) -> Unit,
     val snackbarHostState: SnackbarHostState,
-    val checked: Set<Long>,
-    val onToggleCheck: (ProfileEntity) -> Unit,
-    val onToggleChecks: (List<ProfileEntity>) -> Unit,
-    val onCheckAll: () -> Unit,
-    val onClearChecks: () -> Unit,
-    val onDeleteChecked: () -> Unit,
-    val canMoveChecked: Boolean,
-    val onMoveChecked: () -> Unit
+    val selection: Selection,
+    val bulk: ServerBulkActions,
+    val onSetHidden: (ids: Collection<Long>, hidden: Boolean) -> Unit
 ) {
-    val selecting: Boolean get() = checked.isNotEmpty()
     val searching: Boolean get() = query != null
-
-    fun checkState(ids: List<Long>): ToggleableState = when (ids.count { it in checked }) {
-        0 -> ToggleableState.Off
-        ids.size -> ToggleableState.On
-        else -> ToggleableState.Indeterminate
-    }
 }
 
 @Composable
@@ -463,7 +431,7 @@ private fun ErkinScreenPortrait(c: ErkinScreenContent) {
         ConnectionSection(c)
 
         Spacer(Modifier.height(16.dp))
-        ServerListSection(
+        ServerListPanel(
             c = c,
             modifier = Modifier
                 .fillMaxWidth()
@@ -493,7 +461,7 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
         Spacer(Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            ServerListSection(
+            ServerListPanel(
                 c = c,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -608,102 +576,6 @@ private fun Modifier.tuckedUnder(depth: Dp): Modifier = layout { measurable, con
 }
 
 @Composable
-private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier) {
-    if (c.servers.profiles.isEmpty()) {
-        Box(modifier = modifier, contentAlignment = Alignment.Center) {
-            EmptyState(
-                text = stringResource(Res.string.servers_empty),
-                action = EmptyAction(stringResource(Res.string.add_server), c.onAddServerClick)
-            )
-        }
-        return
-    }
-
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier
-    ) {
-        var order by remember { mutableStateOf(c.shown) }
-        LaunchedEffect(c.shown) { order = c.shown }
-        val listState = rememberLazyListState()
-        val scrollAfterSort = rememberScrollToTopAfterSort(listState, c.servers.profiles.map { it.id })
-        val reorderState = rememberReorderableLazyListState(listState) { from, to ->
-            val fromIndex = order.indexOfFirst { it.key == from.key }
-            val toIndex = order.indexOfFirst { it.key == to.key }
-            if (fromIndex >= 0 && toIndex >= 0) {
-                order = order.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    start = 6.dp,
-                    end = 6.dp,
-                    top = 6.dp,
-                    bottom = 64.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                val fastestId = c.servers.fastest
-                items(order, key = { it.key }) { item ->
-                    ReorderableItem(reorderState, key = item.key) { dragging ->
-                        val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
-                        val handle: @Composable () -> Unit = if (c.searching) ({}) else ({
-                            IconButton(
-                                onClick = {},
-                                modifier = Modifier.draggableHandle(
-                                    onDragStopped = { c.onReorder(order.flatMap { it.profileIds }) }
-                                )
-                            ) {
-                                Icon(
-                                    Icons.Default.DragHandle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        })
-                        Surface(
-                            shape = RoundedCornerShape(18.dp),
-                            shadowElevation = elevation,
-                            color = if (dragging) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent
-                        ) {
-                            val mode = if (c.selecting) RowMode.Selecting(c.checkState(item.profileIds), handle) else RowMode.Normal
-                            when (item) {
-                                is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, mode = mode, showGroup = c.searching)
-                                is ServerListItem.Group -> GroupListRow(c, item, fastestId, Modifier, mode)
-                            }
-                        }
-                    }
-                }
-            }
-            if (c.searching && order.isEmpty()) {
-                Text(
-                    text = stringResource(Res.string.servers_search_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
-                )
-            }
-            val notifying = c.snackbarHostState.currentSnackbarData != null
-            ServerToolbar(
-                c = c,
-                visible = !c.selecting && !notifying,
-                onTest = { scrollAfterSort(c.onTest(order.flatMap { it.profileIds })) }
-            )
-            SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked) {
-                IconButton(onClick = c.onMoveChecked, enabled = c.canMoveChecked) {
-                    Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(Res.string.move_to_group))
-                }
-            }
-            SwipeableSnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
-        }
-    }
-}
-
-@Composable
 private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = onClick,
@@ -736,171 +608,5 @@ private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun BoxScope.ServerToolbar(c: ErkinScreenContent, visible: Boolean, onTest: () -> Unit) {
-    FloatingVisibility(
-        visible = visible && !c.searching,
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .padding(bottom = 12.dp)
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
-            shadowElevation = TOOLBAR_SHADOW
-        ) {
-            Row(
-                modifier = Modifier.padding(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                IconButton(onClick = { c.onQueryChange("") }) {
-                    Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.apps_server_search))
-                }
-                TestButton(testing = c.servers.testing, onClick = onTest)
-                IconButton(onClick = c.onAddServerClick) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_server))
-                }
-            }
-        }
-    }
-    FloatingVisibility(
-        visible = visible && c.searching,
-        modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
-    ) {
-        ServerSearchField(query = c.query.orEmpty(), onQueryChange = c.onQueryChange)
-    }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun TestButton(testing: Boolean, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        enabled = !testing,
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondary,
-        contentColor = MaterialTheme.colorScheme.onSecondary
-    ) {
-        Row(
-            modifier = Modifier
-                .height(40.dp)
-                .padding(start = 12.dp, end = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                if (testing) {
-                    LoadingIndicator(color = MaterialTheme.colorScheme.onSecondary, modifier = Modifier.size(28.dp))
-                } else {
-                    Icon(Icons.Default.Speed, contentDescription = null)
-                }
-            }
-            Text(stringResource(Res.string.servers_test), style = MaterialTheme.typography.labelLarge)
-        }
-    }
-}
-
-@Composable
-private fun ServerSearchField(query: String, onQueryChange: (String?) -> Unit) {
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shadowElevation = TOOLBAR_SHADOW
-    ) {
-        AppSearchBar(
-            query = query,
-            onQueryChange = onQueryChange,
-            placeholder = stringResource(Res.string.apps_server_search),
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .focusRequester(focus),
-            trailing = {
-                if (query.isEmpty()) {
-                    IconButton(onClick = { onQueryChange(null) }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.cancel))
-                    }
-                }
-            }
-        )
-    }
-}
-
-private val TOOLBAR_SHADOW = 3.dp
 private val KEYBOARD_INSETS: WindowInsets
     @Composable get() = WindowInsets.ime.exclude(WindowInsets.navigationBars)
-
-@Composable
-private fun ServerListRow(
-    c: ErkinScreenContent,
-    item: ServerListItem.Server,
-    fastestId: Long?,
-    modifier: Modifier,
-    onSelected: () -> Unit = {},
-    mode: RowMode = RowMode.Normal,
-    sheet: ServerListItem.Group? = null,
-    showGroup: Boolean = false
-) {
-    val profile = item.profile
-    val group = item.group
-    val chainLabel = chainLabel(profile, c.servers.profiles)
-    ServerRow(
-        profile = profile,
-        isSelected = profile.id == c.servers.selected?.id,
-        actions = ServerActions(
-            onEdit = { c.onEdit(profile) },
-            onShare = if (chainLabel == null) ({ c.onShare(profile) }) else null,
-            onRefreshSubscription = group?.takeIf { it.kind is GroupKind.Subscription }?.let { { c.groups.onRefresh(it.id) } },
-            onRemoveFromGroup = sheet?.takeIf { it.kind == GroupKind.Local }?.let { { c.onRemoveFromGroup(profile) } },
-            onEditLogin = if (profile.protocol == ProxyProtocol.OPENVPN) ({ c.onEditLogin(profile) }) else null,
-            onDelete = { c.onDelete(profile) }
-        ),
-        onSelect = {
-            if (c.selecting) {
-                c.onToggleCheck(profile)
-            } else {
-                c.onSelect(profile)
-                onSelected()
-            }
-        },
-        onLongClick = { c.onToggleCheck(profile) },
-        modifier = modifier,
-        result = c.servers.results[profile.id],
-        testing = profile.id in c.servers.testingIds,
-        isBest = profile.id == fastestId,
-        chainLabel = chainLabel,
-        groupIcon = group?.kind?.rowIcon,
-        groupName = group?.displayName?.takeIf { showGroup },
-        mode = mode
-    )
-}
-
-@Composable
-private fun GroupListRow(
-    c: ErkinScreenContent,
-    item: ServerListItem.Group,
-    fastestId: Long?,
-    modifier: Modifier,
-    mode: RowMode
-) {
-    val current = item.current
-    GroupRow(
-        item = item,
-        actions = c.groups,
-        isSelected = current.id == c.servers.selected?.id,
-        result = c.servers.results[current.id],
-        testing = current.id in c.servers.testingIds,
-        isBest = current.id == fastestId,
-        mode = mode,
-        onClick = { if (c.selecting) c.onToggleChecks(item.members) else c.onSelect(current) },
-        onLongClick = { c.onToggleChecks(item.members) },
-        modifier = modifier
-    )
-}

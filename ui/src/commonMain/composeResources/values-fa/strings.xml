@@ -75,7 +75,13 @@
     <string name="servers_title">سرورها</string>
     <string name="servers_test">بررسی</string>
     <string name="servers_search_empty">سروری پیدا نشد</string>
-    <string name="sort_servers_by_ping">مرتب‌سازی بر اساس پینگ</string>
+    <string name="hide_server">پنهان کردن</string>
+    <string name="show_server">نمایش</string>
+    <string name="hidden_servers">پنهان‌شده‌ها · %1$d</string>
+    <string name="server_sort">ترتیب سرورها</string>
+    <string name="server_sort_ping">بر اساس پینگ</string>
+    <string name="server_sort_name">بر اساس نام</string>
+    <string name="server_sort_manual">دستی</string>
     <string name="servers_empty">هنوز سروری نیست. لینک پیکربندی یا اشتراک اضافه کنید.</string>
     <string name="server_test_latency">آزمایش تأخیر</string>
     <string name="server_ping_timeout">مهلت تمام شد</string>
@@ -152,7 +158,6 @@
     <string name="more_options_cd">گزینه‌های بیشتر</string>
     <string name="share">اشتراک‌گذاری</string>
     <string name="refresh_subscription">بازخوانی</string>
-    <string name="test_subscription">بررسی پینگ</string>
     <plurals name="unreachable_servers">
         <item quantity="one">%1$d سرور در دسترس نیست</item>
         <item quantity="other">%1$d سرور در دسترس نیستند</item>
@@ -180,7 +185,7 @@
     <string name="apps_filter_all">همه</string>
     <string name="apps_select_cd">انتخاب برنامه‌ها</string>
     <string name="apps_server_title">سرور</string>
-    <string name="apps_server_search">جستجوی سرورها</string>
+    <string name="search_servers">جستجوی سرورها</string>
     <string name="apps_choose_server_cd">انتخاب سرور</string>
     <string name="apps_server_unreachable_cd">سرور پاسخ نمی‌دهد</string>
     <string name="apps_server_unreachable">پاسخ نمی‌دهد</string>

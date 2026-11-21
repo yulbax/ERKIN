@@ -55,6 +55,9 @@ interface ProfileDao {
     @Query("UPDATE profiles SET groupId = :groupId WHERE id IN (:ids)")
     suspend fun moveToGroup(ids: List<Long>, groupId: Long?)
 
+    @Query("UPDATE profiles SET hidden = :hidden WHERE id IN (:ids)")
+    suspend fun setHidden(ids: List<Long>, hidden: Boolean)
+
     @Query("UPDATE profiles SET name = :name WHERE id = :id")
     suspend fun updateName(id: Long, name: String)
 

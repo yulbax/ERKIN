@@ -1,5 +1,8 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import io.github.yulbax.erkin.data.profile.ServerNode
+import io.github.yulbax.erkin.data.profile.ServerTree
+import io.github.yulbax.erkin.data.profile.ServerFolder
 import kotlinx.coroutines.flow.filter
 import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.ServerChecks
@@ -39,6 +42,9 @@ import kotlinx.coroutines.withContext
 import java.io.InputStream
 import org.jetbrains.compose.resources.getString
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import io.github.yulbax.erkin.data.profile.ServerSort
 
 sealed interface LoginRequest {
     class NewServer(val raw: String, val fileName: String?, val groupId: Long?) : LoginRequest
@@ -55,41 +61,24 @@ sealed interface ServerError {
     data class Refused(val refusal: SubscriptionRefusal) : ServerError
 }
 
-fun List<ProfileEntity>.orderByDelay(ids: Set<Long>, results: Map<Long, ProbeResult>, groups: Map<Long, ServerGroupEntity>): List<Long> =
-    serverListItems(sortedByDelay(ids, results) { it }, groups)
-        .sortedByDelay(ids, results) { it.server }
-        .flatMap { it.profileIds }
-
-private fun <T> List<T>.sortedByDelay(ids: Set<Long>, results: Map<Long, ProbeResult>, server: (T) -> ProfileEntity): List<T> {
-    val tested: (T) -> Boolean = { server(it).id in ids }
-    val ranked = filter(tested).sortedBy { results[server(it).id].rank() }.iterator()
-    return map { if (tested(it)) ranked.next() else it }
-}
-
-private fun ProbeResult?.rank(): Int = when (this) {
-    is ProbeResult.Answered -> ms
-    null, ProbeResult.NeedsConnection -> Int.MAX_VALUE - 1
-    ProbeResult.NoAnswer, ProbeResult.LoginRejected -> Int.MAX_VALUE
-}
-
 data class ServersUiState(
-    val profiles: List<ProfileEntity> = emptyList(),
+    val tree: ServerTree = ServerTree(),
     val selected: ProfileEntity? = null,
     val results: Map<Long, ProbeResult> = emptyMap(),
     val fastest: Long? = null,
     val testingIds: Set<Long> = emptySet(),
-    val groups: Map<Long, ServerGroupEntity> = emptyMap(),
     val refreshing: Set<Long> = emptySet(),
-    val items: List<ServerListItem> = emptyList(),
-    val error: ServerError? = null
+    val error: ServerError? = null,
+    val manualOrder: Boolean = true
 ) {
+    val profiles: List<ProfileEntity> get() = tree.profiles
+    val groups: Map<Long, ServerGroupEntity> get() = tree.groups
     val testing: Boolean get() = testingIds.isNotEmpty()
+    val choices: ServerChoices by lazy { ServerChoices(tree, results = results) }
 
-    fun group(id: Long): ServerListItem.Group? =
-        items.firstOrNull { it is ServerListItem.Group && it.id == id } as ServerListItem.Group?
+    fun group(id: Long): ServerNode.Group? = tree.group(id)
 
-    fun search(query: String): List<ServerListItem> =
-        profiles.matching(query).map { ServerListItem.Server(it, it.groupId?.let(groups::get)) }
+    fun search(query: String): List<ServerNode> = tree.search(ServerFolder.Root, query)
 }
 
 class ProfileViewModel(
@@ -120,29 +109,27 @@ class ProfileViewModel(
             Triple(results, ProbeResults.fastest(results, compared), testingIds)
         },
         groups,
-        _error
-    ) { profiles, selected, (results, fastest, testingIds), (stored, refreshing), error ->
+        combine(_error, settingsRepository.settings.map { it.serverSort() == ServerSort.MANUAL }.distinctUntilChanged()) { error, manual -> error to manual }
+    ) { profiles, selected, (results, fastest, testingIds), (stored, refreshing), (error, manualOrder) ->
         ServersUiState(
-            profiles = profiles,
+            tree = ServerTree(profiles, stored),
             selected = selected,
             results = results,
             fastest = fastest,
             testingIds = testingIds,
-            groups = stored,
             refreshing = refreshing,
-            items = serverListItems(profiles, stored),
-            error = error
+            error = error,
+            manualOrder = manualOrder
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), ServersUiState())
 
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()
-        val run = serverTests.run(uiState.value.items.testQueue().filter { it in ids })
+        val run = serverTests.run(uiState.value.tree.testQueue(ids))
         return viewModelScope.async(Dispatchers.IO) {
             val results = run.await() ?: return@async null
-            val order = if (settingsRepository.settings.first().sortServersByPing) {
-                val state = uiState.value
-                state.profiles.orderByDelay(ids, results, state.groups).also { profileRepository.reorder(it) }
+            val order = if (settingsRepository.settings.first().serverSort() == ServerSort.PING) {
+                uiState.value.tree.orderedByDelay(ids, results).also { profileRepository.reorder(it) }
             } else {
                 null
             }
@@ -260,6 +247,10 @@ class ProfileViewModel(
 
     fun select(profile: ProfileEntity) {
         viewModelScope.launch(Dispatchers.IO) { profileRepository.select(profile) }
+    }
+
+    fun setHidden(ids: Collection<Long>, hidden: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.setHidden(ids, hidden) }
     }
 
     fun delete(profiles: List<ProfileEntity>) {

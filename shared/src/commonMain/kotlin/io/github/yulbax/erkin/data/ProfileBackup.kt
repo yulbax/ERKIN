@@ -16,7 +16,8 @@ data class ProfileBackup(
     val subscriptionUrl: String = "",
     val subscriptionName: String? = null,
     val groupId: Long? = null,
-    val remembered: Boolean = false
+    val remembered: Boolean = false,
+    val hidden: Boolean = false
 ) {
     fun toEntity(groupId: Long? = null) = ProfileEntity(
         id = id,
@@ -25,7 +26,8 @@ data class ProfileBackup(
         link = link,
         outboundJson = outboundJson,
         selected = selected,
-        groupId = groupId
+        groupId = groupId,
+        hidden = hidden
     )
 
     companion object {
@@ -39,7 +41,8 @@ data class ProfileBackup(
             subscriptionUrl = group?.url.orEmpty(),
             subscriptionName = group?.name,
             groupId = group?.takeIf { it.kind == GroupKind.Local }?.id,
-            remembered = group?.currentId == profile.id
+            remembered = group?.currentId == profile.id,
+            hidden = profile.hidden
         )
     }
 }

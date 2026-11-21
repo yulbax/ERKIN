@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
+import io.github.yulbax.erkin.data.profile.ServerSort
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
@@ -45,17 +46,31 @@ object BackupCodec {
     fun decode(text: String): AppConfigBackup? =
         runCatching { json.decodeFromString(AppConfigBackup.serializer(), text) }
             .getOrNull()
-            ?.let { it.copy(rules = it.rules?.map(RoutingRuleEntity::upgraded), directAppsTunneled = tunneledDirectApps(text)) }
+            ?.let { backup ->
+                val legacy = legacySettings(text)
+                backup.copy(
+                    rules = backup.rules?.map(RoutingRuleEntity::upgraded),
+                    directAppsTunneled = legacy?.tunnelDirectApps == true,
+                    settings = backup.settings?.withLegacySort(legacy)
+                )
+            }
             ?.takeIf(::isValid)
 
-    private fun tunneledDirectApps(text: String): Boolean =
-        runCatching { json.decodeFromString(LegacyBackup.serializer(), text).settings?.tunnelDirectApps == true }.getOrDefault(false)
+    private fun legacySettings(text: String): LegacySettings? =
+        runCatching { json.decodeFromString(LegacyBackup.serializer(), text).settings }.getOrNull()
 
     @Serializable
     private class LegacyBackup(val settings: LegacySettings? = null)
 
+    private fun SettingsEntity.withLegacySort(legacy: LegacySettings?): SettingsEntity =
+        if (legacy?.serverSort == null && legacy?.sortServersByPing == false) copy(serverSort = ServerSort.MANUAL.wire) else this
+
     @Serializable
-    private class LegacySettings(val tunnelDirectApps: Boolean = false)
+    private class LegacySettings(
+        val tunnelDirectApps: Boolean = false,
+        val sortServersByPing: Boolean? = null,
+        val serverSort: String? = null
+    )
 
     fun read(input: InputStream): AppConfigBackup? =
         runCatching { input.readBounded(AppConfigBackup.MAX_IMPORT_BYTES).decodeToString() }
@@ -101,6 +116,7 @@ object BackupCodec {
             ByeDpiDns.normalizeAddress(settings.byeDpiDnsAddress) == settings.byeDpiDnsAddress &&
             DnsTransport.isKnownWire(settings.byeDpiDnsTransport) &&
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
+            ServerSort.fromWire(settings.serverSort) != null &&
             (settings.preferredFingerprint.isBlank() ||
                 TlsFingerprint.fromWire(settings.preferredFingerprint) != null)
 

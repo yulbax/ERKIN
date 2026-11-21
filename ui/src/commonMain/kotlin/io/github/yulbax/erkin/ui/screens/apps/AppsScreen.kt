@@ -60,6 +60,9 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import io.github.yulbax.erkin.data.profile.ServerFolder
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheetMode
+import io.github.yulbax.erkin.ui.screens.erkin.ServerSheet
 
 private sealed interface ServerPickTarget {
     data class App(val app: AppInfo) : ServerPickTarget
@@ -175,19 +178,19 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
 
             when (val target = picking) {
                 null -> Unit
-                is ServerPickTarget.App -> ServerPickerSheet(
-                    subtitle = target.app.name,
+                is ServerPickTarget.App -> ServerSheet(
+                    folder = ServerFolder.Root,
                     choices = choices,
-                    current = choices.current(target.app),
-                    onPick = { serverId -> viewModel.setServer(target.app, serverId) },
-                    onDismiss = { picking = null }
+                    mode = ServerSheetMode.Pick(choices.current(target.app), onPick = { serverId -> viewModel.setServer(target.app, serverId) }),
+                    onDismiss = { picking = null },
+                    subtitle = target.app.name
                 )
-                ServerPickTarget.Selection -> ServerPickerSheet(
-                    subtitle = stringResource(Res.string.servers_selected, selectedCount),
+                ServerPickTarget.Selection -> ServerSheet(
+                    folder = ServerFolder.Root,
                     choices = choices,
-                    current = CurrentServer.None,
-                    onPick = { serverId -> offerUndo(ConnectionType.VPN, viewModel.setServerForSelection(serverId)) },
-                    onDismiss = { picking = null }
+                    mode = ServerSheetMode.Pick(CurrentServer.None, onPick = { serverId -> offerUndo(ConnectionType.VPN, viewModel.setServerForSelection(serverId)) }),
+                    onDismiss = { picking = null },
+                    subtitle = stringResource(Res.string.servers_selected, selectedCount)
                 )
             }
         }

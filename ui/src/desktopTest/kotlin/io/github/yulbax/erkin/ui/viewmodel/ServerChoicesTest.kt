@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.ui.viewmodel
 
+import io.github.yulbax.erkin.data.profile.ServerTree
+
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
@@ -13,7 +15,7 @@ class ServerChoicesTest {
     private val entry = ProfileEntity(id = 1, name = "Amazon")
     private val exit = ProfileEntity(id = 2, name = "Финляндия")
     private val chain = ProfileEntity(id = 9, name = "Дом", type = ProxyChain.TYPE, outboundJson = ProxyChain(listOf(ChainEntry.ByeDpi, ChainEntry.Server(1)), 2).encode())
-    private val choices = ServerChoices(listOf(entry, exit, chain), unreachable = setOf(1L))
+    private val choices = ServerChoices(ServerTree(listOf(entry, exit, chain)), unreachable = setOf(1L))
 
     @Test
     fun aChainIsNamedAfterItsExitEverywhere() {
@@ -29,7 +31,7 @@ class ServerChoicesTest {
     @Test
     fun aServerChosenOnPurposeIsShownByNameEvenWhileItIsTheMainOne() {
         val main = ProfileEntity(id = 3, name = "Amsterdam", selected = true)
-        val withMain = ServerChoices(listOf(main, exit))
+        val withMain = ServerChoices(ServerTree(listOf(main, exit)))
 
         assertEquals(CurrentServer.Bound(3), withMain.current(ConnectionType.VPN, 3))
         assertEquals(ServerLabel("Amsterdam", isChain = false), withMain.label(ConnectionType.VPN, 3))

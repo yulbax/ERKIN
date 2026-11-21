@@ -1,12 +1,9 @@
-package io.github.yulbax.erkin.ui.viewmodel
+package io.github.yulbax.erkin.data.profile
 
-import io.github.yulbax.erkin.data.profile.GroupKind
-import io.github.yulbax.erkin.data.profile.ProfileEntity
-import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class ServerListItemsTest {
+class ServerTreeTest {
     private val manual = server(1, "Manual")
     private val single = server(2, "Single", SINGLE_ID)
     private val germany = server(3, "Germany", GROUP_ID)
@@ -19,14 +16,14 @@ class ServerListItemsTest {
 
     @Test
     fun groupsASubscriptionAtItsFirstServerAndLeavesASingleServerSubscriptionInline() {
-        val items = serverListItems(listOf(manual, single, germany, manualAfter, france), stored)
+        val items = ServerTree(listOf(manual, single, germany, manualAfter, france), stored).root
 
         assertEquals(
             listOf(
-                ServerListItem.Server(manual),
-                ServerListItem.Server(single, stored.getValue(SINGLE_ID)),
-                ServerListItem.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), rememberedId = null),
-                ServerListItem.Server(manualAfter)
+                ServerNode.Server(manual),
+                ServerNode.Server(single, stored.getValue(SINGLE_ID)),
+                ServerNode.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), rememberedId = null),
+                ServerNode.Server(manualAfter)
             ),
             items
         )
@@ -37,9 +34,9 @@ class ServerListItemsTest {
         val profiles = listOf(germany, france, manual)
         val remembered = mapOf(GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, name = "Mine", currentId = france.id))
 
-        assertEquals(france, subscriptionOf(serverListItems(profiles, remembered)).current)
-        assertEquals(germany, subscriptionOf(serverListItems(profiles, stored)).current)
-        assertEquals("Mine", subscriptionOf(serverListItems(profiles, remembered)).name)
+        assertEquals(france, subscriptionOf(ServerTree(profiles, remembered).root).current)
+        assertEquals(germany, subscriptionOf(ServerTree(profiles, stored).root).current)
+        assertEquals("Mine", subscriptionOf(ServerTree(profiles, remembered).root).name)
     }
 
     @Test
@@ -48,8 +45,8 @@ class ServerListItemsTest {
         val groups = mapOf(LOCAL_ID to ServerGroupEntity(id = LOCAL_ID, name = "Work"))
 
         assertEquals(
-            listOf(ServerListItem.Group(LOCAL_ID, GroupKind.Local, "Work", null, listOf(lone), rememberedId = null)),
-            serverListItems(listOf(lone), groups)
+            listOf(ServerNode.Group(LOCAL_ID, GroupKind.Local, "Work", null, listOf(lone), rememberedId = null)),
+            ServerTree(listOf(lone), groups).root
         )
     }
 
@@ -61,13 +58,13 @@ class ServerListItemsTest {
             GROUP_ID to ServerGroupEntity(id = GROUP_ID, url = GROUP_URL, updatedAt = UPDATED_AT),
             LOCAL_ID to ServerGroupEntity(id = LOCAL_ID, name = "Work", updatedAt = UPDATED_AT)
         )
-        val items = serverListItems(profiles, groups).filterIsInstance<ServerListItem.Group>()
+        val items = ServerTree(profiles, groups).root.filterIsInstance<ServerNode.Group>()
 
         assertEquals(listOf(UPDATED_AT, null), items.map { it.updatedAt })
-        assertEquals(null, subscriptionOf(serverListItems(listOf(germany, france), stored)).updatedAt)
+        assertEquals(null, subscriptionOf(ServerTree(listOf(germany, france), stored).root).updatedAt)
     }
 
-    private fun subscriptionOf(items: List<ServerListItem>) = items.filterIsInstance<ServerListItem.Group>().single()
+    private fun subscriptionOf(items: List<ServerNode>) = items.filterIsInstance<ServerNode.Group>().single()
 
     private fun server(id: Long, name: String, groupId: Long? = null) =
         ProfileEntity(id = id, name = name, type = "vless", link = "vless://$id", outboundJson = "{}", groupId = groupId)

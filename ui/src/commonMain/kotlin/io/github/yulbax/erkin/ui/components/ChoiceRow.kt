@@ -1,5 +1,11 @@
 package io.github.yulbax.erkin.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,9 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.MaterialTheme
@@ -38,33 +41,47 @@ fun ChoiceRow(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
-        color = if (checked) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-        modifier = Modifier.fillMaxWidth()
+        color = if (checked) MaterialTheme.colorScheme.onSurface.copy(alpha = SELECTED_TINT) else Color.Transparent,
+        modifier = Modifier.fillMaxWidth().semantics { selected = checked }
     ) {
-        Row(Modifier.padding(padding), verticalAlignment = Alignment.CenterVertically) {
-            leading?.invoke()
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (subtitle != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (subtitleIcon != null) {
-                            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
-                                SourceIcon(subtitleIcon, contentDescription = null, modifier = Modifier.size(14.dp))
+        Box {
+            Row(Modifier.padding(padding).padding(start = MARK_ROOM), verticalAlignment = Alignment.CenterVertically) {
+                leading?.invoke()
+                Column(Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (subtitle != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (subtitleIcon != null) {
+                                CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
+                                    SourceIcon(subtitleIcon, contentDescription = null, modifier = Modifier.size(14.dp))
+                                }
+                                Spacer(Modifier.width(4.dp))
                             }
-                            Spacer(Modifier.width(4.dp))
+                            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
-            }
-            if (trailing != null) {
-                Spacer(Modifier.width(8.dp))
-                trailing()
+                if (trailing != null) {
+                    Spacer(Modifier.width(8.dp))
+                    trailing()
+                }
             }
             if (checked) {
-                Spacer(Modifier.width(8.dp))
-                Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                Box(Modifier.matchParentSize().padding(start = MARK_INSET, top = MARK_INSET, bottom = MARK_INSET)) {
+                    Box(
+                        Modifier
+                            .width(MARK_WIDTH)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(MARK_WIDTH / 2))
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                }
             }
         }
     }
 }
+
+private const val SELECTED_TINT = 0.10f
+private val MARK_WIDTH = 4.dp
+private val MARK_INSET = 6.dp
+private val MARK_ROOM = 8.dp

@@ -2,6 +2,7 @@ package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProxyChain
+import io.github.yulbax.erkin.data.profile.ServerSort
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
 import io.github.yulbax.erkin.util.readBounded
 import io.github.yulbax.erkin.vpn.core.ByeDpiDns
@@ -157,6 +158,14 @@ class BackupCodecTest {
     @Test
     fun rejectsMalformedJson() {
         assertNull(BackupCodec.decode("{not-json"))
+    }
+
+    @Test
+    fun backupsFromBeforeTheSortChoiceKeepTheirManualOrder() {
+        val encoded = BackupCodec.encode(validBackup().copy(settings = SettingsEntity(mtu = 1500)))
+            .replace("\"settings\": {", "\"settings\": {\n        \"sortServersByPing\": false,")
+
+        assertEquals(ServerSort.MANUAL, BackupCodec.decode(encoded)?.settings?.serverSort())
     }
 
     private fun validBackup(): AppConfigBackup = AppConfigBackup(

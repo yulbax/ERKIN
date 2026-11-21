@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.state.ToggleableState
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
@@ -13,6 +14,12 @@ class Selection(private val saved: MutableState<List<Long>>, private val existin
     val active: Boolean get() = checked.isNotEmpty()
 
     operator fun contains(id: Long): Boolean = id in checked
+
+    fun stateOf(ids: List<Long>): ToggleableState = when (ids.count { it in checked }) {
+        0 -> ToggleableState.Off
+        ids.size -> ToggleableState.On
+        else -> ToggleableState.Indeterminate
+    }
 
     fun toggle(id: Long) {
         saved.value = if (id in checked) (checked - id).toList() else (checked + id).toList()
