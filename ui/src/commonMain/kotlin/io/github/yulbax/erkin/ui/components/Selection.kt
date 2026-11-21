@@ -26,6 +26,10 @@ class Selection(private val saved: MutableState<List<Long>>, private val existin
         saved.value = existing
     }
 
+    fun select(ids: Collection<Long>) {
+        saved.value = (checked + ids).toList()
+    }
+
     fun clear() {
         saved.value = emptyList()
     }

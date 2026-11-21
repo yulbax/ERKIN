@@ -73,6 +73,8 @@
 
     <string name="setup_step_connect">اتصال</string>
     <string name="servers_title">سرورها</string>
+    <string name="servers_test">بررسی</string>
+    <string name="servers_search_empty">سروری پیدا نشد</string>
     <string name="sort_servers_by_ping">مرتب‌سازی بر اساس پینگ</string>
     <string name="servers_empty">هنوز سروری نیست. لینک پیکربندی یا اشتراک اضافه کنید.</string>
     <string name="server_test_latency">آزمایش تأخیر</string>
@@ -107,10 +109,7 @@
     <string name="vpn_tap_to_disconnect">برای قطع بزنید</string>
     <string name="toggle_connection_cd">تغییر وضعیت اتصال</string>
     <string name="channel_status_off">خاموش</string>
-    <string name="channel_status_online">آنلاین · %1$d میلی‌ثانیه</string>
-    <string name="channel_status_online_plain">آنلاین</string>
     <string name="channel_status_ready">کانال محلی آماده است</string>
-    <string name="channel_status_connecting">در حال اتصال…</string>
     <string name="channel_status_no_apps">برنامه‌ای انتخاب نشده</string>
     <string name="byedpi_site_lists">فهرست‌های سایت</string>
     <string name="byedpi_site_lists_hint">آزمایش راهبردها و نشانگر ByeDPI سایت‌های فهرست‌های فعال را بررسی می‌کنند</string>
@@ -229,7 +228,6 @@
     <string name="error_byedpi_crashed">ByeDPI مدام متوقف می‌شود (کد %1$d)</string>
     <string name="error_vpn_permission">به ERKIN اجازه دهید اتصال VPN بسازد</string>
     <string name="error_tun_unavailable">اندروید اجازه نداد ERKIN تونل بسازد. شاید VPN دیگری فعال باشد</string>
-    <string name="channel_status_byedpi_blocked">سایت‌ها باز نمی‌شوند — راهبرد دیگری را امتحان کنید</string>
     <string name="new_apps_channel">کانال برنامه‌های جدید</string>
     <string name="logs_clear">پاک کردن</string>
     <string name="logs_clear_title">گزارش پاک شود؟</string>

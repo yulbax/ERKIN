@@ -7,6 +7,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+sealed interface ExitCountry {
+    data object Pending : ExitCountry
+    data object Unknown : ExitCountry
+    data class Known(val code: String) : ExitCountry
+}
+
 internal class CountryLookup(
     private val engine: VpnEngine,
     private val channels: ChannelProbe,
@@ -15,10 +21,17 @@ internal class CountryLookup(
 ) {
     private var lookup: Job? = null
 
+    fun start() = look()
+
     fun onVpnUp() {
-        if (snapshot.value.vpnCountry.isNotEmpty() || lookup?.isActive == true) return
+        if (snapshot.value.vpnCountry is ExitCountry.Known || lookup?.isActive == true) return
+        look()
+    }
+
+    private fun look() {
         lookup = scope.launch {
-            channels.country(engine)?.let { country -> snapshot.update { it.copy(vpnCountry = country) } }
+            val found = channels.country(engine)?.let(ExitCountry::Known) ?: ExitCountry.Unknown
+            snapshot.update { it.copy(vpnCountry = found) }
         }
     }
 }

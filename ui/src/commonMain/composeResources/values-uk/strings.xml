@@ -73,6 +73,8 @@
 
     <string name="setup_step_connect">Підключитися</string>
     <string name="servers_title">Сервери</string>
+    <string name="servers_test">Перевірити</string>
+    <string name="servers_search_empty">Сервери не знайдено</string>
     <string name="sort_servers_by_ping">Сортувати за пінгом</string>
     <string name="servers_empty">Серверів поки немає. Додайте посилання-конфіг або підписку.</string>
     <string name="server_test_latency">Перевірити затримку</string>
@@ -107,10 +109,7 @@
     <string name="vpn_tap_to_disconnect">Натисніть, щоб відключитися</string>
     <string name="toggle_connection_cd">Перемкнути підключення</string>
     <string name="channel_status_off">вимк</string>
-    <string name="channel_status_online">онлайн · %1$d мс</string>
-    <string name="channel_status_online_plain">онлайн</string>
     <string name="channel_status_ready">локальний канал готовий</string>
-    <string name="channel_status_connecting">підключення…</string>
     <string name="channel_status_no_apps">немає застосунків</string>
     <string name="byedpi_site_lists">Списки сайтів</string>
     <string name="byedpi_site_lists_hint">Тести стратегій та індикатор ByeDPI перевіряють сайти з увімкнених списків</string>
@@ -235,7 +234,6 @@
     <string name="error_byedpi_crashed">ByeDPI постійно завершується (код %1$d)</string>
     <string name="error_vpn_permission">Дозвольте ERKIN створити VPN-підключення</string>
     <string name="error_tun_unavailable">Android не дозволив ERKIN створити тунель. Можливо, увімкнено інший VPN</string>
-    <string name="channel_status_byedpi_blocked">сайти не відкриваються — змініть стратегію</string>
     <string name="new_apps_channel">Канал для нових застосунків</string>
     <string name="logs_clear">Очистити</string>
     <string name="logs_clear_title">Очистити журнал?</string>

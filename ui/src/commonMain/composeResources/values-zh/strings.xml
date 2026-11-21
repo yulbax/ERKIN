@@ -73,6 +73,8 @@
 
     <string name="setup_step_connect">连接</string>
     <string name="servers_title">服务器</string>
+    <string name="servers_test">测试</string>
+    <string name="servers_search_empty">未找到服务器</string>
     <string name="sort_servers_by_ping">按延迟排序</string>
     <string name="servers_empty">暂无服务器。请添加配置链接或订阅。</string>
     <string name="server_test_latency">测试延迟</string>
@@ -107,10 +109,7 @@
     <string name="vpn_tap_to_disconnect">点按以断开</string>
     <string name="toggle_connection_cd">切换连接</string>
     <string name="channel_status_off">关闭</string>
-    <string name="channel_status_online">在线 · %1$d 毫秒</string>
-    <string name="channel_status_online_plain">在线</string>
     <string name="channel_status_ready">本地通道已就绪</string>
-    <string name="channel_status_connecting">连接中…</string>
     <string name="channel_status_no_apps">未选择应用</string>
     <string name="byedpi_site_lists">网站列表</string>
     <string name="byedpi_site_lists_hint">策略测试和 ByeDPI 指示器会检测已启用列表中的网站</string>
@@ -226,7 +225,6 @@
     <string name="error_byedpi_crashed">ByeDPI 反复退出（代码 %1$d）</string>
     <string name="error_vpn_permission">请允许 ERKIN 建立 VPN 连接</string>
     <string name="error_tun_unavailable">Android 未允许 ERKIN 创建隧道，可能有其他 VPN 正在运行</string>
-    <string name="channel_status_byedpi_blocked">网站无法打开——请更换策略</string>
     <string name="new_apps_channel">新应用的默认通道</string>
     <string name="logs_clear">清除</string>
     <string name="logs_clear_title">清除日志？</string>

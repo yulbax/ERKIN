@@ -15,11 +15,11 @@ import io.github.yulbax.erkin.ui.platform.flagFontFamily
 import java.util.Locale
 
 @Composable
-fun CountryFlag(country: String, fontSize: TextUnit = 22.sp) {
+fun CountryFlag(country: String, fontSize: TextUnit = 22.sp, framed: Boolean = true) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(width = 36.dp, height = 26.dp)
+            .then(if (framed) Modifier.size(width = 36.dp, height = 26.dp) else Modifier)
             .clearAndSetSemantics { contentDescription = country }
     ) {
         Text(text = country.toFlagEmoji(), fontSize = fontSize, lineHeight = fontSize, fontFamily = flagFontFamily())

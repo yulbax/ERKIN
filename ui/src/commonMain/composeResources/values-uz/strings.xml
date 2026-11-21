@@ -73,6 +73,8 @@
 
     <string name="setup_step_connect">Ulaning</string>
     <string name="servers_title">Serverlar</string>
+    <string name="servers_test">Tekshirish</string>
+    <string name="servers_search_empty">Serverlar topilmadi</string>
     <string name="sort_servers_by_ping">Ping boʻyicha saralash</string>
     <string name="servers_empty">Hozircha serverlar yoʻq. Konfiguratsiya havolasi yoki obuna qoʻshing.</string>
     <string name="server_test_latency">Kechikishni tekshirish</string>
@@ -107,10 +109,7 @@
     <string name="vpn_tap_to_disconnect">Uzish uchun bosing</string>
     <string name="toggle_connection_cd">Ulanishni yoqish/oʻchirish</string>
     <string name="channel_status_off">oʻchiq</string>
-    <string name="channel_status_online">onlayn · %1$d ms</string>
-    <string name="channel_status_online_plain">onlayn</string>
     <string name="channel_status_ready">lokal nuqta tayyor</string>
-    <string name="channel_status_connecting">ulanmoqda…</string>
     <string name="channel_status_no_apps">ilovalar tanlanmagan</string>
     <string name="byedpi_site_lists">Saytlar roʻyxatlari</string>
     <string name="byedpi_site_lists_hint">Strategiya testlari va ByeDPI koʻrsatkichi yoqilgan roʻyxatlardagi saytlarni tekshiradi</string>
@@ -229,7 +228,6 @@
     <string name="error_byedpi_crashed">ByeDPI toʻxtab qolyapti (kod %1$d)</string>
     <string name="error_vpn_permission">ERKIN ga VPN ulanishini yaratishga ruxsat bering</string>
     <string name="error_tun_unavailable">Android ERKIN ga tunnel yaratishga ruxsat bermadi. Boshqa VPN yoqilgan boʻlishi mumkin</string>
-    <string name="channel_status_byedpi_blocked">saytlar ochilmayapti — boshqa strategiyani sinab koʻring</string>
     <string name="new_apps_channel">Yangi ilovalar uchun kanal</string>
     <string name="logs_clear">Tozalash</string>
     <string name="logs_clear_title">Jurnal tozalansinmi?</string>

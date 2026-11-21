@@ -31,8 +31,20 @@ import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LoadingIndicator
@@ -51,6 +63,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
@@ -62,11 +79,10 @@ import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.canJoinGroup
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
 import io.github.yulbax.erkin.data.profile.kind
-import io.github.yulbax.erkin.ui.components.AddFab
+import io.github.yulbax.erkin.ui.components.AppSearchBar
 import io.github.yulbax.erkin.ui.components.EmptyAction
 import io.github.yulbax.erkin.ui.components.EmptyState
 import io.github.yulbax.erkin.ui.components.SelectionBar
-import io.github.yulbax.erkin.ui.components.groupRowShape
 import io.github.yulbax.erkin.ui.components.RenameDialog
 import androidx.compose.ui.state.ToggleableState
 import io.github.yulbax.erkin.ui.platform.rememberSharer
@@ -138,6 +154,13 @@ fun ErkinScreen(
     var renamingId by remember { mutableStateOf<Long?>(null) }
     val selection = rememberSelection(servers.profiles.map { it.id })
     val checked = selection.checked
+    var query by rememberSaveable { mutableStateOf<String?>(null) }
+    val found = query?.let(servers::search)
+    NavigationBackHandler(
+        state = rememberNavigationEventState(NavigationEventInfo.None),
+        isBackEnabled = query != null && !selection.active,
+        onBackCompleted = { query = null }
+    )
 
     val startVpn = rememberVpnStartRequest(onGranted = viewModel::startVpn)
     val showMessage = rememberShowMessage()
@@ -166,6 +189,9 @@ fun ErkinScreen(
         state = state,
         stats = stats,
         servers = servers,
+        query = query,
+        shown = found ?: servers.items,
+        onQueryChange = { query = it },
         connected = connected,
         onToggle = { if (connected) viewModel.stopVpn() else onConnectClick() },
         onDismissHint = { viewModel.dismissHomeHint() },
@@ -201,7 +227,7 @@ fun ErkinScreen(
         checked = checked,
         onToggleCheck = { profile -> selection.toggle(profile.id) },
         onToggleChecks = { profiles -> selection.toggleAll(profiles.map { it.id }) },
-        onCheckAll = selection::selectAll,
+        onCheckAll = { found?.let { hits -> selection.select(hits.flatMap { it.profileIds }) } ?: selection.selectAll() },
         onClearChecks = selection::clear,
         onDeleteChecked = { deleting = servers.profiles.filter { it.id in checked } },
         canMoveChecked = servers.profiles.filter { it.id in checked }
@@ -386,6 +412,9 @@ private class ErkinScreenContent(
     val state: VpnState,
     val stats: ConnectionStats,
     val servers: ServersUiState,
+    val query: String?,
+    val shown: List<ServerListItem>,
+    val onQueryChange: (String?) -> Unit,
     val connected: Boolean,
     val onToggle: () -> Unit,
     val onDismissHint: () -> Unit,
@@ -412,6 +441,7 @@ private class ErkinScreenContent(
     val onMoveChecked: () -> Unit
 ) {
     val selecting: Boolean get() = checked.isNotEmpty()
+    val searching: Boolean get() = query != null
 
     fun checkState(ids: List<Long>): ToggleableState = when (ids.count { it in checked }) {
         0 -> ToggleableState.Off
@@ -425,13 +455,14 @@ private fun ErkinScreenPortrait(c: ErkinScreenContent) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .windowInsetsPadding(KEYBOARD_INSETS)
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(8.dp))
         ConnectionSection(c)
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
         ServerListSection(
             c = c,
             modifier = Modifier
@@ -447,6 +478,7 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
     Row(
         modifier = Modifier
             .fillMaxSize()
+            .windowInsetsPadding(KEYBOARD_INSETS)
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Column(
@@ -465,8 +497,7 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
                 c = c,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                showHeader = false
+                    .weight(1f)
             )
         }
     }
@@ -506,10 +537,8 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Bool
             connected = c.connected,
             enabled = enabled,
             onToggle = c.onToggle,
-            modifier = Modifier.weight(2f).fillMaxWidth()
+            modifier = Modifier.weight(2f).fillMaxWidth().zIndex(1f)
         )
-
-        Spacer(Modifier.height(20.dp))
         ChannelsRow(c, modifier = Modifier.weight(1f).fillMaxWidth(), fillHeight = true)
     } else {
         ConnectionCard(
@@ -517,10 +546,9 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Bool
             stats = c.stats,
             connected = c.connected,
             enabled = enabled,
-            onToggle = c.onToggle
+            onToggle = c.onToggle,
+            modifier = Modifier.zIndex(1f)
         )
-
-        Spacer(Modifier.height(20.dp))
         ChannelsRow(c)
     }
 
@@ -533,10 +561,13 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, landscape: Bool
 @Composable
 private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fillHeight: Boolean = false) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .tuckedUnder(CONNECTION_CARD_CORNER)
+            .then(if (fillHeight) Modifier else Modifier.height(IntrinsicSize.Min)),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        val cardModifier = if (fillHeight) Modifier.weight(1f).fillMaxHeight() else Modifier.weight(1f)
+        val cardModifier = Modifier.weight(1f).fillMaxHeight()
         ChannelStatusCard(
             type = ConnectionType.VPN,
             active = c.connected,
@@ -545,18 +576,18 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
             noServers = c.servers.profiles.isEmpty(),
             latencyMs = c.stats.vpnLatencyMs,
             country = c.stats.vpnCountry,
-            shape = groupRowShape(0, 2),
-            modifier = cardModifier,
-            fillHeight = fillHeight
+            shape = RoundedCornerShape(bottomStart = CONNECTION_CARD_CORNER),
+            topInset = CONNECTION_CARD_CORNER,
+            modifier = cardModifier
         )
         ChannelStatusCard(
             type = ConnectionType.BYEDPI,
             active = c.stats.byedpiActive,
             up = c.stats.byedpiUp,
             hasApps = c.ui.hasByedpiApps,
-            shape = groupRowShape(1, 2),
+            shape = RoundedCornerShape(bottomEnd = CONNECTION_CARD_CORNER),
+            topInset = CONNECTION_CARD_CORNER,
             modifier = cardModifier,
-            fillHeight = fillHeight,
             reachable = c.stats.byedpiReachable,
             total = c.stats.byedpiTotal,
             checking = c.stats.byedpiChecking,
@@ -565,49 +596,25 @@ private fun ChannelsRow(c: ErkinScreenContent, modifier: Modifier = Modifier, fi
     }
 }
 
-@Composable
-private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHeader: Boolean = true) {
-    if (showHeader) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = stringResource(Res.string.servers_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 16.dp)
-            )
-            TextButton(
-                onClick = c.onAddServerClick,
-                modifier = Modifier.padding(end = 8.dp)
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                )
-                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                Text(stringResource(Res.string.add_server))
-            }
-        }
-    }
+private fun Modifier.tuckedUnder(depth: Dp): Modifier = layout { measurable, constraints ->
+    val shift = depth.roundToPx()
+    val placeable = measurable.measure(
+        constraints.copy(
+            minHeight = constraints.minHeight + shift,
+            maxHeight = if (constraints.hasBoundedHeight) constraints.maxHeight + shift else Constraints.Infinity
+        )
+    )
+    layout(placeable.width, placeable.height - shift) { placeable.place(0, -shift) }
+}
 
+@Composable
+private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier) {
     if (c.servers.profiles.isEmpty()) {
-        if (showHeader) {
-            Text(
+        Box(modifier = modifier, contentAlignment = Alignment.Center) {
+            EmptyState(
                 text = stringResource(Res.string.servers_empty),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(vertical = 8.dp)
+                action = EmptyAction(stringResource(Res.string.add_server), c.onAddServerClick)
             )
-        } else {
-            Box(modifier = modifier, contentAlignment = Alignment.Center) {
-                EmptyState(
-                    text = stringResource(Res.string.servers_empty),
-                    action = EmptyAction(stringResource(Res.string.add_server), c.onAddServerClick)
-                )
-            }
         }
         return
     }
@@ -617,9 +624,8 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = modifier
     ) {
-        val showTest = c.servers.profiles.isNotEmpty()
-        var order by remember { mutableStateOf(c.servers.items) }
-        LaunchedEffect(c.servers.items) { order = c.servers.items }
+        var order by remember { mutableStateOf(c.shown) }
+        LaunchedEffect(c.shown) { order = c.shown }
         val listState = rememberLazyListState()
         val scrollAfterSort = rememberScrollToTopAfterSort(listState, c.servers.profiles.map { it.id })
         val reorderState = rememberReorderableLazyListState(listState) { from, to ->
@@ -637,7 +643,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                     start = 6.dp,
                     end = 6.dp,
                     top = 6.dp,
-                    bottom = if (showTest || !showHeader) 64.dp else 6.dp
+                    bottom = 64.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -645,7 +651,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                 items(order, key = { it.key }) { item ->
                     ReorderableItem(reorderState, key = item.key) { dragging ->
                         val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
-                        val handle: @Composable () -> Unit = {
+                        val handle: @Composable () -> Unit = if (c.searching) ({}) else ({
                             IconButton(
                                 onClick = {},
                                 modifier = Modifier.draggableHandle(
@@ -658,7 +664,7 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                        }
+                        })
                         Surface(
                             shape = RoundedCornerShape(18.dp),
                             shadowElevation = elevation,
@@ -666,28 +672,33 @@ private fun ServerListSection(c: ErkinScreenContent, modifier: Modifier, showHea
                         ) {
                             val mode = if (c.selecting) RowMode.Selecting(c.checkState(item.profileIds), handle) else RowMode.Normal
                             when (item) {
-                                is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, mode = mode)
+                                is ServerListItem.Server -> ServerListRow(c, item, fastestId, Modifier, mode = mode, showGroup = c.searching)
                                 is ServerListItem.Group -> GroupListRow(c, item, fastestId, Modifier, mode)
                             }
                         }
                     }
                 }
             }
+            if (c.searching && order.isEmpty()) {
+                Text(
+                    text = stringResource(Res.string.servers_search_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                )
+            }
             val notifying = c.snackbarHostState.currentSnackbarData != null
-            AnimatedSpeedometerButton(visible = showTest && !c.selecting && !notifying, testing = c.servers.testing, onClick = { scrollAfterSort(c.onTest(c.servers.profiles.map { it.id })) })
+            ServerToolbar(
+                c = c,
+                visible = !c.selecting && !notifying,
+                onTest = { scrollAfterSort(c.onTest(order.flatMap { it.profileIds })) }
+            )
             SelectionBar(c.selecting, c.checked.size, c.onClearChecks, c.onCheckAll, c.onDeleteChecked) {
                 IconButton(onClick = c.onMoveChecked, enabled = c.canMoveChecked) {
                     Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(Res.string.move_to_group))
                 }
             }
             SwipeableSnackbarHost(c.snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
-            if (!showHeader && !c.selecting) {
-                AddFab(
-                    onClick = c.onAddServerClick,
-                    contentDescription = stringResource(Res.string.add_server),
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(12.dp)
-                )
-            }
         }
     }
 }
@@ -726,44 +737,105 @@ private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun BoxScope.AnimatedSpeedometerButton(visible: Boolean, testing: Boolean, onClick: () -> Unit) {
+private fun BoxScope.ServerToolbar(c: ErkinScreenContent, visible: Boolean, onTest: () -> Unit) {
     FloatingVisibility(
-        visible = visible,
+        visible = visible && !c.searching,
         modifier = Modifier
             .align(Alignment.BottomCenter)
             .padding(bottom = 12.dp)
     ) {
-        SpeedometerButton(testing = testing, onClick = onClick)
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shadowElevation = TOOLBAR_SHADOW
+        ) {
+            Row(
+                modifier = Modifier.padding(4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                IconButton(onClick = { c.onQueryChange("") }) {
+                    Icon(Icons.Default.Search, contentDescription = stringResource(Res.string.apps_server_search))
+                }
+                TestButton(testing = c.servers.testing, onClick = onTest)
+                IconButton(onClick = c.onAddServerClick) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.add_server))
+                }
+            }
+        }
+    }
+    FloatingVisibility(
+        visible = visible && c.searching,
+        modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+    ) {
+        ServerSearchField(query = c.query.orEmpty(), onQueryChange = c.onQueryChange)
     }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun SpeedometerButton(testing: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun TestButton(testing: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         enabled = !testing,
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = modifier.size(48.dp)
+        color = MaterialTheme.colorScheme.secondary,
+        contentColor = MaterialTheme.colorScheme.onSecondary
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (testing) {
-                LoadingIndicator(
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(40.dp)
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Speed,
-                    contentDescription = stringResource(Res.string.server_test_latency),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.size(24.dp)
-                )
+        Row(
+            modifier = Modifier
+                .height(40.dp)
+                .padding(start = 12.dp, end = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                if (testing) {
+                    LoadingIndicator(color = MaterialTheme.colorScheme.onSecondary, modifier = Modifier.size(28.dp))
+                } else {
+                    Icon(Icons.Default.Speed, contentDescription = null)
+                }
             }
+            Text(stringResource(Res.string.servers_test), style = MaterialTheme.typography.labelLarge)
         }
     }
 }
+
+@Composable
+private fun ServerSearchField(query: String, onQueryChange: (String?) -> Unit) {
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shadowElevation = TOOLBAR_SHADOW
+    ) {
+        AppSearchBar(
+            query = query,
+            onQueryChange = onQueryChange,
+            placeholder = stringResource(Res.string.apps_server_search),
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .focusRequester(focus),
+            trailing = {
+                if (query.isEmpty()) {
+                    IconButton(onClick = { onQueryChange(null) }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.cancel))
+                    }
+                }
+            }
+        )
+    }
+}
+
+private val TOOLBAR_SHADOW = 3.dp
+private val KEYBOARD_INSETS: WindowInsets
+    @Composable get() = WindowInsets.ime.exclude(WindowInsets.navigationBars)
 
 @Composable
 private fun ServerListRow(
@@ -773,7 +845,8 @@ private fun ServerListRow(
     modifier: Modifier,
     onSelected: () -> Unit = {},
     mode: RowMode = RowMode.Normal,
-    sheet: ServerListItem.Group? = null
+    sheet: ServerListItem.Group? = null,
+    showGroup: Boolean = false
 ) {
     val profile = item.profile
     val group = item.group
@@ -804,6 +877,7 @@ private fun ServerListRow(
         isBest = profile.id == fastestId,
         chainLabel = chainLabel,
         groupIcon = group?.kind?.rowIcon,
+        groupName = group?.displayName?.takeIf { showGroup },
         mode = mode
     )
 }

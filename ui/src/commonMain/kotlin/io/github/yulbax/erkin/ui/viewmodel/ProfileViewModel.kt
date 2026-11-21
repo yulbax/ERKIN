@@ -87,6 +87,9 @@ data class ServersUiState(
 
     fun group(id: Long): ServerListItem.Group? =
         items.firstOrNull { it is ServerListItem.Group && it.id == id } as ServerListItem.Group?
+
+    fun search(query: String): List<ServerListItem> =
+        profiles.matching(query).map { ServerListItem.Server(it, it.groupId?.let(groups::get)) }
 }
 
 class ProfileViewModel(

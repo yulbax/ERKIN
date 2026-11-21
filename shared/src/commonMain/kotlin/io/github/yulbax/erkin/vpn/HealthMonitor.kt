@@ -30,7 +30,7 @@ data class HealthSnapshot(
     val vpnActive: Boolean,
     val vpnDelayMs: Int?,
     val vpnChecked: Boolean,
-    val vpnCountry: String,
+    val vpnCountry: ExitCountry,
     val byedpiActive: Boolean,
     val byedpiUp: Boolean,
     val byedpiChecked: Boolean
@@ -67,11 +67,20 @@ class HealthMonitor(
         val childScope = CoroutineScope(scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]))
         this.scope = childScope
         val snapshot = MutableStateFlow(
-            HealthSnapshot(params.vpnActive, null, false, "", params.byeDpiPort != null, false, false)
+            HealthSnapshot(
+                vpnActive = params.vpnActive,
+                vpnDelayMs = null,
+                vpnChecked = false,
+                vpnCountry = if (params.vpnActive) ExitCountry.Pending else ExitCountry.Unknown,
+                byedpiActive = params.byeDpiPort != null,
+                byedpiUp = false,
+                byedpiChecked = false
+            )
         )
         snapshot.onEach(::publish).launchIn(childScope)
         if (params.vpnActive) {
             val country = CountryLookup(params.engine, channels, snapshot, childScope)
+            country.start()
             val liveness = VpnLiveness(params, snapshot, checks, country, log, checkInterval, retryDelay)
             childScope.launch { liveness.run() }
             val bound = (params.boundServers - listOfNotNull(params.activeServer).toSet()).toList()

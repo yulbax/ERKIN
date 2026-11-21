@@ -122,8 +122,11 @@ private fun ConnectionType.colors(): ChannelColors {
     val dark = LocalDarkTheme.current
     val color = accent?.let { if (dark) it.dark else it.light }
         ?: return ChannelColors(scheme.surfaceContainerHighest, scheme.onSurfaceVariant)
-    return ChannelColors(color.copy(alpha = if (dark) TINT_ALPHA_DARK else TINT_ALPHA_LIGHT), color)
+    return ChannelColors(channelTint(color), color)
 }
+
+@Composable
+internal fun channelTint(color: Color): Color = color.copy(alpha = if (LocalDarkTheme.current) TINT_ALPHA_DARK else TINT_ALPHA_LIGHT)
 
 @Composable
 internal fun ChannelButton(

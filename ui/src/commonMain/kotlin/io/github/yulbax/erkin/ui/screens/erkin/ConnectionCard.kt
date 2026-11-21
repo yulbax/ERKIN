@@ -30,13 +30,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.components.text
 import io.github.yulbax.erkin.ui.res.*
-import io.github.yulbax.erkin.ui.theme.StatusOrange
+import io.github.yulbax.erkin.ui.theme.LocalDarkTheme
+import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.screens.apps.channelColor
+import io.github.yulbax.erkin.ui.screens.apps.channelTint
+import io.github.yulbax.erkin.ui.screens.apps.warningColor
+import androidx.compose.ui.graphics.compositeOver
 import io.github.yulbax.erkin.util.formatRate
 import io.github.yulbax.erkin.vpn.ConnectionStats
 import io.github.yulbax.erkin.vpn.HealthChannel
@@ -51,35 +57,18 @@ internal fun ConnectionCard(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scheme = MaterialTheme.colorScheme
     val busy = state.isBusy
-    val isError = state is VpnState.Error
-    val warning = busy || state is VpnState.ChannelDown
-    val vivid = isError || connected || busy
-
-    val targetTop = when {
-        isError -> Color(0xFFB3261E)
-        warning -> StatusOrange
-        connected -> Color(0xFF2E7D32)
-        else -> scheme.surfaceVariant
+    val tone = when {
+        state is VpnState.Error -> CardTone.ERROR
+        busy || state is VpnState.ChannelDown -> CardTone.BUSY
+        connected -> CardTone.ON
+        else -> CardTone.OFF
     }
-    val targetBottom = when {
-        isError -> Color(0xFF8C1D18)
-        warning -> Color(0xFFF57F17)
-        connected -> Color(0xFF1B5E20)
-        else -> scheme.surface
-    }
-    val top by animateColorAsState(targetTop, tween(500), label = "top")
-    val bottom by animateColorAsState(targetBottom, tween(500), label = "bottom")
-    val content by animateColorAsState(
-        when {
-            warning -> Color(0xFF211A00)
-            vivid -> Color.White
-            else -> scheme.onSurfaceVariant
-        },
-        tween(500),
-        label = "content"
-    )
+    val colors = tone.colors()
+    val container by animateColorAsState(colors.container, tween(500), label = "container")
+    val content by animateColorAsState(colors.content, tween(500), label = "content")
+    val button by animateColorAsState(colors.button, tween(500), label = "button")
+    val onButton by animateColorAsState(colors.onButton, tween(500), label = "onButton")
 
     val title = when (state) {
         VpnState.Disconnected -> stringResource(Res.string.vpn_disconnected)
@@ -100,12 +89,15 @@ internal fun ConnectionCard(
         }
         is VpnState.Error -> state.failure.text()
     }
+    val shape = RoundedCornerShape(CONNECTION_CARD_CORNER)
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(Brush.verticalGradient(listOf(top, bottom)))
-            .padding(horizontal = 24.dp, vertical = 30.dp),
+            .shadow(CARD_SHADOW, shape)
+            .clip(shape)
+            .background(container)
+            .pointerInput(Unit) {}
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -141,7 +133,14 @@ internal fun ConnectionCard(
             }
 
             Spacer(Modifier.width(16.dp))
-            PowerToggle(busy = busy, vivid = vivid, enabled = enabled, content = content, onToggle = onToggle)
+            PowerToggle(
+                busy = busy,
+                raised = tone == CardTone.OFF,
+                enabled = enabled,
+                color = button,
+                iconColor = onButton,
+                onToggle = onToggle
+            )
         }
     }
 }
@@ -149,21 +148,20 @@ internal fun ConnectionCard(
 @Composable
 private fun PowerToggle(
     busy: Boolean,
-    vivid: Boolean,
+    raised: Boolean,
     enabled: Boolean,
-    content: Color,
+    color: Color,
+    iconColor: Color,
     onToggle: () -> Unit
 ) {
-    val circleColor = if (vivid) Color.White.copy(alpha = 0.2f) else Color.White
-    val iconColor = if (vivid) content else Color(0xFF1C1B1F)
     Surface(
         onClick = onToggle,
         enabled = enabled,
         shape = CircleShape,
-        color = circleColor,
-        shadowElevation = if (vivid) 0.dp else 4.dp,
+        color = color,
+        shadowElevation = if (raised) 4.dp else 0.dp,
         modifier = Modifier
-            .size(80.dp)
+            .size(64.dp)
             .alpha(if (enabled) 1f else 0.5f)
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -171,16 +169,46 @@ private fun PowerToggle(
                 CircularProgressIndicator(
                     color = iconColor,
                     strokeWidth = 3.dp,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(26.dp)
                 )
             } else {
                 Icon(
                     Icons.Default.PowerSettingsNew,
                     contentDescription = stringResource(Res.string.toggle_connection_cd),
                     tint = iconColor,
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(30.dp)
                 )
             }
         }
+    }
+}
+
+internal val CONNECTION_CARD_CORNER = 28.dp
+private val CARD_SHADOW = 6.dp
+
+private class ToneColors(val container: Color, val content: Color, val button: Color, val onButton: Color)
+
+private enum class CardTone {
+    OFF,
+    BUSY,
+    ON,
+    ERROR;
+
+    @Composable
+    fun colors(): ToneColors {
+        val scheme = MaterialTheme.colorScheme
+        val accent = when (this) {
+            OFF -> return ToneColors(
+                if (LocalDarkTheme.current) scheme.surfaceContainerHigh else scheme.surfaceContainerHighest,
+                scheme.onSurfaceVariant,
+                Color.White,
+                Color(0xFF1C1B1F)
+            )
+            BUSY -> warningColor()
+            ON -> channelColor(ConnectionType.VPN)
+            ERROR -> channelColor(ConnectionType.BLOCK)
+        }
+        val onAccent = if (LocalDarkTheme.current) Color(0xFF1C1B1F) else Color.White
+        return ToneColors(channelTint(accent).compositeOver(scheme.surface), scheme.onSurface, accent, onAccent)
     }
 }

@@ -153,10 +153,9 @@ internal fun serverPickerPage(
     val groups = items.filterIsInstance<ServerListItem.Group>()
     val queue = items.testQueue()
     fun queueOf(servers: List<ProfileEntity>) = servers.mapTo(HashSet()) { it.id }.let { ids -> queue.filter { it in ids } }
-    val needle = query.trim()
-    if (needle.isNotEmpty()) {
+    if (query.isNotBlank()) {
         val groupNames = groups.flatMap { group -> group.members.map { it.id to group.name } }.toMap()
-        val found = choices.servers.filter { it.name.contains(needle, ignoreCase = true) }
+        val found = choices.servers.matching(query)
         return ServerPickerPage(openGroup, group = null, rows = found.map { row(it, groupNames[it.id]) }, testQueue = queueOf(found))
     }
     groups.firstOrNull { it.id == openGroup }?.let { group ->

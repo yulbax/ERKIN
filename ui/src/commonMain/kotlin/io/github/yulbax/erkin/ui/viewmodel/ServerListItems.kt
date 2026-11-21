@@ -41,6 +41,11 @@ sealed interface ServerListItem {
     }
 }
 
+internal fun List<ProfileEntity>.matching(query: String): List<ProfileEntity> {
+    val needle = query.trim()
+    return if (needle.isEmpty()) this else filter { it.name.contains(needle, ignoreCase = true) }
+}
+
 internal fun List<ServerListItem>.testQueue(): List<Long> = (map { it.server } + flatMap { it.others }).map { it.id }
 
 internal fun serverListItems(profiles: List<ProfileEntity>, groups: Map<Long, ServerGroupEntity>): List<ServerListItem> {

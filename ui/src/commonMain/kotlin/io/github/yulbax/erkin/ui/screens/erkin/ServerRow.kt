@@ -51,11 +51,12 @@ internal fun ServerRow(
     isBest: Boolean = false,
     chainLabel: String? = null,
     groupIcon: RowIcon? = null,
+    groupName: String? = null,
     mode: RowMode = RowMode.Normal
 ) {
     ServerRowLayout(
         title = serverName(profile.name),
-        subtitle = chainLabel ?: profile.type,
+        subtitle = listOfNotNull(groupName, chainLabel ?: profile.type).joinToString(" · "),
         isSelected = isSelected,
         mode = mode,
         result = result,

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.ConcurrentHashMap
@@ -32,13 +33,13 @@ class HealthMonitorTest {
 
     @Test
     fun theCardIsConnectedOnlyWhenEveryChannelAnswers() {
-        assertEquals(VpnState.ChannelDown(HealthChannel.VPN), HealthSnapshot(true, null, true, "", true, true, true).state)
-        assertEquals(VpnState.ChannelDown(HealthChannel.BYEDPI), HealthSnapshot(true, 80, true, "", true, false, true).state)
-        assertEquals(VpnState.Verifying, HealthSnapshot(true, 80, true, "", true, false, false).state)
-        assertEquals(VpnState.Verifying, HealthSnapshot(true, null, false, "", true, true, true).state)
-        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", true, true, true).state)
-        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, "", false, false, false).state)
-        assertEquals(VpnState.Connected(0), HealthSnapshot(false, null, false, "", true, true, true).state)
+        assertEquals(VpnState.ChannelDown(HealthChannel.VPN), HealthSnapshot(true, null, true, ExitCountry.Unknown, true, true, true).state)
+        assertEquals(VpnState.ChannelDown(HealthChannel.BYEDPI), HealthSnapshot(true, 80, true, ExitCountry.Unknown, true, false, true).state)
+        assertEquals(VpnState.Verifying, HealthSnapshot(true, 80, true, ExitCountry.Unknown, true, false, false).state)
+        assertEquals(VpnState.Verifying, HealthSnapshot(true, null, false, ExitCountry.Unknown, true, true, true).state)
+        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, ExitCountry.Unknown, true, true, true).state)
+        assertEquals(VpnState.Connected(80), HealthSnapshot(true, 80, true, ExitCountry.Unknown, false, false, false).state)
+        assertEquals(VpnState.Connected(0), HealthSnapshot(false, null, false, ExitCountry.Unknown, true, true, true).state)
     }
 
     @Test
@@ -129,6 +130,26 @@ class HealthMonitorTest {
     }
 
     @Test
+    fun theExitCountryIsAskedForAlongsideTheFirstCheckNotAfterIt() = runBlocking {
+        val run = Run(hangOn = 1L) { 40 }
+        run.watch { run.countryAsked.get() > 0 }
+
+        assertEquals(1, run.countryAsked.get())
+        assertFalse(run.states.stats.value.vpnUp)
+    }
+
+    @Test
+    fun theExitCountryIsPendingUntilItIsFoundOrGivenUp() = runBlocking {
+        val found = Run(country = { "NL" }) { 40 }
+        found.watch { found.states.stats.value.vpnCountry == ExitCountry.Known("NL") }
+        val lost = Run { 40 }
+        lost.watch { lost.states.stats.value.vpnCountry == ExitCountry.Unknown }
+
+        assertEquals(ExitCountry.Known("NL"), found.states.stats.value.vpnCountry)
+        assertEquals(ExitCountry.Unknown, lost.states.stats.value.vpnCountry)
+    }
+
+    @Test
     fun theWatchMeasuresOnlyServersLoadedInTheRunningTunnel() = runBlocking {
         val run = Run { 40 }
         run.watch { run.runningOnlyFlags.size >= 3 }
@@ -159,6 +180,7 @@ class HealthMonitorTest {
 
     private class Run(
         private val byeDpiPort: Int? = null,
+        private val country: suspend () -> String? = { null },
         private val byeDpiUp: Boolean = true,
         private val checkInterval: Duration = 50.milliseconds,
         private val closeAtEnd: Boolean = false,
@@ -171,6 +193,7 @@ class HealthMonitorTest {
         val rejections = AtomicInteger()
         val byedpiChanges = AtomicInteger()
         val runningOnlyFlags = ConcurrentLinkedQueue<Boolean>()
+        val countryAsked = AtomicInteger()
         val measured = ConcurrentHashMap<Long, AtomicInteger>().apply { (1L..3L).forEach { put(it, AtomicInteger()) } }
 
         suspend fun watch(timeoutMs: Long = 2_000, until: () -> Boolean): Boolean {
@@ -186,7 +209,10 @@ class HealthMonitorTest {
                 states,
                 SilentLog,
                 ServerChecks(latency, results, SilentLog),
-                Channels(byeDpiUp),
+                Channels(byeDpiUp) {
+                    countryAsked.incrementAndGet()
+                    country()
+                },
                 checkInterval = checkInterval,
                 retryDelay = 10.milliseconds
             )
@@ -215,9 +241,9 @@ class HealthMonitorTest {
         }
     }
 
-    private class Channels(private val byeDpiUp: Boolean) : ChannelProbe {
+    private class Channels(private val byeDpiUp: Boolean, private val lookUp: suspend () -> String?) : ChannelProbe {
         override suspend fun byeDpiReachable(port: Int): Boolean = byeDpiUp
-        override suspend fun country(engine: VpnEngine): String? = null
+        override suspend fun country(engine: VpnEngine): String? = lookUp()
     }
 
     private object Store : VpnSessionStore {

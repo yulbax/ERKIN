@@ -75,6 +75,8 @@
 
     <string name="setup_step_connect">Connect</string>
     <string name="servers_title">Servers</string>
+    <string name="servers_test">Test</string>
+    <string name="servers_search_empty">No servers found</string>
     <string name="sort_servers_by_ping">Sort by ping</string>
     <string name="servers_empty">No servers yet. Add a config link or a subscription.</string>
     <string name="server_test_latency">Test latency</string>
@@ -110,10 +112,7 @@
     <string name="vpn_tap_to_disconnect">Tap to disconnect</string>
     <string name="toggle_connection_cd">Toggle connection</string>
     <string name="channel_status_off">off</string>
-    <string name="channel_status_online">online · %1$d ms</string>
-    <string name="channel_status_online_plain">online</string>
     <string name="channel_status_ready">local endpoint ready</string>
-    <string name="channel_status_connecting">connecting…</string>
     <string name="channel_status_no_apps">no apps selected</string>
     <string name="byedpi_site_lists">Site lists</string>
     <string name="byedpi_site_lists_hint">Strategy tests and the ByeDPI indicator check the sites of the enabled lists</string>
@@ -239,7 +238,6 @@
     <string name="error_byedpi_crashed">ByeDPI keeps stopping (code %1$d)</string>
     <string name="error_vpn_permission">Allow ERKIN to set up a VPN connection</string>
     <string name="error_tun_unavailable">Android did not let ERKIN create the tunnel. Another VPN may be active</string>
-    <string name="channel_status_byedpi_blocked">sites don’t open — try another strategy</string>
     <string name="new_apps_channel">Channel for new apps</string>
     <string name="logs_clear">Clear</string>
     <string name="logs_clear_title">Clear the log?</string>

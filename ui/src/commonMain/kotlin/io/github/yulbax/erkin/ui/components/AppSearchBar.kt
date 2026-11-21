@@ -31,13 +31,14 @@ fun AppSearchBar(
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = stringResource(Res.string.search_hint),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
     trailing: @Composable () -> Unit = {}
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val colors = TextFieldDefaults.colors(
-        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+        focusedContainerColor = containerColor,
+        unfocusedContainerColor = containerColor,
+        disabledContainerColor = containerColor,
         focusedIndicatorColor = Color.Transparent,
         unfocusedIndicatorColor = Color.Transparent,
         disabledIndicatorColor = Color.Transparent

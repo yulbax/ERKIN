@@ -9,7 +9,7 @@ data class ConnectionStats(
     val configName: String = "",
     val vpnUp: Boolean = false,
     val vpnLatencyMs: Int = 0,
-    val vpnCountry: String = "",
+    val vpnCountry: ExitCountry = ExitCountry.Unknown,
     val byedpiActive: Boolean = false,
     val byedpiUp: Boolean = false,
     val byedpiChecking: Boolean = false,
@@ -41,7 +41,7 @@ class VpnStateRepository {
             it.copy(
                 vpnUp = false,
                 vpnLatencyMs = 0,
-                vpnCountry = "",
+                vpnCountry = ExitCountry.Pending,
                 byedpiUp = false,
                 byedpiChecking = false,
                 byedpiReachable = 0,

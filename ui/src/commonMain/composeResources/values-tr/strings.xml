@@ -73,6 +73,8 @@
 
     <string name="setup_step_connect">Bağlanın</string>
     <string name="servers_title">Sunucular</string>
+    <string name="servers_test">Test et</string>
+    <string name="servers_search_empty">Sunucu bulunamadı</string>
     <string name="sort_servers_by_ping">Ping’e göre sırala</string>
     <string name="servers_empty">Henüz sunucu yok. Bir yapılandırma bağlantısı veya abonelik ekleyin.</string>
     <string name="server_test_latency">Gecikmeyi test et</string>
@@ -107,10 +109,7 @@
     <string name="vpn_tap_to_disconnect">Bağlantıyı kesmek için dokunun</string>
     <string name="toggle_connection_cd">Bağlantıyı aç/kapat</string>
     <string name="channel_status_off">kapalı</string>
-    <string name="channel_status_online">çevrimiçi · %1$d ms</string>
-    <string name="channel_status_online_plain">çevrimiçi</string>
     <string name="channel_status_ready">yerel uç nokta hazır</string>
-    <string name="channel_status_connecting">bağlanıyor…</string>
     <string name="channel_status_no_apps">uygulama seçilmedi</string>
     <string name="byedpi_site_lists">Site listeleri</string>
     <string name="byedpi_site_lists_hint">Strateji testleri ve ByeDPI göstergesi etkin listelerdeki siteleri kontrol eder</string>
@@ -229,7 +228,6 @@
     <string name="error_byedpi_crashed">ByeDPI sürekli duruyor (kod %1$d)</string>
     <string name="error_vpn_permission">ERKIN’in VPN bağlantısı kurmasına izin verin</string>
     <string name="error_tun_unavailable">Android, ERKIN’in tünel oluşturmasına izin vermedi. Başka bir VPN etkin olabilir</string>
-    <string name="channel_status_byedpi_blocked">siteler açılmıyor — başka bir strateji deneyin</string>
     <string name="new_apps_channel">Yeni uygulamalar için kanal</string>
     <string name="logs_clear">Temizle</string>
     <string name="logs_clear_title">Günlük temizlensin mi?</string>
