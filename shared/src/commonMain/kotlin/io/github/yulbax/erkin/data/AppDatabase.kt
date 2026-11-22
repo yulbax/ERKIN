@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "erkin.db"
-        const val VERSION = 31
+        const val VERSION = 32
 
         fun isNewerThanThisBuild(database: File): Boolean {
             if (!database.isFile) return false
@@ -293,9 +293,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val SEARCH_SNI_MIGRATION = object : Migration(31, 32) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE settings ADD COLUMN byeDpiSearchSni TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun migrations(appsCanBypass: Boolean): Array<Migration> =
             MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION +
-                HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION + HOME_CARD_MIGRATION
+                HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION + HOME_CARD_MIGRATION + SEARCH_SNI_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {

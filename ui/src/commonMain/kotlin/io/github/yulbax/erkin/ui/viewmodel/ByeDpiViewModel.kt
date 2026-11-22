@@ -59,7 +59,8 @@ class ByeDpiViewModel(
         val network: TestNetwork = TestNetwork.Unknown,
         val cards: List<StrategyCard> = emptyList(),
         val run: ByeDpiStrategyRunner.Run? = null,
-        val search: List<SearchRow> = emptyList()
+        val search: List<SearchRow> = emptyList(),
+        val searchSni: String = ""
     )
 
     private val ranked = MutableStateFlow(false)
@@ -89,7 +90,8 @@ class ByeDpiViewModel(
             run = run,
             search = search
                 .map { SearchRow(it.args, it.score, it.args in saved) }
-                .sortedByDescending { it.score.percent }
+                .sortedByDescending { it.score.percent },
+            searchSni = settings.byeDpiSearchSni
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), UiState())
 
@@ -137,7 +139,12 @@ class ByeDpiViewModel(
         run(StrategyRunKind.Saved, uiState.value.cards.map { it.args }, save = true)
     }
 
+    fun rememberSni(sni: String) {
+        viewModelScope.launch { settingsRepository.update { it.copy(byeDpiSearchSni = sni.trim()) } }
+    }
+
     fun search(sni: String, custom: String?) {
+        rememberSni(sni)
         viewModelScope.launch {
             val source = custom ?: Res.readBytes(BUILT_IN_STRATEGIES).decodeToString()
             val quoted = "\"${sni.trim().ifBlank { DEFAULT_SNI }}\""

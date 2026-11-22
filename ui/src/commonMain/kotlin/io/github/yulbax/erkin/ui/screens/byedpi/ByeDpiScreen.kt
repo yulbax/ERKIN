@@ -216,7 +216,10 @@ fun ByeDpi(viewModel: ByeDpiViewModel = koinViewModel()) {
             onStop = viewModel::stop,
             onAdd = viewModel::addFromSearch,
             onAddBest = viewModel::addBestFromSearch,
-            onDismiss = { dialog = null }
+            onDismiss = { sni ->
+                viewModel.rememberSni(sni)
+                dialog = null
+            }
         )
         null -> Unit
     }
@@ -529,14 +532,14 @@ private fun SearchSheet(
     onStop: () -> Unit,
     onAdd: (String) -> Unit,
     onAddBest: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: (sni: String) -> Unit
 ) {
-    var sni by rememberSaveable { mutableStateOf("") }
+    var sni by rememberSaveable(ui.searchSni) { mutableStateOf(ui.searchSni) }
     var useCustom by rememberSaveable { mutableStateOf(false) }
     var custom by rememberSaveable { mutableStateOf("") }
     val run = ui.run
     val searching = run?.kind == StrategyRunKind.Search
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = expandedSheetState()) {
+    ModalBottomSheet(onDismissRequest = { onDismiss(sni) }, sheetState = expandedSheetState()) {
         Column(
             modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)

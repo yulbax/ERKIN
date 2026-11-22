@@ -35,7 +35,8 @@ data class SettingsEntity(
     val blockQuic: Boolean = NetworkOptions.DEFAULT.blockQuic,
     val chainsHintSeen: Boolean = false,
     val serverSort: String = ServerSort.DEFAULT.wire,
-    val homeCardPosition: String = HomeCardPosition.DEFAULT.wire
+    val homeCardPosition: String = HomeCardPosition.DEFAULT.wire,
+    val byeDpiSearchSni: String = ""
 ) {
     fun homeCardPosition(): HomeCardPosition = HomeCardPosition.fromWire(homeCardPosition) ?: HomeCardPosition.DEFAULT
 
