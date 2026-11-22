@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.ui.components.DestructiveConfirmDialog
 import io.github.yulbax.erkin.ui.components.serverName
 import io.github.yulbax.erkin.ui.components.serverNames
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -45,7 +46,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -220,9 +220,9 @@ fun ErkinScreen(
         onSetHidden = profileViewModel::setHidden
     )
 
-    val windowSize = LocalWindowInfo.current.containerSize
-    val landscape = windowSize.width > windowSize.height
-    if (landscape) ErkinScreenLandscape(content) else ErkinScreenPortrait(content)
+    BoxWithConstraints {
+        if (maxWidth > maxHeight) ErkinScreenLandscape(content) else ErkinScreenPortrait(content)
+    }
 
     sheetId?.let { id ->
         val item = servers.group(id)
