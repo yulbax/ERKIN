@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.FolderOff
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -193,7 +192,11 @@ internal fun FolderList(
             }
             if (hidden.isNotEmpty()) {
                 item(key = HIDDEN_HEADER_KEY) {
-                    HiddenHeader(count = hidden.size, expanded = hiddenShown) { hiddenShown = !hiddenShown }
+                    CollapsibleHeader(
+                        text = stringResource(Res.string.hidden_servers, hidden.size),
+                        icon = Icons.Default.VisibilityOff,
+                        expanded = hiddenShown
+                    ) { hiddenShown = !hiddenShown }
                 }
                 if (hiddenShown) {
                     items(hidden, key = { it.id }) { profile -> row(ServerNode.Server(profile), checkOf(listOf(profile.id))) {} }
@@ -241,9 +244,8 @@ private fun BoxScope.FolderSelectionBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun HiddenHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
+internal fun CollapsibleHeader(text: String, icon: ImageVector, expanded: Boolean, onToggle: () -> Unit) {
     Column {
         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
         Row(
@@ -255,9 +257,9 @@ private fun HiddenHeader(count: Int, expanded: Boolean, onToggle: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Icon(Icons.Default.VisibilityOff, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
-                stringResource(Res.string.hidden_servers, count),
+                text,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
