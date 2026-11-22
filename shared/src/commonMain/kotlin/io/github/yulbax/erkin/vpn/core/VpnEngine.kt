@@ -27,14 +27,17 @@ sealed interface ProbeResult {
     data class Answered(val ms: Int) : ProbeResult
     data object NoAnswer : ProbeResult
     data object LoginRejected : ProbeResult
+    data object AccessDenied : ProbeResult
     data object NeedsConnection : ProbeResult
 
     companion object {
         private const val LOGIN_REJECTED = -2
+        private const val ACCESS_DENIED = -3
 
         fun fromWire(value: Int): ProbeResult = when {
             value > 0 -> Answered(value)
             value == LOGIN_REJECTED -> LoginRejected
+            value == ACCESS_DENIED -> AccessDenied
             else -> NoAnswer
         }
     }

@@ -94,6 +94,11 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.ui.text.style.TextOverflow
 import org.jetbrains.compose.resources.getPluralString
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material.icons.filled.Lan
+import io.github.yulbax.erkin.ui.res.local_network_server_denied
+import io.github.yulbax.erkin.ui.res.local_network_server
+import io.github.yulbax.erkin.ui.platform.localNetworkAllowed
 
 @Composable
 fun ErkinScreen(
@@ -141,6 +146,9 @@ fun ErkinScreen(
         startVpn()
     }
     val onConnectClick = { if (ui.bypassLan) requestLocalNetwork() else startVpn() }
+    val localServerDenied = stringResource(Res.string.local_network_server_denied)
+    val allowLocalNetwork = rememberLocalNetworkRequest { granted -> if (!granted) showMessage(localServerDenied) }
+    val unreachableLocalServers = if (localNetworkAllowed()) emptyList() else servers.profiles.filter { it.id in stats.deniedServers }
 
     val connected = state.isActive
     val snackbarHostState = remember { SnackbarHostState() }
@@ -178,6 +186,8 @@ fun ErkinScreen(
         onToggle = { if (connected) viewModel.stopVpn() else onConnectClick() },
         onDismissHint = { viewModel.dismissHomeHint() },
         onNavigateToApps = onNavigateToApps,
+        localServers = unreachableLocalServers.map { serverName(it.name) },
+        onAllowLocalNetwork = allowLocalNetwork,
         onByedpiClick = onNavigateToByeDpi,
         onAddServerClick = { adding = AddRequest(groupId = null) },
         onTest = profileViewModel::test,
@@ -400,6 +410,8 @@ internal class ErkinScreenContent(
     val onToggle: () -> Unit,
     val onDismissHint: () -> Unit,
     val onNavigateToApps: () -> Unit,
+    val localServers: List<String>,
+    val onAllowLocalNetwork: () -> Unit,
     val onByedpiClick: () -> Unit,
     val onAddServerClick: () -> Unit,
     val onTest: (servers: List<Long>) -> Deferred<List<Long>?>,
@@ -486,6 +498,10 @@ private fun ErkinScreenLandscape(c: ErkinScreenContent) {
 @Composable
 private fun ColumnScope.Hints(c: ErkinScreenContent) {
     SetupHint(c)
+    if (c.localServers.isNotEmpty()) {
+        LocalNetworkCard(c)
+        Spacer(Modifier.height(12.dp))
+    }
     if (c.showsAppsHint) {
         AddAppsCard(onClick = c.onNavigateToApps)
         Spacer(Modifier.height(12.dp))
@@ -541,6 +557,10 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, cardBelow: Bool
         ChannelsRow(c)
     }
 
+    if (!cardBelow && c.localServers.isNotEmpty()) {
+        Spacer(Modifier.height(12.dp))
+        LocalNetworkCard(c)
+    }
     if (!cardBelow && c.showsAppsHint) {
         Spacer(Modifier.height(12.dp))
         AddAppsCard(onClick = c.onNavigateToApps)
@@ -602,12 +622,22 @@ private fun Modifier.tucked(depth: Dp, underCard: Boolean): Modifier = layout { 
 }
 
 @Composable
-private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun AddAppsCard(onClick: () -> Unit) {
+    HintCard(Icons.Default.Apps, stringResource(Res.string.connection_no_routed_apps), onClick)
+}
+
+@Composable
+private fun LocalNetworkCard(c: ErkinScreenContent) {
+    HintCard(Icons.Default.Lan, stringResource(Res.string.local_network_server, c.localServers.joinToString()), c.onAllowLocalNetwork)
+}
+
+@Composable
+private fun HintCard(icon: ImageVector, text: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -615,12 +645,12 @@ private fun AddAppsCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Icon(
-                Icons.Default.Apps,
+                icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Text(
-                text = stringResource(Res.string.connection_no_routed_apps),
+                text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.weight(1f)

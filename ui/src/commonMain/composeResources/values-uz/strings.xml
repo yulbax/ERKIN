@@ -47,6 +47,8 @@
     <string name="sniff_destination">Manzilni aniqlash (sniffing)</string>
     <string name="bypass_lan">Lokal tarmoqni chetlab oʻtish (xususiy IP’lar toʻgʻridan-toʻgʻri)</string>
     <string name="local_network_denied">Tizim sozlamalarida lokal tarmoqqa ruxsat bering, aks holda lokal tarmoqni chetlab oʻtish ishlamaydi</string>
+    <string name="local_network_server">%1$s serveri lokal tarmoqda. ERKIN unga ulana olishi uchun bosing</string>
+    <string name="local_network_server_denied">Tizim sozlamalarida lokal tarmoqqa ruxsat bering</string>
     <string name="show_system_apps">Tizim ilovalarini koʻrsatish</string>
     <string name="autostart_title">Avtomatik ulanish</string>
     <string name="auto_connect">Ishga tushganda ulanish</string>
@@ -393,4 +395,5 @@
     <string name="login_edit_hint">Bu server ulanishda foydalanadigan login va parol.</string>
     <string name="login_wrong">Login yoki parol notoʻgʻri.</string>
     <string name="server_ping_login_rejected">kirish xatosi</string>
+    <string name="server_ping_access_denied">ruxsat yoʻq</string>
 </resources>

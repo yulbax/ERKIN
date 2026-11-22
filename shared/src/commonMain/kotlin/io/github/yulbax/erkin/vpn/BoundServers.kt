@@ -38,7 +38,7 @@ internal class BoundServers(
             misses.record(round)
             val down = misses.unreachable
             if (down != before) log.w(HEALTH_TAG, "servers not responding: ${down.sorted()}")
-            stateRepository.updateStats { it.copy(unreachableServers = down) }
+            stateRepository.updateStats { it.afterProbes(round).copy(unreachableServers = down) }
             delay(if (misses.shouldHurry(round)) retryDelay else checkInterval)
         }
     }

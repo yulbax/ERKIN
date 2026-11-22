@@ -47,6 +47,8 @@
     <string name="sniff_destination">شناسایی مقصد (sniff)</string>
     <string name="bypass_lan">دور زدن LAN (IPهای خصوصی مستقیم)</string>
     <string name="local_network_denied">دسترسی به شبکه محلی را در تنظیمات سیستم مجاز کنید، وگرنه دور زدن LAN کار نمی‌کند</string>
+    <string name="local_network_server">سرور %1$s در شبکه محلی است. برای اجازه دسترسی ERKIN به آن ضربه بزنید</string>
+    <string name="local_network_server_denied">دسترسی به شبکه محلی را در تنظیمات سیستم مجاز کنید</string>
     <string name="show_system_apps">نمایش برنامه‌های سیستمی</string>
     <string name="autostart_title">اتصال خودکار</string>
     <string name="auto_connect">اتصال هنگام راه‌اندازی</string>
@@ -393,4 +395,5 @@
     <string name="login_edit_hint">نام کاربری و رمز عبوری که این سرور با آن وصل می‌شود.</string>
     <string name="login_wrong">نام کاربری یا رمز عبور اشتباه است.</string>
     <string name="server_ping_login_rejected">خطای ورود</string>
+    <string name="server_ping_access_denied">دسترسی رد شد</string>
 </resources>

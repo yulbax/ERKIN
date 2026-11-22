@@ -47,6 +47,8 @@
     <string name="sniff_destination">嗅探目标</string>
     <string name="bypass_lan">绕过局域网（私有 IP 直连）</string>
     <string name="local_network_denied">请在系统设置中允许访问本地网络，否则绕过局域网将无法生效</string>
+    <string name="local_network_server">服务器 %1$s 位于本地网络中。点按以允许 ERKIN 访问</string>
+    <string name="local_network_server_denied">请在系统设置中允许访问本地网络</string>
     <string name="show_system_apps">显示系统应用</string>
     <string name="autostart_title">自动连接</string>
     <string name="auto_connect">开机时连接</string>
@@ -387,4 +389,5 @@
     <string name="login_edit_hint">此服务器登录时使用的用户名和密码。</string>
     <string name="login_wrong">用户名或密码错误。</string>
     <string name="server_ping_login_rejected">登录失败</string>
+    <string name="server_ping_access_denied">访问被拒绝</string>
 </resources>

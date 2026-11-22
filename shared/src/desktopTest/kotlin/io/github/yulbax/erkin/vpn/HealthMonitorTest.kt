@@ -24,6 +24,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -47,6 +48,7 @@ class HealthMonitorTest {
         assertEquals(ProbeResult.Answered(80), ProbeResult.fromWire(80))
         assertEquals(ProbeResult.NoAnswer, ProbeResult.fromWire(-1))
         assertEquals(ProbeResult.LoginRejected, ProbeResult.fromWire(-2))
+        assertEquals(ProbeResult.AccessDenied, ProbeResult.fromWire(-3))
         assertEquals(ProbeResult.NoAnswer, ProbeResult.fromWire(0))
     }
 
@@ -106,6 +108,25 @@ class HealthMonitorTest {
 
         assertEquals(ProbeResult.LoginRejected, run.results.results.value[3L])
         assertEquals(0, run.rejections.get())
+    }
+
+    @Test
+    fun theServersTheSystemRefusesToReachAreListedWhetherActiveOrBound() = runBlocking {
+        val run = Run { id -> if (id == 2L) 40 else ACCESS_DENIED }
+        run.watch { run.states.stats.value.deniedServers == setOf(1L, 3L) }
+
+        assertEquals(setOf(1L, 3L), run.states.stats.value.deniedServers)
+    }
+
+    @Test
+    fun aServerLeavesTheRefusedListOnceItAnswers() = runBlocking {
+        val allowed = AtomicBoolean(false)
+        val run = Run { if (allowed.get()) 40 else ACCESS_DENIED }
+        run.watch { run.states.stats.value.deniedServers.isNotEmpty() }
+        allowed.set(true)
+        run.watch { run.states.stats.value.deniedServers.isEmpty() }
+
+        assertEquals(emptySet<Long>(), run.states.stats.value.deniedServers)
     }
 
     @Test
@@ -275,5 +296,6 @@ class HealthMonitorTest {
     private companion object {
         const val FAILED = -1
         const val LOGIN_REJECTED = -2
+        const val ACCESS_DENIED = -3
     }
 }

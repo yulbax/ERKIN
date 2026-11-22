@@ -126,7 +126,7 @@ class ServerTree(
         fun ProbeResult?.rank(): Int = when (this) {
             is ProbeResult.Answered -> ms
             null, ProbeResult.NeedsConnection -> Int.MAX_VALUE - 1
-            ProbeResult.NoAnswer, ProbeResult.LoginRejected -> Int.MAX_VALUE
+            ProbeResult.NoAnswer, ProbeResult.LoginRejected, ProbeResult.AccessDenied -> Int.MAX_VALUE
         }
     }
 }

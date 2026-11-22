@@ -26,6 +26,7 @@ internal data class LivenessCounters(val failures: Int = 0) {
 internal class VpnLiveness(
     private val params: HealthParams,
     private val snapshot: MutableStateFlow<HealthSnapshot>,
+    private val stateRepository: VpnStateRepository,
     private val checks: ServerChecks,
     private val country: CountryLookup,
     private val log: AppLog,
@@ -40,6 +41,7 @@ internal class VpnLiveness(
             val result = active
                 ?.let { checks.check(listOf(it), runningOnly = true)?.get(it) }
                 ?: ProbeResult.NoAnswer
+            active?.let { id -> stateRepository.updateStats { it.afterProbes(mapOf(id to result)) } }
             if (apply(result) == LivenessAction.LOGIN_REJECTED) return
             delay(if (result is ProbeResult.Answered) checkInterval else retryDelay)
         }

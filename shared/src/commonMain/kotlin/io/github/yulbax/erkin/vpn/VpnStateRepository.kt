@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,8 +19,12 @@ data class ConnectionStats(
     val byeDpiPort: Int = 0,
     val uplink: Long = 0,
     val downlink: Long = 0,
-    val unreachableServers: Set<Long> = emptySet()
-)
+    val unreachableServers: Set<Long> = emptySet(),
+    val deniedServers: Set<Long> = emptySet()
+) {
+    fun afterProbes(round: Map<Long, ProbeResult>): ConnectionStats =
+        copy(deniedServers = deniedServers - round.keys + round.filterValues { it == ProbeResult.AccessDenied }.keys)
+}
 
 class VpnStateRepository {
     private val _state = MutableStateFlow<VpnState>(VpnState.Disconnected)
@@ -46,7 +51,8 @@ class VpnStateRepository {
                 byedpiChecking = false,
                 byedpiReachable = 0,
                 byedpiTotal = 0,
-                unreachableServers = emptySet()
+                unreachableServers = emptySet(),
+                deniedServers = emptySet()
             )
         }
     }

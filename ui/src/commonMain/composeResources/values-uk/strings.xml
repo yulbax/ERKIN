@@ -47,6 +47,8 @@
     <string name="sniff_destination">Визначати призначення (sniff)</string>
     <string name="bypass_lan">Обхід LAN (приватні IP напряму)</string>
     <string name="local_network_denied">Дозвольте доступ до локальної мережі в налаштуваннях системи, інакше обхід LAN не працюватиме</string>
+    <string name="local_network_server">Сервер %1$s у локальній мережі. Натисніть, щоб дозволити ERKIN доступ до неї</string>
+    <string name="local_network_server_denied">Дозвольте доступ до локальної мережі в налаштуваннях системи</string>
     <string name="show_system_apps">Показувати системні застосунки</string>
     <string name="autostart_title">Автопідключення</string>
     <string name="auto_connect">Підключатися під час запуску</string>
@@ -405,4 +407,5 @@
     <string name="login_edit_hint">Логін і пароль, з якими підключається цей сервер.</string>
     <string name="login_wrong">Неправильний логін або пароль.</string>
     <string name="server_ping_login_rejected">помилка входу</string>
+    <string name="server_ping_access_denied">доступ заборонено</string>
 </resources>

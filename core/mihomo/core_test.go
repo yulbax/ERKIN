@@ -1,14 +1,17 @@
 package mihomocore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -263,5 +266,19 @@ func TestRunningOnlyMeasuresNothingOutsideTheTunnel(t *testing.T) {
 	}
 	if delay := delayOf(true); delay != delayFailed {
 		t.Fatalf("a server outside the tunnel must fail when only running proxies count, got %d", delay)
+	}
+}
+
+func TestADialTheSystemRefusesIsToldApartFromASilentServer(t *testing.T) {
+	refused := &net.OpError{Op: "write", Net: "udp", Err: os.NewSyscallError("sendmsg", syscall.EPERM)}
+
+	if got := delayOf(0, fmt.Errorf("dial p1: %w", refused)); got != delayAccessDenied {
+		t.Fatalf("refused dial: got %d, want %d", got, delayAccessDenied)
+	}
+	if got := delayOf(0, context.DeadlineExceeded); got != delayFailed {
+		t.Fatalf("timeout: got %d, want %d", got, delayFailed)
+	}
+	if got := delayOf(42, nil); got != 42 {
+		t.Fatalf("answer: got %d, want 42", got)
 	}
 }

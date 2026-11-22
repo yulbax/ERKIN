@@ -3,6 +3,7 @@ package mihomocore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 	_ "time/tzdata"
 
@@ -37,6 +39,7 @@ const (
 	testConcurrency      = 10
 	delayFailed          = -1
 	delayLoginRejected   = -2
+	delayAccessDenied    = -3
 	openVpnLoginRejected = "openvpn authentication failed"
 	invalidInterface     = "<invalid>"
 	logFileMode          = 0o644
@@ -455,9 +458,15 @@ func measure(proxy C.Proxy, url string, timeoutMs int32) int32 {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutMs)*time.Millisecond)
 	defer cancel()
 	delay, err := proxy.URLTest(ctx, url, nil)
+	return delayOf(delay, err)
+}
+
+func delayOf(delay uint16, err error) int32 {
 	switch {
 	case err != nil && strings.Contains(err.Error(), openVpnLoginRejected):
 		return delayLoginRejected
+	case errors.Is(err, syscall.EPERM):
+		return delayAccessDenied
 	case err != nil || delay == 0:
 		return delayFailed
 	}

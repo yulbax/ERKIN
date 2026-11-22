@@ -81,7 +81,7 @@ class HealthMonitor(
         if (params.vpnActive) {
             val country = CountryLookup(params.engine, channels, snapshot, childScope)
             country.start()
-            val liveness = VpnLiveness(params, snapshot, checks, country, log, checkInterval, retryDelay)
+            val liveness = VpnLiveness(params, snapshot, stateRepository, checks, country, log, checkInterval, retryDelay)
             childScope.launch { liveness.run() }
             val bound = (params.boundServers - listOfNotNull(params.activeServer).toSet()).toList()
             if (bound.isNotEmpty()) {

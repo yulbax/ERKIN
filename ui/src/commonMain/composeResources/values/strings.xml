@@ -49,6 +49,8 @@
     <string name="sniff_destination">Sniff destination</string>
     <string name="bypass_lan">Bypass LAN (private IPs direct)</string>
     <string name="local_network_denied">Allow local network access in system settings, otherwise LAN bypass will not work</string>
+    <string name="local_network_server">%1$s is on your local network. Tap to let ERKIN reach it</string>
+    <string name="local_network_server_denied">Allow local network access in system settings</string>
     <string name="show_system_apps">Show system apps</string>
     <string name="autostart_title">Auto-connect</string>
     <string name="auto_connect">Connect on startup</string>
@@ -417,4 +419,5 @@
     <string name="login_edit_hint">The login and password this server signs in with.</string>
     <string name="login_wrong">Wrong login or password.</string>
     <string name="server_ping_login_rejected">login failed</string>
+    <string name="server_ping_access_denied">access denied</string>
 </resources>

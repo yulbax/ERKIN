@@ -47,6 +47,8 @@
     <string name="sniff_destination">Hedefi algıla (sniffing)</string>
     <string name="bypass_lan">Yerel ağı atla (özel IP’ler doğrudan)</string>
     <string name="local_network_denied">Sistem ayarlarında yerel ağ erişimine izin verin, aksi halde yerel ağı atlama çalışmaz</string>
+    <string name="local_network_server">%1$s yerel ağınızda. ERKIN’in ona erişmesine izin vermek için dokunun</string>
+    <string name="local_network_server_denied">Sistem ayarlarında yerel ağ erişimine izin verin</string>
     <string name="show_system_apps">Sistem uygulamalarını göster</string>
     <string name="autostart_title">Otomatik bağlantı</string>
     <string name="auto_connect">Açılışta bağlan</string>
@@ -393,4 +395,5 @@
     <string name="login_edit_hint">Bu sunucunun bağlanırken kullandığı kullanıcı adı ve parola.</string>
     <string name="login_wrong">Kullanıcı adı veya parola yanlış.</string>
     <string name="server_ping_login_rejected">giriş hatası</string>
+    <string name="server_ping_access_denied">erişim reddedildi</string>
 </resources>

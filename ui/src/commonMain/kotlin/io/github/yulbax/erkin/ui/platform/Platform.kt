@@ -34,6 +34,9 @@ expect fun rememberVpnStartRequest(onGranted: () -> Unit): () -> Unit
 expect fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): () -> Unit
 
 @Composable
+expect fun localNetworkAllowed(): Boolean
+
+@Composable
 expect fun rememberSharer(): Sharer
 
 @Composable

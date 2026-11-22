@@ -47,6 +47,8 @@
     <string name="sniff_destination">Определять назначение (sniff)</string>
     <string name="bypass_lan">Обход LAN (приватные IP напрямую)</string>
     <string name="local_network_denied">Разрешите доступ к локальной сети в настройках системы, иначе обход LAN не будет работать</string>
+    <string name="local_network_server">Сервер %1$s в локальной сети. Нажмите, чтобы разрешить ERKIN доступ к ней</string>
+    <string name="local_network_server_denied">Разрешите доступ к локальной сети в настройках системы</string>
     <string name="show_system_apps">Показывать системные приложения</string>
     <string name="autostart_title">Автоподключение</string>
     <string name="auto_connect">Подключаться при запуске</string>
@@ -405,4 +407,5 @@
     <string name="login_edit_hint">Логин и пароль, с которыми подключается этот сервер.</string>
     <string name="login_wrong">Неправильный логин или пароль.</string>
     <string name="server_ping_login_rejected">ошибка входа</string>
+    <string name="server_ping_access_denied">доступ запрещён</string>
 </resources>

@@ -77,15 +77,16 @@ actual fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): ()
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission(), onResult)
     return {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
-            context.checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
-        ) {
-            onResult(true)
-        } else {
-            launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
-        }
+        if (context.localNetworkAllowed()) onResult(true) else launcher.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
     }
 }
+
+@Composable
+actual fun localNetworkAllowed(): Boolean = LocalContext.current.localNetworkAllowed()
+
+private fun Context.localNetworkAllowed(): Boolean =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
+        checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) == PackageManager.PERMISSION_GRANTED
 
 @Composable
 actual fun rememberSharer(): Sharer {

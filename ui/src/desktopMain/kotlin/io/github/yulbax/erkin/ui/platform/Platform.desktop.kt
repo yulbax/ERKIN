@@ -57,6 +57,9 @@ actual fun rememberVpnStartRequest(onGranted: () -> Unit): () -> Unit = onGrante
 actual fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): () -> Unit = { onResult(true) }
 
 @Composable
+actual fun localNetworkAllowed(): Boolean = true
+
+@Composable
 actual fun rememberSharer(): Sharer = remember { DesktopSharer() }
 
 private class DesktopSharer : Sharer {
