@@ -52,4 +52,34 @@ class OpenVpnLoginTest {
         assertFalse(OpenVpn.asksForLogin("vless://id@host:443#Name"))
         assertEquals(false, OpenVpn.asksForLogin(asking.replace("auth-user-pass", "auth-user-pass creds.txt")))
     }
+
+    @Test
+    fun commentedOutCertificateBlocksAreIgnored() {
+        val softEther = """
+            client
+            dev tun
+            proto udp
+            remote vpn.example 1194
+            auth-user-pass
+            <ca>
+            -----BEGIN CERTIFICATE-----
+            CA
+            -----END CERTIFICATE-----
+            </ca>
+            # Paste your certificate in the <cert> block and the key in the <key> one.
+            ;<cert>
+            ;-----BEGIN CERTIFICATE-----
+            ;-----END CERTIFICATE-----
+            ;</cert>
+            #<key>
+            #-----BEGIN PRIVATE KEY-----
+            #-----END PRIVATE KEY-----
+            #</key>
+        """.trimIndent()
+        val proxy = LinkParser.parse(OpenVpn.withLogin(softEther, "user", "secret"))?.proxyJson().orEmpty()
+
+        assertTrue("\"ca\":\"-----BEGIN CERTIFICATE-----\\nCA\\n-----END CERTIFICATE-----\"" in proxy)
+        assertFalse("\"cert\"" in proxy)
+        assertFalse("\"key\"" in proxy)
+    }
 }

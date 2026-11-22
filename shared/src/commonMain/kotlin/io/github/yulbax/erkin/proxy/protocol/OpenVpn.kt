@@ -18,6 +18,7 @@ object OpenVpn : LinkHandler, DocumentHandler {
     private const val DEFAULT_PORT = 1194
     private const val TUNNEL_DNS = "remote-dns-resolve"
     private val WHITESPACE = Regex("\\s+")
+    private val COMMENT = Regex("^[ \\t]*[#;].*\\n?", RegexOption.MULTILINE)
     private val BLOCK = Regex("<([a-z0-9-]+)>(.*?)</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE))
     private val REMOTE = Regex("^\\s*remote\\s+\\S+", RegexOption.MULTILINE)
     private val CLIENT = Regex("^\\s*(client|tls-client)\\s*$", RegexOption.MULTILINE)
@@ -57,8 +58,9 @@ object OpenVpn : LinkHandler, DocumentHandler {
     }
 
     override fun parse(text: String): ParsedLink {
-        val blocks = BLOCK.findAll(text).associate { it.groupValues[1].lowercase() to it.groupValues[2].trim() }
-        val directives = BLOCK.replace(text, "").lineSequence()
+        val config = COMMENT.replace(text, "")
+        val blocks = BLOCK.findAll(config).associate { it.groupValues[1].lowercase() to it.groupValues[2].trim() }
+        val directives = BLOCK.replace(config, "").lineSequence()
             .map { it.substringBefore('#').substringBefore(';').trim() }
             .filter { it.isNotEmpty() }
             .map { it.split(WHITESPACE) }
