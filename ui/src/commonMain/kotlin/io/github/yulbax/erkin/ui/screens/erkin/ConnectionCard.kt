@@ -54,7 +54,8 @@ internal fun ConnectionCard(
     connected: Boolean,
     enabled: Boolean,
     onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    server: String? = null
 ) {
     val busy = state.isBusy
     val tone = when {
@@ -78,7 +79,7 @@ internal fun ConnectionCard(
         is VpnState.Error -> stringResource(Res.string.vpn_not_connected)
     }
     val subtitle = when (state) {
-        VpnState.Disconnected -> stringResource(Res.string.vpn_tap_to_connect)
+        VpnState.Disconnected -> server ?: stringResource(Res.string.vpn_tap_to_connect)
         VpnState.Connecting -> stringResource(Res.string.vpn_establishing_tunnel)
         VpnState.Verifying -> stringResource(Res.string.vpn_checking_connectivity)
         is VpnState.Connected -> stringResource(Res.string.vpn_tap_to_disconnect)

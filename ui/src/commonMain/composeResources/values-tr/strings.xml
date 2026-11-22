@@ -75,6 +75,8 @@
 
     <string name="setup_step_connect">Bağlanın</string>
     <string name="servers_search_empty">Sunucu bulunamadı</string>
+    <string name="servers_frame">Sunucular · %1$d</string>
+    <string name="servers_found_frame">Bulunan · %1$d</string>
     <string name="hide_server">Gizle</string>
     <string name="show_server">Göster</string>
     <string name="hidden_servers">Gizlenenler · %1$d</string>

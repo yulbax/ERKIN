@@ -77,6 +77,8 @@
 
     <string name="setup_step_connect">Connect</string>
     <string name="servers_search_empty">No servers found</string>
+    <string name="servers_frame">Servers · %1$d</string>
+    <string name="servers_found_frame">Found · %1$d</string>
     <string name="hide_server">Hide</string>
     <string name="show_server">Show</string>
     <string name="hidden_servers">Hidden · %1$d</string>

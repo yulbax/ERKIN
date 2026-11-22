@@ -75,6 +75,8 @@
 
     <string name="setup_step_connect">连接</string>
     <string name="servers_search_empty">未找到服务器</string>
+    <string name="servers_frame">服务器 · %1$d</string>
+    <string name="servers_found_frame">找到 · %1$d</string>
     <string name="hide_server">隐藏</string>
     <string name="show_server">显示</string>
     <string name="hidden_servers">已隐藏 · %1$d</string>

@@ -75,6 +75,8 @@
 
     <string name="setup_step_connect">Підключитися</string>
     <string name="servers_search_empty">Сервери не знайдено</string>
+    <string name="servers_frame">Сервери · %1$d</string>
+    <string name="servers_found_frame">Знайдено · %1$d</string>
     <string name="hide_server">Приховати</string>
     <string name="show_server">Показати</string>
     <string name="hidden_servers">Приховані · %1$d</string>

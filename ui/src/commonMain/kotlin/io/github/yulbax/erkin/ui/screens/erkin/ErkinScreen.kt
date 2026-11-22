@@ -545,7 +545,10 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, cardBelow: Bool
             connected = c.connected,
             enabled = enabled,
             onToggle = c.onToggle,
-            modifier = Modifier.zIndex(1f)
+            modifier = Modifier.zIndex(1f),
+            server = c.servers.selected?.takeIf { c.ui.hasVpnApps }?.let { profile ->
+                listOfNotNull(serverName(profile.name), profile.type.takeIf { profile.kind is ServerKind.Link }).joinToString(" · ")
+            }
         )
     }
 

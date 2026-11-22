@@ -75,6 +75,8 @@
 
     <string name="setup_step_connect">Ulaning</string>
     <string name="servers_search_empty">Serverlar topilmadi</string>
+    <string name="servers_frame">Serverlar · %1$d</string>
+    <string name="servers_found_frame">Topildi · %1$d</string>
     <string name="hide_server">Yashirish</string>
     <string name="show_server">Koʻrsatish</string>
     <string name="hidden_servers">Yashirilganlar · %1$d</string>

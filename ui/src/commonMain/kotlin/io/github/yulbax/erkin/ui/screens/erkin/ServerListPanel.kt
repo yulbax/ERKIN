@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -41,6 +40,7 @@ import io.github.yulbax.erkin.ui.components.SwipeableSnackbarHost
 import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.chains.chainLabel
 import org.jetbrains.compose.resources.stringResource
+import io.github.yulbax.erkin.ui.components.LabeledFrame
 
 @Composable
 internal fun ServerListPanel(c: ErkinScreenContent, modifier: Modifier) {
@@ -53,11 +53,12 @@ internal fun ServerListPanel(c: ErkinScreenContent, modifier: Modifier) {
         }
         return
     }
-    Surface(
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier
-    ) {
+    val label = if (c.filtering) {
+        stringResource(Res.string.servers_found_frame, c.shown.size)
+    } else {
+        stringResource(Res.string.servers_frame, c.servers.profiles.count { !it.hidden })
+    }
+    LabeledFrame(label = label, modifier = modifier) {
         val listState = rememberLazyListState()
         val scrollAfterSort = rememberScrollToTopAfterSort(listState, c.servers.profiles.map { it.id })
         FolderList(
@@ -110,7 +111,7 @@ private fun BoxScope.ServerToolbar(c: ErkinScreenContent, visible: Boolean, onTe
     ) {
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.secondaryContainer,
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
             shadowElevation = TOOLBAR_SHADOW
         ) {
             Row(

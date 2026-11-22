@@ -75,6 +75,8 @@
 
     <string name="setup_step_connect">اتصال</string>
     <string name="servers_search_empty">سروری پیدا نشد</string>
+    <string name="servers_frame">سرورها · %1$d</string>
+    <string name="servers_found_frame">یافت‌شده · %1$d</string>
     <string name="hide_server">پنهان کردن</string>
     <string name="show_server">نمایش</string>
     <string name="hidden_servers">پنهان‌شده‌ها · %1$d</string>
