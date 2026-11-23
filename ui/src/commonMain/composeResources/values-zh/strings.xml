@@ -19,8 +19,8 @@
     <string name="license_intro">ERKIN 是自由软件，依据 GNU General Public License v3.0 授权。完整许可证文本如下。</string>
     <string name="license_font_title">Google Sans（内置字体）</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). Licensed under the SIL Open Font License, Version 1.1.</string>
-    <string name="license_flags_title">Noto Color Emoji（国旗）</string>
-    <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). Licensed under the SIL Open Font License, Version 1.1.</string>
+    <string name="license_flags_title">Twemoji（国旗）</string>
+    <string name="license_flags_notice">Copyright 2020 Twitter, Inc and other contributors (github.com/mozilla/twemoji-colr). Graphics licensed under CC-BY 4.0.</string>
     <string name="license_strategies_title">ByeDPI 策略列表（ByeByeDPI）</string>
     <string name="license_strategies_notice">来自 romanvht 的 ByeByeDPI（github.com/romanvht/ByeByeDPI），依据 GNU 通用公共许可证第 3 版授权。</string>
     <string name="license_core_notice">作者 MetaCubeX（github.com/MetaCubeX/mihomo），依据 GNU 通用公共许可证第 3 版授权。</string>

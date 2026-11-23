@@ -20,7 +20,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.ui.components.GroupCard
-import io.github.yulbax.erkin.ui.platform.flagFontFamily
+import io.github.yulbax.erkin.ui.platform.bundledTextFontFamily
 import io.github.yulbax.erkin.ui.res.*
 
 private enum class LicenseText(val title: String, val path: String) {
@@ -39,7 +39,7 @@ fun License() {
         Res.string.license_strategies_title to Res.string.license_strategies_notice,
         Res.string.about_byedpi to Res.string.license_byedpi_notice,
         Res.string.license_font_title to Res.string.license_font_notice,
-        (Res.string.license_flags_title to Res.string.license_flags_notice).takeIf { flagFontFamily() != null }
+        (Res.string.license_flags_title to Res.string.license_flags_notice).takeIf { bundledTextFontFamily != null }
     )
 
     Column(

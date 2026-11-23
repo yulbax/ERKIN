@@ -19,8 +19,8 @@
     <string name="license_intro">ERKIN — вільне програмне забезпечення під ліцензією GNU General Public License v3.0. Повний текст ліцензії наведено нижче.</string>
     <string name="license_font_title">Google Sans (вбудований шрифт)</string>
     <string name="license_font_notice">Copyright 2025 The Google Sans Project Authors (github.com/googlefonts/googlesans). Licensed under the SIL Open Font License, Version 1.1.</string>
-    <string name="license_flags_title">Noto Color Emoji (прапори країн)</string>
-    <string name="license_flags_notice">Copyright 2013 Google LLC (github.com/googlefonts/noto-emoji). Licensed under the SIL Open Font License, Version 1.1.</string>
+    <string name="license_flags_title">Twemoji (прапори країн)</string>
+    <string name="license_flags_notice">Copyright 2020 Twitter, Inc and other contributors (github.com/mozilla/twemoji-colr). Graphics licensed under CC-BY 4.0.</string>
     <string name="license_strategies_title">Список стратегій ByeDPI (ByeByeDPI)</string>
     <string name="license_strategies_notice">Узято з ByeByeDPI, автор romanvht (github.com/romanvht/ByeByeDPI). Поширюється за ліцензією GNU General Public License версії 3.</string>
     <string name="license_core_notice">Автор MetaCubeX (github.com/MetaCubeX/mihomo). Поширюється за ліцензією GNU General Public License версії 3.</string>

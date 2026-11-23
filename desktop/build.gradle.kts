@@ -129,8 +129,7 @@ val prepareLinuxBinaries = registerBundledBinaries(
 )
 
 val prepareBundledFonts = tasks.register<Sync>("prepareBundledFonts") {
-    from(project(":ui").file("src/commonMain/composeResources/font"))
-    from(project(":ui").file("src/desktopMain/composeResources/font"))
+    from(project.file("fonts"))
     into(bundledResourcesDir.map { it.dir("common/fonts") })
 }
 

@@ -11,7 +11,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.yulbax.erkin.ui.platform.flagFontFamily
 import java.util.Locale
 
 @Composable
@@ -22,7 +21,7 @@ fun CountryFlag(country: String, fontSize: TextUnit = 22.sp, framed: Boolean = t
             .then(if (framed) Modifier.size(width = 36.dp, height = 26.dp) else Modifier)
             .clearAndSetSemantics { contentDescription = country }
     ) {
-        Text(text = country.toFlagEmoji(), fontSize = fontSize, lineHeight = fontSize, fontFamily = flagFontFamily())
+        Text(text = country.toFlagEmoji(), fontSize = fontSize, lineHeight = fontSize)
     }
 }
 

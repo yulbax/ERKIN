@@ -51,10 +51,8 @@ import java.awt.RenderingHints
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import io.github.yulbax.erkin.ui.res.Res
-import io.github.yulbax.erkin.ui.res.noto_flags
 import io.github.yulbax.erkin.ui.res.share_copied
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.compose.resources.Font
 
 @Composable
 actual fun rememberShowMessage(): (String) -> Unit = LocalMessages.current
@@ -250,11 +248,6 @@ actual val scrollbarAlwaysVisible: Boolean = true
 actual val drawerSwipeToOpen: Boolean = false
 
 actual val supportsAppIcons: Boolean = true
-
-@Composable
-actual fun flagFontFamily(): FontFamily? = bundledFlagFontFamily ?: FontFamily(Font(Res.font.noto_flags))
-
-private val bundledFlagFontFamily: FontFamily? by lazy { BundledResources.fontFamily("noto_flags.ttf" to FontWeight.Normal) }
 
 actual val bundledTextFontFamily: FontFamily? by lazy {
     BundledResources.fontFamily(
