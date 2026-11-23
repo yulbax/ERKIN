@@ -5,7 +5,6 @@ import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
-import io.github.yulbax.erkin.data.isExecutablePath
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -23,6 +22,7 @@ class ProcessInstalledApps(
     private val ownExecutable: String?,
     private val scope: CoroutineScope,
     private val classification: ProgramClassification = ProgramClassification.forCurrentOs(),
+    private val catalog: () -> List<StartMenuProgram> = if (DesktopPaths.isWindows) StartMenuPrograms::list else ::emptyList,
     private val newAppsType: suspend () -> ConnectionType
 ) : InstalledAppsSource {
 
@@ -74,7 +74,8 @@ class ProcessInstalledApps(
             val remembered = saved
                 .filter { it.packageName !in runningIds && it.packageName !in removed && File(it.packageName).name != ownExecutable }
                 .map { InstalledApp(it.packageName, it.name, it.isSystemApp, isLaunchable = classification.isLaunchable(it.isSystemApp), path = it.path) }
-            _installedApps.value = (running + remembered).sortedBy { it.name.lowercase() }
+            _installedApps.value = (running + remembered + catalogued(catalog(), running + remembered, ownExecutable))
+                .sortedBy { it.name.lowercase() }
             _error.value = null
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -96,6 +97,13 @@ class ProcessInstalledApps(
 
         fun executableOf(command: String): File = File(command.removeSuffix(DELETED_SUFFIX))
 
+        fun catalogued(programs: List<StartMenuProgram>, listed: List<InstalledApp>, ownExecutable: String?): List<InstalledApp> {
+            val listedPaths = listed.mapNotNullTo(HashSet()) { (it.path ?: it.packageName).lowercase() }
+            return programs
+                .filter { it.executable.path.lowercase() !in listedPaths && it.executable.name != ownExecutable }
+                .map { InstalledApp(it.executable.path, it.name, isSystemApp = false, isLaunchable = true, path = it.executable.path) }
+        }
+
         fun removedApps(saved: List<App>, runningIds: Set<String>): List<String> =
             saved.filter { app ->
                 app.packageName !in runningIds && when (val path = app.path) {
@@ -116,7 +124,7 @@ class ProcessInstalledApps(
             ownExecutable: String?,
             classification: ProgramClassification
         ): List<InstalledApp> {
-            val legacyByPath = saved.filter { !isExecutablePath(it.packageName) && it.path != null }.associateBy { it.path?.lowercase() }
+            val savedByPath = saved.associateBy { (it.path ?: it.packageName).lowercase() }
             return processes
                 .filter { it.executable.name.isNotBlank() && it.executable.name != ownExecutable }
                 .groupBy { it.executable.path.lowercase() }
@@ -125,7 +133,7 @@ class ProcessInstalledApps(
                     val file = copies.first().executable
                     val isProcess = copies.all(classification::isProcess)
                     InstalledApp(
-                        packageName = legacyByPath[file.path.lowercase()]?.packageName ?: file.path,
+                        packageName = savedByPath[file.path.lowercase()]?.packageName ?: file.path,
                         name = file.nameWithoutExtension,
                         isSystemApp = isProcess,
                         isLaunchable = classification.isLaunchable(isProcess),

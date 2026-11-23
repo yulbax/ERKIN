@@ -13,6 +13,7 @@ import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,9 +64,10 @@ class AppsViewModel(
     val apps: StateFlow<List<AppInfo>> = combine(
         installedAppsRepository.installedApps,
         appDao.getAllApps(),
-        settingsRepository.settings.map { it.showSystemApps }
-    ) { installed, saved, showSystem ->
-        mergeSaved(installed.filter { showSystem || it.isRegular }.map { it.toAppInfo() }, saved)
+        settingsRepository.settings
+    ) { installed, saved, settings ->
+        val newApps = settings.newAppsConnectionType(platformNewAppsConnectionType)
+        mergeSaved(installed.filter { settings.showSystemApps || it.isRegular }.map { it.toAppInfo(newApps) }, saved)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     var query by mutableStateOf("")
@@ -163,11 +165,12 @@ class AppsViewModel(
         }
     }
 
-    private fun InstalledApp.toAppInfo() = AppInfo(
+    private fun InstalledApp.toAppInfo(connectionType: ConnectionType) = AppInfo(
         packageName = packageName,
         name = name,
         isSystemApp = isSystemApp,
         isLaunchable = isLaunchable,
+        connectionType = connectionType,
         path = path
     )
 }
