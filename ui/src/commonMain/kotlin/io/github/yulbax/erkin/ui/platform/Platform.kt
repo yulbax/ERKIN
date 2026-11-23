@@ -82,6 +82,8 @@ expect val supportsAppIcons: Boolean
 @Composable
 expect fun flagFontFamily(): FontFamily?
 
+expect val bundledTextFontFamily: FontFamily?
+
 expect val platformNewAppsConnectionType: ConnectionType
 
 expect val platformTextStyle: PlatformTextStyle?

@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.desktop
 
 import io.github.yulbax.erkin.data.AppDatabase
+import io.github.yulbax.erkin.ui.platform.BundledResources
 import java.io.File
 
 object DesktopPaths {
@@ -15,9 +16,7 @@ object DesktopPaths {
 
     val instanceSocket: File = desktopSystem.instanceSocket(dataDir)
 
-    private val binDir: File = System.getProperty("compose.application.resources.dir")?.let(::File)
-        ?: System.getenv("ERKIN_BIN_DIR")?.let(::File)
-        ?: File("binaries")
+    private val binDir: File = BundledResources.dir
 
     val serviceSocket: File = System.getenv("ERKIN_SERVICE_SOCKET")?.let(::File) ?: desktopSystem.installedServiceSocket
 

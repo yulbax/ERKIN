@@ -49,6 +49,7 @@ import androidx.compose.ui.text.PlatformParagraphStyle
 import androidx.compose.ui.text.PlatformTextStyle
 import java.awt.RenderingHints
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.noto_flags
 import io.github.yulbax.erkin.ui.res.share_copied
@@ -251,7 +252,17 @@ actual val drawerSwipeToOpen: Boolean = false
 actual val supportsAppIcons: Boolean = true
 
 @Composable
-actual fun flagFontFamily(): FontFamily? = FontFamily(Font(Res.font.noto_flags))
+actual fun flagFontFamily(): FontFamily? = bundledFlagFontFamily ?: FontFamily(Font(Res.font.noto_flags))
+
+private val bundledFlagFontFamily: FontFamily? by lazy { BundledResources.fontFamily("noto_flags.ttf" to FontWeight.Normal) }
+
+actual val bundledTextFontFamily: FontFamily? by lazy {
+    BundledResources.fontFamily(
+        "google_sans_regular.ttf" to FontWeight.Normal,
+        "google_sans_medium.ttf" to FontWeight.Medium,
+        "google_sans_bold.ttf" to FontWeight.Bold
+    )
+}
 
 @OptIn(ExperimentalTextApi::class)
 actual val platformTextStyle: PlatformTextStyle? by lazy {

@@ -225,6 +225,8 @@ actual val supportsAppIcons: Boolean = true
 @Composable
 actual fun flagFontFamily(): FontFamily? = null
 
+actual val bundledTextFontFamily: FontFamily? = null
+
 actual val platformTextStyle: PlatformTextStyle? = null
 
 @Composable

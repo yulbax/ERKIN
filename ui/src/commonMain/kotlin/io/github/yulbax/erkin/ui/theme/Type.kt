@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import io.github.yulbax.erkin.ui.platform.bundledTextFontFamily
 import io.github.yulbax.erkin.ui.platform.platformTextStyle
 import io.github.yulbax.erkin.ui.res.*
 import org.jetbrains.compose.resources.Font
@@ -13,7 +14,7 @@ private val base = Typography()
 
 @Composable
 fun erkinTypography(): Typography {
-    val googleSans = FontFamily(
+    val googleSans = bundledTextFontFamily ?: FontFamily(
         Font(Res.font.google_sans_regular, FontWeight.Normal),
         Font(Res.font.google_sans_medium, FontWeight.Medium),
         Font(Res.font.google_sans_bold, FontWeight.Bold)

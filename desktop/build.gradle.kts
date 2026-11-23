@@ -128,6 +128,14 @@ val prepareLinuxBinaries = registerBundledBinaries(
     )
 )
 
+val prepareBundledFonts = tasks.register<Sync>("prepareBundledFonts") {
+    from(project(":ui").file("src/commonMain/composeResources/font"))
+    from(project(":ui").file("src/desktopMain/composeResources/font"))
+    into(bundledResourcesDir.map { it.dir("common/fonts") })
+}
+
+tasks.matching { it.name == "prepareAppResources" }.configureEach { dependsOn(prepareBundledFonts) }
+
 compose.desktop {
     application {
         mainClass = "io.github.yulbax.erkin.desktop.MainKt"
