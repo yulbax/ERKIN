@@ -2,29 +2,53 @@ package io.github.yulbax.erkin.desktop
 
 import java.io.File
 
-data class RunningProcess(val executable: File, val startedByDesktop: Boolean, val ancestors: List<File> = emptyList())
+data class RunningProcess(
+    val executable: File,
+    val isProgram: Boolean,
+    val ancestors: List<File> = emptyList(),
+    val flatpak: String? = null
+)
 
-sealed interface ProgramClassification {
-    fun isProcess(process: RunningProcess): Boolean
+data class CatalogProgram(val name: String, val id: String, val path: String?, val icon: File? = null) {
+    companion object {
+        fun executable(name: String, executable: File, icon: File? = null) =
+            CatalogProgram(name, WindowsAppIds.stable(executable.path), executable.path, icon)
 
-    fun isLaunchable(isProcess: Boolean): Boolean = !isProcess
+        fun flatpak(name: String, app: String, icon: File? = null) = CatalogProgram(name, app, null, icon)
+    }
+}
 
-    val childrenInheritChannels: Boolean get() = false
+enum class DesktopPrograms(val childrenInheritChannels: Boolean) {
+    LINUX(childrenInheritChannels = true),
+    WINDOWS(childrenInheritChannels = false);
 
-    data class ByLocation(val systemRoots: List<String>) : ProgramClassification {
-        override fun isProcess(process: RunningProcess): Boolean =
-            systemRoots.any { process.executable.path.startsWith(it, ignoreCase = true) }
+    fun catalog(): List<CatalogProgram> = when (this) {
+        LINUX -> LinuxApplications.list()
+        WINDOWS -> WindowsStartApps.list()
     }
 
-    data object ByLauncher : ProgramClassification {
-        override fun isProcess(process: RunningProcess): Boolean = !process.startedByDesktop
-
-        override val childrenInheritChannels: Boolean get() = true
+    fun running(): List<RunningProcess> {
+        val windowed = if (this == WINDOWS) WindowsWindows.withWindows() else emptySet()
+        val systemRoot = System.getenv("SystemRoot")
+        return ProcessHandle.allProcesses().toList().mapNotNull { process ->
+            process.info().command().orElse(null)?.let { command ->
+                val executable = ProcessInstalledApps.executableOf(command)
+                val flatpak = if (this == LINUX) FlatpakApps.of(process.pid()) else null
+                RunningProcess(
+                    executable = executable,
+                    isProgram = when (this) {
+                        LINUX -> flatpak != null || DesktopLaunchers.startedByDesktop(process)
+                        WINDOWS -> process.pid() in windowed && systemRoot?.let { executable.path.startsWith(it, ignoreCase = true) } != true
+                    },
+                    ancestors = if (childrenInheritChannels && flatpak == null) DesktopLaunchers.ancestorsOf(process) else emptyList(),
+                    flatpak = flatpak
+                )
+            }
+        }
     }
 
     companion object {
-        fun forCurrentOs(): ProgramClassification =
-            if (DesktopPaths.isWindows) ByLocation(listOfNotNull(System.getenv("SystemRoot"))) else ByLauncher
+        val current: DesktopPrograms get() = if (DesktopPaths.isWindows) WINDOWS else LINUX
     }
 }
 

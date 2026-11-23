@@ -3,18 +3,16 @@ package io.github.yulbax.erkin.desktop
 import io.github.yulbax.erkin.data.App
 import java.io.File
 import java.nio.file.Files
+import io.github.yulbax.erkin.data.ConnectionType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ProcessInstalledAppsTest {
 
     private fun discover(vararg paths: String, saved: List<App> = emptyList()) =
-        ProcessInstalledApps.discover(
-            paths.map { RunningProcess(File(it), startedByDesktop = false) },
-            saved,
-            ownExecutable = "ERKIN",
-            classification = ProgramClassification.ByLocation(listOf("/usr/"))
-        )
+        ProcessInstalledApps.discover(paths.map { RunningProcess(File(it), isProgram = !it.startsWith("/usr/")) }, saved, ownExecutable = "ERKIN")
 
     @Test
     fun aProgramIsKeyedByItsPath() {
@@ -69,8 +67,7 @@ class ProcessInstalledAppsTest {
         val apps = ProcessInstalledApps.discover(
             listOf("/usr/bin/Hyprland (deleted)", "/usr/bin/Hyprland").map { RunningProcess(ProcessInstalledApps.executableOf(it), false) },
             saved = emptyList(),
-            ownExecutable = "ERKIN",
-            classification = ProgramClassification.ByLauncher
+            ownExecutable = "ERKIN"
         )
         assertEquals(listOf("/usr/bin/Hyprland"), apps.map { it.packageName })
     }
@@ -79,14 +76,13 @@ class ProcessInstalledAppsTest {
     fun onLinuxOnlyWhatTheDesktopStartedIsAProgram() {
         val apps = ProcessInstalledApps.discover(
             listOf(
-                RunningProcess(File("/usr/bin/ghostty"), startedByDesktop = true),
-                RunningProcess(File("/usr/bin/fish"), startedByDesktop = false),
-                RunningProcess(File("/opt/Discord/Discord"), startedByDesktop = true),
-                RunningProcess(File("/opt/Discord/Discord"), startedByDesktop = false)
+                RunningProcess(File("/usr/bin/ghostty"), isProgram = true),
+                RunningProcess(File("/usr/bin/fish"), isProgram = false),
+                RunningProcess(File("/opt/Discord/Discord"), isProgram = true),
+                RunningProcess(File("/opt/Discord/Discord"), isProgram = false)
             ),
             saved = emptyList(),
-            ownExecutable = "ERKIN",
-            classification = ProgramClassification.ByLauncher
+            ownExecutable = "ERKIN"
         )
         assertEquals(listOf(false, true, false), apps.map { it.isSystemApp })
         assertEquals(listOf(true, false, true), apps.map { it.isLaunchable })
@@ -99,5 +95,52 @@ class ProcessInstalledAppsTest {
         assertEquals(false, DesktopLaunchers.startedByDesktop("systemd", "pipewire.service"))
         assertEquals(false, DesktopLaunchers.startedByDesktop("ghostty", "app-ghostty-surface-transient-42.scope"))
         assertEquals(false, DesktopLaunchers.startedByDesktop(null, null))
+    }
+
+    @Test
+    fun theListShowsProgramsInstalledAppsAndAnythingWithItsOwnChannel() {
+        fun installed(path: String, isProcess: Boolean) = io.github.yulbax.erkin.data.InstalledApp(path, File(path).name, isProcess, !isProcess, path)
+        val running = listOf(installed("/usr/bin/ghostty", false), installed("/usr/bin/fish", true), installed("/usr/bin/curl", true))
+        val saved = listOf(
+            App("/usr/bin/curl", "curl", isSystemApp = true, connectionType = ConnectionType.BYEDPI, path = "/usr/bin/curl"),
+            App("/usr/lib/firefox/firefox", "firefox", isSystemApp = true, connectionType = ConnectionType.VPN, path = "/usr/lib/firefox/firefox"),
+            App("/home/u/tool", "tool", isSystemApp = false, connectionType = ConnectionType.VPN, path = "/home/u/tool")
+        )
+        val catalog = listOf(
+            CatalogProgram.executable("Firefox", File("/usr/lib/firefox/firefox")),
+            CatalogProgram.executable("Ghostty", File("/usr/bin/ghostty")),
+            CatalogProgram.executable("GIMP", File("/usr/bin/gimp")),
+            CatalogProgram.executable("Foot Server", File("/usr/bin/foot")),
+            CatalogProgram.executable("Foot", File("/usr/bin/foot"))
+        )
+        val apps = ProcessInstalledApps.listed(running, saved, catalog, ConnectionType.VPN, ownExecutable = "ERKIN")
+
+        assertEquals(listOf("Firefox", "Foot", "GIMP", "Ghostty", "curl"), apps.map { it.name }.sorted())
+        assertTrue(apps.all { it.isRegular })
+    }
+
+    @Test
+    fun aFlatpakAppIsOneEntryUnderItsIdWhetherOrNotItRuns() {
+        val running = ProcessInstalledApps.discover(
+            listOf(
+                RunningProcess(File("/usr/bin/bwrap"), isProgram = true, flatpak = "org.telegram.desktop"),
+                RunningProcess(File("/app/bin/Telegram"), isProgram = true, flatpak = "org.telegram.desktop"),
+                RunningProcess(File("/usr/bin/xdg-dbus-proxy"), isProgram = true, flatpak = "org.telegram.desktop")
+            ),
+            saved = emptyList(),
+            ownExecutable = "ERKIN"
+        )
+        assertEquals(listOf("org.telegram.desktop"), running.map { it.packageName })
+        assertNull(running.single().path)
+
+        val catalog = listOf(
+            CatalogProgram.flatpak("Telegram", "org.telegram.desktop"),
+            CatalogProgram.flatpak("Discord", "com.discordapp.Discord")
+        )
+        val apps = ProcessInstalledApps.listed(running, emptyList(), catalog, ConnectionType.VPN, ownExecutable = "ERKIN")
+        assertEquals(
+            listOf("Discord" to "com.discordapp.Discord", "Telegram" to "org.telegram.desktop"),
+            apps.map { it.name to it.packageName }.sortedBy { it.first }
+        )
     }
 }

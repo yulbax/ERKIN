@@ -5,33 +5,20 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.Charset
 
-data class StartMenuProgram(val name: String, val executable: File)
-
 object StartMenuPrograms {
     private const val SHORTCUT_EXTENSION = "lnk"
-    private const val PROGRAM_EXTENSION = ".exe"
     private const val START_MENU = "Microsoft/Windows/Start Menu/Programs"
-    private val UNINSTALLER = Regex("(?i)uninstall|^unins\\d*$")
 
-    fun list(): List<StartMenuProgram> {
+    fun shortcutTargets(): Map<String, String> {
         val roots = listOfNotNull(System.getenv("ProgramData"), System.getenv("APPDATA")).map { File(it, START_MENU) }
-        val systemRoot = System.getenv("SystemRoot")
-        return programs(
+        return targets(
             shortcuts = roots.flatMap { root -> root.walkTopDown().filter { it.isFile && it.extension.equals(SHORTCUT_EXTENSION, ignoreCase = true) } },
-            target = { file -> runCatching { ShellLink.target(file.readBytes(), System::getenv) }.getOrNull() },
-            excludedRoots = listOfNotNull(systemRoot)
+            target = { file -> runCatching { ShellLink.target(file.readBytes(), System::getenv) }.getOrNull() }
         )
     }
 
-    fun programs(shortcuts: List<File>, target: (File) -> String?, excludedRoots: List<String>): List<StartMenuProgram> =
-        shortcuts
-            .mapNotNull { shortcut -> target(shortcut)?.let { StartMenuProgram(shortcut.nameWithoutExtension, File(it)) } }
-            .filter { it.executable.name.endsWith(PROGRAM_EXTENSION, ignoreCase = true) && it.executable.isFile }
-            .filterNot { program -> excludedRoots.any { program.executable.path.startsWith(it, ignoreCase = true) } }
-            .filterNot { UNINSTALLER.containsMatchIn(it.name) || UNINSTALLER.containsMatchIn(it.executable.nameWithoutExtension) }
-            .groupBy { it.executable.path.lowercase() }
-            .values
-            .map { same -> same.minBy { it.name.length } }
+    fun targets(shortcuts: List<File>, target: (File) -> String?): Map<String, String> =
+        shortcuts.mapNotNull { shortcut -> target(shortcut)?.let { shortcut.nameWithoutExtension.lowercase() to it } }.toMap()
 }
 
 object ShellLink {

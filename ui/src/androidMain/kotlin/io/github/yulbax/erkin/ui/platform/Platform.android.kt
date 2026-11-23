@@ -208,7 +208,7 @@ actual object AppLocale {
 
 actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.VPN
 
-actual val hiddenApps: HiddenApps = HiddenApps.SYSTEM_APPS
+actual val supportsSystemAppsFilter: Boolean = true
 
 actual val appsCanBypass: Boolean = true
 

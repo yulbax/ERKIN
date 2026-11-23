@@ -157,6 +157,17 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun aStoreAppIsMatchedAcrossItsVersions() {
+        val store = "C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_*_8wekyb3d8bbwe\\Notepad\\Notepad.exe"
+        val engine = engine(listOf(vless), "p1", emptyList(), listOf(store))
+        val rules = Json.parseToJsonElement(
+            MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Desktop(DesktopOs.WINDOWS, emptyList()))
+        ).jsonObject.rules()
+
+        assertEquals("PROCESS-PATH-WILDCARD,$store,p1", rules[1])
+    }
+
+    @Test
     fun unlistedTrafficFollowsTheChannelForNewApps() {
         fun lastRule(newApps: ConnectionType, platform: MihomoPlatform, active: String = "p1") =
             Json.parseToJsonElement(

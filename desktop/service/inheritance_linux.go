@@ -39,6 +39,7 @@ var (
 type processNode struct {
 	pid int
 	exe string
+	app string
 }
 
 func init() {
@@ -80,16 +81,24 @@ func inheritedOwner(chain []processNode, ruled map[string]struct{}) (string, boo
 		if index > 0 && isSessionRoot(node) {
 			return "", false
 		}
-		if node.exe == "" {
-			continue
-		}
-		for _, id := range []string{node.exe, filepath.Base(node.exe)} {
+		for _, id := range node.ids() {
 			if _, ok := ruled[id]; ok {
 				return id, true
 			}
 		}
 	}
 	return "", false
+}
+
+func (node processNode) ids() []string {
+	var ids []string
+	if node.app != "" {
+		ids = append(ids, node.app)
+	}
+	if node.exe != "" {
+		ids = append(ids, node.exe, filepath.Base(node.exe))
+	}
+	return ids
 }
 
 func isSessionRoot(node processNode) bool {
@@ -104,7 +113,7 @@ func ancestry(pid int) []processNode {
 	var chain []processNode
 	for pid > 0 && len(chain) < maxAncestry {
 		exe, _ := os.Readlink("/proc/" + strconv.Itoa(pid) + "/exe")
-		chain = append(chain, processNode{pid: pid, exe: exe})
+		chain = append(chain, processNode{pid: pid, exe: exe, app: flatpakApp(pid)})
 		stat, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/stat")
 		if err != nil {
 			break

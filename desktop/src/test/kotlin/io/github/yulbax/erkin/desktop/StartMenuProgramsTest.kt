@@ -34,42 +34,76 @@ class StartMenuProgramsTest {
     }
 
     @Test
-    fun theCatalogKeepsInstalledProgramsAndDropsToolsUninstallersAndDuplicates() {
-        val root = Files.createTempDirectory("erkin-start").toFile()
-        try {
-            fun program(path: String) = File(root, path).apply { parentFile.mkdirs(); writeText("") }
-            val telegram = program("Programs/Telegram/Telegram.exe")
-            val uninstaller = program("Programs/Telegram/unins000.exe")
-            val tool = program("Windows/System32/mstsc.exe")
-            val readme = program("Programs/Telegram/readme.txt")
-            val targets = mapOf(
-                "Telegram" to telegram,
-                "Telegram Desktop" to telegram,
-                "Uninstall Telegram" to uninstaller,
-                "Remote Desktop Connection" to tool,
-                "Readme" to readme,
-                "Gone" to File(root, "Programs/Gone/gone.exe")
-            )
-            val programs = StartMenuPrograms.programs(
-                shortcuts = targets.keys.map { File("$it.lnk") },
-                target = { targets[it.nameWithoutExtension]?.path },
-                excludedRoots = listOf(File(root, "Windows").path)
-            )
-            assertEquals(listOf(StartMenuProgram("Telegram", telegram)), programs)
-        } finally {
-            root.deleteRecursively()
+    fun theStartMenuShortcutsAreFoundByTheirNames() {
+        val targets = StartMenuPrograms.targets(listOf(File("Remote Desktop Connection.lnk"), File("Broken.lnk"))) {
+            if (it.name.startsWith("Remote")) "C:\\Windows\\system32\\mstsc.exe" else null
         }
+        assertEquals(mapOf("remote desktop connection" to "C:\\Windows\\system32\\mstsc.exe"), targets)
     }
 
     @Test
-    fun aCataloguedProgramAlreadyListedIsNotRepeated() {
-        val listed = listOf(io.github.yulbax.erkin.data.InstalledApp("C:\\Apps\\Zoom\\Zoom.exe", "Zoom", false, true, "C:\\Apps\\Zoom\\Zoom.exe"))
-        val programs = listOf(
-            StartMenuProgram("Zoom Workplace", File("C:\\apps\\zoom\\Zoom.exe")),
-            StartMenuProgram("Telegram", File("C:\\Apps\\Telegram\\Telegram.exe"))
+    fun windowsListsWhatItsStartMenuShowsAndResolvesEachKind() {
+        val env = mapOf("SystemRoot" to "C:\\Windows", "ProgramFiles(x86)" to "C:\\Program Files (x86)")
+        val apps = listOf(
+            StartApp("Calculator", "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App",
+                path = "C:\\Program Files\\WindowsApps\\Microsoft.WindowsCalculator_11.2607.0.0_x64__8wekyb3d8bbwe\\CalculatorApp.exe"),
+            StartApp("Command Prompt", "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\cmd.exe"),
+            StartApp("Documentation", "{7C5A40EF-A0FB-4BFC-874A-C0F2E0B9FA8E}\\Kits\\Docs.url"),
+            StartApp("Microsoft Edge", "MSEdge"),
+            StartApp("File Explorer", "Microsoft.Windows.Explorer"),
+            StartApp("Control Panel", "Microsoft.Windows.ControlPanel"),
+            StartApp("Uninstall Tool", "{7C5A40EF-A0FB-4BFC-874A-C0F2E0B9FA8E}\\Tool\\unins000.exe")
         )
-        val added = ProcessInstalledApps.catalogued(programs, listed, ownExecutable = "ERKIN.exe")
+        val shortcuts = mapOf("microsoft edge" to "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe")
+        val catalog = WindowsStartApps.catalog(apps, shortcuts, env::get) { true }
 
-        assertEquals(listOf("Telegram"), added.map { it.name })
+        assertEquals(
+            listOf(
+                "Calculator" to "C:\\Program Files\\WindowsApps\\Microsoft.WindowsCalculator_11.2607.0.0_x64__8wekyb3d8bbwe\\CalculatorApp.exe",
+                "Command Prompt" to "C:\\Windows\\System32\\cmd.exe",
+                "Microsoft Edge" to "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+                "File Explorer" to "C:\\Windows\\explorer.exe"
+            ),
+            catalog.map { it.name to it.path }
+        )
+    }
+
+    @Test
+    fun theStartAppsAnswerIsRead() {
+        val output = "\uFEFF[{\"name\":\"Calculator\",\"id\":\"Microsoft.WindowsCalculator_8wekyb3d8bbwe!App\",\"path\":\"C:\\\\Calc.exe\",\"logo\":\"\"}," +
+            "{\"name\":\"Edge\",\"id\":\"MSEdge\",\"path\":null},{\"name\":\"\",\"id\":\"x\"}]"
+        assertEquals(
+            listOf(
+                StartApp("Calculator", "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App", "C:\\Calc.exe"),
+                StartApp("Edge", "MSEdge")
+            ),
+            WindowsStartApps.parse(output)
+        )
+    }
+
+    @Test
+    fun aStoreAppKeepsOneIdAcrossItsUpdates() {
+        assertEquals(
+            "C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_*_8wekyb3d8bbwe\\Notepad\\Notepad.exe",
+            WindowsAppIds.stable("C:\\Program Files\\WindowsApps\\Microsoft.WindowsNotepad_11.2609.11.0_x64__8wekyb3d8bbwe\\Notepad\\Notepad.exe")
+        )
+        assertEquals("C:\\Apps\\Zoom.exe", WindowsAppIds.stable("C:\\Apps\\Zoom.exe"))
+    }
+
+    @Test
+    fun theLargestIconWithoutABackplateIsChosen() {
+        val dir = Files.createTempDirectory("erkin-logo").toFile()
+        try {
+            listOf(
+                "AppList.scale-200.png", "AppList.targetsize-48.png", "AppList.targetsize-256.png",
+                "AppList.targetsize-48_altform-unplated.png", "AppList.targetsize-256_altform-lightunplated.png",
+                "AppList.targetsize-256_contrast-black.png", "Other.png"
+            ).forEach { File(dir, it).writeText("") }
+            assertEquals("AppList.targetsize-48_altform-unplated.png", WindowsStartApps.logoFile(File(dir, "AppList.png").path)?.name)
+            File(dir, "AppList.targetsize-48_altform-unplated.png").delete()
+            assertEquals("AppList.targetsize-256.png", WindowsStartApps.logoFile(File(dir, "AppList.png").path)?.name)
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 }

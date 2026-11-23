@@ -28,6 +28,14 @@ import java.awt.Frame
 import java.awt.Toolkit
 import java.awt.image.BufferedImage
 import java.util.concurrent.ConcurrentHashMap
+import org.jetbrains.skia.Rect
+import org.jetbrains.skia.svg.SVGDOM
+import org.jetbrains.skia.svg.SVGLength
+import org.jetbrains.skia.svg.SVGLengthContext
+import org.jetbrains.skia.svg.SVGLengthUnit
+import org.jetbrains.skia.Surface
+import org.jetbrains.skia.Image
+import org.jetbrains.skia.Data
 import javax.swing.ImageIcon
 import javax.swing.filechooser.FileSystemView
 import java.awt.datatransfer.StringSelection
@@ -102,10 +110,12 @@ actual fun rememberFilePicker(mimeTypes: List<String>, onPicked: (PickedFile) ->
 actual fun rememberSystemVpnSettings(): (() -> Unit)? = null
 
 @Composable
-actual fun rememberAppIcon(appId: String, path: String?): ImageBitmap? =
-    produceState(initialValue = path?.let(ExecutableIcons::cached), key1 = path) {
-        if (value == null && path != null) value = withContext(Dispatchers.IO) { ExecutableIcons.load(path) }
+actual fun rememberAppIcon(appId: String, path: String?): ImageBitmap? {
+    val key = path ?: appId
+    return produceState(initialValue = ExecutableIcons.cached(key), key1 = key) {
+        if (value == null) value = withContext(Dispatchers.IO) { ExecutableIcons.load(key) }
     }.value
+}
 
 private object ExecutableIcons {
     private const val SIZE = 64
@@ -114,8 +124,9 @@ private object ExecutableIcons {
     fun cached(path: String): ImageBitmap? = icons[path]
 
     fun load(path: String): ImageBitmap? {
-        if (!supportsAppIcons) return null
         icons[path]?.let { return it }
+        DesktopAppIcons.fileFor(path)?.let { icon -> decode(icon)?.let { return it.also { bitmap -> icons[path] = bitmap } } }
+        if (!WindowsShell.isWindows) return null
         val file = File(path).takeIf { it.isFile } ?: return null
         val icon = runCatching { FileSystemView.getFileSystemView().getSystemIcon(file, SIZE, SIZE) }.getOrNull()
             ?: return null
@@ -133,6 +144,41 @@ private object ExecutableIcons {
         }
         return image.toComposeImageBitmap().also { icons[path] = it }
     }
+
+    private fun decode(icon: File): ImageBitmap? = runCatching {
+        val bytes = icon.readBytes()
+        if (icon.extension.equals("svg", ignoreCase = true)) {
+            renderSvg(bytes, SIZE)
+        } else {
+            Image.makeFromEncoded(bytes).toComposeImageBitmap()
+        }
+    }.getOrNull()
+}
+
+internal fun renderSvg(bytes: ByteArray, size: Int): ImageBitmap {
+    val svg = SVGDOM(Data.makeFromBytes(bytes))
+    svg.root?.let { root ->
+        if (root.viewBox == null) {
+            val intrinsic = root.getIntrinsicSize(SVGLengthContext(size.toFloat(), size.toFloat()))
+            if (intrinsic.x > 0f && intrinsic.y > 0f) root.viewBox = Rect.makeWH(intrinsic.x, intrinsic.y)
+        }
+        root.width = SVGLength(100f, SVGLengthUnit.PERCENTAGE)
+        root.height = SVGLength(100f, SVGLengthUnit.PERCENTAGE)
+    }
+    svg.setContainerSize(size.toFloat(), size.toFloat())
+    val surface = Surface.makeRasterN32Premul(size, size)
+    svg.render(surface.canvas)
+    return surface.makeImageSnapshot().toComposeImageBitmap()
+}
+
+object DesktopAppIcons {
+    private val files = ConcurrentHashMap<String, File>()
+
+    fun remember(app: String, icon: File) {
+        files[app] = icon
+    }
+
+    fun fileFor(app: String): File? = files[app]
 }
 
 @Composable
@@ -190,7 +236,7 @@ private val isLinux: Boolean = System.getProperty("os.name").startsWith("Linux")
 
 actual val platformNewAppsConnectionType: ConnectionType = if (isLinux) ConnectionType.VPN else ConnectionType.DIRECT
 
-actual val hiddenApps: HiddenApps = HiddenApps.PROCESSES
+actual val supportsSystemAppsFilter: Boolean = false
 
 actual val appsCanBypass: Boolean = false
 
@@ -203,7 +249,7 @@ actual val scrollbarAlwaysVisible: Boolean = true
 
 actual val drawerSwipeToOpen: Boolean = false
 
-actual val supportsAppIcons: Boolean = System.getProperty("os.name").startsWith("Windows")
+actual val supportsAppIcons: Boolean = true
 
 @Composable
 actual fun flagFontFamily(): FontFamily? = FontFamily(Font(Res.font.noto_flags))

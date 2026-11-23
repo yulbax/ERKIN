@@ -50,7 +50,6 @@
     <string name="local_network_server">服务器 %1$s 位于本地网络中。点按以允许 ERKIN 访问</string>
     <string name="local_network_server_denied">请在系统设置中允许访问本地网络</string>
     <string name="show_system_apps">显示系统应用</string>
-    <string name="apps_processes">进程</string>
     <string name="apps_inherited_from">经由 %1$s</string>
     <string name="autostart_title">自动连接</string>
     <string name="auto_connect">开机时连接</string>

@@ -17,12 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.SettingsApplications
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,12 +42,10 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.ui.components.AppIcon
 import io.github.yulbax.erkin.ui.components.VerticalScrollbar
 import io.github.yulbax.erkin.ui.platform.HoverHint
-import io.github.yulbax.erkin.ui.platform.hiddenApps
 import io.github.yulbax.erkin.ui.platform.revealInFolder
 import io.github.yulbax.erkin.ui.platform.scrollbarAlwaysVisible
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.apps_inherited_from
-import io.github.yulbax.erkin.ui.screens.erkin.CollapsibleHeader
 import io.github.yulbax.erkin.ui.viewmodel.AppInfo
 import io.github.yulbax.erkin.ui.viewmodel.AppRowMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsMode
@@ -65,42 +60,36 @@ internal fun AppsList(
     onConnectionTypeChange: (AppInfo, ConnectionType) -> Unit,
     onChooseServer: (AppInfo) -> Unit,
     onToggle: (String) -> Unit,
-    onStartSelecting: (String) -> Unit,
-    searching: Boolean = false
+    onStartSelecting: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
-    var processesOpened by rememberSaveable { mutableStateOf(false) }
-    val (programs, processes) = remember(apps) {
-        if (hiddenApps.foldedInAppsList) apps.partition { it.isRegular || it.ownChannel } else apps to emptyList()
-    }
-    val processesShown = processesOpened || searching
-    val row: @Composable (AppInfo) -> Unit = { app ->
-        AppRow(
-            app = app,
-            mode = mode.rowMode(app.packageName),
-            choices = choices,
-            onConnectionTypeChange = { type -> onConnectionTypeChange(app, type) },
-            onChooseServer = { onChooseServer(app) },
-            onToggle = { onToggle(app.packageName) },
-            onStartSelecting = { onStartSelecting(app.packageName) }
-        )
-    }
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             contentPadding = PaddingValues(end = if (scrollbarAlwaysVisible) 8.dp else 0.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            appRows(programs, row)
-            if (processes.isNotEmpty()) {
-                item(key = PROCESSES_HEADER_KEY) {
-                    CollapsibleHeader(
-                        text = "${stringResource(hiddenApps.sectionTitle)} · ${processes.size}",
-                        icon = Icons.Default.SettingsApplications,
-                        expanded = processesShown
-                    ) { processesOpened = !processesShown }
+            items(
+                count = apps.size,
+                key = { apps[it].packageName },
+                contentType = { "app_row" }
+            ) { index ->
+                val app = apps[index]
+                AppRow(
+                    app = app,
+                    mode = mode.rowMode(app.packageName),
+                    choices = choices,
+                    onConnectionTypeChange = { type -> onConnectionTypeChange(app, type) },
+                    onChooseServer = { onChooseServer(app) },
+                    onToggle = { onToggle(app.packageName) },
+                    onStartSelecting = { onStartSelecting(app.packageName) }
+                )
+                if (index < apps.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
                 }
-                if (processesShown) appRows(processes, row)
             }
         }
         VerticalScrollbar(
@@ -108,34 +97,10 @@ internal fun AppsList(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(vertical = 8.dp),
-            sections = remember(programs, processes, processesShown) {
-                appSections(programs) + if (processesShown) {
-                    appSections(processes).map { it.copy(firstIndex = it.firstIndex + programs.size + 1) }
-                } else {
-                    emptyList()
-                }
-            }
+            sections = remember(apps) { appSections(apps) }
         )
     }
 }
-
-private fun LazyListScope.appRows(apps: List<AppInfo>, row: @Composable (AppInfo) -> Unit) {
-    items(
-        count = apps.size,
-        key = { apps[it].packageName },
-        contentType = { "app_row" }
-    ) { index ->
-        row(apps[index])
-        if (index < apps.lastIndex) {
-            HorizontalDivider(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
-        }
-    }
-}
-
-private const val PROCESSES_HEADER_KEY = "processes"
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

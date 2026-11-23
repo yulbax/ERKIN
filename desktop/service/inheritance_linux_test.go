@@ -17,7 +17,7 @@ func ruled(ids ...string) map[string]struct{} {
 }
 
 func TestAChildTakesTheChannelOfItsNearestRuledAncestor(t *testing.T) {
-	chain := []processNode{{40, "/usr/bin/curl"}, {30, "/usr/bin/fish"}, {20, "/usr/bin/ghostty"}, {10, "/usr/bin/Hyprland"}, {1, "/usr/lib/systemd/systemd"}}
+	chain := []processNode{{40, "/usr/bin/curl", ""}, {30, "/usr/bin/fish", ""}, {20, "/usr/bin/ghostty", ""}, {10, "/usr/bin/Hyprland", ""}, {1, "/usr/lib/systemd/systemd", ""}}
 	owner, ok := inheritedOwner(chain, ruled("/usr/bin/ghostty"))
 	if !ok || owner != "/usr/bin/ghostty" {
 		t.Fatalf("got %q %v", owner, ok)
@@ -25,7 +25,7 @@ func TestAChildTakesTheChannelOfItsNearestRuledAncestor(t *testing.T) {
 }
 
 func TestAProcessWithItsOwnRuleKeepsIt(t *testing.T) {
-	chain := []processNode{{40, "/usr/bin/curl"}, {20, "/usr/bin/ghostty"}}
+	chain := []processNode{{40, "/usr/bin/curl", ""}, {20, "/usr/bin/ghostty", ""}}
 	owner, ok := inheritedOwner(chain, ruled("/usr/bin/ghostty", "/usr/bin/curl"))
 	if !ok || owner != "/usr/bin/curl" {
 		t.Fatalf("got %q %v", owner, ok)
@@ -33,7 +33,7 @@ func TestAProcessWithItsOwnRuleKeepsIt(t *testing.T) {
 }
 
 func TestTheDesktopSessionPassesNothingDown(t *testing.T) {
-	chain := []processNode{{40, "/usr/bin/zen-bin"}, {10, "/usr/bin/Hyprland"}, {1, "/usr/lib/systemd/systemd"}}
+	chain := []processNode{{40, "/usr/bin/zen-bin", ""}, {10, "/usr/bin/Hyprland", ""}, {1, "/usr/lib/systemd/systemd", ""}}
 	if owner, ok := inheritedOwner(chain, ruled("/usr/bin/Hyprland", "/usr/lib/systemd/systemd")); ok {
 		t.Fatalf("inherited %q from the session", owner)
 	}
@@ -43,14 +43,14 @@ func TestTheDesktopSessionPassesNothingDown(t *testing.T) {
 }
 
 func TestAnOrphanFallsBackToTheDefault(t *testing.T) {
-	chain := []processNode{{40, "/usr/bin/bash"}, {1, "/usr/lib/systemd/systemd"}}
+	chain := []processNode{{40, "/usr/bin/bash", ""}, {1, "/usr/lib/systemd/systemd", ""}}
 	if owner, ok := inheritedOwner(chain, ruled("/usr/bin/ghostty")); ok {
 		t.Fatalf("an orphan inherited %q", owner)
 	}
 }
 
 func TestNameRulesAndReplacedBinariesMatch(t *testing.T) {
-	chain := []processNode{{40, "/usr/bin/curl"}, {20, "/opt/zen/zen-bin (deleted)"}}
+	chain := []processNode{{40, "/usr/bin/curl", ""}, {20, "/opt/zen/zen-bin (deleted)", ""}}
 	if owner, ok := inheritedOwner(chain, ruled("/opt/zen/zen-bin (deleted)")); !ok || owner != "/opt/zen/zen-bin (deleted)" {
 		t.Fatalf("got %q %v", owner, ok)
 	}
@@ -103,5 +103,24 @@ func TestTheOwnerOfALiveSocketIsFound(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("this test process was not among the running copies of its executable")
+	}
+}
+
+func TestAFlatpakAppIsKnownByItsIdInsideAndAroundItsSandbox(t *testing.T) {
+	scope := "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-org.telegram.desktop-1443230209.scope\n"
+	info := "[Application]\nname=org.telegram.desktop\nruntime=runtime/org.kde.Platform/x86_64/6.9\n\n[Instance]\nname=other\n"
+	if got := flatpakAppOf(info, ""); got != "org.telegram.desktop" {
+		t.Fatalf("info: %q", got)
+	}
+	if got := flatpakAppOf("", scope); got != "org.telegram.desktop" {
+		t.Fatalf("scope: %q", got)
+	}
+	if got := flatpakAppOf("", "0::/user.slice/user-1000.slice/session-3.scope\n"); got != "" {
+		t.Fatalf("host: %q", got)
+	}
+	chain := []processNode{{40, "/app/bin/Telegram", "org.telegram.desktop"}, {30, "/usr/bin/bwrap", ""}, {10, "/usr/bin/Hyprland", ""}}
+	owner, ok := inheritedOwner(chain, map[string]struct{}{"org.telegram.desktop": {}})
+	if !ok || owner != "org.telegram.desktop" {
+		t.Fatalf("owner %q %v", owner, ok)
 	}
 }

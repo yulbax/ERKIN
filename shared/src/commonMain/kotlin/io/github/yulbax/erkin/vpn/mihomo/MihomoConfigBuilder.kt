@@ -78,6 +78,8 @@ object MihomoConfigBuilder {
     const val BYEDPI_PROBE_LISTENER = "byedpi-probe-in"
     private const val PROCESS_NAME = "PROCESS-NAME"
     private const val PROCESS_PATH = "PROCESS-PATH"
+    private const val PROCESS_PATH_WILDCARD = "PROCESS-PATH-WILDCARD"
+    private const val WILDCARD = '*'
     private const val FAKE_IP_RANGE = "198.18.0.1/16"
     private const val DESKTOP_TUN_INET4 = "172.19.0.1/30"
     private const val DESKTOP_TUN_INET6 = "fdfe:dcba:9876::1/126"
@@ -335,6 +337,7 @@ object MihomoConfigBuilder {
 
     private fun appMatches(app: String, platform: MihomoPlatform): List<String> {
         val types = when {
+            WILDCARD in app -> listOf(PROCESS_PATH_WILDCARD)
             !isExecutablePath(app) -> listOf(PROCESS_NAME)
             platform.childrenInheritChannels -> listOf(PROCESS_PATH, PROCESS_NAME)
             else -> listOf(PROCESS_PATH)
@@ -353,6 +356,9 @@ object MihomoConfigBuilder {
         platform: MihomoPlatform,
         target: (String) -> String
     ) {
-        apps.forEach { app -> platform.processIds(app).forEach { add("$type,$it,${target(app)}") } }
+        apps.forEach { app ->
+            val kind = if (WILDCARD in app && type == PROCESS_PATH) PROCESS_PATH_WILDCARD else type
+            platform.processIds(app).forEach { add("$kind,$it,${target(app)}") }
+        }
     }
 }

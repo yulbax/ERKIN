@@ -4,9 +4,7 @@ import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppChannelsTest {
@@ -21,7 +19,6 @@ class AppChannelsTest {
 
         assertEquals(ConnectionType.DIRECT, curl.connectionType)
         assertEquals("ghostty", curl.inheritedFrom)
-        assertFalse(curl.ownChannel)
     }
 
     @Test
@@ -31,7 +28,6 @@ class AppChannelsTest {
 
         assertEquals(ConnectionType.BYEDPI, curl.connectionType)
         assertNull(curl.inheritedFrom)
-        assertTrue(curl.ownChannel)
     }
 
     @Test
@@ -41,7 +37,6 @@ class AppChannelsTest {
 
         assertEquals(ConnectionType.VPN, curl.connectionType)
         assertNull(curl.inheritedFrom)
-        assertFalse(curl.ownChannel)
     }
 
     @Test

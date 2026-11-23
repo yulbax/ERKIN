@@ -14,7 +14,7 @@ import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.hasOwnChannel
 import io.github.yulbax.erkin.data.profile.ProfileRepository
-import io.github.yulbax.erkin.ui.platform.hiddenApps
+import io.github.yulbax.erkin.ui.platform.supportsSystemAppsFilter
 import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -37,11 +37,8 @@ data class AppInfo(
     val connectionType: ConnectionType = ConnectionType.VPN,
     val path: String? = null,
     val serverId: Long? = null,
-    val ownChannel: Boolean = true,
     val inheritedFrom: String? = null
-) {
-    val isRegular: Boolean get() = !isSystemApp || isLaunchable
-}
+)
 
 class AppsViewModel(
     private val appDao: AppDao,
@@ -72,7 +69,7 @@ class AppsViewModel(
         appDao.getAllApps(),
         settingsRepository.settings
     ) { installed, saved, settings ->
-        val hidden = !hiddenApps.foldedInAppsList && !settings.showSystemApps
+        val hidden = supportsSystemAppsFilter && !settings.showSystemApps
         appInfos(installed.filter { !hidden || it.isRegular }, saved, settings.newAppsConnectionType(platformNewAppsConnectionType))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
@@ -173,8 +170,8 @@ internal fun appInfos(installed: List<InstalledApp>, saved: List<App>, newApps: 
         val parent = app.ancestors.firstNotNullOfOrNull { path -> byPath[path.lowercase()]?.takeIf { it.hasOwnChannel(newApps) } }
         when {
             own != null -> app.toAppInfo(own.connectionType, own.serverId)
-            parent != null -> app.toAppInfo(parent.connectionType, parent.serverId, ownChannel = false, inheritedFrom = parent.name)
-            else -> app.toAppInfo(newApps, serverId = null, ownChannel = false)
+            parent != null -> app.toAppInfo(parent.connectionType, parent.serverId, inheritedFrom = parent.name)
+            else -> app.toAppInfo(newApps, serverId = null)
         }
     }
 }
@@ -182,7 +179,6 @@ internal fun appInfos(installed: List<InstalledApp>, saved: List<App>, newApps: 
 private fun InstalledApp.toAppInfo(
     connectionType: ConnectionType,
     serverId: Long?,
-    ownChannel: Boolean = true,
     inheritedFrom: String? = null
 ) = AppInfo(
     packageName = packageName,
@@ -192,6 +188,5 @@ private fun InstalledApp.toAppInfo(
     connectionType = connectionType,
     path = path,
     serverId = serverId,
-    ownChannel = ownChannel,
     inheritedFrom = inheritedFrom
 )

@@ -52,7 +52,6 @@
     <string name="local_network_server">%1$s is on your local network. Tap to let ERKIN reach it</string>
     <string name="local_network_server_denied">Allow local network access in system settings</string>
     <string name="show_system_apps">Show system apps</string>
-    <string name="apps_processes">Processes</string>
     <string name="apps_inherited_from">via %1$s</string>
     <string name="autostart_title">Auto-connect</string>
     <string name="auto_connect">Connect on startup</string>
