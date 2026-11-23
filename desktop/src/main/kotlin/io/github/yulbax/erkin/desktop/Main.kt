@@ -16,7 +16,7 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberDialogState
 import androidx.compose.ui.window.rememberWindowState
-import com.kdroid.composetray.tray.api.Tray
+import dev.nucleusframework.composenativetray.tray.api.Tray
 import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.RoutedApps
@@ -87,10 +87,8 @@ fun main() {
 
         if (TraySupport.isAvailable) ProvideAppLocale {
             val labels = trayLabels()
-            @Suppress("DEPRECATION")
             Tray(
-                iconPath = resourceUrl(APP_ICON),
-                windowsIconPath = resourceUrl(TRAY_ICON_WINDOWS),
+                icon = icon,
                 tooltip = "ERKIN",
                 primaryAction = show,
                 menuContent = {
@@ -159,15 +157,11 @@ fun main() {
     instance.release()
 }
 
-private fun resourceUrl(name: String): String =
-    checkNotNull(Thread.currentThread().contextClassLoader.getResource(name)) { "missing $name" }.toString()
-
 private fun appIconBytes(): ByteArray =
     checkNotNull(Thread.currentThread().contextClassLoader.getResourceAsStream(APP_ICON)) { "missing $APP_ICON" }
         .use { it.readBytes() }
 
 private const val APP_ICON = "erkin-icon.png"
-private const val TRAY_ICON_WINDOWS = "erkin-icon.ico"
 
 private fun showDataTooNew() = application {
     DialogWindow(

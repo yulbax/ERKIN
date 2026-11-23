@@ -30,6 +30,5 @@
 -dontwarn org.slf4j.**
 -dontnote **
 
--keep class com.kdroid.composetray.** { *; }
--dontwarn com.kdroid.**
--dontwarn io.github.kdroidfilter.**
+-keep class dev.nucleusframework.composenativetray.** { *; }
+-dontwarn dev.nucleusframework.**
