@@ -50,6 +50,7 @@
     <string name="local_network_server">Сервер %1$s у локальній мережі. Натисніть, щоб дозволити ERKIN доступ до неї</string>
     <string name="local_network_server_denied">Дозвольте доступ до локальної мережі в налаштуваннях системи</string>
     <string name="show_system_apps">Показувати системні застосунки</string>
+    <string name="show_all_processes">Показувати всі процеси</string>
     <string name="autostart_title">Автопідключення</string>
     <string name="auto_connect">Підключатися під час запуску</string>
     <string name="always_on_vpn">Системний постійний VPN</string>

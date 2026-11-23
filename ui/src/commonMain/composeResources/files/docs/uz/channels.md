@@ -18,6 +18,12 @@ Har bir ilova kanallardan biri orqali ishlaydi:
 - Qoidalar kanaldan ustun: ulanish qoidaga mos kelsa, qoida koʻrsatgan joyga ketadi. Batafsil — «Qoidalar va ulanishlar» maqolasida.
 - Block umumiy qoidalardan ustun: bloklangan ilovaga tarmoqni faqat uning oʻz qoidalari ochadi.
 
+## Linux’dagi dasturlar
+
+Linux’da oʻz kanali boʻlmagan dastur uni ishga tushirgan dasturning kanali orqali ishlaydi. Agar terminalga Direct berilgan boʻlsa, undan ishga tushirilgan hamma narsa, masalan curl, git yoki brauzer, ham toʻgʻridan-toʻgʻri chiqadi. Dasturning oʻz kanali meros olinganidan ustun. Yangi ilovalar uchun kanal oʻz kanali hisoblanmaydi: unda dastur merosni davom ettiradi.
+
+Shuning uchun har bir kanal uchun alohida terminal ochish qulay: masalan, foot ByeDPI’da, kitty esa VPN’da. Buyruq qaysi terminalda ishga tushirilgan boʻlsa, oʻsha terminal kanali orqali ketadi. Ochiq turgan brauzer oʻz kanalida qoladi: terminaldagi buyruq manzilni faqat ishlab turgan oynaga uzatadi.
+
 ## Zanjirlar
 
 «Zanjirlar» boʻlimida bir nechta serverdan yoʻl yigʻish mumkin: kirish, oraliq boʻgʻinlar va chiqish serveri. Birinchi boʻgʻin ByeDPI boʻlishi mumkin. Boʻgʻinlar dastagidan sudrab joyi almashtiriladi. Zanjirni asosiy server yoki ilova serveri qilib tanlash mumkin, «Kechikishni tekshirish» esa uni butunligicha oʻlchaydi.

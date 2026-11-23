@@ -184,7 +184,7 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
-    fun linuxAlsoMatchesAProgramReplacedOnDiskWhileRunning() {
+    fun linuxMatchesAProgramReplacedOnDiskAndTheChildrenItStarted() {
         val engine = engine(
             listOf(vless), "p1", emptyList(), listOf("/opt/zen/zen-bin"),
             rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.DIRECT, app = "/opt/zen/zen-bin"))
@@ -199,9 +199,13 @@ class MihomoConfigBuilderTest {
                 "PROCESS-NAME,ciadpi (deleted),DIRECT",
                 "PROCESS-PATH,/usr/bin/tracker,REJECT",
                 "PROCESS-PATH,/usr/bin/tracker (deleted),REJECT",
-                "AND,((OR,((PROCESS-PATH,/opt/zen/zen-bin),(PROCESS-PATH,/opt/zen/zen-bin (deleted)))),(DOMAIN-SUFFIX,example.org)),DIRECT",
+                "PROCESS-NAME,/usr/bin/tracker,REJECT",
+                "PROCESS-NAME,/usr/bin/tracker (deleted),REJECT",
+                "AND,((OR,((PROCESS-PATH,/opt/zen/zen-bin),(PROCESS-PATH,/opt/zen/zen-bin (deleted)),(PROCESS-NAME,/opt/zen/zen-bin),(PROCESS-NAME,/opt/zen/zen-bin (deleted)))),(DOMAIN-SUFFIX,example.org)),DIRECT",
                 "PROCESS-PATH,/opt/zen/zen-bin,p1",
                 "PROCESS-PATH,/opt/zen/zen-bin (deleted),p1",
+                "PROCESS-NAME,/opt/zen/zen-bin,p1",
+                "PROCESS-NAME,/opt/zen/zen-bin (deleted),p1",
                 "MATCH,DIRECT"
             ),
             rules

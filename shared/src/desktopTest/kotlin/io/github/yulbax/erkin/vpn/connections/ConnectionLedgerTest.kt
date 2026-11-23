@@ -57,6 +57,20 @@ class ConnectionLedgerTest {
     }
 
     @Test
+    fun aCommandRoutedByItsTerminalIsShownUnderItsOwnName() {
+        val table = ConnectionTable.parse(
+            """{"rows":[
+                {"process":"/usr/bin/ghostty","path":"/usr/bin/curl","host":"example.org","inbound":"Tun","route":"p1","rule":"ProcessName","connections":1,"lastSeen":5},
+                {"process":"ghostty","path":"/usr/bin/ghostty","host":"example.com","inbound":"Tun","route":"p1","rule":"ProcessPath","connections":1,"lastSeen":6}
+            ]}"""
+        )
+        val apps = ConnectionLedger.activity(table)
+
+        assertEquals(setOf("curl", "ghostty"), apps.map { it.app }.toSet())
+        assertEquals("/usr/bin/curl", apps.first { it.app == "curl" }.path)
+    }
+
+    @Test
     fun erkinsOwnConnectionsAndProbesAreShownAsErkinAfterTheApps() {
         val table = ConnectionTable.parse(
             """{"rows":[

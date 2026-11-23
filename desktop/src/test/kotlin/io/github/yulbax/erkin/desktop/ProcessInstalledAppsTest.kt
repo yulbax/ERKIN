@@ -9,7 +9,12 @@ import org.junit.Test
 class ProcessInstalledAppsTest {
 
     private fun discover(vararg paths: String, saved: List<App> = emptyList()) =
-        ProcessInstalledApps.discover(paths.map(::File), saved, ownExecutable = "ERKIN", systemRoots = listOf("/usr/"))
+        ProcessInstalledApps.discover(
+            paths.map { RunningProcess(File(it), startedByDesktop = false) },
+            saved,
+            ownExecutable = "ERKIN",
+            classification = ProgramClassification.ByLocation(listOf("/usr/"))
+        )
 
     @Test
     fun aProgramIsKeyedByItsPath() {
@@ -62,11 +67,37 @@ class ProcessInstalledAppsTest {
     @Test
     fun aProgramUpdatedWhileRunningIsTheSameProgram() {
         val apps = ProcessInstalledApps.discover(
-            listOf("/usr/bin/Hyprland (deleted)", "/usr/bin/Hyprland").map(ProcessInstalledApps::executableOf),
+            listOf("/usr/bin/Hyprland (deleted)", "/usr/bin/Hyprland").map { RunningProcess(ProcessInstalledApps.executableOf(it), false) },
             saved = emptyList(),
             ownExecutable = "ERKIN",
-            systemRoots = listOf("/usr/")
+            classification = ProgramClassification.ByLauncher
         )
         assertEquals(listOf("/usr/bin/Hyprland"), apps.map { it.packageName })
+    }
+
+    @Test
+    fun onLinuxOnlyWhatTheDesktopStartedIsAProgram() {
+        val apps = ProcessInstalledApps.discover(
+            listOf(
+                RunningProcess(File("/usr/bin/ghostty"), startedByDesktop = true),
+                RunningProcess(File("/usr/bin/fish"), startedByDesktop = false),
+                RunningProcess(File("/opt/Discord/Discord"), startedByDesktop = true),
+                RunningProcess(File("/opt/Discord/Discord"), startedByDesktop = false)
+            ),
+            saved = emptyList(),
+            ownExecutable = "ERKIN",
+            classification = ProgramClassification.ByLauncher
+        )
+        assertEquals(listOf(false, true, false), apps.map { it.isSystemApp })
+        assertEquals(listOf(true, false, true), apps.map { it.isLaunchable })
+    }
+
+    @Test
+    fun theDesktopStartsProgramsDirectlyOrThroughItsOwnSystemdUnits() {
+        assertEquals(true, DesktopLaunchers.startedByDesktop("Hyprland", "session-3.scope"))
+        assertEquals(true, DesktopLaunchers.startedByDesktop("systemd", "app-org.kde.dolphin@1a2b.service"))
+        assertEquals(false, DesktopLaunchers.startedByDesktop("systemd", "pipewire.service"))
+        assertEquals(false, DesktopLaunchers.startedByDesktop("ghostty", "app-ghostty-surface-transient-42.scope"))
+        assertEquals(false, DesktopLaunchers.startedByDesktop(null, null))
     }
 }

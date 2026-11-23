@@ -39,15 +39,17 @@ sealed interface SystemDns {
 
 data class ProbeInbound(val port: Int, val username: String, val password: String)
 
-enum class DesktopOs(private val replacedExecutableSuffix: String?) {
-    WINDOWS(null),
-    LINUX(" (deleted)");
+enum class DesktopOs(private val replacedExecutableSuffix: String?, val childrenInheritChannels: Boolean) {
+    WINDOWS(null, childrenInheritChannels = false),
+    LINUX(" (deleted)", childrenInheritChannels = true);
 
     fun processIds(app: String): List<String> = listOfNotNull(app, replacedExecutableSuffix?.let { app + it })
 }
 
 sealed interface MihomoPlatform {
     fun processIds(app: String): List<String>
+
+    val childrenInheritChannels: Boolean get() = false
 
     data class Android(val systemDns: SystemDns = SystemDns.Local) : MihomoPlatform {
         override fun processIds(app: String): List<String> = listOf(app)
@@ -60,6 +62,8 @@ sealed interface MihomoPlatform {
         val byeDpiProbePort: Int? = null
     ) : MihomoPlatform {
         override fun processIds(app: String): List<String> = os.processIds(app)
+
+        override val childrenInheritChannels: Boolean get() = os.childrenInheritChannels
     }
 }
 
@@ -249,7 +253,7 @@ object MihomoConfigBuilder {
                 val (blockedAppRules, listedRules) = rules.partition { it.app in blocked }
                 engine.blockedPackages.forEach { app ->
                     blockedAppRules.filter { it.app == app }.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists, platform) }
-                    platform.processIds(app).forEach { add("${processMatch(app)},$it,$REJECT") }
+                    appMatches(app, platform).forEach { add("$it,$REJECT") }
                 }
                 if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
@@ -274,6 +278,9 @@ object MihomoConfigBuilder {
                     )
                     channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), platform, target) }
                     channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), platform, target) }
+                    if (platform.childrenInheritChannels) {
+                        channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filter(::isExecutablePath), platform, target) }
+                    }
                 } else {
                     processRules(PROCESS_NAME, byeDpiPackages, platform) { BYEDPI_PROXY }
                     processRules(PROCESS_NAME, vpnPackages, platform, vpnTargetOf)
@@ -326,10 +333,17 @@ object MihomoConfigBuilder {
         put("udp", true)
     }
 
-    private fun processMatch(app: String): String = if (isExecutablePath(app)) PROCESS_PATH else PROCESS_NAME
+    private fun appMatches(app: String, platform: MihomoPlatform): List<String> {
+        val types = when {
+            !isExecutablePath(app) -> listOf(PROCESS_NAME)
+            platform.childrenInheritChannels -> listOf(PROCESS_PATH, PROCESS_NAME)
+            else -> listOf(PROCESS_PATH)
+        }
+        return types.flatMap { type -> platform.processIds(app).map { "$type,$it" } }
+    }
 
     private fun appCondition(app: String, platform: MihomoPlatform): String {
-        val matches = platform.processIds(app).map { "(${processMatch(app)},$it)" }
+        val matches = appMatches(app, platform).map { "($it)" }
         return matches.singleOrNull() ?: "(OR,(${matches.joinToString(",")}))"
     }
 

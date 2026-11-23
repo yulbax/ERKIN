@@ -186,9 +186,11 @@ private fun chooseFile(title: String, mode: Int, suggestedName: String?): File? 
     return File(dialog.directory, name)
 }
 
-actual val platformNewAppsConnectionType: ConnectionType = ConnectionType.DIRECT
+private val isLinux: Boolean = System.getProperty("os.name").startsWith("Linux")
 
-actual val supportsSystemAppsFilter: Boolean = false
+actual val platformNewAppsConnectionType: ConnectionType = if (isLinux) ConnectionType.VPN else ConnectionType.DIRECT
+
+actual val hiddenAppsFilter: HiddenAppsFilter? = HiddenAppsFilter.PROCESSES.takeIf { isLinux }
 
 actual val appsCanBypass: Boolean = false
 

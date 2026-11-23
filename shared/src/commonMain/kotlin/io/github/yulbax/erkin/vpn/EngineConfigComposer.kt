@@ -1,8 +1,9 @@
 package io.github.yulbax.erkin.vpn
 
-import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.RoutedApps
+import io.github.yulbax.erkin.data.carriesTraffic
+import io.github.yulbax.erkin.data.hasOwnChannel
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
@@ -82,7 +83,7 @@ object EngineConfigComposer {
         if (everyApp.isEmpty && !newApps.carriesTraffic(hasServers)) {
             fail(if (selected == null) VpnFailure.NoServers else VpnFailure.NoRoutedApps)
         }
-        val ruledApps = foreignApps.filter { it.needsOwnRule(newApps) }
+        val ruledApps = foreignApps.filter { it.hasOwnChannel(newApps) }
         val routed = RoutedApps.from(ruledApps, hasServers)
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
@@ -146,12 +147,6 @@ object EngineConfigComposer {
                     applied?.rules?.rules?.any { it.target == SubscriptionTarget.VPN } == true))
         )
     }
-
-    private fun ConnectionType.carriesTraffic(hasServers: Boolean): Boolean =
-        this == ConnectionType.BYEDPI || (this == ConnectionType.VPN && hasServers)
-
-    private fun App.needsOwnRule(newApps: ConnectionType): Boolean =
-        connectionType != newApps || (connectionType == ConnectionType.VPN && serverId != null)
 
     private fun boundServers(
         serverIds: List<Long>,

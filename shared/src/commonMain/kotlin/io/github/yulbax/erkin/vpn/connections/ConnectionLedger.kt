@@ -1,6 +1,8 @@
 package io.github.yulbax.erkin.vpn.connections
 
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.executableName
+import io.github.yulbax.erkin.data.isExecutablePath
 
 data class AddressActivity(
     val name: String,
@@ -85,8 +87,11 @@ object ConnectionLedger {
     private fun ruleOf(rows: List<TrafficRow>): CoreRule? =
         rows.filter { it.rule.isNotEmpty() }.maxByOrNull { it.lastSeen }?.let { CoreRule(it.rule, it.payload) }
 
-    private fun appOf(row: TrafficRow): String =
-        if (ServicePurpose.of(row.inbound, row.inName) != null) SERVICE_APP else row.process.ifEmpty { row.path }
+    private fun appOf(row: TrafficRow): String = when {
+        ServicePurpose.of(row.inbound, row.inName) != null -> SERVICE_APP
+        isExecutablePath(row.process) && row.path.isNotEmpty() -> executableName(row.path)
+        else -> row.process.ifEmpty { row.path }
+    }
 
     private fun keyOf(row: TrafficRow): Key {
         val purpose = ServicePurpose.of(row.inbound, row.inName)

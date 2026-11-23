@@ -50,6 +50,7 @@
     <string name="local_network_server">%1$s serveri lokal tarmoqda. ERKIN unga ulana olishi uchun bosing</string>
     <string name="local_network_server_denied">Tizim sozlamalarida lokal tarmoqqa ruxsat bering</string>
     <string name="show_system_apps">Tizim ilovalarini koʻrsatish</string>
+    <string name="show_all_processes">Barcha jarayonlarni koʻrsatish</string>
     <string name="autostart_title">Avtomatik ulanish</string>
     <string name="auto_connect">Ishga tushganda ulanish</string>
     <string name="always_on_vpn">Tizimning doimiy VPN’i</string>

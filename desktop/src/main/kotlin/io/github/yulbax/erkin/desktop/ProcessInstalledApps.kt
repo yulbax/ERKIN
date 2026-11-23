@@ -22,6 +22,7 @@ class ProcessInstalledApps(
     private val appDao: AppDao,
     private val ownExecutable: String?,
     private val scope: CoroutineScope,
+    private val classification: ProgramClassification = ProgramClassification.forCurrentOs(),
     private val newAppsType: suspend () -> ConnectionType
 ) : InstalledAppsSource {
 
@@ -35,7 +36,6 @@ class ProcessInstalledApps(
     override val error: StateFlow<String?> = _error.asStateFlow()
 
     private val refreshMutex = Mutex()
-    private val systemRoots = listOfNotNull(System.getenv("SystemRoot"), "/usr/", "/lib", "/sbin", "/bin")
 
     init {
         scope.launch {
@@ -58,18 +58,22 @@ class ProcessInstalledApps(
     private suspend fun discoverApps() = refreshMutex.withLock {
         try {
             val saved = appDao.getAllAppsSnapshot()
-            val running = discover(runningExecutables(), saved, ownExecutable, systemRoots)
+            val running = discover(runningProcesses(), saved, ownExecutable, classification)
             val savedById = saved.associateBy { it.packageName }
             val discovered = running.filter { it.packageName !in savedById }
             if (discovered.isNotEmpty()) {
                 val type = newAppsType()
                 appDao.addApps(discovered.map { App(it.packageName, it.name, it.isSystemApp, type, it.path) })
             }
+            val reclassified = running.mapNotNull { app ->
+                savedById[app.packageName]?.takeIf { it.isSystemApp != app.isSystemApp }?.copy(isSystemApp = app.isSystemApp)
+            }
+            if (reclassified.isNotEmpty()) appDao.upsertApps(reclassified)
             val runningIds = running.mapTo(HashSet()) { it.packageName }
             val removed = removedApps(saved, runningIds)
             val remembered = saved
                 .filter { it.packageName !in runningIds && it.packageName !in removed && File(it.packageName).name != ownExecutable }
-                .map { InstalledApp(it.packageName, it.name, it.isSystemApp, isLaunchable = true, path = it.path) }
+                .map { InstalledApp(it.packageName, it.name, it.isSystemApp, isLaunchable = classification.isLaunchable(it.isSystemApp), path = it.path) }
             _installedApps.value = (running + remembered).sortedBy { it.name.lowercase() }
             _error.value = null
         } catch (cancelled: CancellationException) {
@@ -81,12 +85,10 @@ class ProcessInstalledApps(
         }
     }
 
-    private fun runningExecutables(): List<File> =
-        ProcessHandle.allProcesses()
-            .map { it.info().command().orElse(null) }
-            .toList()
-            .filterNotNull()
-            .map(::executableOf)
+    private fun runningProcesses(): List<RunningProcess> =
+        ProcessHandle.allProcesses().toList().mapNotNull { process ->
+            process.info().command().orElse(null)?.let { RunningProcess(executableOf(it), DesktopLaunchers.startedByDesktop(process)) }
+        }
 
     companion object {
         private val REFRESH_INTERVAL = 15_000.milliseconds
@@ -108,17 +110,25 @@ class ProcessInstalledApps(
             return existing.parentFile == null || !existing.list().isNullOrEmpty()
         }
 
-        fun discover(executables: List<File>, saved: List<App>, ownExecutable: String?, systemRoots: List<String>): List<InstalledApp> {
+        fun discover(
+            processes: List<RunningProcess>,
+            saved: List<App>,
+            ownExecutable: String?,
+            classification: ProgramClassification
+        ): List<InstalledApp> {
             val legacyByPath = saved.filter { !isExecutablePath(it.packageName) && it.path != null }.associateBy { it.path?.lowercase() }
-            return executables
-                .filter { it.name.isNotBlank() && it.name != ownExecutable }
-                .distinctBy { it.path.lowercase() }
-                .map { file ->
+            return processes
+                .filter { it.executable.name.isNotBlank() && it.executable.name != ownExecutable }
+                .groupBy { it.executable.path.lowercase() }
+                .values
+                .map { copies ->
+                    val file = copies.first().executable
+                    val isProcess = copies.all(classification::isProcess)
                     InstalledApp(
                         packageName = legacyByPath[file.path.lowercase()]?.packageName ?: file.path,
                         name = file.nameWithoutExtension,
-                        isSystemApp = systemRoots.any { file.path.startsWith(it, ignoreCase = true) },
-                        isLaunchable = true,
+                        isSystemApp = isProcess,
+                        isLaunchable = classification.isLaunchable(isProcess),
                         path = file.path
                     )
                 }

@@ -53,6 +53,10 @@ themselves.
   into a rule for that app.
 - **Desktop.** On Windows and Linux apps are matched by their program, and traffic of
   programs without a channel goes straight out.
+- **Channels follow the launcher on Linux.** A program without a channel of its own takes
+  the channel of the program that started it, so everything run from a terminal set to
+  Direct goes straight out. Keep a terminal per channel to pick the route for a command
+  by where you start it.
 
 ### Servers
 

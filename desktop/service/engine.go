@@ -40,6 +40,7 @@ func (e *engine) start(config string, resolvedProxy string, resolver string) err
 			return err
 		}
 	}
+	setRuledProcesses(config)
 	if err := mihomocore.Apply(config, true, resolvedProxy, resolver); err != nil {
 		mihomocore.Shutdown()
 		return err

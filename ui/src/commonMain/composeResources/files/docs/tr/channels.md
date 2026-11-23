@@ -18,6 +18,12 @@ Her uygulama bir kanal kullanır:
 - Kurallar kanaldan önce gelir: bir kurala uyan bağlantı, kuralın gösterdiği yere gider. Ayrıntılar Kurallar ve bağlantılar makalesinde.
 - Block genel kurallardan önce gelir: engellenen uygulamaya ağı yalnızca kendi kuralları açar.
 
+## Linux’ta programlar
+
+Linux’ta kendi kanalı olmayan bir program, onu başlatan programın kanalını kullanır. Terminal Direct’e ayarlıysa ondan başlatılan her şey, örneğin curl, git ya da bir tarayıcı, de doğrudan çıkar. Programın kendi kanalı devralınan kanaldan önce gelir. Yeni uygulamaların kanalı kendi kanalı sayılmaz: bu kanalda program devralmaya devam eder.
+
+Bu yüzden her kanal için ayrı bir terminal kullanmak pratiktir: örneğin ByeDPI’da foot, VPN’de kitty. Bir komut, başlatıldığı terminalin kanalından gider. Zaten açık olan bir tarayıcı kendi kanalında kalır, çünkü terminaldeki komut adresi yalnızca çalışan pencereye iletir.
+
 ## Zincirler
 
 Zincirler bölümünde birkaç sunucudan bir yol kurabilirsiniz: giriş, aradaki halkalar ve çıkış sunucusu. İlk halka ByeDPI olabilir. Halkalar tutamaçtan sürüklenerek yer değiştirir. Zincir ana sunucu ya da bir uygulamanın sunucusu olabilir; Gecikmeyi test et onu baştan sona ölçer.

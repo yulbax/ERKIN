@@ -13,6 +13,23 @@ data class App(
     val serverId: Long? = null
 )
 
+fun App.hasOwnChannel(newApps: ConnectionType): Boolean =
+    connectionType != newApps || (connectionType == ConnectionType.VPN && serverId != null)
+
+fun ConnectionType.carriesTraffic(hasServers: Boolean): Boolean =
+    this == ConnectionType.BYEDPI || (this == ConnectionType.VPN && hasServers)
+
+data class ChannelUse(val any: Boolean, val vpn: Boolean, val byeDpi: Boolean, val withoutServer: Boolean) {
+    companion object {
+        fun of(routed: RoutedApps, newApps: ConnectionType): ChannelUse = ChannelUse(
+            any = !routed.isEmpty || newApps.carriesTraffic(hasServers = true),
+            vpn = routed.hasVpn || newApps == ConnectionType.VPN,
+            byeDpi = routed.hasByeDpi || newApps == ConnectionType.BYEDPI,
+            withoutServer = routed.runsWithoutServer || newApps.carriesTraffic(hasServers = false)
+        )
+    }
+}
+
 fun isExecutablePath(id: String): Boolean = '/' in id || '\\' in id
 
 fun executableName(id: String): String = id.substringAfterLast('/').substringAfterLast('\\')

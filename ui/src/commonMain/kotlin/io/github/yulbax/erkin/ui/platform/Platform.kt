@@ -2,6 +2,10 @@ package io.github.yulbax.erkin.ui.platform
 
 import androidx.compose.ui.unit.Dp
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.ui.res.Res
+import io.github.yulbax.erkin.ui.res.show_all_processes
+import io.github.yulbax.erkin.ui.res.show_system_apps
+import org.jetbrains.compose.resources.StringResource
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -63,7 +67,12 @@ expect object AppLocale {
     fun apply(tag: String?)
 }
 
-expect val supportsSystemAppsFilter: Boolean
+enum class HiddenAppsFilter(val label: StringResource) {
+    SYSTEM_APPS(Res.string.show_system_apps),
+    PROCESSES(Res.string.show_all_processes)
+}
+
+expect val hiddenAppsFilter: HiddenAppsFilter?
 
 expect val appsCanBypass: Boolean
 

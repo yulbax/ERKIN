@@ -5,7 +5,9 @@ import io.github.yulbax.erkin.data.HomeCardPosition
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.yulbax.erkin.data.AppDao
+import io.github.yulbax.erkin.data.ChannelUse
 import io.github.yulbax.erkin.data.RoutedApps
+import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.util.Telemetry
 import io.github.yulbax.erkin.util.VpnLauncher
@@ -44,8 +46,8 @@ class ConnectionViewModel(
         settingsRepository.settings,
         appDao.getAllApps()
     ) { settings, apps ->
-        val routed = RoutedApps.from(apps)
-        ErkinUiState(settings.homeHintSeen, !routed.isEmpty, routed.hasVpn, routed.hasByeDpi, settings.bypassLan, routed.runsWithoutServer, settings.homeCardPosition())
+        val use = ChannelUse.of(RoutedApps.from(apps), settings.newAppsConnectionType(platformNewAppsConnectionType))
+        ErkinUiState(settings.homeHintSeen, use.any, use.vpn, use.byeDpi, settings.bypassLan, use.withoutServer, settings.homeCardPosition())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), ErkinUiState())
 
     init {

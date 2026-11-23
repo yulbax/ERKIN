@@ -18,6 +18,12 @@ Every app uses one channel:
 - Rules win over the channel: a connection that matches a rule goes where the rule says. See Rules and connections.
 - Block wins over shared rules: only the app's own rules open the network to a blocked app.
 
+## Programs on Linux
+
+On Linux a program without a channel of its own uses the channel of the program that started it. If a terminal is set to Direct, everything started from it, such as curl, git or a browser, also goes straight out. A channel of its own wins over the inherited one. The channel for new apps does not count as one: on it, the program keeps inheriting.
+
+This makes one terminal per channel a quick switch: for example foot on ByeDPI and kitty on VPN, and a command goes through the channel of the terminal it was started in. A browser that is already open stays in its channel, because a command from the terminal only hands the address to the running window.
+
 ## Chains
 
 In Chains you build a path through several servers: an entry, hops in between and an exit server. The first hop can be ByeDPI. Drag a hop by its handle to move it. A chain can be the main server or an app's server, and Test latency measures it end to end.

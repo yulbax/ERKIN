@@ -1,6 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.settings
 
-import io.github.yulbax.erkin.ui.platform.supportsSystemAppsFilter
+import io.github.yulbax.erkin.ui.platform.hiddenAppsFilter
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,14 +47,12 @@ fun Settings(
                 {
                     NewAppsChannelRow(ui.newAppsConnectionType, viewModel::setNewAppsConnectionType)
                 },
-                if (supportsSystemAppsFilter) {
+                hiddenAppsFilter?.let { filter ->
                     {
-                        SwitchRow(stringResource(Res.string.show_system_apps), ui.showSystemApps) {
+                        SwitchRow(stringResource(filter.label), ui.showSystemApps) {
                             viewModel.toggleShowSystemApps()
                         }
                     }
-                } else {
-                    null
                 }
             )
         )
