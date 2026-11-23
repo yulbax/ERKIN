@@ -12,7 +12,9 @@ import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledApp
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.SettingsRepository
+import io.github.yulbax.erkin.data.hasOwnChannel
 import io.github.yulbax.erkin.data.profile.ProfileRepository
+import io.github.yulbax.erkin.ui.platform.hiddenApps
 import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -34,8 +36,12 @@ data class AppInfo(
     val isLaunchable: Boolean = true,
     val connectionType: ConnectionType = ConnectionType.VPN,
     val path: String? = null,
-    val serverId: Long? = null
-)
+    val serverId: Long? = null,
+    val ownChannel: Boolean = true,
+    val inheritedFrom: String? = null
+) {
+    val isRegular: Boolean get() = !isSystemApp || isLaunchable
+}
 
 class AppsViewModel(
     private val appDao: AppDao,
@@ -66,8 +72,8 @@ class AppsViewModel(
         appDao.getAllApps(),
         settingsRepository.settings
     ) { installed, saved, settings ->
-        val newApps = settings.newAppsConnectionType(platformNewAppsConnectionType)
-        mergeSaved(installed.filter { settings.showSystemApps || it.isRegular }.map { it.toAppInfo(newApps) }, saved)
+        val hidden = !hiddenApps.foldedInAppsList && !settings.showSystemApps
+        appInfos(installed.filter { !hidden || it.isRegular }, saved, settings.newAppsConnectionType(platformNewAppsConnectionType))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     var query by mutableStateOf("")
@@ -157,20 +163,35 @@ class AppsViewModel(
     fun refresh() {
         installedAppsRepository.refresh()
     }
+}
 
-    private fun mergeSaved(installed: List<AppInfo>, saved: List<App>): List<AppInfo> {
-        val savedApps = saved.associateBy { it.packageName }
-        return installed.map { app ->
-            savedApps[app.packageName]?.let { app.copy(connectionType = it.connectionType, serverId = it.serverId) } ?: app
+internal fun appInfos(installed: List<InstalledApp>, saved: List<App>, newApps: ConnectionType): List<AppInfo> {
+    val byId = saved.associateBy { it.packageName }
+    val byPath = saved.associateBy { (it.path ?: it.packageName).lowercase() }
+    return installed.map { app ->
+        val own = byId[app.packageName]?.takeIf { it.hasOwnChannel(newApps) }
+        val parent = app.ancestors.firstNotNullOfOrNull { path -> byPath[path.lowercase()]?.takeIf { it.hasOwnChannel(newApps) } }
+        when {
+            own != null -> app.toAppInfo(own.connectionType, own.serverId)
+            parent != null -> app.toAppInfo(parent.connectionType, parent.serverId, ownChannel = false, inheritedFrom = parent.name)
+            else -> app.toAppInfo(newApps, serverId = null, ownChannel = false)
         }
     }
-
-    private fun InstalledApp.toAppInfo(connectionType: ConnectionType) = AppInfo(
-        packageName = packageName,
-        name = name,
-        isSystemApp = isSystemApp,
-        isLaunchable = isLaunchable,
-        connectionType = connectionType,
-        path = path
-    )
 }
+
+private fun InstalledApp.toAppInfo(
+    connectionType: ConnectionType,
+    serverId: Long?,
+    ownChannel: Boolean = true,
+    inheritedFrom: String? = null
+) = AppInfo(
+    packageName = packageName,
+    name = name,
+    isSystemApp = isSystemApp,
+    isLaunchable = isLaunchable,
+    connectionType = connectionType,
+    path = path,
+    serverId = serverId,
+    ownChannel = ownChannel,
+    inheritedFrom = inheritedFrom
+)

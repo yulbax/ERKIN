@@ -50,7 +50,8 @@
     <string name="local_network_server">سرور %1$s در شبکه محلی است. برای اجازه دسترسی ERKIN به آن ضربه بزنید</string>
     <string name="local_network_server_denied">دسترسی به شبکه محلی را در تنظیمات سیستم مجاز کنید</string>
     <string name="show_system_apps">نمایش برنامه‌های سیستمی</string>
-    <string name="show_all_processes">نمایش همه فرایندها</string>
+    <string name="apps_processes">فرایندها</string>
+    <string name="apps_inherited_from">از طریق %1$s</string>
     <string name="autostart_title">اتصال خودکار</string>
     <string name="auto_connect">اتصال هنگام راه‌اندازی</string>
     <string name="always_on_vpn">VPN همیشه‌روشن سیستم</string>

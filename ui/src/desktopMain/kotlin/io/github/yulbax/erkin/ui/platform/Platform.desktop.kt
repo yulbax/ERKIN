@@ -190,7 +190,7 @@ private val isLinux: Boolean = System.getProperty("os.name").startsWith("Linux")
 
 actual val platformNewAppsConnectionType: ConnectionType = if (isLinux) ConnectionType.VPN else ConnectionType.DIRECT
 
-actual val hiddenAppsFilter: HiddenAppsFilter? = HiddenAppsFilter.PROCESSES.takeIf { isLinux }
+actual val hiddenApps: HiddenApps = HiddenApps.PROCESSES
 
 actual val appsCanBypass: Boolean = false
 

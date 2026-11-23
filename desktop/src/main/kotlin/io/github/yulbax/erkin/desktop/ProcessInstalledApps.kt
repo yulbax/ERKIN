@@ -88,7 +88,13 @@ class ProcessInstalledApps(
 
     private fun runningProcesses(): List<RunningProcess> =
         ProcessHandle.allProcesses().toList().mapNotNull { process ->
-            process.info().command().orElse(null)?.let { RunningProcess(executableOf(it), DesktopLaunchers.startedByDesktop(process)) }
+            process.info().command().orElse(null)?.let { command ->
+                RunningProcess(
+                    executable = executableOf(command),
+                    startedByDesktop = DesktopLaunchers.startedByDesktop(process),
+                    ancestors = if (classification.childrenInheritChannels) DesktopLaunchers.ancestorsOf(process) else emptyList()
+                )
+            }
         }
 
     companion object {
@@ -132,12 +138,14 @@ class ProcessInstalledApps(
                 .map { copies ->
                     val file = copies.first().executable
                     val isProcess = copies.all(classification::isProcess)
+                    val ancestors = copies.firstNotNullOfOrNull { copy -> copy.ancestors.takeIf { it.isNotEmpty() } }.orEmpty()
                     InstalledApp(
                         packageName = savedByPath[file.path.lowercase()]?.packageName ?: file.path,
                         name = file.nameWithoutExtension,
                         isSystemApp = isProcess,
                         isLaunchable = classification.isLaunchable(isProcess),
-                        path = file.path
+                        path = file.path,
+                        ancestors = ancestors.map { it.path }.distinct()
                     )
                 }
         }

@@ -7,7 +7,8 @@ data class InstalledApp(
     val name: String,
     val isSystemApp: Boolean,
     val isLaunchable: Boolean,
-    val path: String? = null
+    val path: String? = null,
+    val ancestors: List<String> = emptyList()
 ) {
     val isRegular: Boolean get() = !isSystemApp || isLaunchable
 }

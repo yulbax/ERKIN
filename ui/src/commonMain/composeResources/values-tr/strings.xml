@@ -50,7 +50,8 @@
     <string name="local_network_server">%1$s yerel ağınızda. ERKIN’in ona erişmesine izin vermek için dokunun</string>
     <string name="local_network_server_denied">Sistem ayarlarında yerel ağ erişimine izin verin</string>
     <string name="show_system_apps">Sistem uygulamalarını göster</string>
-    <string name="show_all_processes">Tüm işlemleri göster</string>
+    <string name="apps_processes">İşlemler</string>
+    <string name="apps_inherited_from">%1$s üzerinden</string>
     <string name="autostart_title">Otomatik bağlantı</string>
     <string name="auto_connect">Açılışta bağlan</string>
     <string name="always_on_vpn">Sistemin Her zaman açık VPN’i</string>

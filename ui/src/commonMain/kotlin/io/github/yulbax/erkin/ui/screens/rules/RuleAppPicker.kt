@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.ui.screens.rules
 
+import io.github.yulbax.erkin.ui.platform.hiddenApps
 import io.github.yulbax.erkin.ui.components.ChoiceRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -61,7 +62,7 @@ internal fun RuleAppPickerSheet(
             val systemShown = systemOpened || query.isNotBlank()
             item(key = SYSTEM_HEADER_KEY) {
                 CollapsibleHeader(
-                    text = "${stringResource(Res.string.rule_app_system)} · ${system.size}",
+                    text = "${stringResource(hiddenApps.sectionTitle)} · ${system.size}",
                     icon = Icons.Default.SettingsApplications,
                     expanded = systemShown
                 ) { systemOpened = !systemShown }

@@ -162,7 +162,8 @@ fun Apps(viewModel: AppsViewModel = koinViewModel()) {
                                 onConnectionTypeChange = viewModel::setConnectionType,
                                 onChooseServer = { app -> picking = ServerPickTarget.App(app) },
                                 onToggle = viewModel::toggleSelected,
-                                onStartSelecting = viewModel::startSelecting
+                                onStartSelecting = viewModel::startSelecting,
+                                searching = viewModel.query.isNotBlank()
                             )
                         }
                     }
