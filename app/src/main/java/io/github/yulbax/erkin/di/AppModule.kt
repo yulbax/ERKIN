@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.di
 
+import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import android.content.Context
 import androidx.room.Room
@@ -139,7 +140,7 @@ class AppModule {
 
     @Single
     fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =
-        RoomVpnSessionStore(database, profileRepository)
+        RoomVpnSessionStore(database, profileRepository, platformNewAppsConnectionType)
 
     @Single
     fun configBackupRepository(

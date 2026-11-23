@@ -1,11 +1,11 @@
 package io.github.yulbax.erkin.desktop
 
+import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import androidx.room.Room
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.ConfigBackupRepository
-import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.InstalledAppsSource
 import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsRepository
@@ -76,7 +76,7 @@ val desktopModule = module {
     single { ProfileRepository(get(), get(), get(), get()) }
     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass) }
     single { RoutingRuleRepository(get()) }
-    single<VpnSessionStore> { RoomVpnSessionStore(get(), get()) }
+    single<VpnSessionStore> { RoomVpnSessionStore(get(), get(), platformNewAppsConnectionType) }
 
     single { VpnStateRepository() }
     single { IncomingServers() }
@@ -102,7 +102,7 @@ val desktopModule = module {
     single<InstalledAppsSource>(createdAtStart = true) {
         val settings = get<SettingsRepository>()
         ProcessInstalledApps(get(), DesktopPaths.ownExecutable, CoroutineScope(SupervisorJob() + Dispatchers.IO)) {
-            settings.settings.first().newAppsConnectionType(ConnectionType.DIRECT)
+            settings.settings.first().newAppsConnectionType(platformNewAppsConnectionType)
         }
     }
 

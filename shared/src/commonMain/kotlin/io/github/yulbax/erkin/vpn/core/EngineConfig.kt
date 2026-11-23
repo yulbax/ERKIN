@@ -1,5 +1,7 @@
 package io.github.yulbax.erkin.vpn.core
 
+import io.github.yulbax.erkin.data.ConnectionType
+
 data class EngineConfig(
     val proxies: List<EngineProxy>,
     val activeProxyTag: String,
@@ -14,8 +16,12 @@ data class EngineConfig(
     val vpnTargets: Map<String, String> = emptyMap(),
     val directPackages: List<String> = emptyList(),
     val blockedPackages: List<String> = emptyList(),
-    val serverTags: Map<Long, String> = emptyMap()
-)
+    val serverTags: Map<Long, String> = emptyMap(),
+    val bypassPackages: List<String> = emptyList(),
+    val newApps: ConnectionType = ConnectionType.BYPASS
+) {
+    val tunnelsEveryApp: Boolean get() = newApps != ConnectionType.BYPASS
+}
 
 data class EngineProxy(
     val tag: String,

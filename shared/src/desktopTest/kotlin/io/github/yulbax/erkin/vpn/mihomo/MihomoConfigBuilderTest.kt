@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
+import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.vpn.core.EngineConfig
@@ -146,6 +147,33 @@ class MihomoConfigBuilderTest {
             ),
             config.rules()
         )
+    }
+
+    @Test
+    fun unlistedTrafficFollowsTheChannelForNewApps() {
+        fun lastRule(newApps: ConnectionType, platform: MihomoPlatform, active: String = "p1") =
+            Json.parseToJsonElement(
+                MihomoConfigBuilder.build(engine(listOf(vless), active, emptyList(), emptyList()).copy(newApps = newApps), PROBE, platform)
+            ).jsonObject.rules().last()
+        val linux = MihomoPlatform.Desktop(DesktopOs.LINUX, emptyList())
+
+        assertEquals("MATCH,p1", lastRule(ConnectionType.VPN, linux))
+        assertEquals("MATCH,p1", lastRule(ConnectionType.VPN, MihomoPlatform.Android()))
+        assertEquals("MATCH,byedpi", lastRule(ConnectionType.BYEDPI, linux))
+        assertEquals("MATCH,DIRECT", lastRule(ConnectionType.DIRECT, MihomoPlatform.Android()))
+        assertEquals("MATCH,DIRECT", lastRule(ConnectionType.BYPASS, linux))
+        assertEquals("MATCH,REJECT", lastRule(ConnectionType.BYPASS, MihomoPlatform.Android()))
+    }
+
+    @Test
+    fun aDesktopBypassAppGoesDirectWhenNewAppsUseTheVpn() {
+        val engine = engine(listOf(vless), "p1", emptyList(), emptyList())
+            .copy(newApps = ConnectionType.VPN, bypassPackages = listOf("legacy-name"), directPaths = listOf("/usr/bin/bank"))
+        val rules = Json.parseToJsonElement(
+            MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Desktop(DesktopOs.WINDOWS, emptyList()))
+        ).jsonObject.rules()
+
+        assertEquals(listOf("IN-NAME,probe-in,p1", "PROCESS-PATH,/usr/bin/bank,DIRECT", "PROCESS-NAME,legacy-name,DIRECT", "MATCH,p1"), rules)
     }
 
     @Test

@@ -53,6 +53,7 @@ data class AppliedConfig(
     val selectedTag: String get() = engineConfig.activeProxyTag
     val needsByeDpi: Boolean
         get() = engineConfig.byeDpiPackages.isNotEmpty() ||
+            engineConfig.newApps == ConnectionType.BYEDPI ||
             engineConfig.rules.any { it.target == RuleTarget.BYEDPI } ||
             engineConfig.proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
 
@@ -72,9 +73,15 @@ object EngineConfigComposer {
     ): AppliedConfig {
         val selected = inputs.selected
         if (selected == null && inputs.profiles.isNotEmpty()) fail(VpnFailure.NoServerSelected)
+        val newApps = inputs.newAppsChannel
+        val hasServers = selected != null
         val foreignApps = inputs.apps.filterNot { it.packageName == ownPackage }
-        val routed = RoutedApps.from(foreignApps, hasServers = selected != null)
-        if (routed.isEmpty) fail(if (selected == null) VpnFailure.NoServers else VpnFailure.NoRoutedApps)
+        val everyApp = RoutedApps.from(foreignApps, hasServers)
+        if (everyApp.isEmpty && !newApps.carriesTraffic(hasServers)) {
+            fail(if (selected == null) VpnFailure.NoServers else VpnFailure.NoRoutedApps)
+        }
+        val ruledApps = foreignApps.filter { it.needsOwnRule(newApps) }
+        val routed = RoutedApps.from(ruledApps, hasServers)
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
         val rules = inputs.rules.filter { rule -> RuleLists.url(rule)?.let { it in lists } ?: true }
@@ -102,24 +109,33 @@ object EngineConfigComposer {
                 vpnTargets = vpnTargets,
                 directPackages = routed.directPackages,
                 blockedPackages = routed.blockedPackages,
-                serverTags = bound.keys.associateWith(ProxyTag::of)
+                serverTags = bound.keys.associateWith(ProxyTag::of),
+                bypassPackages = routed.bypassPackages,
+                newApps = newApps
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: when {
-                routed.hasByeDpi -> "(ByeDPI only)"
-                routed.hasBlocked -> "(Block only)"
+                everyApp.hasByeDpi || newApps == ConnectionType.BYEDPI -> "(ByeDPI only)"
+                everyApp.hasBlocked -> "(Block only)"
                 else -> "(Direct only)"
             },
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
             sessionRequirements = (listOf(active) + bound.values).flatMapTo(mutableSetOf()) {
                 it.lastOrNull()?.sessionRequirements.orEmpty()
             },
-            routingKey = foreignApps.sortedBy { it.packageName }
+            routingKey = "new=${newApps.wire}#" + ruledApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 rules.joinToString("|", prefix = "#") { "${it.app?.let { app -> "$app~" }.orEmpty()}${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
-            vpnActive = routed.hasVpn || (selected != null && rules.any { it.target == RuleTarget.VPN })
+            vpnActive = everyApp.hasVpn ||
+                (hasServers && (newApps == ConnectionType.VPN || rules.any { it.target == RuleTarget.VPN }))
         )
     }
+
+    private fun ConnectionType.carriesTraffic(hasServers: Boolean): Boolean =
+        this == ConnectionType.BYEDPI || (this == ConnectionType.VPN && hasServers)
+
+    private fun App.needsOwnRule(newApps: ConnectionType): Boolean =
+        connectionType != newApps || (connectionType == ConnectionType.VPN && serverId != null)
 
     private fun boundServers(
         serverIds: List<Long>,

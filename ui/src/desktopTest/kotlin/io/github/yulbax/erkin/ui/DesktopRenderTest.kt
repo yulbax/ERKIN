@@ -170,7 +170,7 @@ class DesktopRenderTest {
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
                     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass = true) }
-                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get())) { _, _, _, _, _, _ -> "{}" } }
+                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get(), ConnectionType.DIRECT)) { _, _, _, _, _, _ -> "{}" } }
                     single { ProbeResults() }
                     single { ServerChecks(get(), get(), get()) }
                     single { VpnStateRepository() }

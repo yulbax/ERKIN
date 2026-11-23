@@ -13,19 +13,22 @@ import kotlinx.coroutines.flow.map
 
 class RoomVpnSessionStore(
     private val database: AppDatabase,
-    private val profileRepository: ProfileRepository
+    private val profileRepository: ProfileRepository,
+    private val platformNewAppsChannel: ConnectionType
 ) : VpnSessionStore {
 
     override suspend fun refreshProfiles() = profileRepository.refreshDescriptors()
 
     override suspend fun load(): SessionInputs {
         val profileDao = database.profileDao()
+        val settings = database.settingsDao().getSettings() ?: SettingsEntity()
         return SessionInputs(
             selected = profileDao.getSelected(),
             profiles = profileDao.getAll(),
-            settings = database.settingsDao().getSettings() ?: SettingsEntity(),
+            settings = settings,
             apps = database.appDao().getAllAppsSnapshot(),
-            rules = database.routingRuleDao().getAll().mapNotNull { it.toRule() }
+            rules = database.routingRuleDao().getAll().mapNotNull { it.toRule() },
+            newAppsChannel = settings.newAppsConnectionType(platformNewAppsChannel)
         )
     }
 
@@ -34,8 +37,9 @@ class RoomVpnSessionStore(
             database.profileDao().observeAll(),
             database.profileDao().observeSelected(),
             database.appDao().getAllApps(),
-            database.routingRuleDao().observeAll()
-        ) { profiles, selected, apps, rules -> listOf(profiles, selected, apps, rules) }
+            database.routingRuleDao().observeAll(),
+            database.settingsDao().observeSettings().map { it?.newAppsConnectionType }
+        ) { profiles, selected, apps, rules, newApps -> listOf(profiles, selected, apps, rules, newApps) }
             .distinctUntilChanged()
             .map { }
 

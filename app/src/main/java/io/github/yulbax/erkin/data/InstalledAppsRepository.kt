@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -184,7 +185,7 @@ class InstalledAppsRepository(
     )
 
     private suspend fun newAppsType(): ConnectionType =
-        (settingsDao.getSettings() ?: SettingsEntity()).newAppsConnectionType(ConnectionType.VPN)
+        (settingsDao.getSettings() ?: SettingsEntity()).newAppsConnectionType(platformNewAppsConnectionType)
 
     private fun InstalledApp.toStoredApp(newAppsType: ConnectionType) = App(
         packageName = packageName,

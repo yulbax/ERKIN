@@ -95,10 +95,15 @@ class MihomoEngine(
             inet6 = if (ipv6) listOf(TunAddress(TUN_INET6, TUN_INET6_PREFIX)) else emptyList(),
             autoRoute = true,
             dnsServers = listOf(TUN_DNS),
-            includePackages = installedIncludePackages(config),
-            excludePackages = emptyList()
+            includePackages = if (config.tunnelsEveryApp) emptyList() else installedIncludePackages(config),
+            excludePackages = if (config.tunnelsEveryApp) installedExcludePackages(config) else emptyList()
         )
     }
+
+    private fun installedExcludePackages(config: EngineConfig): List<String> =
+        (config.bypassPackages.filter { appContext.packageManager.isInstalled(it) } + appContext.packageName)
+            .distinct()
+            .sorted()
 
     private fun installedIncludePackages(config: EngineConfig): List<String> {
         val (installed, skipped) = config.tunneledPackages.partition { appContext.packageManager.isInstalled(it) }

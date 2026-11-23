@@ -27,6 +27,56 @@ class EngineConfigComposerTest {
     }
 
     @Test
+    fun aNewAppOnTheDefaultChannelLeavesTheRoutingAsItIs() {
+        val vpn = App("/usr/bin/firefox", "firefox", isSystemApp = false, connectionType = ConnectionType.VPN)
+        val fresh = App("/usr/bin/curl", "curl", isSystemApp = false, connectionType = ConnectionType.DIRECT)
+        val before = EngineConfigComposer.compose(inputs(listOf(vpn)).copy(newAppsChannel = ConnectionType.DIRECT), OWN, BYEDPI_PORT)
+        val after = EngineConfigComposer.compose(inputs(listOf(vpn, fresh)).copy(newAppsChannel = ConnectionType.DIRECT), OWN, BYEDPI_PORT)
+        val moved = EngineConfigComposer.compose(
+            inputs(listOf(vpn, fresh.copy(connectionType = ConnectionType.VPN))).copy(newAppsChannel = ConnectionType.DIRECT),
+            OWN,
+            BYEDPI_PORT
+        )
+
+        assertEquals(emptyList<String>(), after.engineConfig.directPaths)
+        assertFalse(after.isStructuralChangeFrom(before))
+        assertTrue(moved.isStructuralChangeFrom(after))
+    }
+
+    @Test
+    fun theDefaultChannelCarriesTrafficWithoutListedApps() {
+        val vpnDefault = EngineConfigComposer.compose(inputs(emptyList()).copy(newAppsChannel = ConnectionType.VPN), OWN, BYEDPI_PORT)
+        val byeDpiDefault = EngineConfigComposer.compose(inputs(emptyList()).copy(newAppsChannel = ConnectionType.BYEDPI), OWN, BYEDPI_PORT)
+
+        assertTrue(vpnDefault.vpnActive)
+        assertTrue(vpnDefault.engineConfig.tunnelsEveryApp)
+        assertTrue(byeDpiDefault.needsByeDpi)
+        assertFalse(byeDpiDefault.vpnActive)
+    }
+
+    @Test
+    fun onlyBypassAppsLeaveATunnelThatTakesEveryApp() {
+        val apps = listOf(
+            App("org.example.chat", "Chat", isSystemApp = false, connectionType = ConnectionType.VPN),
+            App("org.example.bank", "Bank", isSystemApp = false, connectionType = ConnectionType.BYPASS),
+            App("org.example.video", "Video", isSystemApp = false, connectionType = ConnectionType.BYEDPI)
+        )
+        val config = EngineConfigComposer.compose(inputs(apps).copy(newAppsChannel = ConnectionType.VPN), OWN, BYEDPI_PORT).engineConfig
+
+        assertEquals(listOf("org.example.bank"), config.bypassPackages)
+        assertEquals(emptyList<String>(), config.vpnPackages)
+        assertEquals(listOf("org.example.video"), config.byeDpiPackages)
+    }
+
+    @Test
+    fun anAppBoundToItsOwnServerKeepsItsRuleOnTheVpnDefault() {
+        val bound = App("org.example.chat", "Chat", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = 1)
+        val config = EngineConfigComposer.compose(inputs(listOf(bound)).copy(newAppsChannel = ConnectionType.VPN), OWN, BYEDPI_PORT).engineConfig
+
+        assertEquals(listOf("org.example.chat"), config.vpnPackages)
+    }
+
+    @Test
     fun directAppsEnterTheTunAndBypassAppsStayOutside() {
         val vpn = App("org.example.vpn", "Vpn", isSystemApp = false, connectionType = ConnectionType.VPN)
         val bypass = App("org.example.bank", "Bank", isSystemApp = false, connectionType = ConnectionType.BYPASS)

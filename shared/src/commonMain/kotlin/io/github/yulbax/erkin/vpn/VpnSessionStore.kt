@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.vpn
 
 import io.github.yulbax.erkin.data.App
+import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
@@ -13,7 +14,8 @@ data class SessionInputs(
     val profiles: List<ProfileEntity>,
     val settings: SettingsEntity,
     val apps: List<App>,
-    val rules: List<RoutingRule> = emptyList()
+    val rules: List<RoutingRule> = emptyList(),
+    val newAppsChannel: ConnectionType = ConnectionType.BYPASS
 )
 
 interface VpnSessionStore {

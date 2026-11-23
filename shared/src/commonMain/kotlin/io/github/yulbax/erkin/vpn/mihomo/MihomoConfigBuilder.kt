@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
+import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.isExecutablePath
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.BuiltInOutbound
@@ -103,8 +104,15 @@ object MihomoConfigBuilder {
                 RuleTarget.BLOCK -> REJECT
             }
         }
-        val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { byeDpiPackages.isNotEmpty() }
-        val defaultTarget = if (desktop != null) DIRECT else REJECT
+        val byeDpiProbePort = desktop?.byeDpiProbePort
+            ?.takeIf { byeDpiPackages.isNotEmpty() || engine.newApps == ConnectionType.BYEDPI }
+        val defaultTarget = when (engine.newApps) {
+            ConnectionType.VPN -> vpnTarget
+            ConnectionType.BYEDPI -> BYEDPI_PROXY
+            ConnectionType.DIRECT -> DIRECT
+            ConnectionType.BYPASS -> if (desktop != null) DIRECT else REJECT
+            ConnectionType.BLOCK -> REJECT
+        }
         val systemDns = when (platform) {
             is MihomoPlatform.Android -> platform.systemDns
             is MihomoPlatform.Desktop -> platform.systemDns
@@ -220,10 +228,11 @@ object MihomoConfigBuilder {
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
                 listedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists, platform) }
                 if (desktop != null) {
+                    val direct = (directPaths + engine.directPackages + engine.bypassPackages).distinct()
                     val channels = listOf<Pair<List<String>, (String) -> String>>(
                         byeDpiPackages to { BYEDPI_PROXY },
                         vpnPackages to vpnTargetOf,
-                        directPaths to { DIRECT }
+                        direct to { DIRECT }
                     )
                     channels.forEach { (apps, target) -> processRules(PROCESS_PATH, apps.filter(::isExecutablePath), platform, target) }
                     channels.forEach { (apps, target) -> processRules(PROCESS_NAME, apps.filterNot(::isExecutablePath), platform, target) }

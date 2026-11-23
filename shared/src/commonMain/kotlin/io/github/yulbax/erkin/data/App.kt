@@ -32,7 +32,8 @@ data class RoutedApps(
     val vpnPackages: List<String>,
     val directPaths: List<String> = emptyList(),
     val directPackages: List<String> = emptyList(),
-    val blockedPackages: List<String> = emptyList()
+    val blockedPackages: List<String> = emptyList(),
+    val bypassPackages: List<String> = emptyList()
 ) {
     val tunneledPackages: List<String> get() = blockedPackages + byeDpiPackages + vpnPackages + directPackages
     val hasByeDpi: Boolean get() = byeDpiPackages.isNotEmpty()
@@ -52,7 +53,8 @@ data class RoutedApps(
                 vpnPackages = if (hasServers) vpn else emptyList(),
                 directPaths = (direct + bypass).filter(::isExecutablePath),
                 directPackages = direct.filterNot(::isExecutablePath),
-                blockedPackages = apps.packagesOf(ConnectionType.BLOCK)
+                blockedPackages = apps.packagesOf(ConnectionType.BLOCK),
+                bypassPackages = bypass
             )
         }
 
