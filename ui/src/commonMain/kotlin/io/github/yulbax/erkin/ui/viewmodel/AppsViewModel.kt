@@ -18,6 +18,7 @@ import io.github.yulbax.erkin.ui.platform.supportsSystemAppsFilter
 import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -64,14 +65,8 @@ class AppsViewModel(
     val isLoading: StateFlow<Boolean> = installedAppsRepository.isLoading
     val error: StateFlow<String?> = installedAppsRepository.error
 
-    val apps: StateFlow<List<AppInfo>> = combine(
-        installedAppsRepository.installedApps,
-        appDao.getAllApps(),
-        settingsRepository.settings
-    ) { installed, saved, settings ->
-        val hidden = supportsSystemAppsFilter && !settings.showSystemApps
-        appInfos(installed.filter { !hidden || it.isRegular }, saved, settings.newAppsConnectionType(platformNewAppsConnectionType))
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
+    val apps: StateFlow<List<AppInfo>> = appInfosOf(installedAppsRepository, appDao, settingsRepository, hideSystemApps = true)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     var query by mutableStateOf("")
         private set
@@ -160,6 +155,23 @@ class AppsViewModel(
     fun refresh() {
         installedAppsRepository.refresh()
     }
+}
+
+internal fun appInfosOf(
+    installed: InstalledAppsSource,
+    appDao: AppDao,
+    settings: SettingsRepository,
+    hideSystemApps: Boolean
+): Flow<List<AppInfo>> = combine(installed.installedApps, appDao.getAllApps(), settings.settings) { apps, saved, current ->
+    val hidden = hideSystemApps && supportsSystemAppsFilter && !current.showSystemApps
+    appInfos(apps.filter { !hidden || it.isRegular }, saved, current.newAppsConnectionType(platformNewAppsConnectionType))
+}
+
+internal class AppLookup(apps: List<AppInfo>) {
+    private val byId = apps.associateBy { it.packageName }
+    private val byPath = apps.associateBy { (it.path ?: it.packageName).lowercase() }
+
+    fun find(id: String, path: String?): AppInfo? = byId[id] ?: path?.ifEmpty { null }?.let { byPath[it.lowercase()] }
 }
 
 internal fun appInfos(installed: List<InstalledApp>, saved: List<App>, newApps: ConnectionType): List<AppInfo> {

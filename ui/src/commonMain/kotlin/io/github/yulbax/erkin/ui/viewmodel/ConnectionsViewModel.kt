@@ -2,8 +2,9 @@ package io.github.yulbax.erkin.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.yulbax.erkin.data.App
 import io.github.yulbax.erkin.data.AppDao
+import io.github.yulbax.erkin.data.InstalledAppsSource
+import io.github.yulbax.erkin.data.SettingsRepository
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.rules.RoutingRuleEntity
@@ -39,6 +40,8 @@ data class ConnectionApp(
 class ConnectionsViewModel(
     monitor: ConnectionMonitor,
     appDao: AppDao,
+    installedApps: InstalledAppsSource,
+    settings: SettingsRepository,
     profileRepository: ProfileRepository,
     vpnStateRepository: VpnStateRepository,
     private val rules: RoutingRuleRepository,
@@ -48,10 +51,12 @@ class ConnectionsViewModel(
     val running: StateFlow<Boolean> = vpnStateRepository.state.map { it.isActive }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), false)
 
-    val apps: StateFlow<List<ConnectionApp>> = combine(monitor.activity, appDao.getAllApps()) { activity, apps ->
-        val byId = apps.associateBy { it.packageName }
-        val byPath = apps.filter { it.path != null }.associateBy { it.path }
-        activity.map { app -> app.resolve(byId[app.app] ?: byPath[app.path.ifEmpty { null }]) }
+    val apps: StateFlow<List<ConnectionApp>> = combine(
+        monitor.activity,
+        appInfosOf(installedApps, appDao, settings, hideSystemApps = false)
+    ) { activity, apps ->
+        val lookup = AppLookup(apps)
+        activity.map { app -> app.resolve(lookup.find(app.app, app.path)) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, probeResults)
@@ -66,11 +71,11 @@ class ConnectionsViewModel(
         viewModelScope.launch(Dispatchers.IO) { rules.delete(listOf(rule)) }
     }
 
-    private fun AppActivity.resolve(known: App?) = ConnectionApp(
+    private fun AppActivity.resolve(known: AppInfo?) = ConnectionApp(
         id = app,
         ruleApp = known?.packageName ?: app,
         name = known?.name,
-        path = known?.path ?: path.ifEmpty { null },
+        path = if (known != null) known.path else path.ifEmpty { null },
         channel = known?.connectionType,
         serverId = known?.serverId,
         activity = this

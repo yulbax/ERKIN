@@ -44,4 +44,26 @@ class AppChannelsTest {
         val app = InstalledApp("C:\\Apps\\Zoom.exe", "Zoom", isSystemApp = false, isLaunchable = true, path = "C:\\Apps\\Zoom.exe")
         assertEquals(ConnectionType.DIRECT, appInfos(listOf(app), emptyList(), ConnectionType.DIRECT).single().connectionType)
     }
+
+    @Test
+    fun aConnectionFindsItsAppByIdOrByPath() {
+        val apps = appInfos(
+            listOf(
+                InstalledApp("org.telegram.desktop", "Telegram", isSystemApp = false, isLaunchable = true, path = null),
+                InstalledApp("/opt/zen-browser-bin/zen-bin", "Zen Browser", isSystemApp = false, isLaunchable = true, path = "/opt/zen-browser-bin/zen-bin"),
+                InstalledApp("C:\\Apps\\Tool.exe", "Tool", isSystemApp = false, isLaunchable = true, path = "C:\\Apps\\Tool.exe")
+            ),
+            listOf(App("org.telegram.desktop", "Telegram", isSystemApp = false, connectionType = ConnectionType.DIRECT)),
+            ConnectionType.VPN
+        )
+        val lookup = AppLookup(apps)
+
+        val telegram = lookup.find("org.telegram.desktop", "/app/bin/Telegram")
+        assertEquals("Telegram" to null, telegram?.name to telegram?.path)
+        assertEquals(ConnectionType.DIRECT, telegram?.connectionType)
+        assertEquals("Zen Browser", lookup.find("zen-bin", "/opt/zen-browser-bin/zen-bin")?.name)
+        assertEquals("Tool", lookup.find("Tool.exe", "c:\\apps\\tool.exe")?.name)
+        assertNull(lookup.find("curl", "/usr/bin/curl"))
+        assertNull(lookup.find("curl", ""))
+    }
 }
