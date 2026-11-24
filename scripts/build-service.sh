@@ -33,7 +33,9 @@ for os in $TARGETS; do
   fi
   say "Building erkin-service ${APP_VERSION} for ${os}/amd64 with mihomo ${MIHOMO_VERSION}"
   mkdir -p "$(dirname "$out")"
-  CGO_ENABLED=0 GOOS="$os" GOARCH=amd64 go build -trimpath -buildvcs=false -modfile="$MODFILE" -tags "with_gvisor,no_tailscale,no_easytier,no_zerotier,no_fake_tcp" \
+  tags="with_gvisor,no_tailscale,no_easytier,no_zerotier,no_fake_tcp"
+  [ "$os" = "linux" ] && tags="$tags,cmfa"
+  CGO_ENABLED=0 GOOS="$os" GOARCH=amd64 go build -trimpath -buildvcs=false -modfile="$MODFILE" -tags "$tags" \
     -ldflags "-X github.com/metacubex/mihomo/constant.Version=${MIHOMO_VERSION} -X main.version=${APP_VERSION} -s -w -buildid=" \
     -o "$out" .
   install -m644 "${MIHOMO_DIR}/LICENSE" "$(dirname "$out")/mihomo-LICENSE.txt"

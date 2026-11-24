@@ -19,6 +19,7 @@ import (
 const (
 	maxAncestry          = 64
 	inetDiagMessageSize  = 72
+	inetDiagUidOffset    = 64
 	inetDiagInodeOffset  = 68
 	inetDiagSourceOffset = 8
 	inetDiagPortOffset   = 4
@@ -62,21 +63,24 @@ func setRuledProcesses(config string) {
 }
 
 func inheritedOwnerOf(metadata *C.Metadata) (string, error) {
-	if metadata.ProcessPath == "" {
-		return "", process.ErrNotFound
-	}
-	pid, ok := ownerPid(metadata)
+	pid, uid, ok := connectionOwner(metadata.NetWork.String(), metadata.SrcIP, uint16(metadata.SrcPort))
 	if !ok {
 		return "", process.ErrNotFound
 	}
+	chain := ancestry(pid)
+	if len(chain) == 0 || chain[0].exe == "" {
+		return "", process.ErrNotFound
+	}
+	metadata.ProcessPath = chain[0].exe
+	metadata.Uid = uid
 	ruled := map[string]struct{}{}
 	if loaded := ruledProcesses.Load(); loaded != nil {
 		ruled = *loaded
 	}
-	if owner, ok := ownerOf(ancestry(pid), ruled); ok {
+	if owner, ok := ownerOf(chain, ruled); ok {
 		return owner, nil
 	}
-	return "", process.ErrNotFound
+	return filepath.Base(chain[0].exe), nil
 }
 
 func ownerOf(chain []processNode, ruled map[string]struct{}) (string, bool) {
@@ -153,49 +157,35 @@ func parentPid(stat string) (int, bool) {
 	return parent, err == nil
 }
 
-func ownerPid(metadata *C.Metadata) (int, bool) {
-	candidates := processesRunning(metadata.ProcessPath, metadata.Uid)
-	switch len(candidates) {
-	case 0:
-		return 0, false
-	case 1:
-		return candidates[0], true
-	}
-	inode, ok := socketInode(metadata.NetWork.String(), metadata.SrcIP, uint16(metadata.SrcPort))
+func connectionOwner(network string, source netip.Addr, port uint16) (int, uint32, bool) {
+	inode, uid, ok := socketOf(network, source, port)
 	if !ok {
+		return 0, 0, false
+	}
+	pid, ok := pidHolding(inode, uid)
+	return pid, uid, ok
+}
+
+func pidHolding(inode uint32, uid uint32) (int, bool) {
+	entries, err := os.ReadDir("/proc")
+	if err != nil {
 		return 0, false
 	}
 	target := "socket:[" + strconv.FormatUint(uint64(inode), 10) + "]"
-	for _, pid := range candidates {
-		if holdsSocket(pid, target) {
-			return pid, true
-		}
-	}
-	return 0, false
-}
-
-func processesRunning(exe string, uid uint32) []int {
-	entries, err := os.ReadDir("/proc")
-	if err != nil {
-		return nil
-	}
-	var pids []int
 	for _, entry := range entries {
 		pid, err := strconv.Atoi(entry.Name())
 		if err != nil {
 			continue
 		}
-		dir := "/proc/" + entry.Name()
-		if link, err := os.Readlink(dir + "/exe"); err != nil || link != exe {
-			continue
-		}
 		var info syscall.Stat_t
-		if syscall.Stat(dir, &info) != nil || info.Uid != uid {
+		if syscall.Stat("/proc/"+entry.Name(), &info) != nil || info.Uid != uid {
 			continue
 		}
-		pids = append(pids, pid)
+		if holdsSocket(pid, target) {
+			return pid, true
+		}
 	}
-	return pids
+	return 0, false
 }
 
 func holdsSocket(pid int, target string) bool {
@@ -212,7 +202,17 @@ func holdsSocket(pid int, target string) bool {
 	return false
 }
 
-func socketInode(network string, source netip.Addr, port uint16) (uint32, bool) {
+func socketOf(network string, source netip.Addr, port uint16) (uint32, uint32, bool) {
+	if inode, uid, ok := socketIn(network, source, port); ok {
+		return inode, uid, true
+	}
+	if source.Is4() {
+		return socketIn(network, netip.AddrFrom16(source.As16()), port)
+	}
+	return 0, 0, false
+}
+
+func socketIn(network string, source netip.Addr, port uint16) (uint32, uint32, bool) {
 	protocol := uint8(syscall.IPPROTO_UDP)
 	if strings.HasPrefix(network, "tcp") {
 		protocol = syscall.IPPROTO_TCP
@@ -223,7 +223,7 @@ func socketInode(network string, source netip.Addr, port uint16) (uint32, bool) 
 	}
 	messages, ok := sockDiagDump(family, protocol, port, source.AsSlice())
 	if !ok {
-		return 0, false
+		return 0, 0, false
 	}
 	native := nativeEndian()
 	for _, message := range messages {
@@ -238,8 +238,8 @@ func socketInode(network string, source netip.Addr, port uint16) (uint32, bool) 
 			address = netip.AddrFrom16([16]byte(data[inetDiagSourceOffset : inetDiagSourceOffset+16])).Unmap()
 		}
 		if address == source.Unmap() {
-			return native.Uint32(data[inetDiagInodeOffset:]), true
+			return native.Uint32(data[inetDiagInodeOffset:]), native.Uint32(data[inetDiagUidOffset:]), true
 		}
 	}
-	return 0, false
+	return 0, 0, false
 }

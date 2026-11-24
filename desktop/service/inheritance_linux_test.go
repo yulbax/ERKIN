@@ -5,7 +5,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
-	"strconv"
+	"syscall"
 	"testing"
 )
 
@@ -89,21 +89,36 @@ func TestTheOwnerOfALiveSocketIsFound(t *testing.T) {
 	}
 	defer listener.Close()
 	port := uint16(listener.Addr().(*net.TCPAddr).Port)
-	inode, ok := socketInode("tcp", netip.MustParseAddr("127.0.0.1"), port)
+	pid, uid, ok := connectionOwner("tcp", netip.MustParseAddr("127.0.0.1"), port)
 	if !ok {
 		t.Skip("sock_diag is unavailable")
 	}
-	target := "socket:[" + strconv.FormatUint(uint64(inode), 10) + "]"
-	if !holdsSocket(os.Getpid(), target) {
-		t.Fatalf("this process does not hold %s", target)
+	if pid != os.Getpid() || uid != uint32(os.Getuid()) {
+		t.Fatalf("owner %d/%d, want %d/%d", pid, uid, os.Getpid(), os.Getuid())
 	}
-	self, _ := os.Readlink("/proc/self/exe")
-	found := false
-	for _, pid := range processesRunning(self, uint32(os.Getuid())) {
-		found = found || pid == os.Getpid()
+}
+
+func TestADualStackSocketTalkingToIPv4IsFound(t *testing.T) {
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	if err != nil {
+		t.Skip(err)
 	}
-	if !found {
-		t.Fatal("this test process was not among the running copies of its executable")
+	defer listener.Close()
+	fd, err := syscall.Socket(syscall.AF_INET6, syscall.SOCK_STREAM, 0)
+	if err != nil {
+		t.Skip(err)
+	}
+	defer syscall.Close(fd)
+	_ = syscall.SetsockoptInt(fd, syscall.IPPROTO_IPV6, syscall.IPV6_V6ONLY, 0)
+	mapped := netip.AddrFrom16(netip.MustParseAddr("127.0.0.1").As16()).As16()
+	if err = syscall.Connect(fd, &syscall.SockaddrInet6{Port: listener.Addr().(*net.TCPAddr).Port, Addr: mapped}); err != nil {
+		t.Skip(err)
+	}
+	local, _ := syscall.Getsockname(fd)
+	port := uint16(local.(*syscall.SockaddrInet6).Port)
+	pid, _, ok := connectionOwner("tcp", netip.MustParseAddr("127.0.0.1"), port)
+	if !ok || pid != os.Getpid() {
+		t.Fatalf("a dual-stack socket was not found (%d, %v)", pid, ok)
 	}
 }
 
