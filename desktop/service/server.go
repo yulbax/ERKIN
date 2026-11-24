@@ -50,6 +50,7 @@ type response struct {
 	Count   int64           `json:"count,omitempty"`
 	Log     *logEvent       `json:"log,omitempty"`
 	Group   *groupHealth    `json:"group,omitempty"`
+	Procs   []hostProcess   `json:"processes,omitempty"`
 }
 
 type groupHealth struct {
@@ -284,6 +285,9 @@ func (s *server) dispatch(conn io.ReadWriteCloser, message request) response {
 		result.Kind, result.Count, result.OK = set.Behavior, set.Count, true
 	case "rulelistRemove":
 		return fail(removeRuleList(s.workDir, message.Name))
+	case "processes":
+		result.Procs = hostProcesses()
+		result.OK = true
 	case "connections":
 		table, err := mihomocore.Connections()
 		if err != nil {

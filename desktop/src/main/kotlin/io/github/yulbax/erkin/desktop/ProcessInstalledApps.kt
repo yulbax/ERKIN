@@ -24,8 +24,9 @@ import kotlin.time.TimeSource
 
 class ProcessInstalledApps(
     private val appDao: AppDao,
-    private val ownExecutable: String?,
+    private val own: OwnApp,
     private val scope: CoroutineScope,
+    private val hostProcesses: () -> List<HostProcess>,
     private val programs: DesktopPrograms = DesktopPrograms.current,
     private val newAppsType: suspend () -> ConnectionType
 ) : InstalledAppsSource {
@@ -67,13 +68,13 @@ class ProcessInstalledApps(
             val saved = appDao.getAllAppsSnapshot()
             val newApps = newAppsType()
             val catalog = currentCatalog()
-            val running = discover(programs.running(), saved, ownExecutable)
+            val running = discover(programs.running(hostProcesses), saved, own)
             val savedById = saved.associateBy { it.packageName }
             val started = running.filter { !it.isSystemApp && it.packageName !in savedById }
             if (started.isNotEmpty()) {
                 appDao.addApps(started.map { App(it.packageName, it.name, isSystemApp = false, connectionType = newApps, path = it.path) })
             }
-            _installedApps.value = listed(running, saved, catalog, newApps, ownExecutable).sortedBy { it.name.lowercase() }
+            _installedApps.value = listed(running, saved, catalog, newApps, own).sortedBy { it.name.lowercase() }
             _error.value = null
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -104,7 +105,7 @@ class ProcessInstalledApps(
             saved: List<App>,
             catalog: List<CatalogProgram>,
             newApps: ConnectionType,
-            ownExecutable: String?
+            own: OwnApp
         ): List<InstalledApp> {
             fun keyOf(path: String) = WindowsAppIds.stable(path).lowercase()
             val programs = catalog.groupBy { it.id.lowercase() }.values.map { same -> same.minBy { it.name.length } }
@@ -115,12 +116,12 @@ class ProcessInstalledApps(
             fun keyOf(app: App) = keyOf(app.path ?: app.packageName)
             val shown = running.filter { !it.isSystemApp || it.packageName in ownChannel } +
                 saved.filter { app ->
-                    app.packageName !in runningIds && app.packageName !in removed && File(app.packageName).name != ownExecutable &&
+                    app.packageName !in runningIds && app.packageName !in removed && !own.isOwn(app.packageName) &&
                         (app.packageName in ownChannel || keyOf(app) in catalogByKey)
                 }.map { InstalledApp(it.packageName, it.name, isSystemApp = false, isLaunchable = true, path = it.path) }
             val shownKeys = shown.mapTo(HashSet()) { keyOf(it.path ?: it.packageName) }
             val unlisted = programs
-                .filter { it.id.lowercase() !in shownKeys && it.path?.let(::File)?.name != ownExecutable }
+                .filter { it.id.lowercase() !in shownKeys && !own.isOwn(it.id) }
                 .map { InstalledApp(it.id, it.name, isSystemApp = false, isLaunchable = true, path = it.path) }
             return shown.map { app ->
                 val entry = catalogByKey[keyOf(app.path ?: app.packageName)]
@@ -142,11 +143,11 @@ class ProcessInstalledApps(
             return existing.parentFile == null || !existing.list().isNullOrEmpty()
         }
 
-        fun discover(processes: List<RunningProcess>, saved: List<App>, ownExecutable: String?): List<InstalledApp> {
+        fun discover(processes: List<RunningProcess>, saved: List<App>, own: OwnApp): List<InstalledApp> {
             val savedByPath = saved.associateBy { (it.path ?: it.packageName).lowercase() }
             val savedById = saved.associateBy { it.packageName.lowercase() }
             return processes
-                .filter { it.executable.name.isNotBlank() && it.executable.name != ownExecutable }
+                .filter { it.executable.name.isNotBlank() && !own.isOwn(it.flatpak ?: it.executable.path) }
                 .groupBy { it.flatpak ?: it.executable.path.lowercase() }
                 .values
                 .map { copies ->

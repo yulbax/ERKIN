@@ -9,6 +9,19 @@ data class RunningProcess(
     val flatpak: String? = null
 )
 
+data class HostProcess(
+    val pid: Long,
+    val parent: Long,
+    val exe: String?,
+    val name: String,
+    val unit: String? = null,
+    val flatpak: String? = null
+)
+
+class OwnApp(private val executable: String?, private val flatpak: String?) {
+    fun isOwn(id: String): Boolean = id == flatpak || File(id).name == executable
+}
+
 data class CatalogProgram(val name: String, val id: String, val path: String?, val icon: File? = null) {
     companion object {
         fun executable(name: String, executable: File, icon: File? = null) =
@@ -27,21 +40,20 @@ enum class DesktopPrograms(val childrenInheritChannels: Boolean) {
         WINDOWS -> WindowsStartApps.list()
     }
 
-    fun running(): List<RunningProcess> {
-        val windowed = if (this == WINDOWS) WindowsWindows.withWindows() else emptySet()
+    fun running(hostProcesses: () -> List<HostProcess>): List<RunningProcess> = when (this) {
+        LINUX -> DesktopLaunchers.running(hostProcesses())
+        WINDOWS -> windowsPrograms()
+    }
+
+    private fun windowsPrograms(): List<RunningProcess> {
+        val windowed = WindowsWindows.withWindows()
         val systemRoot = System.getenv("SystemRoot")
         return ProcessHandle.allProcesses().toList().mapNotNull { process ->
             process.info().command().orElse(null)?.let { command ->
                 val executable = ProcessInstalledApps.executableOf(command)
-                val flatpak = if (this == LINUX) FlatpakApps.of(process.pid()) else null
                 RunningProcess(
                     executable = executable,
-                    isProgram = when (this) {
-                        LINUX -> flatpak != null || DesktopLaunchers.startedByDesktop(process)
-                        WINDOWS -> process.pid() in windowed && systemRoot?.let { executable.path.startsWith(it, ignoreCase = true) } != true
-                    },
-                    ancestors = if (childrenInheritChannels && flatpak == null) DesktopLaunchers.ancestorsOf(process) else emptyList(),
-                    flatpak = flatpak
+                    isProgram = process.pid() in windowed && systemRoot?.let { executable.path.startsWith(it, ignoreCase = true) } != true
                 )
             }
         }
@@ -72,20 +84,24 @@ object DesktopLaunchers {
         else -> false
     }
 
-    fun startedByDesktop(process: ProcessHandle): Boolean {
-        val parentName = process.parent().flatMap { it.info().command() }.orElse(null)
-            ?.let { File(it.removeSuffix(DELETED_SUFFIX)).name }
-        return startedByDesktop(parentName, cgroupUnitOf(process.pid()))
+    fun running(processes: List<HostProcess>): List<RunningProcess> {
+        val byPid = processes.associateBy { it.pid }
+        return processes.mapNotNull { process ->
+            val exe = process.exe ?: return@mapNotNull null
+            RunningProcess(
+                executable = ProcessInstalledApps.executableOf(exe),
+                isProgram = process.flatpak != null || startedByDesktop(byPid[process.parent]?.name, process.unit),
+                ancestors = if (process.flatpak == null) ancestorsOf(process, byPid) else emptyList(),
+                flatpak = process.flatpak
+            )
+        }
     }
 
-    private fun cgroupUnitOf(pid: Long): String? =
-        runCatching { File("/proc/$pid/cgroup").readText().trim().substringAfterLast('/') }.getOrNull()
-
-    fun ancestorsOf(process: ProcessHandle): List<File> =
-        generateSequence(process.parent().orElse(null)) { it.parent().orElse(null) }
+    private fun ancestorsOf(process: HostProcess, byPid: Map<Long, HostProcess>): List<File> =
+        generateSequence(byPid[process.parent]) { byPid[it.parent] }
             .take(MAX_ANCESTORS)
-            .takeWhile { it.pid() > 1 }
-            .map { it.info().command().orElse(null)?.let { command -> File(command.removeSuffix(DELETED_SUFFIX)) } }
+            .takeWhile { it.pid > 1 }
+            .map { it.exe?.let { exe -> File(exe.removeSuffix(DELETED_SUFFIX)) } }
             .takeWhile { it != null && !isSessionRoot(it) }
             .filterNotNull()
             .toList()

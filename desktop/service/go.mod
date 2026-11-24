@@ -3,6 +3,8 @@ module github.com/yulbax/erkin/service
 go 1.24
 
 require (
+	github.com/godbus/dbus/v5 v5.2.4
+	github.com/metacubex/mihomo v1.19.34
 	github.com/sirupsen/logrus v1.9.4
 	github.com/yulbax/erkin/mihomocore v0.0.0
 	golang.org/x/sys v0.35.0
@@ -70,7 +72,6 @@ require (
 	github.com/metacubex/jsonv2 v0.0.0-20260721082349-16b4998c8f89 // indirect
 	github.com/metacubex/kcp-go v0.0.0-20260105040817-550693377604 // indirect
 	github.com/metacubex/mhurl v0.1.0 // indirect
-	github.com/metacubex/mihomo v1.19.34 // indirect
 	github.com/metacubex/mipstack v0.0.0-20261019124225-9a80a07eaeb9 // indirect
 	github.com/metacubex/mlkem v0.1.0 // indirect
 	github.com/metacubex/nftables v0.0.0-20260426003805-208c2c1ba2cb // indirect

@@ -15,10 +15,15 @@ type tunDevice struct {
 	addresses []netip.Prefix
 }
 
+type tunnelSession interface {
+	close()
+}
+
 type engine struct {
 	mutex   sync.Mutex
 	running bool
 	tun     tunDevice
+	tunnel  tunnelSession
 }
 
 func check(config string) error {
@@ -41,12 +46,20 @@ func (e *engine) start(config string, resolvedProxy string, resolver string) err
 		}
 	}
 	setRuledProcesses(config)
+	config, tunnel, err := openTunnel(config)
+	if err != nil {
+		return err
+	}
 	if err := mihomocore.Apply(config, true, resolvedProxy, resolver); err != nil {
 		mihomocore.Shutdown()
+		if tunnel != nil {
+			tunnel.close()
+		}
 		return err
 	}
 	e.running = true
 	e.tun = tun
+	e.tunnel = tunnel
 	return nil
 }
 
@@ -58,6 +71,10 @@ func (e *engine) stop() error {
 	}
 	e.running = false
 	mihomocore.Shutdown()
+	if e.tunnel != nil {
+		e.tunnel.close()
+		e.tunnel = nil
+	}
 	if e.tun.name != "" {
 		return releaseAdapter(e.tun.name, e.tun.addresses)
 	}

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ERKIN
+Comment=Per-app split VPN with ByeDPI
+Exec=erkin
+Icon=io.github.yulbax.erkin
+Categories=Network;
+Terminal=false
+StartupWMClass=io-github-yulbax-erkin-desktop-MainKt

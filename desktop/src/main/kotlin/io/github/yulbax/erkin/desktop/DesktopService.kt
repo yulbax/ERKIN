@@ -86,7 +86,7 @@ sealed class DesktopService(protected val log: AppLog) {
     }
 
     class Portable(
-        private val binary: File,
+        private val command: List<String>,
         private val workDir: File,
         private val protectSocket: File,
         private val installedSocket: File,
@@ -106,9 +106,11 @@ sealed class DesktopService(protected val log: AppLog) {
             check(!installedServiceRuns()) { INSTALLED_RUNNING }
             log.i(TAG, "starting the ERKIN core")
             val process = ProcessBuilder(
-                binary.absolutePath, "run", "--stdio",
-                "--work-dir", workDir.absolutePath,
-                "--protect", protectSocket.absolutePath
+                command + listOf(
+                    "run", "--stdio",
+                    "--work-dir", workDir.absolutePath,
+                    "--protect", protectSocket.absolutePath
+                )
             ).start()
             thread(isDaemon = true, name = "erkin-core-errors") {
                 process.errorStream.bufferedReader().useLines { lines -> lines.forEach { log.e(TAG, "core: $it") } }

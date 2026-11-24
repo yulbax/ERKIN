@@ -85,9 +85,9 @@ val desktopModule = module {
     single { VpnCommandBus() }
     single<DiagnosticsSource> { DesktopDiagnostics(get(), get(), get(), get()) }
     single<DesktopService> {
-        if (DesktopPaths.isPortable) {
+        if (DesktopPaths.runsServiceItself) {
             DesktopService.Portable(
-                binary = DesktopPaths.serviceBinary,
+                command = DesktopPaths.serviceCommand,
                 workDir = DesktopPaths.coreDir,
                 protectSocket = DesktopPaths.protectSocket,
                 installedSocket = DesktopPaths.serviceSocket,
@@ -103,7 +103,12 @@ val desktopModule = module {
     single { ConnectionMonitor(ServiceConnectionTable(get()), get(), get(), CoroutineScope(SupervisorJob() + Dispatchers.Default)) }
     single<InstalledAppsSource>(createdAtStart = true) {
         val settings = get<SettingsRepository>()
-        ProcessInstalledApps(get(), DesktopPaths.ownExecutable, CoroutineScope(SupervisorJob() + Dispatchers.IO)) {
+        ProcessInstalledApps(
+            appDao = get(),
+            own = DesktopPaths.ownApp,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            hostProcesses = { get<DesktopService>().running()?.processes().orEmpty() }
+        ) {
             settings.settings.first().newAppsConnectionType(platformNewAppsConnectionType)
         }
     }

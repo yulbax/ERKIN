@@ -39,15 +39,6 @@ class LinuxApplicationsTest {
     }
 
     @Test
-    fun aFlatpakProcessIsKnownByItsAppInsideAndAroundItsSandbox() {
-        val info = "[Application]\nname=org.telegram.desktop\nruntime=runtime/org.kde.Platform/x86_64/6.9\n\n[Instance]\nname=other"
-        val scope = "0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-org.telegram.desktop-1443230209.scope\n"
-        assertEquals("org.telegram.desktop", FlatpakApps.appOf(info, ""))
-        assertEquals("org.telegram.desktop", FlatpakApps.appOf("", scope))
-        assertNull(FlatpakApps.appOf("", "0::/user.slice/user-1000.slice/session-3.scope\n"))
-    }
-
-    @Test
     fun linksAndHiddenEntriesAreNotApplications() {
         assertNull(LinuxApplications.parse("[Desktop Entry]\nType=Link\nName=Docs\nURL=https://example.org"))
         assertTrue(LinuxApplications.parse("[Desktop Entry]\nType=Application\nName=X\nExec=x\nNoDisplay=true")!!.hidden)
@@ -63,15 +54,77 @@ class LinuxApplicationsTest {
     }
 
     @Test
-    fun aWrapperScriptLeadsToTheProgramItStarts() {
-        val root = Files.createTempDirectory("erkin-wrapper").toFile()
+    fun theCatalogIsReadThroughTheHostAndNamesHostPaths() {
+        val root = Files.createTempDirectory("erkin-host").toFile()
         try {
-            val program = File(root, "opt/zen/zen-bin").apply { parentFile.mkdirs(); writeBytes(byteArrayOf(0x7f, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte())); setExecutable(true) }
-            val wrapper = File(root, "zen-browser").apply { writeText("#!/bin/bash\n# starts ${'$'}{HOME}/notes\nexec ${program.path} \"${'$'}@\"\n"); setExecutable(true) }
-            assertEquals(program, LinuxApplications.scriptTarget(wrapper))
-            assertNull(LinuxApplications.scriptTarget(program))
+            fun file(path: String) = File(root, path).apply { parentFile.mkdirs() }
+            fun binary(path: String) = file(path).apply { writeBytes(ELF); setExecutable(true) }
+            fun link(path: String, target: String) = Files.createSymbolicLink(file(path).toPath(), File(target).toPath())
+
+            link("bin", "usr/bin")
+            binary("opt/zen/zen-bin")
+            file("usr/bin/zen-browser").apply { writeText("#!/bin/bash\n# starts ${'$'}{HOME}/notes\nexec /opt/zen/zen-bin \"${'$'}@\"\n"); setExecutable(true) }
+            binary("usr/bin/term-real")
+            link("usr/bin/term", "/usr/bin/term-real")
+            link("usr/bin/kinfo", "/usr/bin/term-real")
+            file("usr/share/applications/kinfo.desktop").writeText("[Desktop Entry]\nType=Application\nName=Info\nExec=kinfo")
+            file("usr/share/applications/zen.desktop").writeText("[Desktop Entry]\nType=Application\nName=Zen\nExec=zen-browser %u\nIcon=zen")
+            file("usr/share/applications/term.desktop").writeText("[Desktop Entry]\nType=Application\nName=Term\nExec=/bin/term")
+            file("var/lib/flatpak/exports/share/applications/org.telegram.desktop.desktop")
+                .writeText("[Desktop Entry]\nType=Application\nName=Telegram\nExec=/usr/bin/flatpak run org.telegram.desktop\nX-Flatpak=org.telegram.desktop")
+            val icon = file("usr/share/icons/hicolor/scalable/apps/zen.svg").apply { writeText("<svg/>") }
+
+            val host = HostSystem(
+                home = "/home/u",
+                dataHome = "/home/u/.local/share",
+                dataDirs = listOf("/var/lib/flatpak/exports/share", "/usr/share"),
+                path = listOf("/usr/bin", "/bin"),
+                visible = { root.path + it }
+            )
+            assertEquals(
+                listOf(
+                    Triple("Info", "/usr/bin/term-real", null),
+                    Triple("Telegram", "org.telegram.desktop", null),
+                    Triple("Term", "/usr/bin/term-real", null),
+                    Triple("Zen", "/opt/zen/zen-bin", icon)
+                ),
+                LinuxApplications.list(host).map { Triple(it.name, it.id, it.icon) }.sortedBy { it.first }
+            )
+            assertEquals("/usr/bin/term-real", host.realPath("/bin/./term"))
+            assertEquals("/usr/bin/zen-browser", host.realPath("/usr/bin/../bin/zen-browser"))
+            assertNull(host.realPath("/usr/bin/missing"))
+            assertNull(LinuxApplications.scriptTarget("/opt/zen/zen-bin", host))
         } finally {
             root.deleteRecursively()
         }
+    }
+
+    @Test
+    fun aProgramTheSandboxCannotSeeIsTakenFromItsLauncher() {
+        val root = Files.createTempDirectory("erkin-hidden").toFile()
+        try {
+            fun file(path: String) = File(root, path).apply { parentFile.mkdirs() }
+            file("home/u/.local/share/applications/clion.desktop")
+                .writeText("[Desktop Entry]\nType=Application\nName=CLion\nExec=\"/home/u/.local/share/JetBrains/Toolbox/apps/clion/bin/clion\" %u")
+            file("home/u/.local/share/applications/gone.desktop").writeText("[Desktop Entry]\nType=Application\nName=Gone\nExec=/opt/gone/bin/gone")
+            val host = HostSystem(
+                home = "/home/u",
+                dataHome = "/home/u/.local/share",
+                dataDirs = emptyList(),
+                path = emptyList(),
+                visible = { root.path + it },
+                hidden = { it.startsWith("/home/u/") && !File(root.path + it).exists() }
+            )
+            assertEquals(
+                listOf("CLion" to "/home/u/.local/share/JetBrains/Toolbox/apps/clion/bin/clion"),
+                LinuxApplications.list(host).map { it.name to it.id }
+            )
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    private companion object {
+        val ELF = byteArrayOf(0x7f, 'E'.code.toByte(), 'L'.code.toByte(), 'F'.code.toByte())
     }
 }

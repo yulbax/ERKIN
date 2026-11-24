@@ -96,7 +96,7 @@ class DesktopEngineIntegrationTest {
     }
 
     private fun portableService(installedSocket: File) = DesktopService.Portable(
-        binary = binary("erkin-service"),
+        command = listOf(binary("erkin-service").absolutePath),
         workDir = File(workDir, "core"),
         protectSocket = File(workDir, "p.sock"),
         installedSocket = installedSocket,

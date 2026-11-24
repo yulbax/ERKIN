@@ -62,18 +62,31 @@ func setRuledProcesses(config string) {
 }
 
 func inheritedOwnerOf(metadata *C.Metadata) (string, error) {
-	ruled := ruledProcesses.Load()
-	if ruled == nil || len(*ruled) == 0 || metadata.ProcessPath == "" {
+	if metadata.ProcessPath == "" {
 		return "", process.ErrNotFound
 	}
 	pid, ok := ownerPid(metadata)
 	if !ok {
 		return "", process.ErrNotFound
 	}
-	if owner, ok := inheritedOwner(ancestry(pid), *ruled); ok {
+	ruled := map[string]struct{}{}
+	if loaded := ruledProcesses.Load(); loaded != nil {
+		ruled = *loaded
+	}
+	if owner, ok := ownerOf(ancestry(pid), ruled); ok {
 		return owner, nil
 	}
 	return "", process.ErrNotFound
+}
+
+func ownerOf(chain []processNode, ruled map[string]struct{}) (string, bool) {
+	if owner, ok := inheritedOwner(chain, ruled); ok {
+		return owner, true
+	}
+	if len(chain) > 0 && chain[0].app != "" {
+		return chain[0].app, true
+	}
+	return "", false
 }
 
 func inheritedOwner(chain []processNode, ruled map[string]struct{}) (string, bool) {

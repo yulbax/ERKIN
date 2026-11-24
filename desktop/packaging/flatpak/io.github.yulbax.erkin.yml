@@ -1,0 +1,41 @@
+id: io.github.yulbax.erkin
+runtime: org.freedesktop.Platform
+runtime-version: '26.08'
+sdk: org.freedesktop.Sdk
+command: erkin
+finish-args:
+  - --share=network
+  - --env=LD_LIBRARY_PATH=/app/lib
+  - --share=ipc
+  - --socket=x11
+  - --device=dri
+  - --talk-name=org.freedesktop.Flatpak
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --own-name=org.kde.StatusNotifierItem-2-1
+  - --filesystem=host-os:ro
+  - --filesystem=/opt:ro
+  - --filesystem=/var/lib/flatpak/exports/share:ro
+  - --filesystem=xdg-data/flatpak/exports/share:ro
+  - --filesystem=/var/lib/flatpak/app:ro
+  - --filesystem=xdg-data/flatpak/app:ro
+  - --filesystem=xdg-data/applications:ro
+  - --filesystem=xdg-data/icons:ro
+  - --filesystem=~/.icons:ro
+  - --filesystem=xdg-config/kdeglobals:ro
+  - --filesystem=xdg-config/gtk-3.0:ro
+modules:
+  - name: erkin
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: ../../build/flatpak-stage
+    build-commands:
+      - mkdir -p /app/lib
+      - cp -a ERKIN /app/lib/erkin
+      - ln -s /usr/lib/x86_64-linux-gnu/libdbus-1.so.3 /app/lib/libdbus-1.so
+      - ln -s /usr/lib/x86_64-linux-gnu/libXrandr.so.2 /app/lib/libXrandr.so
+      - mkdir -p /app/bin
+      - ln -s /app/lib/erkin/bin/ERKIN /app/bin/erkin
+      - install -Dm644 io.github.yulbax.erkin.desktop /app/share/applications/io.github.yulbax.erkin.desktop
+      - install -Dm644 erkin.png /app/share/icons/hicolor/256x256/apps/io.github.yulbax.erkin.png
+      - install -Dm644 LICENSE /app/share/licenses/io.github.yulbax.erkin/LICENSE

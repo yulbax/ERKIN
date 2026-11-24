@@ -69,7 +69,7 @@ class DesktopVersionInfo(private val service: DesktopService) : VersionInfo {
 }
 
 class DesktopUpdatePlatform(private val controller: VpnController) : UpdatePlatform {
-    override val assetSuffix: String? = System.getProperty("erkin.updateAsset")?.ifBlank { null }?.takeUnless { DesktopPaths.isPortable }
+    override val assetSuffix: String? = System.getProperty("erkin.updateAsset")?.ifBlank { null }?.takeUnless { DesktopPaths.isPortable || FlatpakSandbox.isActive }
     override val downloadDir: File = File(System.getProperty("java.io.tmpdir"), "erkin-updates")
     override val checksOnLaunch: Boolean = !System.getProperty("erkin.testing").toBoolean()
 

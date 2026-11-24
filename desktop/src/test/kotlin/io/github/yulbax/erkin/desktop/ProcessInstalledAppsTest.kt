@@ -12,7 +12,7 @@ import org.junit.Test
 class ProcessInstalledAppsTest {
 
     private fun discover(vararg paths: String, saved: List<App> = emptyList()) =
-        ProcessInstalledApps.discover(paths.map { RunningProcess(File(it), isProgram = !it.startsWith("/usr/")) }, saved, ownExecutable = "ERKIN")
+        ProcessInstalledApps.discover(paths.map { RunningProcess(File(it), isProgram = !it.startsWith("/usr/")) }, saved, own = OwnApp("ERKIN", null))
 
     @Test
     fun aProgramIsKeyedByItsPath() {
@@ -67,7 +67,7 @@ class ProcessInstalledAppsTest {
         val apps = ProcessInstalledApps.discover(
             listOf("/usr/bin/Hyprland (deleted)", "/usr/bin/Hyprland").map { RunningProcess(ProcessInstalledApps.executableOf(it), false) },
             saved = emptyList(),
-            ownExecutable = "ERKIN"
+            own = OwnApp("ERKIN", null)
         )
         assertEquals(listOf("/usr/bin/Hyprland"), apps.map { it.packageName })
     }
@@ -82,7 +82,7 @@ class ProcessInstalledAppsTest {
                 RunningProcess(File("/opt/Discord/Discord"), isProgram = false)
             ),
             saved = emptyList(),
-            ownExecutable = "ERKIN"
+            own = OwnApp("ERKIN", null)
         )
         assertEquals(listOf(false, true, false), apps.map { it.isSystemApp })
         assertEquals(listOf(true, false, true), apps.map { it.isLaunchable })
@@ -113,7 +113,7 @@ class ProcessInstalledAppsTest {
             CatalogProgram.executable("Foot Server", File("/usr/bin/foot")),
             CatalogProgram.executable("Foot", File("/usr/bin/foot"))
         )
-        val apps = ProcessInstalledApps.listed(running, saved, catalog, ConnectionType.VPN, ownExecutable = "ERKIN")
+        val apps = ProcessInstalledApps.listed(running, saved, catalog, ConnectionType.VPN, own = OwnApp("ERKIN", null))
 
         assertEquals(listOf("Firefox", "Foot", "GIMP", "Ghostty", "curl"), apps.map { it.name }.sorted())
         assertTrue(apps.all { it.isRegular })
@@ -128,7 +128,7 @@ class ProcessInstalledAppsTest {
                 RunningProcess(File("/usr/bin/xdg-dbus-proxy"), isProgram = true, flatpak = "org.telegram.desktop")
             ),
             saved = emptyList(),
-            ownExecutable = "ERKIN"
+            own = OwnApp("ERKIN", null)
         )
         assertEquals(listOf("org.telegram.desktop"), running.map { it.packageName })
         assertNull(running.single().path)
@@ -137,10 +137,39 @@ class ProcessInstalledAppsTest {
             CatalogProgram.flatpak("Telegram", "org.telegram.desktop"),
             CatalogProgram.flatpak("Discord", "com.discordapp.Discord")
         )
-        val apps = ProcessInstalledApps.listed(running, emptyList(), catalog, ConnectionType.VPN, ownExecutable = "ERKIN")
+        val apps = ProcessInstalledApps.listed(running, emptyList(), catalog, ConnectionType.VPN, own = OwnApp("ERKIN", null))
         assertEquals(
             listOf("Discord" to "com.discordapp.Discord", "Telegram" to "org.telegram.desktop"),
             apps.map { it.name to it.packageName }.sortedBy { it.first }
         )
+    }
+
+    @Test
+    fun theHostTableTellsProgramsTheirAncestorsAndFlatpakApps() {
+        val table = listOf(
+            HostProcess(1, 0, null, "systemd"),
+            HostProcess(10, 1, "/usr/bin/Hyprland", "Hyprland", "session-3.scope"),
+            HostProcess(20, 10, "/usr/bin/ghostty", "ghostty", "session-3.scope"),
+            HostProcess(30, 20, "/usr/bin/fish", "fish", "session-3.scope"),
+            HostProcess(40, 30, "/usr/bin/curl", "curl", "session-3.scope"),
+            HostProcess(45, 10, "/usr/bin/bwrap", "bwrap", "app-flatpak-org.telegram.desktop-1.scope", "org.telegram.desktop"),
+            HostProcess(50, 45, "/app/bin/Telegram", "Telegram", "app-flatpak-org.telegram.desktop-1.scope", "org.telegram.desktop")
+        )
+        val running = DesktopLaunchers.running(table).associateBy { it.executable.path }
+
+        assertEquals(setOf("/usr/bin/Hyprland", "/usr/bin/ghostty", "/usr/bin/fish", "/usr/bin/curl", "/usr/bin/bwrap", "/app/bin/Telegram"), running.keys)
+        assertTrue(running.getValue("/usr/bin/ghostty").isProgram)
+        assertEquals(false, running.getValue("/usr/bin/fish").isProgram)
+        assertEquals(listOf("/usr/bin/fish", "/usr/bin/ghostty"), running.getValue("/usr/bin/curl").ancestors.map { it.path })
+        assertEquals(listOf("org.telegram.desktop", "org.telegram.desktop"), listOf(running.getValue("/usr/bin/bwrap").flatpak, running.getValue("/app/bin/Telegram").flatpak))
+        assertTrue(running.getValue("/app/bin/Telegram").isProgram)
+    }
+
+    @Test
+    fun erkinDoesNotListItselfByExecutableOrFlatpakId() {
+        val own = OwnApp("ERKIN", "io.github.yulbax.erkin")
+        assertTrue(own.isOwn("io.github.yulbax.erkin"))
+        assertTrue(own.isOwn("/opt/erkin/bin/ERKIN"))
+        assertEquals(false, own.isOwn("org.telegram.desktop"))
     }
 }

@@ -21,6 +21,8 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
@@ -122,6 +124,22 @@ class ServiceClient private constructor(
     }.takeIf { it.ok }?.let { reply ->
         (reply["group"] as? JsonObject)?.let { group ->
             GroupHealth(group["alive"]?.jsonPrimitive?.intOrNull ?: 0, group["total"]?.jsonPrimitive?.intOrNull ?: 0)
+        }
+    }
+
+    fun processes(): List<HostProcess> = call("processes").let { reply ->
+        reply.throwIfFailed()
+        reply["processes"]?.jsonArray.orEmpty().map { element ->
+            val fields = element.jsonObject
+            fun text(key: String) = fields[key]?.jsonPrimitive?.contentOrNull?.ifEmpty { null }
+            HostProcess(
+                pid = fields["pid"]?.jsonPrimitive?.longOrNull ?: 0,
+                parent = fields["ppid"]?.jsonPrimitive?.longOrNull ?: 0,
+                exe = text("exe"),
+                name = text("name").orEmpty(),
+                unit = text("unit"),
+                flatpak = text("flatpak")
+            )
         }
     }
 

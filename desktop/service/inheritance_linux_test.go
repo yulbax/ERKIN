@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/netip"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 )
@@ -122,5 +123,40 @@ func TestAFlatpakAppIsKnownByItsIdInsideAndAroundItsSandbox(t *testing.T) {
 	owner, ok := inheritedOwner(chain, map[string]struct{}{"org.telegram.desktop": {}})
 	if !ok || owner != "org.telegram.desktop" {
 		t.Fatalf("owner %q %v", owner, ok)
+	}
+}
+
+func TestTheHostProcessTableDescribesTheTestItself(t *testing.T) {
+	own := os.Getpid()
+	for _, process := range hostProcesses() {
+		if process.PID != own {
+			continue
+		}
+		if process.Parent != os.Getppid() || process.Exe == "" || process.Name != filepath.Base(process.Exe) || process.Unit == "" {
+			t.Fatalf("unexpected %+v", process)
+		}
+		return
+	}
+	t.Fatal("own process missing")
+}
+
+func TestTheUnitIsTheLastCgroupComponent(t *testing.T) {
+	if got := cgroupUnit("0::/user.slice/user-1000.slice/user@1000.service/app.slice/app-flatpak-org.telegram.desktop-1.scope\n"); got != "app-flatpak-org.telegram.desktop-1.scope" {
+		t.Fatalf("%q", got)
+	}
+}
+
+func TestAFlatpakAppWithoutARuleIsStillNamedByItsId(t *testing.T) {
+	chain := []processNode{{50, "/app/bin/Telegram", "org.telegram.desktop"}, {45, "/usr/bin/bwrap", "org.telegram.desktop"}, {10, "/usr/bin/Hyprland", ""}}
+	if owner, ok := ownerOf(chain, map[string]struct{}{}); !ok || owner != "org.telegram.desktop" {
+		t.Fatalf("owner %q %v", owner, ok)
+	}
+	sandboxed := []processNode{{60, "/app/lib/erkin/ciadpi", "io.github.yulbax.erkin"}}
+	if owner, _ := ownerOf(sandboxed, map[string]struct{}{"ciadpi": {}}); owner != "ciadpi" {
+		t.Fatalf("a ruled name must win over the Flatpak id, got %q", owner)
+	}
+	host := []processNode{{70, "/usr/bin/curl", ""}, {1, "/usr/lib/systemd/systemd", ""}}
+	if owner, ok := ownerOf(host, map[string]struct{}{}); ok {
+		t.Fatalf("an unruled host process keeps its own name, got %q", owner)
 	}
 }
