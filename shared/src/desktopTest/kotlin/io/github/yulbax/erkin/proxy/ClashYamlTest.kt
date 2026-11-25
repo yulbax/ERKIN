@@ -27,6 +27,19 @@ class ClashYamlTest {
     }
 
     @Test
+    fun aFlagRightOnTheReadersBufferEdgeStillLoads() {
+        val head = "proxies:\n  - name: \""
+        val flag = "\uD83C\uDDF3\uD83C\uDDF1"
+        val padding = "x".repeat(BUFFER_EDGE - head.length)
+        val text = head + padding + flag + " Amsterdam\"\n    type: ss\n    server: 192.0.2.1\n    port: 8388\n" +
+            "    cipher: aes-128-gcm\n    password: secret\n"
+
+        assertEquals(BUFFER_EDGE, text.indexOf(flag))
+        assertEquals(SubscriptionFormat.CLASH_YAML, SubscriptionFormat.detect(text))
+        assertEquals(listOf(padding + flag + " Amsterdam"), SubscriptionParser.parseBody(text).map { it.name })
+    }
+
+    @Test
     fun stripsKeysThatBelongToTheLocalConfig() {
         val chained = SubscriptionParser.parseBody(SUBSCRIPTION).first { it.name == "Chained" }.proxy
 
@@ -111,6 +124,7 @@ class ClashYamlTest {
     }
 
     private companion object {
+        const val BUFFER_EDGE = 1024
         val SUBSCRIPTION = """
             mixed-port: 7890
             allow-lan: false
