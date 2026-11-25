@@ -17,8 +17,15 @@ val buildHash = runCatching {
     providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
 }.getOrDefault("")
 
-val desktopOs = providers.gradleProperty("erkin.desktopOs")
-    .getOrElse(if (System.getProperty("os.name").startsWith("Windows")) "windows" else "linux")
+val hostOs = if (System.getProperty("os.name").startsWith("Windows")) "windows" else "linux"
+val desktopOs = providers.gradleProperty("erkin.desktopOs").getOrElse(hostOs)
+
+val appProperties = mapOf(
+    "erkin.version" to appVersion,
+    "erkin.build" to buildHash,
+    "erkin.byedpi.version" to byeDpiVersion,
+    "erkin.testing" to testing.toString()
+)
 
 kotlin {
     jvmToolchain(21)
@@ -124,7 +131,7 @@ val prepareLinuxBinaries = registerBundledBinaries(
 compose.desktop {
     application {
         mainClass = "io.github.yulbax.erkin.desktop.MainKt"
-        jvmArgs += listOf("-Derkin.version=$appVersion", "-Derkin.build=$buildHash", "-Derkin.byedpi.version=$byeDpiVersion", "-Derkin.testing=$testing")
+        jvmArgs += appProperties.map { (key, value) -> "-D$key=$value" }
         if (System.getProperty("os.name").startsWith("Windows")) jvmArgs += "-Derkin.updateAsset=windows-x86_64.msi"
 
         buildTypes.release.proguard {
@@ -248,5 +255,160 @@ if (System.getProperty("os.name").startsWith("Windows")) {
         from(preparePortableImage) { into("ERKIN") }
         destinationDirectory.set(layout.buildDirectory.dir("compose/binaries/main-release/portable"))
         archiveFileName.set("ERKIN-$appVersion-windows-x86_64-portable.zip")
+    }
+}
+
+enum class NativeTarget(
+    val id: String,
+    val executableSuffix: String,
+    val distributionAppPath: String,
+    val nativeImageLauncher: String,
+    val sqliteEntry: String,
+    val graalvmFiles: List<Pair<String, String>>,
+    val extraArguments: List<String>
+) {
+    LINUX(
+        id = "linux",
+        executableSuffix = "",
+        distributionAppPath = "lib/app",
+        nativeImageLauncher = "native-image",
+        sqliteEntry = "natives/linux_x64/libsqliteJni.so",
+        graalvmFiles = listOf("lib/libjawt.so" to "", "lib/libjawt.so" to "lib"),
+        extraArguments = emptyList()
+    ),
+    WINDOWS(
+        id = "windows",
+        executableSuffix = ".exe",
+        distributionAppPath = "app",
+        nativeImageLauncher = "native-image.cmd",
+        sqliteEntry = "natives/windows_x64/sqliteJni.dll",
+        graalvmFiles = listOf("bin/jawt.dll" to "bin", "lib/fontconfig.bfc" to "lib"),
+        extraArguments = listOf(
+            "-H:+AddAllCharsets",
+            "-H:NativeLinkerOption=/SUBSYSTEM:WINDOWS",
+            "-H:NativeLinkerOption=/ENTRY:mainCRTStartup"
+        )
+    );
+
+    val javaExecutable get() = "bin/java$executableSuffix"
+}
+
+val nativeTarget = NativeTarget.entries.first { it.id == desktopOs }
+val graalvmHome = providers.gradleProperty("erkin.graalvm").orElse(providers.environmentVariable("GRAALVM_HOME"))
+val distributionLibDir = layout.buildDirectory.dir("compose/binaries/main/app/ERKIN/${nativeTarget.distributionAppPath}")
+val distributionJars = fileTree(distributionLibDir) { include("*.jar") }
+val nativeConfigDir = layout.projectDirectory.dir("native/$desktopOs")
+val nativeImageDir = layout.buildDirectory.dir("native/image")
+val generatedNativeDir = layout.buildDirectory.dir("generated/native/kotlin")
+val composeLocales = layout.projectDirectory.dir("../ui/src/commonMain/composeResources").asFile.listFiles().orEmpty()
+    .map { it.name }
+    .filter { it.startsWith("values-") }
+    .map { it.removePrefix("values-") }
+    .sorted()
+
+val nativeSourceSet = sourceSets.create("native") {
+    compileClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
+}
+
+val generateNativeBuild = tasks.register("generateNativeBuild") {
+    val properties = appProperties
+    val buildFile = generatedNativeDir.map { it.file("NativeBuild.kt") }
+    inputs.property("appProperties", properties)
+    outputs.dir(generatedNativeDir)
+    doLast {
+        fun escaped(value: String) = value.replace("\\", "\\\\").replace("\"", "\\\"")
+        val entries = properties.entries.joinToString(",\n") { (key, value) -> "        \"${escaped(key)}\" to \"${escaped(value)}\"" }
+        buildFile.get().asFile.apply {
+            parentFile.mkdirs()
+            writeText("internal object NativeBuild {\n    val properties: Map<String, String> = mapOf(\n$entries\n    )\n}\n")
+        }
+    }
+}
+
+kotlin.sourceSets.named("native") { kotlin.srcDir(generateNativeBuild) }
+
+val buildNativeImage = tasks.register<Exec>("buildNativeImage") {
+    group = "distribution"
+    description = "Compiles the desktop app into a GraalVM native image."
+    dependsOn("createDistributable", "nativeClasses")
+    inputs.files(distributionJars).withPropertyName("jars")
+    inputs.files(nativeSourceSet.output.classesDirs).withPropertyName("nativeClasses")
+    inputs.files(nativeConfigDir).withPropertyName("nativeConfig")
+    outputs.dir(nativeImageDir)
+    val home = graalvmHome
+    val targetOs = desktopOs
+    val buildOs = hostOs
+    val target = nativeTarget
+    val imageDirectory = nativeImageDir
+    val classesDirs = nativeSourceSet.output.classesDirs
+    val jars = distributionJars
+    val configDir = nativeConfigDir.asFile.invariantSeparatorsPath
+    val locales = (listOf("en") + composeLocales).joinToString(",")
+    doFirst {
+        val graalvm = home.orNull ?: error("Set the erkin.graalvm Gradle property or GRAALVM_HOME to a GraalVM JDK.")
+        check(targetOs == buildOs) { "native-image builds only for the host OS ($buildOs), not $targetOs." }
+        val imageDir = imageDirectory.get().asFile.apply { deleteRecursively(); mkdirs() }
+        val classpath = (classesDirs.files + jars.files)
+            .joinToString(File.pathSeparator) { it.invariantSeparatorsPath }
+        val arguments = listOf(
+            "-J-Xmx4g",
+            "-Os",
+            "--enable-native-access=ALL-UNNAMED",
+            "-H:ConfigurationFileDirectories=$configDir",
+            "-Djava.awt.headless=false",
+            "-H:+UnlockExperimentalVMOptions",
+            "-H:IncludeLocales=$locales",
+            "-H:IncludeResources=composeResources/.*",
+            "-H:ExcludeResources=.*sqliteJni.*|composeResources/.*/font/.*"
+        ) + target.extraArguments + listOf(
+            "-cp",
+            "\"$classpath\"",
+            "-o",
+            File(imageDir, "ERKIN").invariantSeparatorsPath,
+            "ERKIN"
+        )
+        val argumentsFile = File(temporaryDir, "native-image.args")
+        argumentsFile.writeText(arguments.joinToString("\n"))
+        executable = File(graalvm, "bin/${target.nativeImageLauncher}").path
+        args("@${argumentsFile.invariantSeparatorsPath}")
+    }
+}
+
+tasks.register<Sync>("packageNative") {
+    group = "distribution"
+    description = "Assembles the native app folder with the executable, Skiko, sqlite and AWT libraries."
+    dependsOn(buildNativeImage)
+    into(layout.buildDirectory.dir("native/ERKIN"))
+    from(nativeImageDir)
+    from(distributionLibDir) { exclude("*.jar", "*.cfg", ".jpackage.xml", "resources/**") }
+    from(distributionLibDir.map { it.dir("resources") }) { into("app/resources") }
+    val sqliteLibrary = nativeTarget.sqliteEntry
+    from(configurations.runtimeClasspath.map { classpath -> classpath.filter { it.name.startsWith("sqlite-bundled-jvm") }.map(::zipTree) }) {
+        include(sqliteLibrary)
+        eachFile { path = name }
+        includeEmptyDirs = false
+    }
+    nativeTarget.graalvmFiles.forEach { (source, destination) ->
+        from(graalvmHome.map { File(it, source) }) { into(destination) }
+    }
+}
+
+tasks.register<JavaExec>("recordNativeConfig") {
+    group = "distribution"
+    description = "Runs the app on GraalVM with the tracing agent and merges its findings into native/$desktopOs."
+    dependsOn("createDistributable")
+    classpath = distributionJars
+    mainClass.set("io.github.yulbax.erkin.desktop.MainKt")
+    jvmArgs(
+        "-agentlib:native-image-agent=config-merge-dir=${nativeConfigDir.asFile.invariantSeparatorsPath}",
+        "-Dcompose.application.resources.dir=${distributionLibDir.get().dir("resources").asFile.invariantSeparatorsPath}",
+        "-Dcompose.application.configure.swing.globals=true"
+    )
+    jvmArgs(appProperties.map { (key, value) -> "-D$key=$value" })
+    val home = graalvmHome
+    val java = nativeTarget.javaExecutable
+    doFirst {
+        val graalvm = home.orNull ?: error("Set the erkin.graalvm Gradle property or GRAALVM_HOME to a GraalVM JDK.")
+        setExecutable(File(graalvm, java).path)
     }
 }
