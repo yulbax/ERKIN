@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "erkin.db"
-        const val VERSION = 32
+        const val VERSION = 34
 
         fun isNewerThanThisBuild(database: File): Boolean {
             if (!database.isFile) return false
@@ -299,9 +299,26 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val SUBSCRIPTION_NOTES_MIGRATION = object : Migration(32, 33) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN supportUrl TEXT")
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN pageUrl TEXT")
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN announce TEXT")
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN updateHours INTEGER")
+            }
+        }
+
+        private val SUBSCRIPTION_RULES_MIGRATION = object : Migration(33, 34) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN rules TEXT")
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN rulesEnabled INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun migrations(appsCanBypass: Boolean): Array<Migration> =
             MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION +
-                HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION + HOME_CARD_MIGRATION + SEARCH_SNI_MIGRATION
+                HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION + HOME_CARD_MIGRATION + SEARCH_SNI_MIGRATION +
+                SUBSCRIPTION_NOTES_MIGRATION + SUBSCRIPTION_RULES_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {

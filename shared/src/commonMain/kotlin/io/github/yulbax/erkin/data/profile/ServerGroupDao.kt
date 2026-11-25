@@ -42,6 +42,9 @@ interface ServerGroupDao {
     @Query("UPDATE server_groups SET name = :name WHERE id = :id")
     suspend fun rename(id: Long, name: String?)
 
+    @Query("UPDATE server_groups SET rulesEnabled = :enabled WHERE id = :id")
+    suspend fun setRulesEnabled(id: Long, enabled: Boolean)
+
     @Query("UPDATE server_groups SET currentId = :profileId WHERE id = :id")
     suspend fun updateCurrent(id: Long, profileId: Long)
 

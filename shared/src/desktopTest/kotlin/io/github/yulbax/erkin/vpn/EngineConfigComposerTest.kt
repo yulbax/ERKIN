@@ -7,6 +7,11 @@ import io.github.yulbax.erkin.data.SettingsEntity
 import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
+import io.github.yulbax.erkin.data.profile.AppliedSubscriptionRules
+import io.github.yulbax.erkin.data.profile.SubscriptionProvider
+import io.github.yulbax.erkin.data.profile.SubscriptionRule
+import io.github.yulbax.erkin.data.profile.SubscriptionRules
+import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.vpn.core.RoutingRule
@@ -14,6 +19,8 @@ import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import io.github.yulbax.erkin.vpn.core.RuleTarget
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -311,6 +318,68 @@ class EngineConfigComposerTest {
 
     private fun noServers(apps: List<App>) =
         SessionInputs(selected = null, profiles = emptyList(), settings = SettingsEntity(), apps = apps)
+
+    @Test
+    fun subscriptionRulesReloadTheConfigAndKeepTheVpnUpWhenTheyTargetIt() {
+        val app = App("/usr/bin/curl", "curl", isSystemApp = false, connectionType = ConnectionType.BYEDPI)
+        val plain = EngineConfigComposer.compose(inputs(listOf(app)), OWN, BYEDPI_PORT)
+        val withRules = EngineConfigComposer.compose(
+            inputs(listOf(app)).copy(subscriptionRules = applied(SubscriptionTarget.VPN)),
+            OWN,
+            BYEDPI_PORT
+        )
+        val directOnly = EngineConfigComposer.compose(
+            inputs(listOf(app)).copy(subscriptionRules = applied(SubscriptionTarget.DIRECT)),
+            OWN,
+            BYEDPI_PORT
+        )
+
+        assertFalse(plain.vpnActive)
+        assertTrue(withRules.vpnActive)
+        assertFalse(directOnly.vpnActive)
+        assertEquals(3L, withRules.engineConfig.subscriptionRules?.groupId)
+        assertTrue(withRules.isStructuralChangeFrom(plain))
+        assertTrue(directOnly.isStructuralChangeFrom(withRules))
+    }
+
+    @Test
+    fun managedSubscriptionListsJoinTheConfigOnlyOnceInstalledAndReloadItWhenUpdated() {
+        val app = App("/usr/bin/curl", "curl", isSystemApp = false, connectionType = ConnectionType.BYEDPI)
+        val url = "https://example.org/voice.mrs"
+        val managed = SubscriptionProvider(
+            "voice",
+            JsonObject(mapOf("type" to JsonPrimitive("http"), "format" to JsonPrimitive("mrs"), "behavior" to JsonPrimitive("domain"), "url" to JsonPrimitive(url)))
+        )
+        val rules = AppliedSubscriptionRules(
+            3,
+            SubscriptionRules(
+                listOf(
+                    SubscriptionRule("RULE-SET,voice", emptyList(), SubscriptionTarget.DIRECT),
+                    SubscriptionRule("DOMAIN,a.example", emptyList(), SubscriptionTarget.VPN)
+                ),
+                listOf(managed),
+                emptyList()
+            )
+        )
+        fun compose(installed: InstalledRuleList?) = EngineConfigComposer.compose(
+            inputs(listOf(app)).copy(subscriptionRules = rules), OWN, BYEDPI_PORT
+        ) { if (it == url) installed else null }
+
+        val missing = compose(null)
+        val wrongKind = compose(InstalledRuleList(setOf(RuleSetKind.IPCIDR), 1))
+        val first = compose(InstalledRuleList(setOf(RuleSetKind.DOMAIN), 1))
+        val updated = compose(InstalledRuleList(setOf(RuleSetKind.DOMAIN), 2))
+
+        assertEquals(listOf("DOMAIN,a.example"), missing.engineConfig.subscriptionRules?.rules?.rules?.map { it.condition })
+        assertTrue(missing.engineConfig.subscriptionRules?.rules?.providers?.isEmpty() == true)
+        assertEquals(missing.engineConfig.subscriptionRules, wrongKind.engineConfig.subscriptionRules)
+        assertEquals(listOf("RULE-SET,voice", "DOMAIN,a.example"), first.engineConfig.subscriptionRules?.rules?.rules?.map { it.condition })
+        assertTrue(first.isStructuralChangeFrom(missing))
+        assertTrue(updated.isStructuralChangeFrom(first))
+    }
+
+    private fun applied(target: SubscriptionTarget) =
+        AppliedSubscriptionRules(3, SubscriptionRules(listOf(SubscriptionRule("DOMAIN,a.example", emptyList(), target)), emptyList(), emptyList()))
 
     private fun inputs(apps: List<App>): SessionInputs {
         val parsed = requireNotNull(LinkParser.parse(VLESS))

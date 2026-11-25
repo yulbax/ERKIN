@@ -22,7 +22,7 @@ class ServerTreeTest {
             listOf(
                 ServerNode.Server(manual),
                 ServerNode.Server(single, stored.getValue(SINGLE_ID)),
-                ServerNode.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), rememberedId = null),
+                ServerNode.Group(GROUP_ID, GroupKind.Subscription(GROUP_URL), "sub.example", null, listOf(germany, france), rememberedId = null, notes = SubscriptionNotes.NONE),
                 ServerNode.Server(manualAfter)
             ),
             items

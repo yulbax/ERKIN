@@ -112,6 +112,7 @@ fun ErkinScreen(
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val servers by profileViewModel.uiState.collectAsStateWithLifecycle()
+    val waitingLists by profileViewModel.waitingLists.collectAsStateWithLifecycle()
     val login by profileViewModel.login.collectAsStateWithLifecycle()
     val incoming = koinInject<IncomingServers>()
     val incomingServer by incoming.next.collectAsStateWithLifecycle()
@@ -203,6 +204,7 @@ fun ErkinScreen(
         onDelete = { deleting = listOf(it) },
         groups = GroupActions(
             refreshing = servers.refreshing,
+            waitingLists = waitingLists,
             onOpen = { sheetId = it },
             onTest = profileViewModel::test,
             onRefresh = profileViewModel::refreshSubscription,
@@ -210,7 +212,8 @@ fun ErkinScreen(
             onRename = { renamingId = it },
             onShare = { id -> shareText(servers, id)?.let { sharer.shareText(it, shareChooserTitle) } },
             onUngroup = profileViewModel::dissolveGroup,
-            onDelete = { id -> deleting = servers.profiles.filter { it.groupId == id } }
+            onDelete = { id -> deleting = servers.profiles.filter { it.groupId == id } },
+            onRulesEnabled = profileViewModel::setSubscriptionRulesEnabled
         ),
         onRemoveFromGroup = { profileViewModel.removeFromGroup(listOf(it.id)) },
         onEditLogin = profileViewModel::editLogin,

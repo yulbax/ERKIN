@@ -2,6 +2,9 @@ package io.github.yulbax.erkin.vpn.mihomo
 
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.isExecutablePath
+import io.github.yulbax.erkin.data.profile.SubscriptionRule
+import io.github.yulbax.erkin.data.profile.SubscriptionRules
+import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.BuiltInOutbound
 import io.github.yulbax.erkin.vpn.core.EngineConfig
@@ -18,6 +21,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonArrayBuilder
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -202,15 +206,20 @@ object MihomoConfigBuilder {
             }
             val lists = rules.mapNotNull(RuleLists::url).distinct()
                 .flatMap { url -> engine.ruleLists[url].orEmpty().map { url to it } }
-            if (lists.isNotEmpty()) {
+            val subscription = engine.subscriptionRules
+            if (lists.isNotEmpty() || subscription?.rules?.providers?.isNotEmpty() == true) {
                 putJsonObject("rule-providers") {
-                    lists.forEach { (url, kind) ->
-                        putJsonObject(RuleLists.providerName(url, kind)) {
-                            put("type", "file")
-                            put("behavior", kind.behavior)
-                            put("format", RULE_LIST_FORMAT)
-                            put("path", RuleLists.path(url, kind))
+                    subscription?.let { applied ->
+                        applied.rules.providers.forEach { provider ->
+                            val name = SubscriptionRules.providerName(applied.groupId, provider.name)
+                            when (val list = provider.managed) {
+                                null -> put(name, provider.definition)
+                                else -> putJsonObject(name) { putFileProvider(list.url, list.kind) }
+                            }
                         }
+                    }
+                    lists.forEach { (url, kind) ->
+                        putJsonObject(RuleLists.providerName(url, kind)) { putFileProvider(url, kind) }
                     }
                 }
             }
@@ -227,6 +236,17 @@ object MihomoConfigBuilder {
                 if (options.bypassLan) PrivateNetworks.CIDRS.forEach { add("IP-CIDR,$it,$DIRECT,no-resolve") }
                 if (options.blockQuic) add(BLOCK_QUIC_RULE)
                 listedRules.forEach { rule -> addRule(rule, ruleTarget(rule), engine.ruleLists, platform) }
+                subscription?.let { applied ->
+                    applied.rules.rules.forEach { rule ->
+                        val target = when (rule.target) {
+                            SubscriptionTarget.VPN -> vpnTarget
+                            SubscriptionTarget.DIRECT -> DIRECT
+                            SubscriptionTarget.BLOCK -> REJECT
+                        }
+                        val condition = rule.conditionWith { SubscriptionRules.providerName(applied.groupId, it) }
+                        add((listOf(condition, target) + rule.options).joinToString(SubscriptionRule.TOKEN_SEPARATOR))
+                    }
+                }
                 if (desktop != null) {
                     val direct = (directPaths + engine.directPackages + engine.bypassPackages).distinct()
                     val channels = listOf<Pair<List<String>, (String) -> String>>(
@@ -245,6 +265,13 @@ object MihomoConfigBuilder {
             }
         }
         return json.encodeToString(JsonObject.serializer(), config)
+    }
+
+    private fun JsonObjectBuilder.putFileProvider(url: String, kind: RuleSetKind) {
+        put("type", "file")
+        put("behavior", kind.behavior)
+        put("format", RULE_LIST_FORMAT)
+        put("path", RuleLists.path(url, kind))
     }
 
     private fun JsonArrayBuilder.addRule(

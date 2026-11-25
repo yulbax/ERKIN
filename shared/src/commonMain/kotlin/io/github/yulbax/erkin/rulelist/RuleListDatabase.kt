@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.rulelist
 
+import io.github.yulbax.erkin.data.profile.ManagedList
 import io.github.yulbax.erkin.data.rules.RuleListDao
 import io.github.yulbax.erkin.data.rules.RuleListEntity
 import io.github.yulbax.erkin.vpn.DownloadRoute
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -93,8 +95,9 @@ class RuleListDatabase(
         return try {
             mutex.withLock {
                 withContext(Dispatchers.IO) {
-                    val kind = RuleSetKind.fromBehavior(dao.get(url)?.kind)
-                    install(RuleListSource(url, kind))
+                    val record = dao.get(url) ?: RuleListEntity(url)
+                    val installation = install(RuleListSource(url, RuleSetKind.fromBehavior(record.kind)), parts, prune = true)
+                    dao.upsert(record.copy(title = installation.title, entries = installation.entries, failure = null, failureDetail = null))
                 }
             }
             Result.success(Unit)
@@ -123,6 +126,30 @@ class RuleListDatabase(
         return stale.map { download(it) }.any { it.isSuccess }
     }
 
+    suspend fun refreshManaged(lists: Collection<ManagedList>, now: Long = System.currentTimeMillis()): Boolean {
+        val stale = withContext(Dispatchers.IO) {
+            lists.filter { list ->
+                val installed = installed(list.url)
+                installed == null || list.kind !in installed.kinds || now - installed.updatedAt >= REFRESH_AFTER.inWholeMilliseconds
+            }
+        }
+        val refreshed = stale.map { list ->
+            try {
+                mutex.withLock { withContext(Dispatchers.IO) { install(list.source, { listOf(it) }, prune = false) } }
+                true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                false
+            }
+        }
+        if (stale.isNotEmpty()) revision.update { it + 1 }
+        return refreshed.any { it }
+    }
+
+    fun installedAmong(lists: Collection<ManagedList>): Flow<Set<ManagedList>> =
+        revision.map { lists.filterTo(HashSet()) { list -> installed(list.url)?.kinds?.contains(list.kind) == true } }.flowOn(Dispatchers.IO)
+
     suspend fun rename(url: String, name: String?) = withContext(Dispatchers.IO) {
         dao.rename(url, name?.trim()?.takeIf { it.isNotEmpty() })
     }
@@ -138,14 +165,16 @@ class RuleListDatabase(
     private fun expectedKinds(record: RuleListEntity): Set<RuleSetKind> =
         parts(RuleListSource(record.source, RuleSetKind.fromBehavior(record.kind))).mapNotNullTo(HashSet()) { it.kind }
 
-    private suspend fun install(source: RuleListSource) {
+    private data class Installation(val title: String?, val entries: Long)
+
+    private suspend fun install(source: RuleListSource, split: (RuleListSource) -> List<RuleListSource>, prune: Boolean): Installation {
         val url = source.url
         val key = RuleLists.key(url)
         val dir = store.stagingDir().apply { mkdirs() }
         val staged = mutableListOf<File>()
         try {
             var title: String? = null
-            val sets = parts(source).withIndex().flatMap { (index, part) ->
+            val sets = split(source).withIndex().flatMap { (index, part) ->
                 val raw = File(dir, "$key.$index$DOWNLOAD_SUFFIX").also(staged::add)
                 fetch(part.url, raw)
                 when (RuleListContent.of(raw)) {
@@ -168,10 +197,11 @@ class RuleListDatabase(
                     RuleListContent.OTHER -> throw RuleListException(RuleListFailure.NOT_A_LIST)
                 }
             }
-            val kinds = sets.mapTo(HashSet()) { it.kind }
-            RuleSetKind.entries.filterNot { it in kinds }.forEach { store.remove(RuleLists.fileName(url, it)) }
-            val record = dao.get(url) ?: RuleListEntity(url)
-            dao.upsert(record.copy(title = title, entries = sets.sumOf { it.count }, failure = null, failureDetail = null))
+            if (prune) {
+                val kinds = sets.mapTo(HashSet()) { it.kind }
+                RuleSetKind.entries.filterNot { it in kinds }.forEach { store.remove(RuleLists.fileName(url, it)) }
+            }
+            return Installation(title, sets.sumOf { it.count })
         } finally {
             staged.forEach(File::delete)
         }

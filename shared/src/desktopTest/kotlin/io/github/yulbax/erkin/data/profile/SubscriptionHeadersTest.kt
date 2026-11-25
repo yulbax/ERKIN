@@ -23,4 +23,36 @@ class SubscriptionHeadersTest {
         assertNull(SubscriptionHeaders.usage("nonsense"))
         assertNull(SubscriptionHeaders.usage(null))
     }
+
+    @Test
+    fun linksAcceptOnlyWebAndTelegramSchemes() {
+        assertEquals("https://t.example/support", SubscriptionHeaders.link(" https://t.example/support "))
+        assertEquals("HTTP://t.example", SubscriptionHeaders.link("HTTP://t.example"))
+        assertEquals("tg://resolve?domain=help", SubscriptionHeaders.link("tg://resolve?domain=help"))
+        assertNull(SubscriptionHeaders.link("javascript:alert(1)"))
+        assertNull(SubscriptionHeaders.link("file:///etc/passwd"))
+        assertNull(SubscriptionHeaders.link("/relative/path"))
+        assertNull(SubscriptionHeaders.link("  "))
+        assertNull(SubscriptionHeaders.link(null))
+        assertNull(SubscriptionHeaders.link("https://t.example/" + "a".repeat(2048)))
+    }
+
+    @Test
+    fun announcementsDecodeBase64AndAreCapped() {
+        assertEquals("Мой VPN", SubscriptionHeaders.announce("base64:0JzQvtC5IFZQTg=="))
+        assertEquals("Works\nTomorrow", SubscriptionHeaders.announce(" Works\nTo\u0007morrow "))
+        assertEquals(500, SubscriptionHeaders.announce("x".repeat(900))?.length)
+        assertNull(SubscriptionHeaders.announce("   "))
+        assertNull(SubscriptionHeaders.announce(null))
+    }
+
+    @Test
+    fun updateIntervalsAreWholeHoursWithinAMonth() {
+        assertEquals(2, SubscriptionHeaders.updateHours("2"))
+        assertEquals(720, SubscriptionHeaders.updateHours(" 720 "))
+        assertNull(SubscriptionHeaders.updateHours("0"))
+        assertNull(SubscriptionHeaders.updateHours("721"))
+        assertNull(SubscriptionHeaders.updateHours("abc"))
+        assertNull(SubscriptionHeaders.updateHours(null))
+    }
 }

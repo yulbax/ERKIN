@@ -4,10 +4,14 @@ import androidx.room.Room
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.App
+import io.github.yulbax.erkin.data.RoomVpnSessionStore
 import io.github.yulbax.erkin.data.SettingsEntity
+import io.github.yulbax.erkin.proxy.ClashRulesReader
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.vpn.core.RuleLists
+import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import java.util.Base64
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.jsonObject
@@ -239,14 +243,18 @@ class ProfileRefreshTest {
     private class FakeSubscription : SubscriptionProfileSource {
         var links: List<String> = emptyList()
         var info = SubscriptionInfo()
+        var rules: SubscriptionRules? = null
         var refusal: SubscriptionRefusal? = null
         var fetches = 0
         override suspend fun fetch(url: String): FetchedSubscription {
             fetches++
             refusal?.let { throw SubscriptionRefusedException(it) }
-            return FetchedSubscription(links.mapNotNull(LinkParser::parse), info)
+            return FetchedSubscription(links.mapNotNull(LinkParser::parse), info, rules)
         }
     }
+
+    private fun rulesOf(condition: String) =
+        SubscriptionRules(listOf(SubscriptionRule(condition, emptyList(), SubscriptionTarget.VPN)), emptyList(), emptyList())
 
     private suspend fun storedSubscriptionServer(link: String, selected: Boolean = false): ProfileEntity {
         val parsed = requireNotNull(LinkParser.parse(link))
@@ -437,7 +445,8 @@ class ProfileRefreshTest {
     @Test
     fun subscriptionDetailsAreKeptUntilItsLastServerIsDeleted() = runBlocking {
         subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
-        subscription.info = SubscriptionInfo(title = "Provider", usage = SubscriptionUsage(1, 2, 10, 1_900_000_000))
+        val notes = SubscriptionNotes("https://help.example", "tg://resolve?domain=cabinet", "Maintenance", 12)
+        subscription.info = SubscriptionInfo(title = "Provider", usage = SubscriptionUsage(1, 2, 10, 1_900_000_000), notes = notes)
         repository.add(SUBSCRIPTION_URL)
         val id = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
         repository.renameGroup(id, "  Mine ")
@@ -446,10 +455,68 @@ class ProfileRefreshTest {
         assertEquals("Provider", stored.title)
         assertEquals("Mine", stored.displayName)
         assertEquals(SubscriptionUsage(1, 2, 10, 1_900_000_000), stored.usage)
+        assertEquals(notes, stored.notes)
 
         repository.delete(database.profileDao().getAll())
 
         assertNull(database.serverGroupDao().get(id))
+    }
+
+    @Test
+    fun subscriptionRulesAreStoredAndRefreshedButTheSwitchIsLeftAlone() = runBlocking {
+        subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
+        subscription.rules = rulesOf("DOMAIN,a.example")
+        repository.add(SUBSCRIPTION_URL)
+        val id = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+        assertFalse(requireNotNull(database.serverGroupDao().get(id)).rulesEnabled)
+
+        repository.setSubscriptionRulesEnabled(id, true)
+        subscription.rules = rulesOf("DOMAIN,b.example")
+        repository.refreshSubscription(id)
+
+        val stored = requireNotNull(database.serverGroupDao().get(id))
+        assertTrue(stored.rulesEnabled)
+        assertEquals(subscription.rules, stored.subscriptionRules)
+
+        subscription.rules = null
+        repository.refreshSubscription(id)
+
+        val dropped = requireNotNull(database.serverGroupDao().get(id))
+        assertNull(dropped.rules)
+        assertTrue(dropped.rulesEnabled)
+    }
+
+    @Test
+    fun aRefreshStoresGeoRulesAsManagedLists() = runBlocking {
+        subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
+        subscription.rules = ClashRulesReader.read("rules:\n  - GEOIP,RU,DIRECT\n  - GEOSITE,youtube,DIRECT")
+        repository.add(SUBSCRIPTION_URL)
+        val id = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+
+        val stored = requireNotNull(requireNotNull(database.serverGroupDao().get(id)).subscriptionRules)
+
+        assertEquals(
+            listOf(ManagedList(RuleLists.country("ru").url, RuleSetKind.IPCIDR), ManagedList(RuleLists.geoSite("youtube").url, RuleSetKind.DOMAIN)),
+            stored.managedLists
+        )
+    }
+
+    @Test
+    fun theSessionTakesSubscriptionRulesOnlyWhenEnabledAndTheSelectedServerBelongsToThem() = runBlocking {
+        val store = RoomVpnSessionStore(database, repository, ConnectionType.BYPASS)
+        subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
+        subscription.rules = rulesOf("DOMAIN,a.example")
+        repository.add(SUBSCRIPTION_URL)
+        val id = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL)).id
+
+        assertNull(store.load().subscriptionRules)
+
+        repository.setSubscriptionRulesEnabled(id, true)
+        assertEquals(AppliedSubscriptionRules(id, requireNotNull(subscription.rules)), store.load().subscriptionRules)
+
+        repository.add("vless://id@other.example:443?security=tls#Other")
+        repository.select(database.profileDao().getAll().first { it.name == "Other" })
+        assertNull(store.load().subscriptionRules)
     }
 
     @Test

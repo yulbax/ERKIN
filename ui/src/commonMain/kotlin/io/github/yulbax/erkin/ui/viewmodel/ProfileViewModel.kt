@@ -19,6 +19,9 @@ import io.github.yulbax.erkin.data.profile.AddTarget
 import io.github.yulbax.erkin.data.profile.GroupTarget
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
 import io.github.yulbax.erkin.data.profile.SubscriptionRefusal
+import io.github.yulbax.erkin.rulelist.RuleListDatabase
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flatMapLatest
 import io.github.yulbax.erkin.proxy.protocol.OpenVpn
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.server_group_default
@@ -87,7 +90,8 @@ class ProfileViewModel(
     private val serverTests: ServerChecks,
     private val probeResults: ProbeResults,
     private val log: AppLog,
-    private val states: VpnStateRepository
+    private val states: VpnStateRepository,
+    ruleListDatabase: RuleListDatabase
 ) : ViewModel() {
 
     private val _error = MutableStateFlow<ServerError?>(null)
@@ -122,6 +126,13 @@ class ProfileViewModel(
             manualOrder = manualOrder
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), ServersUiState())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val waitingLists: StateFlow<Set<String>> = profileRepository.groups
+        .map { groups -> groups.flatMap { it.subscriptionRules?.managedLists.orEmpty() }.toSet() }
+        .distinctUntilChanged()
+        .flatMapLatest { lists -> ruleListDatabase.installedAmong(lists).map { installed -> (lists - installed).mapTo(HashSet()) { it.url } } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptySet())
 
     fun test(servers: List<Long>): Deferred<List<Long>?> {
         val ids = servers.toSet()
@@ -235,6 +246,10 @@ class ProfileViewModel(
                 _refreshing.value -= id
             }
         }
+    }
+
+    fun setSubscriptionRulesEnabled(groupId: Long, enabled: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.setSubscriptionRulesEnabled(groupId, enabled) }
     }
 
     fun reorder(ids: List<Long>) {

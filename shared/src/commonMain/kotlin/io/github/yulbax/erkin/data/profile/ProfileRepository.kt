@@ -133,6 +133,10 @@ class ProfileRepository(
         }
     }
 
+    suspend fun setSubscriptionRulesEnabled(groupId: Long, enabled: Boolean) {
+        database.serverGroupDao().setRulesEnabled(groupId, enabled)
+    }
+
     suspend fun dissolveGroup(id: Long) {
         reshape {
             val groups = database.serverGroupDao()
@@ -206,6 +210,11 @@ class ProfileRepository(
                 download = usage?.download,
                 total = usage?.total,
                 expire = usage?.expire,
+                supportUrl = subscription.info.notes.supportUrl,
+                pageUrl = subscription.info.notes.pageUrl,
+                announce = subscription.info.notes.announce,
+                updateHours = subscription.info.notes.updateHours,
+                rules = subscription.rules?.encode(),
                 updatedAt = System.currentTimeMillis()
             )
         )

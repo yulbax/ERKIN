@@ -353,13 +353,50 @@
         <item quantity="many">%1$d серверів</item>
         <item quantity="other">%1$d сервера</item>
     </plurals>
-    <string name="subscription_usage">%1$s з %2$s</string>
     <string name="subscription_used">Використано %1$s</string>
     <string name="subscription_expires">до %1$s</string>
     <string name="subscription_updated">оновлено %1$s</string>
     <string name="subscription_expired">закінчилася</string>
     <string name="subscription_show_servers">Показати сервери</string>
     <string name="subscription_hide_servers">Сховати сервери</string>
+    <plurals name="subscription_days_left">
+        <item quantity="one">залишився %1$d день</item>
+        <item quantity="few">залишилося %1$d дні</item>
+        <item quantity="many">залишилося %1$d днів</item>
+        <item quantity="other">залишилося %1$d дня</item>
+    </plurals>
+    <plurals name="subscription_update_every">
+        <item quantity="one">кожну %1$d годину</item>
+        <item quantity="few">кожні %1$d години</item>
+        <item quantity="many">кожні %1$d годин</item>
+        <item quantity="other">кожні %1$d години</item>
+    </plurals>
+    <string name="subscription_card_more">Докладніше</string>
+    <string name="subscription_card_less">Згорнути</string>
+    <string name="subscription_support">Підтримка</string>
+    <string name="subscription_page">Кабінет</string>
+    <string name="subscription_of_total">з %1$s</string>
+    <string name="subscription_percent">%1$d%</string>
+    <string name="subscription_rules_section">З підписки</string>
+    <string name="subscription_rules_title">Правила · %1$d</string>
+    <string name="subscription_rules_after_yours">після ваших правил</string>
+    <string name="subscription_rules_from_lists">%1$d за списками</string>
+    <string name="subscription_rules_skipped">%1$d пропущено</string>
+    <string name="subscription_rules_page_title">Правила підписки</string>
+    <plurals name="subscription_rules_count">
+        <item quantity="one">%1$d правило</item>
+        <item quantity="few">%1$d правила</item>
+        <item quantity="many">%1$d правил</item>
+        <item quantity="other">%1$d правила</item>
+    </plurals>
+    <string name="subscription_rules_apply">Застосовувати</string>
+    <string name="subscription_rules_apply_hint">Коли підключено сервер цієї підписки. Йдуть після ваших правил і до каналів застосунків.</string>
+    <string name="subscription_rules_skipped_title">Пропущено · %1$d</string>
+    <string name="subscription_rules_waiting_list">очікує завантаження списку</string>
+    <string name="subscription_rules_skip_geodata">потрібна гео-база, якої в ERKIN немає</string>
+    <string name="subscription_rules_skip_unsupported">тип правила не підтримується</string>
+    <string name="subscription_rules_skip_no_target">у групи немає придатного призначення</string>
+    <string name="subscription_rules_skip_no_provider">список правил відсутній або не завантажується</string>
     <string name="connections_title">З’єднання</string>
     <string name="connections_off">Підключіть ERKIN, щоб побачити, куди звертаються застосунки</string>
     <string name="connections_empty">З’єднань поки немає</string>

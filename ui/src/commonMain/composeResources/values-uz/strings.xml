@@ -345,13 +345,44 @@
         <item quantity="one">%1$d ta server</item>
         <item quantity="other">%1$d ta server</item>
     </plurals>
-    <string name="subscription_usage">%1$s / %2$s</string>
     <string name="subscription_used">%1$s ishlatilgan</string>
     <string name="subscription_expires">%1$s gacha</string>
     <string name="subscription_updated">yangilangan: %1$s</string>
     <string name="subscription_expired">muddati tugagan</string>
     <string name="subscription_show_servers">Serverlarni koʻrsatish</string>
     <string name="subscription_hide_servers">Serverlarni yashirish</string>
+    <plurals name="subscription_days_left">
+        <item quantity="one">%1$d kun qoldi</item>
+        <item quantity="other">%1$d kun qoldi</item>
+    </plurals>
+    <plurals name="subscription_update_every">
+        <item quantity="one">har %1$d soatda</item>
+        <item quantity="other">har %1$d soatda</item>
+    </plurals>
+    <string name="subscription_card_more">Batafsil</string>
+    <string name="subscription_card_less">Yigʻish</string>
+    <string name="subscription_support">Yordam</string>
+    <string name="subscription_page">Kabinet</string>
+    <string name="subscription_of_total">/ %1$s</string>
+    <string name="subscription_percent">%1$d%</string>
+    <string name="subscription_rules_section">Obunadan</string>
+    <string name="subscription_rules_title">Qoidalar · %1$d</string>
+    <string name="subscription_rules_after_yours">qoidalaringizdan keyin</string>
+    <string name="subscription_rules_from_lists">%1$d ro‘yxatlar bo‘yicha</string>
+    <string name="subscription_rules_skipped">%1$d o‘tkazib yuborildi</string>
+    <string name="subscription_rules_page_title">Obuna qoidalari</string>
+    <plurals name="subscription_rules_count">
+        <item quantity="one">%1$d qoida</item>
+        <item quantity="other">%1$d qoida</item>
+    </plurals>
+    <string name="subscription_rules_apply">Qo‘llash</string>
+    <string name="subscription_rules_apply_hint">Shu obunaning serveri ulangan paytda ishlaydi. Qoidalaringizdan keyin va ilova kanallaridan oldin keladi.</string>
+    <string name="subscription_rules_skipped_title">O‘tkazib yuborilgan · %1$d</string>
+    <string name="subscription_rules_waiting_list">ro‘yxat yuklanishi kutilmoqda</string>
+    <string name="subscription_rules_skip_geodata">ERKINda mavjud bo‘lmagan geo-baza kerak</string>
+    <string name="subscription_rules_skip_unsupported">qoida turi qo‘llab-quvvatlanmaydi</string>
+    <string name="subscription_rules_skip_no_target">guruhning yaroqli yo‘nalishi yo‘q</string>
+    <string name="subscription_rules_skip_no_provider">qoidalar ro‘yxati yo‘q yoki yuklab bo‘lmaydi</string>
     <string name="connections_title">Ulanishlar</string>
     <string name="connections_off">Ilovalar qayerga murojaat qilayotganini koʻrish uchun ERKIN ni ulang</string>
     <string name="connections_empty">Hozircha ulanishlar yoʻq</string>

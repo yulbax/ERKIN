@@ -30,7 +30,10 @@ sealed interface ServerNode {
         val members: List<ProfileEntity>,
         val rememberedId: Long?,
         val updatedAt: Long? = null,
-        val hidden: List<ProfileEntity> = emptyList()
+        val hidden: List<ProfileEntity> = emptyList(),
+        val notes: SubscriptionNotes? = null,
+        val rules: SubscriptionRules? = null,
+        val rulesEnabled: Boolean = false
     ) : ServerNode {
         val current: ProfileEntity = members.ifEmpty { hidden }.shownServer(rememberedId)
 
@@ -108,6 +111,9 @@ class ServerTree(
                         kind = stored.kind,
                         name = stored.displayName,
                         usage = stored.usage,
+                        notes = stored.notes.takeIf { stored.kind is GroupKind.Subscription },
+                        rules = stored.subscriptionRules.takeIf { stored.kind is GroupKind.Subscription },
+                        rulesEnabled = stored.rulesEnabled,
                         members = members.filterNot { it.hidden },
                         rememberedId = stored.currentId,
                         updatedAt = stored.updatedAt.takeIf { stored.kind is GroupKind.Subscription && it > 0 },

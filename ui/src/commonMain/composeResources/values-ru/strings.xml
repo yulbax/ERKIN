@@ -353,13 +353,50 @@
         <item quantity="many">%1$d серверов</item>
         <item quantity="other">%1$d сервера</item>
     </plurals>
-    <string name="subscription_usage">%1$s из %2$s</string>
     <string name="subscription_used">Использовано %1$s</string>
     <string name="subscription_expires">до %1$s</string>
     <string name="subscription_updated">обновлено %1$s</string>
     <string name="subscription_expired">истекла</string>
     <string name="subscription_show_servers">Показать серверы</string>
     <string name="subscription_hide_servers">Скрыть серверы</string>
+    <plurals name="subscription_days_left">
+        <item quantity="one">осталось %1$d день</item>
+        <item quantity="few">осталось %1$d дня</item>
+        <item quantity="many">осталось %1$d дней</item>
+        <item quantity="other">осталось %1$d дня</item>
+    </plurals>
+    <plurals name="subscription_update_every">
+        <item quantity="one">каждый %1$d час</item>
+        <item quantity="few">каждые %1$d часа</item>
+        <item quantity="many">каждые %1$d часов</item>
+        <item quantity="other">каждые %1$d часа</item>
+    </plurals>
+    <string name="subscription_card_more">Подробнее</string>
+    <string name="subscription_card_less">Свернуть</string>
+    <string name="subscription_support">Поддержка</string>
+    <string name="subscription_page">Кабинет</string>
+    <string name="subscription_of_total">из %1$s</string>
+    <string name="subscription_percent">%1$d%</string>
+    <string name="subscription_rules_section">Из подписки</string>
+    <string name="subscription_rules_title">Правила · %1$d</string>
+    <string name="subscription_rules_after_yours">после ваших правил</string>
+    <string name="subscription_rules_from_lists">%1$d по спискам</string>
+    <string name="subscription_rules_skipped">%1$d пропущено</string>
+    <string name="subscription_rules_page_title">Правила подписки</string>
+    <plurals name="subscription_rules_count">
+        <item quantity="one">%1$d правило</item>
+        <item quantity="few">%1$d правила</item>
+        <item quantity="many">%1$d правил</item>
+        <item quantity="other">%1$d правила</item>
+    </plurals>
+    <string name="subscription_rules_apply">Применять</string>
+    <string name="subscription_rules_apply_hint">Когда подключён сервер этой подписки. Идут после ваших правил и до каналов приложений.</string>
+    <string name="subscription_rules_skipped_title">Пропущено · %1$d</string>
+    <string name="subscription_rules_waiting_list">ждёт загрузки списка</string>
+    <string name="subscription_rules_skip_geodata">нужна гео-база, которой в ERKIN нет</string>
+    <string name="subscription_rules_skip_unsupported">тип правила не поддерживается</string>
+    <string name="subscription_rules_skip_no_target">у группы нет подходящего назначения</string>
+    <string name="subscription_rules_skip_no_provider">список правил отсутствует или не скачивается</string>
     <string name="connections_title">Соединения</string>
     <string name="connections_off">Подключите ERKIN, чтобы увидеть, куда ходят приложения</string>
     <string name="connections_empty">Соединений пока нет</string>

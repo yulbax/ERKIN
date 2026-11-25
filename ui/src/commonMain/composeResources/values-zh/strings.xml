@@ -341,13 +341,41 @@
     <plurals name="subscription_servers">
         <item quantity="other">%1$d 个服务器</item>
     </plurals>
-    <string name="subscription_usage">%1$s / %2$s</string>
     <string name="subscription_used">已用 %1$s</string>
     <string name="subscription_expires">到期 %1$s</string>
     <string name="subscription_updated">更新于 %1$s</string>
     <string name="subscription_expired">已过期</string>
     <string name="subscription_show_servers">显示服务器</string>
     <string name="subscription_hide_servers">隐藏服务器</string>
+    <plurals name="subscription_days_left">
+        <item quantity="other">还剩 %1$d 天</item>
+    </plurals>
+    <plurals name="subscription_update_every">
+        <item quantity="other">每 %1$d 小时</item>
+    </plurals>
+    <string name="subscription_card_more">展开</string>
+    <string name="subscription_card_less">收起</string>
+    <string name="subscription_support">客服</string>
+    <string name="subscription_page">账户</string>
+    <string name="subscription_of_total">/ %1$s</string>
+    <string name="subscription_percent">%1$d%</string>
+    <string name="subscription_rules_section">来自订阅</string>
+    <string name="subscription_rules_title">规则 · %1$d</string>
+    <string name="subscription_rules_after_yours">位于你的规则之后</string>
+    <string name="subscription_rules_from_lists">%1$d 条来自列表</string>
+    <string name="subscription_rules_skipped">已跳过 %1$d 条</string>
+    <string name="subscription_rules_page_title">订阅规则</string>
+    <plurals name="subscription_rules_count">
+        <item quantity="other">%1$d 条规则</item>
+    </plurals>
+    <string name="subscription_rules_apply">应用</string>
+    <string name="subscription_rules_apply_hint">连接到此订阅的服务器时生效。排在你的规则之后、应用通道之前。</string>
+    <string name="subscription_rules_skipped_title">已跳过 · %1$d</string>
+    <string name="subscription_rules_waiting_list">等待列表下载</string>
+    <string name="subscription_rules_skip_geodata">需要 ERKIN 没有的地理数据库</string>
+    <string name="subscription_rules_skip_unsupported">不支持的规则类型</string>
+    <string name="subscription_rules_skip_no_target">其策略组没有可用的目标</string>
+    <string name="subscription_rules_skip_no_provider">规则列表缺失或无法下载</string>
     <string name="connections_title">连接</string>
     <string name="connections_off">连接 ERKIN 后即可查看各应用的去向</string>
     <string name="connections_empty">暂无连接</string>

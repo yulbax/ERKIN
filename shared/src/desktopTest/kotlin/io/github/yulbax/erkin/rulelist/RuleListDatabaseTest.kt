@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.rulelist
 import androidx.room.Room
 import com.sun.net.httpserver.HttpServer
 import io.github.yulbax.erkin.data.AppDatabase
+import io.github.yulbax.erkin.data.profile.ManagedList
 import io.github.yulbax.erkin.vpn.core.RuleListSource
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleSetFormat
@@ -190,6 +191,23 @@ class RuleListDatabaseTest {
         assertNotNull(lists.installed(kept.url))
         assertNull(lists.installed(dropped.url))
         assertEquals(setOf(kept.url), lists.states.first().keys)
+    }
+
+    @Test
+    fun managedListsAreInstalledWithoutJoiningTheLibraryAndOnlyRefreshedWhenStaleOrMissing() = runBlocking {
+        val managed = ManagedList(serve("/geoip/ru.mrs", MRS).url, RuleSetKind.IPCIDR)
+        val broken = ManagedList(url("/missing.mrs"), RuleSetKind.DOMAIN)
+        val countries = RuleListDatabase(store, database.ruleListDao(), parts = { listOf(it, it.copy(kind = RuleSetKind.DOMAIN)) })
+
+        assertTrue(countries.refreshManaged(listOf(managed, broken)))
+
+        assertEquals(setOf(RuleSetKind.IPCIDR), countries.installed(managed.url)?.kinds)
+        assertNull(countries.installed(broken.url))
+        assertEquals(setOf(managed), countries.installedAmong(listOf(managed, broken)).first())
+        assertTrue(countries.states.first().isEmpty())
+        assertFalse(countries.refreshManaged(listOf(managed)))
+        store.modifiedAt(managed.url, System.currentTimeMillis() - RuleListDatabase.REFRESH_AFTER.inWholeMilliseconds)
+        assertTrue(countries.refreshManaged(listOf(managed)))
     }
 
     private val MRS = byteArrayOf(0x28, 0xB5.toByte(), 0x2F, 0xFD.toByte(), 0x01)

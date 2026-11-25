@@ -1,6 +1,11 @@
 package io.github.yulbax.erkin.vpn.mihomo
 
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.profile.AppliedSubscriptionRules
+import io.github.yulbax.erkin.data.profile.SubscriptionProvider
+import io.github.yulbax.erkin.data.profile.SubscriptionRule
+import io.github.yulbax.erkin.data.profile.SubscriptionRules
+import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.vpn.core.EngineConfig
@@ -15,6 +20,7 @@ import io.github.yulbax.erkin.vpn.core.RuleTarget
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -462,6 +468,89 @@ class MihomoConfigBuilderTest {
     ): JsonObject = Json.parseToJsonElement(
         MihomoConfigBuilder.build(engine(listOf(vless), "p1", byeDpi, vpn, options, directPaths, rules), PROBE, platform)
     ).jsonObject
+
+    @Test
+    fun subscriptionRulesGoAfterUserRulesAndBeforeAppChannelsWithTheirProvidersPrefixed() {
+        val provider = SubscriptionProvider(
+            "voice",
+            JsonObject(mapOf("type" to JsonPrimitive("http"), "behavior" to JsonPrimitive("domain"), "url" to JsonPrimitive("https://example.org/voice.mrs")))
+        )
+        val subscription = AppliedSubscriptionRules(
+            7,
+            SubscriptionRules(
+                rules = listOf(
+                    SubscriptionRule("DOMAIN-SUFFIX,openai.com", emptyList(), SubscriptionTarget.VPN),
+                    SubscriptionRule("RULE-SET,voice", emptyList(), SubscriptionTarget.DIRECT),
+                    SubscriptionRule("AND,((RULE-SET,voice),(NETWORK,udp))", listOf("no-resolve"), SubscriptionTarget.BLOCK)
+                ),
+                providers = listOf(provider),
+                skipped = emptyList()
+            )
+        )
+        val engine = engine(
+            listOf(vless), "p1", listOf("org.dpi"), listOf("org.vpn"),
+            rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.VPN))
+        ).copy(subscriptionRules = subscription)
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject
+
+        assertEquals(
+            listOf(
+                "IN-NAME,probe-in,p1",
+                "DOMAIN-SUFFIX,example.org,p1",
+                "DOMAIN-SUFFIX,openai.com,p1",
+                "RULE-SET,sub7-voice,DIRECT",
+                "AND,((RULE-SET,sub7-voice),(NETWORK,udp)),REJECT,no-resolve",
+                "PROCESS-NAME,org.dpi,byedpi",
+                "PROCESS-NAME,org.vpn,p1",
+                "MATCH,REJECT"
+            ),
+            config.rules()
+        )
+        assertEquals(listOf("sub7-voice"), config.getValue("rule-providers").jsonObject.keys.toList())
+        assertEquals(provider.definition, config.getValue("rule-providers").jsonObject.getValue("sub7-voice"))
+    }
+
+    @Test
+    fun managedSubscriptionListsAreFileProvidersAndTheRestPassesThrough() {
+        val url = "https://example.org/voice.mrs"
+        val managed = SubscriptionProvider(
+            "voice",
+            JsonObject(mapOf("type" to JsonPrimitive("http"), "format" to JsonPrimitive("mrs"), "behavior" to JsonPrimitive("domain"), "url" to JsonPrimitive(url)))
+        )
+        val classical = SubscriptionProvider(
+            "extra",
+            JsonObject(mapOf("type" to JsonPrimitive("http"), "format" to JsonPrimitive("yaml"), "behavior" to JsonPrimitive("classical"), "url" to JsonPrimitive("https://example.org/extra.yaml")))
+        )
+        val subscription = AppliedSubscriptionRules(
+            7,
+            SubscriptionRules(
+                rules = listOf(
+                    SubscriptionRule("RULE-SET,voice", emptyList(), SubscriptionTarget.DIRECT),
+                    SubscriptionRule("RULE-SET,extra", emptyList(), SubscriptionTarget.DIRECT)
+                ),
+                providers = listOf(managed, classical),
+                skipped = emptyList()
+            )
+        )
+        val engine = engine(listOf(vless), "p1", emptyList(), listOf("org.vpn")).copy(subscriptionRules = subscription)
+        val providers = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android()))
+            .jsonObject.getValue("rule-providers").jsonObject
+
+        val file = providers.getValue("sub7-voice").jsonObject
+        assertEquals("file", file.getValue("type").jsonPrimitive.content)
+        assertEquals("domain", file.getValue("behavior").jsonPrimitive.content)
+        assertEquals("mrs", file.getValue("format").jsonPrimitive.content)
+        assertEquals(RuleLists.path(url, RuleSetKind.DOMAIN), file.getValue("path").jsonPrimitive.content)
+        assertEquals(classical.definition, providers.getValue("sub7-extra"))
+    }
+
+    @Test
+    fun withoutSubscriptionRulesNothingIsAddedAndThereAreNoProviders() {
+        val config = build(platform = MihomoPlatform.Android(), vpn = listOf("org.vpn"))
+
+        assertFalse(config.containsKey("rule-providers"))
+        assertEquals(4, config.rules().size)
+    }
 
     private fun engine(
         proxies: List<EngineProxy>,

@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.vpn.core
 
 import io.github.yulbax.erkin.data.ConnectionType
+import io.github.yulbax.erkin.data.profile.AppliedSubscriptionRules
 
 data class EngineConfig(
     val proxies: List<EngineProxy>,
@@ -18,7 +19,8 @@ data class EngineConfig(
     val blockedPackages: List<String> = emptyList(),
     val serverTags: Map<Long, String> = emptyMap(),
     val bypassPackages: List<String> = emptyList(),
-    val newApps: ConnectionType = ConnectionType.BYPASS
+    val newApps: ConnectionType = ConnectionType.BYPASS,
+    val subscriptionRules: AppliedSubscriptionRules? = null
 ) {
     val tunnelsEveryApp: Boolean get() = newApps != ConnectionType.BYPASS
 }

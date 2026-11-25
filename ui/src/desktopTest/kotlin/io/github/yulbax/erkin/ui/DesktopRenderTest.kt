@@ -269,8 +269,8 @@ class DesktopRenderTest {
             ServerNode.Group(stored.id, stored.kind, stored.displayName, null, members, rememberedId = null)
         }
         val actions = GroupActions(
-            refreshing = emptySet(), onOpen = {}, onTest = { CompletableDeferred(null) }, onRefresh = {},
-            onAdd = {}, onRename = {}, onShare = {}, onUngroup = {}, onDelete = {}
+            refreshing = emptySet(), waitingLists = emptySet(), onOpen = {}, onTest = { CompletableDeferred(null) }, onRefresh = {},
+            onAdd = {}, onRename = {}, onShare = {}, onUngroup = {}, onDelete = {}, onRulesEnabled = { _, _ -> }
         )
         render("server-groups", width = 420, height = 860) { MainScreen() }
         render("server-group-sheet", width = 420, height = 700) {

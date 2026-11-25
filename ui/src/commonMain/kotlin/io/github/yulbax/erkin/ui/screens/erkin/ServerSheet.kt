@@ -150,7 +150,7 @@ private fun ManageSheet(folder: ServerFolder, choices: ServerChoices, mode: Serv
                 group?.let { GroupMenuButton(it, mode.actions) }
             }
         },
-        extra = group?.usage?.let { usage -> { UsageBlock(usage) } }
+        extra = group?.takeIf { it.kind is GroupKind.Subscription }?.let { subscription -> { SubscriptionCard(subscription, mode.actions) } }
     ) { shown, close ->
         val selection = rememberSelection((group?.members.orEmpty() + group?.hidden.orEmpty()).map { it.id })
         FolderList(
@@ -171,7 +171,7 @@ private fun ManageSheet(folder: ServerFolder, choices: ServerChoices, mode: Serv
 private fun groupSummary(group: ServerNode.Group): String =
     listOfNotNull(
         pluralStringResource(Res.plurals.subscription_servers, group.members.size, group.members.size),
-        group.updatedAt?.let { stringResource(Res.string.subscription_updated, updatedText(it)) }
+        group.updatedAt?.takeIf { group.kind !is GroupKind.Subscription }?.let { stringResource(Res.string.subscription_updated, updatedText(it)) }
     ).joinToString(" · ")
 
 @Composable

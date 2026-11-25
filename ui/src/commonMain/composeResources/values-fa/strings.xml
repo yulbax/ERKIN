@@ -345,13 +345,44 @@
         <item quantity="one">%1$d سرور</item>
         <item quantity="other">%1$d سرور</item>
     </plurals>
-    <string name="subscription_usage">%1$s از %2$s</string>
     <string name="subscription_used">%1$s مصرف شده</string>
     <string name="subscription_expires">تا %1$s</string>
     <string name="subscription_updated">به‌روزرسانی: %1$s</string>
     <string name="subscription_expired">منقضی شده</string>
     <string name="subscription_show_servers">نمایش سرورها</string>
     <string name="subscription_hide_servers">پنهان کردن سرورها</string>
+    <plurals name="subscription_days_left">
+        <item quantity="one">%1$d روز مانده</item>
+        <item quantity="other">%1$d روز مانده</item>
+    </plurals>
+    <plurals name="subscription_update_every">
+        <item quantity="one">هر %1$d ساعت</item>
+        <item quantity="other">هر %1$d ساعت</item>
+    </plurals>
+    <string name="subscription_card_more">بیشتر</string>
+    <string name="subscription_card_less">کمتر</string>
+    <string name="subscription_support">پشتیبانی</string>
+    <string name="subscription_page">حساب</string>
+    <string name="subscription_of_total">از %1$s</string>
+    <string name="subscription_percent">%1$d%</string>
+    <string name="subscription_rules_section">از اشتراک</string>
+    <string name="subscription_rules_title">قوانین · %1$d</string>
+    <string name="subscription_rules_after_yours">بعد از قوانین شما</string>
+    <string name="subscription_rules_from_lists">%1$d از فهرست‌ها</string>
+    <string name="subscription_rules_skipped">%1$d ردشده</string>
+    <string name="subscription_rules_page_title">قوانین اشتراک</string>
+    <plurals name="subscription_rules_count">
+        <item quantity="one">%1$d قانون</item>
+        <item quantity="other">%1$d قانون</item>
+    </plurals>
+    <string name="subscription_rules_apply">اعمال</string>
+    <string name="subscription_rules_apply_hint">تا زمانی که سروری از این اشتراک وصل است. بعد از قوانین شما و پیش از کانال‌های برنامه‌ها قرار می‌گیرند.</string>
+    <string name="subscription_rules_skipped_title">ردشده · %1$d</string>
+    <string name="subscription_rules_waiting_list">در انتظار دانلود فهرست</string>
+    <string name="subscription_rules_skip_geodata">به پایگاه داده جغرافیایی نیاز دارد که ERKIN ندارد</string>
+    <string name="subscription_rules_skip_unsupported">نوع قانون پشتیبانی نمی‌شود</string>
+    <string name="subscription_rules_skip_no_target">گروه سیاست مقصد قابل استفاده‌ای ندارد</string>
+    <string name="subscription_rules_skip_no_provider">فهرست قوانین وجود ندارد یا دانلود نمی‌شود</string>
     <string name="connections_title">اتصال‌ها</string>
     <string name="connections_off">ERKIN را وصل کنید تا ببینید برنامه‌ها به کجا وصل می‌شوند</string>
     <string name="connections_empty">هنوز اتصالی نیست</string>

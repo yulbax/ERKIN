@@ -12,10 +12,6 @@ import org.snakeyaml.engine.v2.schema.CoreSchema
 import java.math.BigInteger
 
 internal object ClashYamlReader : FormatReader {
-    private const val MERGE_KEY = "<<"
-    private const val MAX_ALIASES = 50
-    private const val MAX_CHARS = 10 * 1024 * 1024
-
     override fun detects(text: String): Boolean = proxyObjects(text) != null
 
     override fun read(text: String): List<ParsedProfile> =
@@ -26,7 +22,7 @@ internal object ClashYamlReader : FormatReader {
         }
 
     private fun proxyObjects(text: String): List<JsonObject>? {
-        val root = load(text) ?: return null
+        val root = ClashYamlDocument.load(text) ?: return null
         val items = when (root) {
             is JsonObject -> (root["proxies"] as? JsonArray)?.toList()
             is JsonArray -> root.toList().takeIf { list -> list.isNotEmpty() && list.all(::isProxyFragment) }
@@ -37,8 +33,14 @@ internal object ClashYamlReader : FormatReader {
 
     private fun isProxyFragment(element: JsonElement): Boolean =
         element is JsonObject && "type" in element && "server" in element
+}
 
-    private fun load(text: String): JsonElement? = runCatching {
+internal object ClashYamlDocument {
+    private const val MERGE_KEY = "<<"
+    private const val MAX_ALIASES = 50
+    private const val MAX_CHARS = 10 * 1024 * 1024
+
+    fun load(text: String): JsonElement? = runCatching {
         val settings = LoadSettings.builder()
             .setSchema(CoreSchema())
             .setMaxAliasesForCollections(MAX_ALIASES)

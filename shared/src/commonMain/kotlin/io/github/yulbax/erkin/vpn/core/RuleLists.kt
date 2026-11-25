@@ -14,7 +14,11 @@ enum class RuleSetKind(val behavior: String) {
 
 enum class RuleSetFormat(val wire: String) {
     TEXT("text"),
-    MRS("mrs")
+    MRS("mrs");
+
+    companion object {
+        fun fromWire(value: String?): RuleSetFormat? = entries.firstOrNull { it.wire == value }
+    }
 }
 
 data class RuleListSource(val url: String, val kind: RuleSetKind?)
@@ -41,6 +45,9 @@ object RuleLists {
 
     fun country(code: String): RuleListSource =
         RuleListSource(COUNTRY_URL_PREFIX + code.lowercase(Locale.ROOT) + COUNTRY_URL_SUFFIX, RuleSetKind.IPCIDR)
+
+    fun geoSite(name: String): RuleListSource =
+        RuleListSource(COUNTRY_DOMAINS_URL_PREFIX + name.lowercase(Locale.ROOT) + COUNTRY_URL_SUFFIX, RuleSetKind.DOMAIN)
 
     fun parts(source: RuleListSource): List<RuleListSource> {
         val domains = countryOf(source.url)?.let(COUNTRY_DOMAIN_LISTS::get) ?: return listOf(source)

@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.data
 
+import io.github.yulbax.erkin.data.profile.AppliedSubscriptionRules
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
@@ -22,24 +23,32 @@ class RoomVpnSessionStore(
     override suspend fun load(): SessionInputs {
         val profileDao = database.profileDao()
         val settings = database.settingsDao().getSettings() ?: SettingsEntity()
+        val selected = profileDao.getSelected()
         return SessionInputs(
-            selected = profileDao.getSelected(),
+            selected = selected,
             profiles = profileDao.getAll(),
             settings = settings,
             apps = database.appDao().getAllAppsSnapshot(),
             rules = database.routingRuleDao().getAll().mapNotNull { it.toRule() },
-            newAppsChannel = settings.newAppsConnectionType(platformNewAppsChannel)
+            newAppsChannel = settings.newAppsConnectionType(platformNewAppsChannel),
+            subscriptionRules = selected?.groupId?.let { database.serverGroupDao().get(it) }?.appliedRules()
         )
     }
 
+    private fun ServerGroupEntity.appliedRules(): AppliedSubscriptionRules? =
+        subscriptionRules?.takeIf { rulesEnabled && it.rules.isNotEmpty() }?.let { AppliedSubscriptionRules(id, it) }
+
     override fun routingChanges(): Flow<Unit> =
         combine(
-            database.profileDao().observeAll(),
-            database.profileDao().observeSelected(),
-            database.appDao().getAllApps(),
-            database.routingRuleDao().observeAll(),
-            database.settingsDao().observeSettings().map { it?.newAppsConnectionType }
-        ) { profiles, selected, apps, rules, newApps -> listOf(profiles, selected, apps, rules, newApps) }
+            combine(
+                database.profileDao().observeAll(),
+                database.profileDao().observeSelected(),
+                database.appDao().getAllApps(),
+                database.routingRuleDao().observeAll(),
+                database.settingsDao().observeSettings().map { it?.newAppsConnectionType }
+            ) { profiles, selected, apps, rules, newApps -> listOf(profiles, selected, apps, rules, newApps) },
+            database.serverGroupDao().observeAll().map { groups -> groups.map { Triple(it.id, it.rulesEnabled, it.rules) } }
+        ) { routing, subscriptionRules -> listOf(routing, subscriptionRules) }
             .distinctUntilChanged()
             .map { }
 

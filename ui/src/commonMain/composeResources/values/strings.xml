@@ -369,13 +369,44 @@
         <item quantity="one">%1$d server</item>
         <item quantity="other">%1$d servers</item>
     </plurals>
-    <string name="subscription_usage">%1$s of %2$s</string>
     <string name="subscription_used">%1$s used</string>
     <string name="subscription_expires">until %1$s</string>
     <string name="subscription_updated">updated %1$s</string>
     <string name="subscription_expired">expired</string>
     <string name="subscription_show_servers">Show servers</string>
     <string name="subscription_hide_servers">Hide servers</string>
+    <plurals name="subscription_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <plurals name="subscription_update_every">
+        <item quantity="one">every %1$d hour</item>
+        <item quantity="other">every %1$d hours</item>
+    </plurals>
+    <string name="subscription_card_more">Show more</string>
+    <string name="subscription_card_less">Show less</string>
+    <string name="subscription_support">Support</string>
+    <string name="subscription_page">Account</string>
+    <string name="subscription_of_total">of %1$s</string>
+    <string name="subscription_percent">%1$d%</string>
+    <string name="subscription_rules_section">From the subscription</string>
+    <string name="subscription_rules_title">Rules · %1$d</string>
+    <string name="subscription_rules_after_yours">after your rules</string>
+    <string name="subscription_rules_from_lists">%1$d from lists</string>
+    <string name="subscription_rules_skipped">%1$d skipped</string>
+    <string name="subscription_rules_page_title">Subscription rules</string>
+    <plurals name="subscription_rules_count">
+        <item quantity="one">%1$d rule</item>
+        <item quantity="other">%1$d rules</item>
+    </plurals>
+    <string name="subscription_rules_apply">Apply</string>
+    <string name="subscription_rules_apply_hint">While a server of this subscription is connected. They come after your rules and before app channels.</string>
+    <string name="subscription_rules_skipped_title">Skipped · %1$d</string>
+    <string name="subscription_rules_waiting_list">waiting for the list to download</string>
+    <string name="subscription_rules_skip_geodata">needs a geo database, which ERKIN does not have</string>
+    <string name="subscription_rules_skip_unsupported">rule type is not supported</string>
+    <string name="subscription_rules_skip_no_target">its policy group has no usable target</string>
+    <string name="subscription_rules_skip_no_provider">rule list is missing or not downloadable</string>
     <string name="connections_title">Connections</string>
     <string name="connections_off">Connect ERKIN to see where your apps go</string>
     <string name="connections_empty">No connections yet</string>

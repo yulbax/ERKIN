@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.data.profile.ChainEntry
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProxyChain
 import io.github.yulbax.erkin.data.profile.ServerKind
+import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
@@ -85,6 +86,10 @@ object EngineConfigComposer {
         val lists = inputs.rules.mapNotNull(RuleLists::url).distinct()
             .mapNotNull { url -> ruleLists(url)?.let { url to it } }.toMap()
         val rules = inputs.rules.filter { rule -> RuleLists.url(rule)?.let { it in lists } ?: true }
+        val subscription = inputs.subscriptionRules?.takeIf { hasServers }
+        val managed = subscription?.rules?.managedLists.orEmpty()
+            .mapNotNull { list -> ruleLists(list.url)?.takeIf { list.kind in it.kinds }?.let { list to it } }.toMap()
+        val applied = subscription?.available { it in managed }
         val active = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
         val boundIds = foreignApps.filter { it.connectionType == ConnectionType.VPN }.mapNotNull { it.serverId } +
             rules.filter { it.target == RuleTarget.VPN }.mapNotNull { it.serverId }
@@ -111,7 +116,8 @@ object EngineConfigComposer {
                 blockedPackages = routed.blockedPackages,
                 serverTags = bound.keys.associateWith(ProxyTag::of),
                 bypassPackages = routed.bypassPackages,
-                newApps = newApps
+                newApps = newApps,
+                subscriptionRules = applied
             ),
             configName = selected?.name?.ifBlank { "(unnamed)" } ?: when {
                 everyApp.hasByeDpi || newApps == ConnectionType.BYEDPI -> "(ByeDPI only)"
@@ -125,9 +131,12 @@ object EngineConfigComposer {
             routingKey = "new=${newApps.wire}#" + ruledApps.sortedBy { it.packageName }
                 .joinToString("|") { "${it.packageName}=${it.connectionType}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
                 rules.joinToString("|", prefix = "#") { "${it.app?.let { app -> "$app~" }.orEmpty()}${it.match.wire}:${it.value}=${it.target.wire}${it.serverId?.let { id -> "@$id" }.orEmpty()}" } +
-                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" },
+                lists.entries.joinToString("|", prefix = "#") { "${it.key}@${it.value.updatedAt}" } +
+                applied?.let { "#sub${it.groupId}@${it.rules.rules.hashCode()}.${it.rules.providers.hashCode()}" }.orEmpty() +
+                managed.entries.joinToString("|", prefix = "#") { "${it.key.url}@${it.value.updatedAt}" },
             vpnActive = everyApp.hasVpn ||
-                (hasServers && (newApps == ConnectionType.VPN || rules.any { it.target == RuleTarget.VPN }))
+                (hasServers && (newApps == ConnectionType.VPN || rules.any { it.target == RuleTarget.VPN } ||
+                    applied?.rules?.rules?.any { it.target == SubscriptionTarget.VPN } == true))
         )
     }
 
