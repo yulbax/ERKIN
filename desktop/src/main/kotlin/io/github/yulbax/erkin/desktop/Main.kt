@@ -55,8 +55,10 @@ fun main() {
         instance.release()
         return
     }
+    val upgrading = DesktopPaths.database.isFile
 
     val koin = startKoin { modules(desktopModule, uiModule) }.koin
+    runBlocking { koin.get<SettingsRepository>().update { NewAppsChannelPin.pinned(it, upgrading, desktopSystem.newAppsChannel) } }
     thread(isDaemon = true, name = "erkin-service-start") { koin.get<DesktopService>().connectAtLaunch() }
     val tray = koin.get<TrayHost>()
     val chrome = koin.get<WindowChrome>()

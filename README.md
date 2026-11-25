@@ -56,8 +56,8 @@ themselves. The Flatpak is updated by Flatpak from the ERKIN repository.
 - **Connections.** See where every app goes while connected — traffic per channel, the
   addresses each app opened and the channel or rule that routed them — and turn an address
   into a rule for that app.
-- **Desktop.** On Windows and Linux apps are matched by their program, and traffic of
-  programs without a channel goes straight out.
+- **Desktop.** On Windows and Linux apps are matched by their program, and programs
+  without a channel of their own use the channel for new apps — the VPN on a new install.
 - **Channels follow the launcher on Linux.** A program without a channel of its own takes
   the channel of the program that started it, so everything run from a terminal set to
   Direct goes straight out. Keep a terminal per channel to pick the route for a command

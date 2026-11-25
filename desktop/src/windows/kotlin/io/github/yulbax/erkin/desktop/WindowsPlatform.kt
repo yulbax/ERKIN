@@ -13,7 +13,7 @@ import java.io.File
 object WindowsSystem : DesktopSystem {
     override val desktopOs: DesktopOs = DesktopOs.WINDOWS
     override val deviceOsName: String = "Windows"
-    override val newAppsChannel: ConnectionType = ConnectionType.DIRECT
+    override val newAppsChannel: ConnectionType = ConnectionType.VPN
     override val ciadpiUnsupportedOptions: Set<String> = setOf("-S", "--md5sig")
     override val installedServiceSocket: File = File(System.getenv("ProgramData") ?: "C:\\ProgramData", "ERKIN/erkin.sock")
     override val sandboxApp: String? = null
