@@ -11,9 +11,11 @@ import org.junit.Test
 class HttpSubscriptionDeviceTest {
     private var limitReached = false
     private val received = mutableMapOf<String, String?>()
+    private var userAgent: String? = null
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
         createContext("/") { exchange ->
             listOf("x-hwid", "x-device-os", "x-ver-os", "x-device-model").forEach { received[it] = exchange.requestHeaders.getFirst(it) }
+            userAgent = exchange.requestHeaders.getFirst("User-Agent")
             if (limitReached) exchange.responseHeaders.add("x-hwid-max-devices-reached", "true")
             val body = "vless://00000000-0000-0000-0000-000000000000@a.example:443?security=tls#A".toByteArray()
             exchange.sendResponseHeaders(200, body.size.toLong())
@@ -38,6 +40,13 @@ class HttpSubscriptionDeviceTest {
             mapOf("x-hwid" to "9774d56d682e549c", "x-device-os" to "Android", "x-ver-os" to "16", "x-device-model" to "Pixel 8"),
             received
         )
+    }
+
+    @Test
+    fun theSubscriptionIsAskedForInTheMihomoFormat() = runBlocking {
+        HttpSubscriptionProfileSource().fetch(url)
+
+        assertEquals("clash.meta", userAgent)
     }
 
     @Test

@@ -30,6 +30,7 @@ class HttpSubscriptionProfileSource(
             connection.connectTimeout = TIMEOUT.inWholeMilliseconds.toInt()
             connection.readTimeout = TIMEOUT.inWholeMilliseconds.toInt()
             connection.instanceFollowRedirects = false
+            connection.setRequestProperty(SubscriptionHeaders.USER_AGENT, SubscriptionHeaders.CLIENT)
             device?.headers?.forEach(connection::setRequestProperty)
             try {
                 val code = connection.responseCode
@@ -71,6 +72,8 @@ class HttpSubscriptionProfileSource(
 internal object SubscriptionHeaders {
     const val TITLE = "profile-title"
     const val USER_INFO = "subscription-userinfo"
+    const val USER_AGENT = "User-Agent"
+    const val CLIENT = "clash.meta"
     private const val BASE64_PREFIX = "base64:"
     private const val MAX_TITLE_LENGTH = 128
 
