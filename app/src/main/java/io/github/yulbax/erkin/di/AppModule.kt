@@ -22,6 +22,7 @@ import io.github.yulbax.erkin.update.UpdateDownloader
 import io.github.yulbax.erkin.util.AndroidDeviceIdentity
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.VersionInfo
+import io.github.yulbax.erkin.data.profile.DueSubscriptionRefresher
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
@@ -139,8 +140,16 @@ class AppModule {
     fun probeResults(): ProbeResults = ProbeResults()
 
     @Single
-    fun vpnSessionStore(database: AppDatabase, profileRepository: ProfileRepository): VpnSessionStore =
-        RoomVpnSessionStore(database, profileRepository, platformNewAppsConnectionType)
+    fun dueSubscriptionRefresher(profileRepository: ProfileRepository, log: AppLog): DueSubscriptionRefresher =
+        DueSubscriptionRefresher(profileRepository, log)
+
+    @Single
+    fun vpnSessionStore(
+        database: AppDatabase,
+        profileRepository: ProfileRepository,
+        dueSubscriptions: DueSubscriptionRefresher
+    ): VpnSessionStore =
+        RoomVpnSessionStore(database, profileRepository, dueSubscriptions, platformNewAppsConnectionType)
 
     @Single
     fun configBackupRepository(

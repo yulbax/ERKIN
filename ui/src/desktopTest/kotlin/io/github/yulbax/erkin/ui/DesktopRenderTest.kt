@@ -47,6 +47,7 @@ import io.github.yulbax.erkin.data.byedpi.ByeDpiHistory
 import io.github.yulbax.erkin.vpn.core.TestNetwork
 import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import io.github.yulbax.erkin.data.profile.AddTarget
+import io.github.yulbax.erkin.data.profile.DueSubscriptionRefresher
 import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.ui.screens.erkin.GroupActions
 import io.github.yulbax.erkin.ui.screens.erkin.ServerSheet
@@ -169,8 +170,9 @@ class DesktopRenderTest {
                     }
                     single<SubscriptionProfileSource> { NoSubscriptions }
                     single { ProfileRepository(get(), get(), get(), get()) }
+                    single { DueSubscriptionRefresher(get(), get()) }
                     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass = true) }
-                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get(), ConnectionType.DIRECT)) { _, _, _, _, _, _ -> "{}" } }
+                    single { ServerLatencyProbe(RoomVpnSessionStore(get(), get(), get(), ConnectionType.DIRECT)) { _, _, _, _, _, _ -> "{}" } }
                     single { ProbeResults() }
                     single { ServerChecks(get(), get(), get()) }
                     single { VpnStateRepository() }

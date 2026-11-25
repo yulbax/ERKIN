@@ -503,7 +503,7 @@ class ProfileRefreshTest {
 
     @Test
     fun theSessionTakesSubscriptionRulesOnlyWhenEnabledAndTheSelectedServerBelongsToThem() = runBlocking {
-        val store = RoomVpnSessionStore(database, repository, ConnectionType.BYPASS)
+        val store = RoomVpnSessionStore(database, repository, DueSubscriptionRefresher(repository, log), ConnectionType.BYPASS)
         subscription.links = listOf("vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands")
         subscription.rules = rulesOf("DOMAIN,a.example")
         repository.add(SUBSCRIPTION_URL)

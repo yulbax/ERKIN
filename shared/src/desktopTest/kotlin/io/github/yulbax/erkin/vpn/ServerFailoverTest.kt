@@ -97,6 +97,7 @@ class ServerFailoverTest {
         override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
         override suspend fun selectedGroup() = group
         override suspend fun refreshSubscription(url: String): ProfileOperationResult = refresh.also { refreshed += url }
+        override suspend fun refreshDueSubscriptions() = Unit
         override suspend fun select(profile: ProfileEntity) {
             selectedNow = profile
         }

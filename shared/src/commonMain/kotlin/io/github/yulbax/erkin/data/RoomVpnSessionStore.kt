@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.data
 
 import io.github.yulbax.erkin.data.profile.AppliedSubscriptionRules
+import io.github.yulbax.erkin.data.profile.DueSubscriptionRefresher
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.map
 class RoomVpnSessionStore(
     private val database: AppDatabase,
     private val profileRepository: ProfileRepository,
+    private val dueSubscriptions: DueSubscriptionRefresher,
     private val platformNewAppsChannel: ConnectionType
 ) : VpnSessionStore {
 
@@ -62,6 +64,8 @@ class RoomVpnSessionStore(
 
     override suspend fun refreshSubscription(url: String): ProfileOperationResult =
         profileRepository.refreshSubscription(url)
+
+    override suspend fun refreshDueSubscriptions() = dueSubscriptions.refreshDue()
 
     override suspend fun select(profile: ProfileEntity) = profileRepository.select(profile)
 }

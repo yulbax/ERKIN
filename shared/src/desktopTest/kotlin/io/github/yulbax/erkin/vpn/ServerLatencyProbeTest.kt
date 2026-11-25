@@ -171,6 +171,7 @@ class ServerLatencyProbeTest {
         override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
         override suspend fun selectedGroup(): ServerGroupEntity? = null
         override suspend fun refreshSubscription(url: String): ProfileOperationResult = ProfileOperationResult.EmptySubscription
+        override suspend fun refreshDueSubscriptions() = Unit
         override suspend fun select(profile: ProfileEntity) = Unit
     }
 
@@ -181,6 +182,7 @@ class ServerLatencyProbeTest {
         override fun byeDpiArgsChanges(): Flow<String> = emptyFlow()
         override suspend fun selectedGroup(): ServerGroupEntity? = null
         override suspend fun refreshSubscription(url: String): ProfileOperationResult = ProfileOperationResult.EmptySubscription
+        override suspend fun refreshDueSubscriptions() = Unit
         override suspend fun select(profile: ProfileEntity) = Unit
     }
 

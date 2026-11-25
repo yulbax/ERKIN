@@ -89,6 +89,7 @@ class VpnSession(
         stateRepository.update(VpnState.Verifying)
         watchRouting()
         startHealth()
+        scope.launch { store.refreshDueSubscriptions() }
     }
 
     suspend fun reload(): ReloadOutcome {

@@ -62,6 +62,7 @@ import io.github.yulbax.erkin.ui.viewmodel.AppsMode
 import io.github.yulbax.erkin.ui.viewmodel.AppsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
+import io.github.yulbax.erkin.ui.viewmodel.SubscriptionRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.UpdateViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.coroutines.launch
@@ -82,6 +83,7 @@ fun MainScreen(
     updates: UpdateViewModel = koinViewModel()
 ) {
     koinViewModel<RuleListRefreshViewModel>()
+    koinViewModel<SubscriptionRefreshViewModel>()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route

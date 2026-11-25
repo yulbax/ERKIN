@@ -70,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.yulbax.erkin.data.profile.GroupKind
 import io.github.yulbax.erkin.data.profile.SubscriptionRules
+import io.github.yulbax.erkin.data.profile.SubscriptionSchedule
 import io.github.yulbax.erkin.data.profile.SubscriptionUsage
 import io.github.yulbax.erkin.ui.components.AppDialog
 import io.github.yulbax.erkin.ui.components.AppDropdownMenu
@@ -171,7 +172,7 @@ internal fun SubscriptionCard(group: ServerNode.Group, actions: GroupActions) {
     val facts: @Composable () -> Unit = {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             expiry?.let { ExpiryFact(it.expire) }
-            group.updatedAt?.let { UpdatedFact(it, notes?.updateHours) }
+            group.updatedAt?.let { UpdatedFact(it, SubscriptionSchedule.intervalHours(notes?.updateHours)) }
         }
     }
     val sections = buildList<@Composable () -> Unit> {
@@ -329,11 +330,11 @@ private fun ExpiryFact(expire: Long) {
 }
 
 @Composable
-private fun UpdatedFact(updatedAt: Long, updateHours: Int?) {
+private fun UpdatedFact(updatedAt: Long, updateHours: Int) {
     Fact(
         icon = Icons.Filled.Schedule,
         title = stringResource(Res.string.subscription_updated, updatedText(updatedAt)),
-        detail = updateHours?.let { pluralStringResource(Res.plurals.subscription_update_every, it, it) }
+        detail = pluralStringResource(Res.plurals.subscription_update_every, updateHours, updateHours)
     )
 }
 

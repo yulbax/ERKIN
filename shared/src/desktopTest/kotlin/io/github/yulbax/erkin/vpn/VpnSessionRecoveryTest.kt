@@ -119,6 +119,7 @@ class VpnSessionRecoveryTest {
             release.await()
             return ProfileOperationResult.EmptySubscription
         }
+        override suspend fun refreshDueSubscriptions() = Unit
         override suspend fun select(profile: ProfileEntity) = Unit
     }
 

@@ -7,6 +7,7 @@ import io.github.yulbax.erkin.ui.viewmodel.ConnectionViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ConnectionsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.ProfileViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleListRefreshViewModel
+import io.github.yulbax.erkin.ui.viewmodel.SubscriptionRefreshViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RuleSetsViewModel
 import io.github.yulbax.erkin.ui.viewmodel.RulesViewModel
 import io.github.yulbax.erkin.ui.viewmodel.SettingsViewModel
@@ -27,5 +28,6 @@ val uiModule = module {
     viewModelOf(::RulesViewModel)
     viewModelOf(::SettingsViewModel)
     viewModelOf(::SiteListsViewModel)
+    viewModelOf(::SubscriptionRefreshViewModel)
     viewModelOf(::UpdateViewModel)
 }

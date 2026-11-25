@@ -14,6 +14,7 @@ import io.github.yulbax.erkin.data.byedpi.ByeDpiSiteLists
 import io.github.yulbax.erkin.vpn.core.TestNetwork
 import io.github.yulbax.erkin.vpn.core.TestNetworkSource
 import io.github.yulbax.erkin.data.profile.HttpSubscriptionProfileSource
+import io.github.yulbax.erkin.data.profile.DueSubscriptionRefresher
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.SubscriptionProfileSource
 import io.github.yulbax.erkin.data.rules.RoutingRuleRepository
@@ -76,7 +77,8 @@ val desktopModule = module {
     single { ProfileRepository(get(), get(), get(), get()) }
     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass) }
     single { RoutingRuleRepository(get()) }
-    single<VpnSessionStore> { RoomVpnSessionStore(get(), get(), platformNewAppsConnectionType) }
+    single { DueSubscriptionRefresher(get(), get()) }
+    single<VpnSessionStore> { RoomVpnSessionStore(get(), get(), get(), platformNewAppsConnectionType) }
 
     single { VpnStateRepository() }
     single { IncomingServers() }
