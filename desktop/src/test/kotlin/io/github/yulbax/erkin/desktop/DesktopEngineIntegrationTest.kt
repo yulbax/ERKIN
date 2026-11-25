@@ -42,6 +42,13 @@ import org.junit.Test
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Duration.Companion.milliseconds
 
+private object StartedByTest : ServiceHost {
+    override val sandboxProtectSocket: File? = null
+    override val serviceCommand: List<String> = emptyList()
+
+    override fun startInstalled(log: AppLog): Boolean = false
+}
+
 class DesktopEngineIntegrationTest {
     private val binDir = System.getenv("ERKIN_TEST_BIN_DIR")?.let(::File)
     private val workDir = Files.createTempDirectory("erkin-desktop-test").toFile()
@@ -108,23 +115,25 @@ class DesktopEngineIntegrationTest {
         .filter { it.info().command().map { command -> "erkin-service" in command }.orElse(false) }
         .toList()
 
-    private fun binary(name: String): File = File(binDir, if (DesktopPaths.isWindows) "$name.exe" else name)
+    private val windows: Boolean = desktopSystem.desktopOs == DesktopOs.WINDOWS
+
+    private fun binary(name: String): File = File(binDir, desktopSystem.executableName(name))
 
     @Test
     fun thePortableCoreRoutesAnAppThroughTheTun() {
         assumeTrue("set ERKIN_TEST_TUN where the core may create a TUN", System.getenv("ERKIN_TEST_TUN") != null)
-        val curl = if (DesktopPaths.isWindows) "curl.exe" else "curl"
+        val curl = if (windows) "curl.exe" else "curl"
         val config = MihomoConfigBuilder.build(
             EngineConfig(listOf(EngineProxy("p1", """{"type":"direct"}""")), "p1", emptyList(), listOf(curl), listOf(curl), 1081, NetworkOptions()),
             ProbeInbound(freeLoopbackPort(), randomToken(), randomToken()),
-            MihomoPlatform.Desktop(if (DesktopPaths.isWindows) DesktopOs.WINDOWS else DesktopOs.LINUX, listOf(binary("ciadpi").name))
+            MihomoPlatform.Desktop(desktopSystem.desktopOs, listOf(binary("ciadpi").name))
         )
         val service = portableService(installedSocket = File(workDir, "none.sock"))
         val client = service.control()
         client.start(config, "", "")
         assertTrue("the TUN must come up", waitFor { tunUp() })
 
-        val fetch = ProcessBuilder(curl, "-s", "-o", if (DesktopPaths.isWindows) "NUL" else "/dev/null", "https://www.example.com").start()
+        val fetch = ProcessBuilder(curl, "-s", "-o", if (windows) "NUL" else "/dev/null", "https://www.example.com").start()
         assertTrue(fetch.waitFor(30, TimeUnit.SECONDS))
         assertEquals(0, fetch.exitValue())
         assertTrue("the TUN must carry traffic through the core", checkNotNull(client.traffic()).down > 0)
@@ -134,7 +143,7 @@ class DesktopEngineIntegrationTest {
         assertTrue("the TUN must go away with the core", waitFor { !tunUp() })
     }
 
-    private fun tunUp(): Boolean = if (DesktopPaths.isWindows) {
+    private fun tunUp(): Boolean = if (windows) {
         val query = ProcessBuilder("powershell", "-NoProfile", "-Command", "Get-NetAdapter -Name '${MihomoConfigBuilder.DESKTOP_INTERFACE_NAME}' -ErrorAction Stop")
             .redirectErrorStream(true).redirectOutput(ProcessBuilder.Redirect.DISCARD).start()
         query.waitFor() == 0
@@ -212,7 +221,7 @@ class DesktopEngineIntegrationTest {
             }
         """.trimIndent()
 
-        val service = DesktopService.Installed(socket, log = SilentLog)
+        val service = DesktopService.Installed(socket, StartedByTest, log = SilentLog)
         val client = service.connect()
         assertEquals(File(workDir, "svc").absoluteFile, service.hello?.workDir)
         assertTrue(service.hello?.core.orEmpty().isNotEmpty())
@@ -249,7 +258,7 @@ class DesktopEngineIntegrationTest {
     fun onlyTheControlConnectionHoldsTheTunnel() {
         val socket = startService()
         val config = """{"mode": "rule", "log-level": "warning", "proxies": [{"name": "p1", "type": "direct"}], "rules": ["MATCH,p1"]}"""
-        val service = DesktopService.Installed(socket, log = SilentLog)
+        val service = DesktopService.Installed(socket, StartedByTest, log = SilentLog)
         val control = service.control()
         control.start(config, "", "")
 

@@ -7,9 +7,9 @@ import java.util.UUID
 object DesktopDeviceIdentity {
     private const val FILE_NAME = "device-id"
 
-    fun load(): DeviceIdentity = DeviceIdentity(
+    fun load(osName: String): DeviceIdentity = DeviceIdentity(
         hwid = hwid(File(DesktopPaths.dataDir, FILE_NAME)),
-        os = if (DesktopPaths.isWindows) "Windows" else "Linux",
+        os = osName,
         osVersion = System.getProperty("os.version").orEmpty(),
         model = System.getProperty("os.name").orEmpty()
     )

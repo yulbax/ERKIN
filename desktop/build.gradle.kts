@@ -17,13 +17,22 @@ val buildHash = runCatching {
     providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()
 }.getOrDefault("")
 
+val desktopOs = providers.gradleProperty("erkin.desktopOs")
+    .getOrElse(if (System.getProperty("os.name").startsWith("Windows")) "windows" else "linux")
+
 kotlin {
     jvmToolchain(21)
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_21)
         allWarningsAsErrors.set(true)
     }
+    sourceSets {
+        main { kotlin.srcDir("src/$desktopOs/kotlin") }
+        test { kotlin.srcDir("src/${desktopOs}Test/kotlin") }
+    }
 }
+
+sourceSets.test { resources.srcDir("src/${desktopOs}Test/resources") }
 
 dependencies {
     implementation(project(":ui"))
@@ -31,11 +40,11 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.koin.compose.viewmodel)
     implementation(libs.kotlinx.coroutines.swing)
-    implementation(libs.jna)
     implementation(libs.compose.native.tray)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.jetbrains.compose.material.icons.extended)
     testImplementation(libs.junit)
+    if (desktopOs == "windows") implementation(libs.jna)
 }
 
 val bundledResourcesDir = layout.buildDirectory.dir("bundled-resources")

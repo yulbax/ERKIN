@@ -2,10 +2,8 @@ package io.github.yulbax.erkin.desktop
 
 import java.util.concurrent.TimeUnit
 
-object TraySupport {
-    val isAvailable: Boolean by lazy {
-        if (DesktopPaths.isWindows) true else hasStatusNotifierHost()
-    }
+object LinuxTrayHost : TrayHost {
+    override val isAvailable: Boolean by lazy { hasStatusNotifierHost() }
 
     private fun hasStatusNotifierHost(): Boolean = runCatching {
         val process = ProcessBuilder(

@@ -17,7 +17,6 @@ object WindowsDwm {
     private const val DWMWCP_ROUND = 2
 
     fun roundCorners(window: Window) {
-        if (!DesktopPaths.isWindows) return
         runCatching {
             val api = Native.load("dwmapi", Api::class.java)
             api.DwmSetWindowAttribute(Native.getWindowPointer(window), DWMWA_WINDOW_CORNER_PREFERENCE, IntByReference(DWMWCP_ROUND), Int.SIZE_BYTES)

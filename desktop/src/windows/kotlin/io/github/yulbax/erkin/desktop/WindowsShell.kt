@@ -1,9 +1,14 @@
-package io.github.yulbax.erkin.ui.platform
+package io.github.yulbax.erkin.desktop
 
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.WString
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+import java.io.File
+import javax.swing.ImageIcon
+import javax.swing.filechooser.FileSystemView
 
 internal object WindowsShell {
 
@@ -22,7 +27,24 @@ internal object WindowsShell {
 
     private const val COINIT_APARTMENTTHREADED = 2
 
-    val isWindows: Boolean = System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)
+    fun icon(path: String, size: Int): BufferedImage? {
+        val file = File(path).takeIf { it.isFile } ?: return null
+        val icon = runCatching { FileSystemView.getFileSystemView().getSystemIcon(file, size, size) }.getOrNull()
+            ?: return null
+        val image = BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB)
+        val graphics = image.createGraphics()
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+            if (icon is ImageIcon) {
+                graphics.drawImage(icon.image, 0, 0, size, size, null)
+            } else {
+                icon.paintIcon(null, graphics, (size - icon.iconWidth) / 2, (size - icon.iconHeight) / 2)
+            }
+        } finally {
+            graphics.dispose()
+        }
+        return image
+    }
 
     fun revealInExplorer(path: String) {
         Thread({

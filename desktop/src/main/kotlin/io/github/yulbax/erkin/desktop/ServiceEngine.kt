@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit
 class ServiceEngine(
     private val service: DesktopService,
     private val directProcesses: List<String>,
+    private val desktopOs: DesktopOs,
+    private val systemDns: SystemDnsSource,
     private val listener: EngineListener,
     private val log: AppLog
 ) : VpnEngine {
@@ -26,7 +28,6 @@ class ServiceEngine(
     override val probeUsername: String = randomToken()
     override val probePassword: String = randomToken()
     private val byeDpiProbeSocksPort: Int = freeLoopbackPort()
-    private val desktopOs = if (DesktopPaths.isWindows) DesktopOs.WINDOWS else DesktopOs.LINUX
 
     @Volatile private var client: ServiceClient? = null
     @Volatile private var balancer: String? = null
@@ -84,7 +85,7 @@ class ServiceEngine(
     private fun buildConfig(config: EngineConfig): String = MihomoConfigBuilder.build(
         engine = config,
         probe = ProbeInbound(probeSocksPort, probeUsername, probePassword),
-        platform = MihomoPlatform.Desktop(desktopOs, directProcesses, SystemDnsDetector.detect(), byeDpiProbeSocksPort)
+        platform = MihomoPlatform.Desktop(desktopOs, directProcesses, systemDns.detect(), byeDpiProbeSocksPort)
     )
 
     private companion object {

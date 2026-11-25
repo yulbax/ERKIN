@@ -28,6 +28,7 @@ import io.github.yulbax.erkin.ui.components.ExitConfirmDialog
 import io.github.yulbax.erkin.ui.components.trayLabels
 import io.github.yulbax.erkin.ui.di.uiModule
 import io.github.yulbax.erkin.ui.platform.AppLocale
+import io.github.yulbax.erkin.ui.platform.DesktopShell
 import io.github.yulbax.erkin.ui.platform.ProvideAppLocale
 import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.theme.ERKINTheme
@@ -44,6 +45,7 @@ import kotlin.concurrent.thread
 
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
+    DesktopShell.install(desktopSystem.newAppsChannel, fileShell.executableIcon, fileShell.revealInFolder)
     val activations = Channel<Unit>(Channel.CONFLATED)
     val instance = SingleInstance(DesktopPaths.dataDir, DesktopPaths.instanceSocket)
     if (!instance.claim { activations.trySend(Unit) }) return
@@ -56,6 +58,8 @@ fun main() {
 
     val koin = startKoin { modules(desktopModule, uiModule) }.koin
     thread(isDaemon = true, name = "erkin-service-start") { koin.get<DesktopService>().connectAtLaunch() }
+    val tray = koin.get<TrayHost>()
+    val chrome = koin.get<WindowChrome>()
     val controller = koin.get<VpnController>()
     controller.launch()
     autoConnect(koin.get(), koin.get(), koin.get(), koin.get())
@@ -88,7 +92,7 @@ fun main() {
             for (activation in activations) show()
         }
 
-        if (TraySupport.isAvailable) ProvideAppLocale {
+        if (tray.isAvailable) ProvideAppLocale {
             val labels = trayLabels()
             Tray(
                 icon = icon,
@@ -111,15 +115,15 @@ fun main() {
         ) {
             LaunchedEffect(Unit) {
                 window.minimumSize = WindowLimits.minimum
-                WindowLimits.clampWidth(window)
-                WindowsDwm.roundCorners(window)
+                WindowLimits.clampWidth(window, chrome)
+                chrome.roundCorners(window)
             }
             Remember(state)
             LaunchedEffect(state.placement) {
                 if (state.placement != WindowPlacement.Floating) state.placement = WindowPlacement.Floating
             }
             LaunchedEffect(state.isMinimized) {
-                if (state.isMinimized && TraySupport.isAvailable) {
+                if (state.isMinimized && tray.isAvailable) {
                     visible = false
                     state.isMinimized = false
                 }
@@ -135,7 +139,7 @@ fun main() {
                             topBarFrame = { bar -> WindowDraggableArea { bar() } },
                             topBarActions = {
                                 CaptionButtons(
-                                    onMinimize = { if (TraySupport.isAvailable) visible = false else state.isMinimized = true },
+                                    onMinimize = { if (tray.isAvailable) visible = false else state.isMinimized = true },
                                     onClose = requestExit
                                 )
                             }
@@ -144,7 +148,7 @@ fun main() {
                     if (confirmExit) {
                         ExitConfirmDialog(
                             onExit = exit,
-                            onMinimizeToTray = if (TraySupport.isAvailable) {
+                            onMinimizeToTray = if (tray.isAvailable) {
                                 {
                                     confirmExit = false
                                     visible = false

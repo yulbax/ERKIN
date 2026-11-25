@@ -24,7 +24,7 @@ object WindowsWindows {
     private const val GW_OWNER = 4
 
     private val api: User32? by lazy {
-        if (DesktopPaths.isWindows) runCatching { Native.load("user32", User32::class.java) }.getOrNull() else null
+        runCatching { Native.load("user32", User32::class.java) }.getOrNull()
     }
 
     fun withWindows(): Set<Long> {

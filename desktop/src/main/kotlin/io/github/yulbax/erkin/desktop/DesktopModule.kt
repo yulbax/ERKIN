@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.desktop
 
-import io.github.yulbax.erkin.ui.platform.platformNewAppsConnectionType
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import io.github.yulbax.erkin.ui.platform.appsCanBypass
 import androidx.room.Room
@@ -49,6 +48,7 @@ import kotlinx.coroutines.flow.first
 import org.koin.dsl.module
 
 val desktopModule = module {
+    includes(platformModule)
     single { FileAppLog(DesktopPaths.logFile) { level, tag, text -> println("${level.symbol}/$tag: $text") } }
     single<AppLog> { get<FileAppLog>() }
 
@@ -65,7 +65,7 @@ val desktopModule = module {
         val log = get<AppLog>()
         ByeDpiStrategyRunner(
             newProcess = {
-                CiadpiProcess(DesktopPaths.ciadpi, DesktopPaths.protectSocket.absolutePath, log, DesktopPaths.ciadpiUnsupportedOptions)
+                CiadpiProcess(DesktopPaths.ciadpi, get<ServiceHost>().protectSocket.absolutePath, log, get<DesktopSystem>().ciadpiUnsupportedOptions)
             },
             siteCheck = get(),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
@@ -73,28 +73,29 @@ val desktopModule = module {
         )
     }
     single { DownloadRoute() }
-    single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get(), DesktopDeviceIdentity.load()) }
+    single<SubscriptionProfileSource> { HttpSubscriptionProfileSource(get(), DesktopDeviceIdentity.load(get<DesktopSystem>().deviceOsName)) }
     single { ProfileRepository(get(), get(), get(), get()) }
     single { ConfigBackupRepository(get(), get(), get(), appsCanBypass) }
     single { RoutingRuleRepository(get()) }
     single { DueSubscriptionRefresher(get(), get()) }
-    single<VpnSessionStore> { RoomVpnSessionStore(get(), get(), get(), platformNewAppsConnectionType) }
+    single<VpnSessionStore> { RoomVpnSessionStore(get(), get(), get(), get<DesktopSystem>().newAppsChannel) }
 
     single { VpnStateRepository() }
     single { IncomingServers() }
     single { VpnCommandBus() }
     single<DiagnosticsSource> { DesktopDiagnostics(get(), get(), get(), get()) }
     single<DesktopService> {
-        if (DesktopPaths.runsServiceItself) {
+        val host = get<ServiceHost>()
+        if (host.runsServiceItself) {
             DesktopService.Portable(
-                command = DesktopPaths.serviceCommand,
+                command = host.serviceCommand,
                 workDir = DesktopPaths.coreDir,
-                protectSocket = DesktopPaths.protectSocket,
+                protectSocket = host.protectSocket,
                 installedSocket = DesktopPaths.serviceSocket,
                 log = get()
             )
         } else {
-            DesktopService.Installed(socket = DesktopPaths.serviceSocket, log = get())
+            DesktopService.Installed(socket = DesktopPaths.serviceSocket, host = host, log = get())
         }
     }
     single<VersionInfo> { DesktopVersionInfo(get()) }
@@ -107,9 +108,10 @@ val desktopModule = module {
             appDao = get(),
             own = DesktopPaths.ownApp,
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-            hostProcesses = { get<DesktopService>().running()?.processes().orEmpty() }
+            hostProcesses = { get<DesktopService>().running()?.processes().orEmpty() },
+            programs = get()
         ) {
-            settings.settings.first().newAppsConnectionType(platformNewAppsConnectionType)
+            settings.settings.first().newAppsConnectionType(get<DesktopSystem>().newAppsChannel)
         }
     }
 
@@ -128,14 +130,16 @@ val desktopModule = module {
                 engine = ServiceEngine(
                     service = service,
                     directProcesses = listOf(DesktopPaths.ciadpi.name),
+                    desktopOs = get<DesktopSystem>().desktopOs,
+                    systemDns = get(),
                     listener = controller,
                     log = log
                 ),
                 byeDpi = CiadpiProcess(
                     DesktopPaths.ciadpi,
-                    DesktopPaths.protectSocket.absolutePath,
+                    get<ServiceHost>().protectSocket.absolutePath,
                     log.of(LogSource.BYEDPI),
-                    DesktopPaths.ciadpiUnsupportedOptions
+                    get<DesktopSystem>().ciadpiUnsupportedOptions
                 ),
                 byeDpiHealthProbeUrl = ProbeUrls.BYEDPI,
                 ownPackage = DesktopPaths.ownExecutable.orEmpty()
@@ -145,5 +149,5 @@ val desktopModule = module {
     single<VpnLauncher> { DesktopVpnLauncher(get()) }
     single { UpdateChecker(get(), get(), get()) }
     single { UpdateDownloader(get()) }
-    single<UpdatePlatform> { DesktopUpdatePlatform(get()) }
+    single<UpdatePlatform> { DesktopUpdatePlatform(get(), get()) }
 }

@@ -44,22 +44,14 @@ import java.awt.MouseInfo
 import java.awt.Point
 import java.awt.Rectangle
 import java.awt.Window
-import java.awt.event.ComponentAdapter
-import java.awt.event.ComponentEvent
 
 object WindowLimits {
     val minimum = Dimension(360, 560)
     const val MAX_WIDTH = 600
 
-    fun clampWidth(window: Window) {
+    fun clampWidth(window: Window, chrome: WindowChrome) {
         window.maximumSize = Dimension(MAX_WIDTH, Int.MAX_VALUE)
-        if (!DesktopPaths.isWindows) return
-        window.addComponentListener(object : ComponentAdapter() {
-            override fun componentResized(event: ComponentEvent) {
-                if (window.width > MAX_WIDTH) window.setSize(MAX_WIDTH, window.height)
-            }
-        })
-        if (window.width > MAX_WIDTH) window.setSize(MAX_WIDTH, window.height)
+        chrome.limitWidth(window, MAX_WIDTH)
     }
 }
 

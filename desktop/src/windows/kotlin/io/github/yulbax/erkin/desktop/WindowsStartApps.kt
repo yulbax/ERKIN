@@ -62,8 +62,8 @@ object WindowsStartApps {
         exists: (String) -> Boolean
     ): List<CatalogProgram> =
         apps.mapNotNull { app ->
-            val executable = executableOf(app, shortcuts, environment) ?: return@mapNotNull null
-            CatalogProgram.executable(app.name, File(executable), app.logo.ifEmpty { null }?.let(::logoFile))
+            val executable = File(executableOf(app, shortcuts, environment) ?: return@mapNotNull null)
+            CatalogProgram.executable(app.name, executable, app.logo.ifEmpty { null }?.let(::logoFile), WindowsAppIds.stable(executable.path))
         }
             .filter { program -> program.path.orEmpty().let { it.endsWith(PROGRAM_EXTENSION, ignoreCase = true) && exists(it) } }
             .filterNot { program -> UNINSTALLER.containsMatchIn(program.name) || UNINSTALLER.containsMatchIn(File(program.path.orEmpty()).nameWithoutExtension) }

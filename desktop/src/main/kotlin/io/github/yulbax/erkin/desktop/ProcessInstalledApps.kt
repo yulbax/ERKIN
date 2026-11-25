@@ -27,7 +27,7 @@ class ProcessInstalledApps(
     private val own: OwnApp,
     private val scope: CoroutineScope,
     private val hostProcesses: () -> List<HostProcess>,
-    private val programs: DesktopPrograms = DesktopPrograms.current,
+    private val programs: DesktopPrograms,
     private val newAppsType: suspend () -> ConnectionType
 ) : InstalledAppsSource {
 
@@ -68,13 +68,13 @@ class ProcessInstalledApps(
             val saved = appDao.getAllAppsSnapshot()
             val newApps = newAppsType()
             val catalog = currentCatalog()
-            val running = discover(programs.running(hostProcesses), saved, own)
+            val running = discover(programs.running(hostProcesses), saved, own, programs)
             val savedById = saved.associateBy { it.packageName }
             val started = running.filter { !it.isSystemApp && it.packageName !in savedById }
             if (started.isNotEmpty()) {
                 appDao.addApps(started.map { App(it.packageName, it.name, isSystemApp = false, connectionType = newApps, path = it.path) })
             }
-            _installedApps.value = listed(running, saved, catalog, newApps, own).sortedBy { it.name.lowercase() }
+            _installedApps.value = listed(running, saved, catalog, newApps, own, programs).sortedBy { it.name.lowercase() }
             _error.value = null
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -105,14 +105,15 @@ class ProcessInstalledApps(
             saved: List<App>,
             catalog: List<CatalogProgram>,
             newApps: ConnectionType,
-            own: OwnApp
+            own: OwnApp,
+            programs: DesktopPrograms
         ): List<InstalledApp> {
-            fun keyOf(path: String) = WindowsAppIds.stable(path).lowercase()
-            val programs = catalog.groupBy { it.id.lowercase() }.values.map { same -> same.minBy { it.name.length } }
-            val catalogByKey = programs.associateBy { it.id.lowercase() }
+            fun keyOf(path: String) = programs.stableId(path).lowercase()
+            val entries = catalog.groupBy { it.id.lowercase() }.values.map { same -> same.minBy { it.name.length } }
+            val catalogByKey = entries.associateBy { it.id.lowercase() }
             val ownChannel = saved.filter { it.hasOwnChannel(newApps) }.mapTo(HashSet()) { it.packageName }
             val runningIds = running.mapTo(HashSet()) { it.packageName }
-            val removed = removedApps(saved, runningIds).toSet()
+            val removed = removedApps(saved, runningIds, programs).toSet()
             fun keyOf(app: App) = keyOf(app.path ?: app.packageName)
             val shown = running.filter { !it.isSystemApp || it.packageName in ownChannel } +
                 saved.filter { app ->
@@ -120,7 +121,7 @@ class ProcessInstalledApps(
                         (app.packageName in ownChannel || keyOf(app) in catalogByKey)
                 }.map { InstalledApp(it.packageName, it.name, isSystemApp = false, isLaunchable = true, path = it.path) }
             val shownKeys = shown.mapTo(HashSet()) { keyOf(it.path ?: it.packageName) }
-            val unlisted = programs
+            val unlisted = entries
                 .filter { it.id.lowercase() !in shownKeys && !own.isOwn(it.id) }
                 .map { InstalledApp(it.id, it.name, isSystemApp = false, isLaunchable = true, path = it.path) }
             return shown.map { app ->
@@ -129,9 +130,9 @@ class ProcessInstalledApps(
             } + unlisted
         }
 
-        fun removedApps(saved: List<App>, runningIds: Set<String>): List<String> =
+        fun removedApps(saved: List<App>, runningIds: Set<String>, programs: DesktopPrograms): List<String> =
             saved.filter { app ->
-                app.packageName !in runningIds && !WindowsAppIds.isStable(app.packageName) && when (val path = app.path) {
+                app.packageName !in runningIds && !programs.isStableId(app.packageName) && when (val path = app.path) {
                     null -> app.packageName.endsWith(DELETED_SUFFIX)
                     else -> isRemoved(File(path))
                 }
@@ -143,7 +144,7 @@ class ProcessInstalledApps(
             return existing.parentFile == null || !existing.list().isNullOrEmpty()
         }
 
-        fun discover(processes: List<RunningProcess>, saved: List<App>, own: OwnApp): List<InstalledApp> {
+        fun discover(processes: List<RunningProcess>, saved: List<App>, own: OwnApp, programs: DesktopPrograms): List<InstalledApp> {
             val savedByPath = saved.associateBy { (it.path ?: it.packageName).lowercase() }
             val savedById = saved.associateBy { it.packageName.lowercase() }
             return processes
@@ -159,8 +160,8 @@ class ProcessInstalledApps(
                     val ancestors = copies.firstNotNullOfOrNull { copy -> copy.ancestors.takeIf { it.isNotEmpty() } }.orEmpty()
                     InstalledApp(
                         packageName = savedByPath[file.path.lowercase()]?.packageName
-                            ?: savedById[WindowsAppIds.stable(file.path).lowercase()]?.packageName
-                            ?: WindowsAppIds.stable(file.path),
+                            ?: savedById[programs.stableId(file.path).lowercase()]?.packageName
+                            ?: programs.stableId(file.path),
                         name = file.nameWithoutExtension,
                         isSystemApp = isProcess,
                         isLaunchable = !isProcess,

@@ -36,8 +36,6 @@ import org.jetbrains.skia.svg.SVGLengthUnit
 import org.jetbrains.skia.Surface
 import org.jetbrains.skia.Image
 import org.jetbrains.skia.Data
-import javax.swing.ImageIcon
-import javax.swing.filechooser.FileSystemView
 import java.awt.datatransfer.StringSelection
 import java.io.File
 import java.io.InputStream
@@ -126,22 +124,7 @@ private object ExecutableIcons {
     fun load(path: String): ImageBitmap? {
         icons[path]?.let { return it }
         DesktopAppIcons.fileFor(path)?.let { icon -> decode(icon)?.let { return it.also { bitmap -> icons[path] = bitmap } } }
-        if (!WindowsShell.isWindows) return null
-        val file = File(path).takeIf { it.isFile } ?: return null
-        val icon = runCatching { FileSystemView.getFileSystemView().getSystemIcon(file, SIZE, SIZE) }.getOrNull()
-            ?: return null
-        val image = BufferedImage(SIZE, SIZE, BufferedImage.TYPE_INT_ARGB)
-        val graphics = image.createGraphics()
-        try {
-            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
-            if (icon is ImageIcon) {
-                graphics.drawImage(icon.image, 0, 0, SIZE, SIZE, null)
-            } else {
-                icon.paintIcon(null, graphics, (SIZE - icon.iconWidth) / 2, (SIZE - icon.iconHeight) / 2)
-            }
-        } finally {
-            graphics.dispose()
-        }
+        val image = DesktopShell.executableIcon?.invoke(path, SIZE) ?: return null
         return image.toComposeImageBitmap().also { icons[path] = it }
     }
 
@@ -169,6 +152,25 @@ internal fun renderSvg(bytes: ByteArray, size: Int): ImageBitmap {
     val surface = Surface.makeRasterN32Premul(size, size)
     svg.render(surface.canvas)
     return surface.makeImageSnapshot().toComposeImageBitmap()
+}
+
+object DesktopShell {
+    @Volatile var newAppsConnectionType: ConnectionType = ConnectionType.VPN
+        private set
+    @Volatile var executableIcon: ((path: String, size: Int) -> BufferedImage?)? = null
+        private set
+    @Volatile var revealInFolder: ((path: String) -> Unit)? = null
+        private set
+
+    fun install(
+        newAppsConnectionType: ConnectionType,
+        executableIcon: ((path: String, size: Int) -> BufferedImage?)?,
+        revealInFolder: ((path: String) -> Unit)?
+    ) {
+        this.newAppsConnectionType = newAppsConnectionType
+        this.executableIcon = executableIcon
+        this.revealInFolder = revealInFolder
+    }
 }
 
 object DesktopAppIcons {
@@ -232,9 +234,7 @@ private fun chooseFile(title: String, mode: Int, suggestedName: String?): File? 
     return File(dialog.directory, name)
 }
 
-private val isLinux: Boolean = System.getProperty("os.name").startsWith("Linux")
-
-actual val platformNewAppsConnectionType: ConnectionType = if (isLinux) ConnectionType.VPN else ConnectionType.DIRECT
+actual val platformNewAppsConnectionType: ConnectionType get() = DesktopShell.newAppsConnectionType
 
 actual val supportsSystemAppsFilter: Boolean = false
 
@@ -242,8 +242,7 @@ actual val appsCanBypass: Boolean = false
 
 actual val scrollbarEdgeInset: Dp = 6.dp
 
-actual val revealInFolder: ((path: String) -> Unit)? =
-    if (WindowsShell.isWindows) { path -> if (File(path).isFile) WindowsShell.revealInExplorer(path) } else null
+actual val revealInFolder: ((path: String) -> Unit)? get() = DesktopShell.revealInFolder
 
 actual val scrollbarAlwaysVisible: Boolean = true
 

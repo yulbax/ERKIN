@@ -42,7 +42,7 @@ sealed class DesktopService(protected val log: AppLog) {
 
     protected fun forwardLog(level: String, message: String) = log.core(level, message)
 
-    class Installed(private val socket: File, log: AppLog) : DesktopService(log) {
+    class Installed(private val socket: File, private val host: ServiceHost, log: AppLog) : DesktopService(log) {
         @Volatile private var client: ServiceClient? = null
         @Volatile private var control: ServiceClient? = null
 
@@ -63,15 +63,7 @@ sealed class DesktopService(protected val log: AppLog) {
         }
 
         private fun startService(): ServiceClient? {
-            if (!DesktopPaths.isWindows) return null
-            log.i(TAG, "starting the ERKIN service")
-            val process = ProcessBuilder("sc.exe", "start", SERVICE_NAME).redirectErrorStream(true).start()
-            val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
-            val exit = process.waitFor()
-            if (exit != 0 && exit != ALREADY_RUNNING) {
-                log.w(TAG, "sc start exited with $exit: $output")
-                return null
-            }
+            if (!host.startInstalled(log)) return null
             val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(START_WAIT_S)
             while (System.nanoTime() < deadline) {
                 tryConnect()?.let { connected -> return connected.also { client = it } }
@@ -129,8 +121,6 @@ sealed class DesktopService(protected val log: AppLog) {
 
     private companion object {
         const val TAG = "DesktopService"
-        const val SERVICE_NAME = "ERKIN"
-        const val ALREADY_RUNNING = 1056
         const val START_WAIT_S = 15L
         const val NOT_RUNNING = "The ERKIN background service is not running. Reinstall ERKIN."
         const val INSTALLED_RUNNING = "The installed ERKIN is running. Close it before connecting with the portable one."

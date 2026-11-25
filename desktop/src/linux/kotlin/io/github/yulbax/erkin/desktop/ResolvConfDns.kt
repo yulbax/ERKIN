@@ -4,13 +4,12 @@ import io.github.yulbax.erkin.vpn.mihomo.SystemDns
 import java.io.File
 import java.net.InetAddress
 
-object SystemDnsDetector {
+object ResolvConfDns : SystemDnsSource {
     private val RESOLV_CONF = File("/etc/resolv.conf")
     private val RESOLVED_UPSTREAM = File("/run/systemd/resolve/resolv.conf")
     private val IP_LITERAL = Regex("[0-9.]+|[0-9a-fA-F:.]*:[0-9a-fA-F:.]*")
 
-    fun detect(): SystemDns {
-        if (DesktopPaths.isWindows) return SystemDns.Local
+    override fun detect(): SystemDns {
         val configured = nameservers(RESOLV_CONF)
         if (configured.isEmpty() || configured.any { !it.isLoopbackAddress }) return SystemDns.Local
         return nameservers(RESOLVED_UPSTREAM)
