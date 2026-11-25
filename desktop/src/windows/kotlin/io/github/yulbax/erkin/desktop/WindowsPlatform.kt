@@ -26,6 +26,8 @@ object WindowsSystem : DesktopSystem {
     override fun userDataDir(windowsName: String, unixName: String): File =
         System.getenv("APPDATA")?.let { File(it, windowsName) }
             ?: File(System.getProperty("user.home"), ".local/share/$unixName")
+
+    override fun hostDataDir(unixName: String): File? = null
 }
 
 object WindowsServiceHost : ServiceHost {

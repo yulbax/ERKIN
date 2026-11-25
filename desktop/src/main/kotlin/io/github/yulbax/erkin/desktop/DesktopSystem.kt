@@ -21,6 +21,8 @@ interface DesktopSystem {
     fun instanceSocket(dataDir: File): File
 
     fun userDataDir(windowsName: String, unixName: String): File
+
+    fun hostDataDir(unixName: String): File?
 }
 
 interface ServiceHost {

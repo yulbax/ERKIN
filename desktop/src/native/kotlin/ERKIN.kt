@@ -5,6 +5,7 @@ object ERKIN {
     fun main(args: Array<String>) {
         val dir = File(ProcessHandle.current().info().command().orElseThrow()).parentFile
         System.setProperty("java.library.path", dir.path + File.pathSeparator + System.getProperty("java.library.path", ""))
+        if (File(dir, NativeBuild.PORTABLE_MARKER).isFile) System.setProperty("erkin.portable", "true")
         val launch = mapOf(
             "java.home" to dir.path,
             "skiko.library.path" to dir.path,

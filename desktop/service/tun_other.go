@@ -5,3 +5,5 @@ package main
 func openTunnel(config string) (string, tunnelSession, error) {
 	return config, nil, nil
 }
+
+func dropStaleTunnels(string) {}

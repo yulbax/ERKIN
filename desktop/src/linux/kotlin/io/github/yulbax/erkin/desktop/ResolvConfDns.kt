@@ -10,6 +10,7 @@ object ResolvConfDns : SystemDnsSource {
     private val IP_LITERAL = Regex("[0-9.]+|[0-9a-fA-F:.]*:[0-9a-fA-F:.]*")
 
     override fun detect(): SystemDns {
+        if (FlatpakSandbox.isActive) return SystemDns.Local
         val configured = nameservers(RESOLV_CONF)
         if (configured.isEmpty() || configured.any { !it.isLoopbackAddress }) return SystemDns.Local
         return nameservers(RESOLVED_UPSTREAM)

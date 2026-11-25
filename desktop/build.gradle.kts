@@ -20,12 +20,14 @@ val buildHash = runCatching {
 val hostOs = if (System.getProperty("os.name").startsWith("Windows")) "windows" else "linux"
 val desktopOs = providers.gradleProperty("erkin.desktopOs").getOrElse(hostOs)
 
+val portableMarker = "app/portable"
+
 val appProperties = mapOf(
     "erkin.version" to appVersion,
     "erkin.build" to buildHash,
     "erkin.byedpi.version" to byeDpiVersion,
     "erkin.testing" to testing.toString()
-)
+) + if (desktopOs == "windows") mapOf("erkin.updateAsset" to "windows-x86_64.msi") else emptyMap()
 
 kotlin {
     jvmToolchain(21)
@@ -55,6 +57,49 @@ dependencies {
 }
 
 val bundledResourcesDir = layout.buildDirectory.dir("bundled-resources")
+
+object WindowsSdk {
+    private const val AS_INVOKER = "level=\"asInvoker\""
+    private const val AS_ADMINISTRATOR = "level=\"requireAdministrator\""
+    private val ADMINISTRATOR_MANIFEST = """
+        <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+          <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+            <security><requestedPrivileges><requestedExecutionLevel $AS_ADMINISTRATOR uiAccess="false"/></requestedPrivileges></security>
+          </trustInfo>
+        </assembly>
+    """.trimIndent()
+
+    fun tool(name: String): File {
+        val kits = File(System.getenv("ProgramFiles(x86)") ?: "C:\\Program Files (x86)", "Windows Kits/10/bin")
+        return kits.listFiles().orEmpty()
+            .map { File(it, "x64/$name") }
+            .filter { it.isFile }
+            .maxByOrNull { it.parentFile.parentFile.name }
+            ?: error("$name not found in $kits; install the Windows SDK")
+    }
+
+    fun requireAdministrator(exe: File, workDir: File) {
+        val mt = tool("mt.exe").absolutePath
+        val manifest = File(workDir, "${exe.nameWithoutExtension}.manifest")
+        manifest.delete()
+        run(mt, "-nologo", "-inputresource:${exe.absolutePath};#1", "-out:${manifest.absolutePath}", allowFailure = true)
+        val current = manifest.takeIf { it.isFile }?.readText()
+        val requested = when {
+            current == null -> ADMINISTRATOR_MANIFEST
+            AS_INVOKER in current -> current.replace(AS_INVOKER, AS_ADMINISTRATOR)
+            else -> error("The ${exe.name} manifest does not request asInvoker: $current")
+        }
+        manifest.writeText(requested)
+        run(mt, "-nologo", "-manifest", manifest.absolutePath, "-outputresource:${exe.absolutePath};#1")
+    }
+
+    private fun run(vararg command: String, allowFailure: Boolean = false) {
+        val process = ProcessBuilder(*command).redirectErrorStream(true).start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        check(process.waitFor() == 0 || allowFailure) { "${command.first()} failed: $output" }
+    }
+}
 
 data class ByeDpiArchive(val name: String, val sha256: String, val entry: String)
 
@@ -139,7 +184,6 @@ compose.desktop {
     application {
         mainClass = "io.github.yulbax.erkin.desktop.MainKt"
         jvmArgs += appProperties.map { (key, value) -> "-D$key=$value" }
-        if (System.getProperty("os.name").startsWith("Windows")) jvmArgs += "-Derkin.updateAsset=windows-x86_64.msi"
 
         buildTypes.release.proguard {
             isEnabled.set(true)
@@ -175,45 +219,72 @@ if (System.getProperty("os.name").startsWith("Linux")) {
 if (System.getProperty("os.name").startsWith("Windows")) {
     tasks.matching { it.name == "prepareAppResources" }.configureEach { dependsOn(prepareWindowsBinaries) }
 
-    tasks.register<Exec>("packageServiceMsi") {
+    fun registerMsi(name: String, about: String, imageTask: String, appImage: Provider<Directory>, output: Provider<Directory>) =
+        tasks.register<Exec>(name) {
+            group = "distribution"
+            description = about
+            dependsOn(imageTask, rootProject.tasks.named("unzipWix"))
+            val wixDir = rootProject.layout.buildDirectory.dir("wix311")
+            inputs.dir(appImage)
+            inputs.dir("packaging/windows")
+            inputs.file("icons/erkin.ico")
+            outputs.dir(output)
+            environment("ERKIN_ICON", project.file("icons/erkin.ico").absolutePath)
+            doFirst {
+                output.get().asFile.apply { deleteRecursively(); mkdirs() }
+                environment("PATH", wixDir.get().asFile.absolutePath + File.pathSeparator + System.getenv("PATH"))
+            }
+            executable = File(System.getProperty("java.home"), "bin/jpackage.exe").absolutePath
+            args(
+                "--type", "msi",
+                "--app-image", appImage.get().asFile.absolutePath,
+                "--dest", output.get().asFile.absolutePath,
+                "--resource-dir", project.file("packaging/windows").absolutePath,
+                "--name", "ERKIN",
+                "--app-version", appVersion,
+                "--vendor", "yulbax",
+                "--description", "ERKIN VPN with per-app routing and ByeDPI",
+                "--install-dir", "ERKIN",
+                "--win-menu",
+                "--win-shortcut",
+                "--win-dir-chooser",
+                "--win-upgrade-uuid", "85e5f814-d069-44e8-9991-526d02154e62"
+            )
+            val builtName = "ERKIN-$appVersion.msi"
+            val msiName = "ERKIN-$appVersion-windows-x86_64.msi"
+            val msiDir = output.map { it.asFile }
+            doLast {
+                val dir = msiDir.get()
+                val built = File(dir, builtName)
+                check(built.renameTo(File(dir, msiName))) { "Could not rename $built to $msiName" }
+            }
+        }
+
+    registerMsi(
+        name = "packageServiceMsi",
+        about = "Builds the MSI with a WiX template that installs and removes the ERKIN background service.",
+        imageTask = "createReleaseDistributable",
+        appImage = layout.buildDirectory.dir("compose/binaries/main-release/app/ERKIN"),
+        output = layout.buildDirectory.dir("compose/binaries/main-release/msi")
+    )
+
+    val nativeMsiImage = layout.buildDirectory.dir("native/msi-image/ERKIN")
+    tasks.register<Sync>("prepareNativeMsiImage") {
         group = "distribution"
-        description = "Builds the MSI with a WiX template that installs and removes the ERKIN background service."
-        dependsOn("createReleaseDistributable", rootProject.tasks.named("unzipWix"))
-        val appImage = layout.buildDirectory.dir("compose/binaries/main-release/app/ERKIN")
-        val output = layout.buildDirectory.dir("compose/binaries/main-release/msi")
-        val wixDir = rootProject.layout.buildDirectory.dir("wix311")
-        inputs.dir(appImage)
-        inputs.dir("packaging/windows")
-        outputs.dir(output)
-        doFirst {
-            output.get().asFile.apply { deleteRecursively(); mkdirs() }
-            environment("PATH", wixDir.get().asFile.absolutePath + File.pathSeparator + System.getenv("PATH"))
-        }
-        executable = File(System.getProperty("java.home"), "bin/jpackage.exe").absolutePath
-        args(
-            "--type", "msi",
-            "--app-image", appImage.get().asFile.absolutePath,
-            "--dest", output.get().asFile.absolutePath,
-            "--resource-dir", project.file("packaging/windows").absolutePath,
-            "--name", "ERKIN",
-            "--app-version", appVersion,
-            "--vendor", "yulbax",
-            "--description", "ERKIN VPN with per-app routing and ByeDPI",
-            "--install-dir", "ERKIN",
-            "--win-menu",
-            "--win-shortcut",
-            "--win-dir-chooser",
-            "--win-upgrade-uuid", "85e5f814-d069-44e8-9991-526d02154e62"
-        )
-        val builtName = "ERKIN-$appVersion.msi"
-        val msiName = "ERKIN-$appVersion-windows-x86_64.msi"
-        val msiDir = output.map { it.asFile }
-        doLast {
-            val dir = msiDir.get()
-            val built = File(dir, builtName)
-            check(built.renameTo(File(dir, msiName))) { "Could not rename $built to $msiName" }
-        }
+        description = "Lays the native app folder out as a jpackage app image so jpackage can wrap it in the MSI."
+        dependsOn("packageNative")
+        from(layout.buildDirectory.dir("native/ERKIN"))
+        from(layout.buildDirectory.file("compose/binaries/main/app/ERKIN/app/.jpackage.xml")) { into("app") }
+        into(nativeMsiImage)
     }
+
+    registerMsi(
+        name = "packageNativeMsi",
+        about = "Builds the MSI of the native app with the same WiX template and background service.",
+        imageTask = "prepareNativeMsiImage",
+        appImage = nativeMsiImage,
+        output = layout.buildDirectory.dir("native/msi")
+    )
 
     val portableImage = layout.buildDirectory.dir("portable/ERKIN")
     val preparePortableImage = tasks.register<Sync>("preparePortableImage") {
@@ -225,12 +296,6 @@ if (System.getProperty("os.name").startsWith("Windows")) {
         val root = portableImage.map { it.asFile }
         doLast {
             val dir = root.get()
-            fun run(vararg command: String) {
-                val process = ProcessBuilder(*command).redirectErrorStream(true).start()
-                val output = process.inputStream.bufferedReader().use { it.readText() }
-                check(process.waitFor() == 0) { "${command.first()} failed: $output" }
-            }
-
             val cfg = File(dir, "app/ERKIN.cfg")
             val text = cfg.readText()
             val newline = if ("\r\n" in text) "\r\n" else "\n"
@@ -238,21 +303,7 @@ if (System.getProperty("os.name").startsWith("Windows")) {
             check(header in text) { "No [JavaOptions] section in $cfg" }
             val options = listOf("-Derkin.portable=true").joinToString("") { "java-options=$it$newline" }
             cfg.writeText(text.replaceFirst(header, header + options))
-
-            val kits = File(System.getenv("ProgramFiles(x86)") ?: "C:\\Program Files (x86)", "Windows Kits/10/bin")
-            val mt = kits.listFiles().orEmpty()
-                .map { File(it, "x64/mt.exe") }
-                .filter { it.isFile }
-                .maxByOrNull { it.parentFile.parentFile.name }
-                ?: error("mt.exe not found in $kits; install the Windows SDK")
-            val launcher = File(dir, "ERKIN.exe")
-            val manifest = File(temporaryDir, "ERKIN.manifest")
-            run(mt.absolutePath, "-nologo", "-inputresource:${launcher.absolutePath};#1", "-out:${manifest.absolutePath}")
-            val asInvoker = "level=\"asInvoker\""
-            val manifestText = manifest.readText()
-            check(asInvoker in manifestText) { "The ERKIN.exe manifest does not request asInvoker: $manifestText" }
-            manifest.writeText(manifestText.replace(asInvoker, "level=\"requireAdministrator\""))
-            run(mt.absolutePath, "-nologo", "-manifest", manifest.absolutePath, "-outputresource:${launcher.absolutePath};#1")
+            WindowsSdk.requireAdministrator(File(dir, "ERKIN.exe"), temporaryDir)
         }
     }
 
@@ -261,6 +312,30 @@ if (System.getProperty("os.name").startsWith("Windows")) {
         description = "Zips the portable ERKIN folder."
         from(preparePortableImage) { into("ERKIN") }
         destinationDirectory.set(layout.buildDirectory.dir("compose/binaries/main-release/portable"))
+        archiveFileName.set("ERKIN-$appVersion-windows-x86_64-portable.zip")
+    }
+
+    val nativePortableImage = layout.buildDirectory.dir("native/portable-image/ERKIN")
+    val prepareNativePortableImage = tasks.register<Sync>("prepareNativePortableImage") {
+        group = "distribution"
+        description = "Turns the native app folder into the portable ERKIN that runs as administrator."
+        dependsOn("packageNative")
+        from(layout.buildDirectory.dir("native/ERKIN"))
+        into(nativePortableImage)
+        val root = nativePortableImage.map { it.asFile }
+        val marker = portableMarker
+        doLast {
+            val dir = root.get()
+            File(dir, marker).apply { parentFile.mkdirs() }.writeText("")
+            WindowsSdk.requireAdministrator(File(dir, "ERKIN.exe"), temporaryDir)
+        }
+    }
+
+    tasks.register<Zip>("packageNativePortableZip") {
+        group = "distribution"
+        description = "Zips the native portable ERKIN folder."
+        from(prepareNativePortableImage) { into("ERKIN") }
+        destinationDirectory.set(layout.buildDirectory.dir("native/portable"))
         archiveFileName.set("ERKIN-$appVersion-windows-x86_64-portable.zip")
     }
 }
@@ -319,15 +394,17 @@ val nativeSourceSet = sourceSets.create("native") {
 
 val generateNativeBuild = tasks.register("generateNativeBuild") {
     val properties = appProperties
+    val marker = portableMarker
     val buildFile = generatedNativeDir.map { it.file("NativeBuild.kt") }
     inputs.property("appProperties", properties)
+    inputs.property("portableMarker", marker)
     outputs.dir(generatedNativeDir)
     doLast {
         fun escaped(value: String) = value.replace("\\", "\\\\").replace("\"", "\\\"")
         val entries = properties.entries.joinToString(",\n") { (key, value) -> "        \"${escaped(key)}\" to \"${escaped(value)}\"" }
         buildFile.get().asFile.apply {
             parentFile.mkdirs()
-            writeText("internal object NativeBuild {\n    val properties: Map<String, String> = mapOf(\n$entries\n    )\n}\n")
+            writeText("internal object NativeBuild {\n    const val PORTABLE_MARKER = \"${escaped(marker)}\"\n\n    val properties: Map<String, String> = mapOf(\n$entries\n    )\n}\n")
         }
     }
 }
@@ -351,12 +428,25 @@ val buildNativeImage = tasks.register<Exec>("buildNativeImage") {
     val jars = distributionJars
     val configDir = nativeConfigDir.asFile.invariantSeparatorsPath
     val locales = (listOf("en") + composeLocales).joinToString(",")
+    val windowsIcon = project.file("icons/erkin.ico")
+    inputs.file(windowsIcon).withPropertyName("windowsIcon")
     doFirst {
         val graalvm = home.orNull ?: error("Set the erkin.graalvm Gradle property or GRAALVM_HOME to a GraalVM JDK.")
         check(targetOs == buildOs) { "native-image builds only for the host OS ($buildOs), not $targetOs." }
         val imageDir = imageDirectory.get().asFile.apply { deleteRecursively(); mkdirs() }
         val classpath = (classesDirs.files + jars.files)
             .joinToString(File.pathSeparator) { it.invariantSeparatorsPath }
+        val icon = if (target == NativeTarget.WINDOWS) {
+            val script = File(temporaryDir, "erkin.rc").apply { writeText("1 ICON \"${windowsIcon.invariantSeparatorsPath}\"\n") }
+            val compiled = File(temporaryDir, "erkin.res")
+            val process = ProcessBuilder(WindowsSdk.tool("rc.exe").path, "/nologo", "/fo", compiled.path, script.path)
+                .redirectErrorStream(true).start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            check(process.waitFor() == 0) { "rc.exe failed: $output" }
+            listOf("-H:NativeLinkerOption=${compiled.invariantSeparatorsPath}")
+        } else {
+            emptyList()
+        }
         val arguments = listOf(
             "-J-Xmx4g",
             "-Os",
@@ -367,7 +457,7 @@ val buildNativeImage = tasks.register<Exec>("buildNativeImage") {
             "-H:IncludeLocales=$locales",
             "-H:IncludeResources=composeResources/.*",
             "-H:ExcludeResources=.*sqliteJni.*|composeResources/.*/font/.*"
-        ) + target.extraArguments + listOf(
+        ) + target.extraArguments + icon + listOf(
             "-cp",
             "\"$classpath\"",
             "-o",

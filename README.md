@@ -14,7 +14,7 @@ DPI-bypass engine, or straight out untouched. All of them can run at the same ti
 
 ## Download
 
-Get the latest APKs, the Windows installer and the Linux packages from
+Get the latest APKs, the Windows installer and the Linux Flatpak from
 [Releases](https://github.com/yulbax/ERKIN/releases/latest).
 
 - **Android** — `ERKIN-<version>-android-arm64-v8a.apk` fits almost every phone; `universal`
@@ -23,11 +23,16 @@ Get the latest APKs, the Windows installer and the Linux packages from
   MSI over the old one; your servers and settings are kept.
   `ERKIN-<version>-windows-x86_64-portable.zip` is the portable build: it runs from any folder
   without installation and shares its data with the installed ERKIN.
-- **Linux** — `ERKIN-<version>-linux-x86_64.deb` (Debian, Ubuntu), `.rpm` (Fedora, openSUSE) or
-  `.pkg.tar.zst` (Arch).
+- **Linux** — `ERKIN-<version>-linux-x86_64.flatpak`, or the ERKIN Flatpak repository:
+
+  ```bash
+  flatpak install --user https://yulbax.github.io/ERKIN/erkin.flatpakref
+  ```
+
+  Both need NetworkManager.
 
 The Android app and the installed Windows app check GitHub for new versions and update
-themselves.
+themselves. The Flatpak is updated by Flatpak from the ERKIN repository.
 
 ## Features
 
@@ -124,8 +129,10 @@ ERKIN combines two engines behind a single tunnel interface:
   *Direct* apps straight out; on Android *Bypass* apps never enter the tunnel. ERKIN uses
   the official mihomo release behind a thin wrapper (`core/mihomo`). The same core runs
   everywhere: as a Go Mobile library inside the app on Android, and inside the `erkin-service`
-  background service on the desktop — a Windows service or a systemd unit that starts with the app and stops shortly
-  after it closes. The portable Windows build runs the same core as a child process. The
+  background service on the desktop, which starts with the app and stops shortly after it
+  closes. On Windows it is a Windows service; the portable build runs it as a child process.
+  On Linux the Flatpak starts it outside its sandbox as the user, and it gets the tunnel from
+  NetworkManager. The
   desktop app talks to it over a local connection; if the app goes away, the tunnel is torn
   down.
 - **[ByeDPI](https://github.com/hufrea/byedpi)** runs as a local proxy that
@@ -155,47 +162,43 @@ bash scripts/build-mihomo.sh
 Building requires Android SDK 37 and CMake 3.22.1. A physical device is recommended;
 Android's VPN APIs are unreliable on emulators.
 
+### Desktop
+
+The desktop app is a GraalVM 25 native image; set `GRAALVM_HOME` or `-Perkin.graalvm` to a
+GraalVM JDK. `-Perkin.desktopOnly` skips the Android modules, so no Android SDK is needed there.
+
 ### Windows
 
 The tunnel runs in a small background service, `erkin-service.exe`, built from the same core
-(no C toolchain needed):
+(no C toolchain needed), and `ciadpi.exe`, built from the ByeDPI source with mingw-w64:
 
 ```bash
 TARGETS=windows bash scripts/build-service.sh   # → desktop/libs/windows/erkin-service.exe
+bash scripts/build-ciadpi.sh                    # → desktop/libs/windows/ciadpi.exe
 ```
 
-The installer itself must be built on Windows with JDK 21:
+The installer and the portable zip must be built on Windows with the Visual Studio C++ build
+tools and the Windows SDK:
 
 ```bash
-./gradlew -Perkin.desktopOnly :desktop:packageServiceMsi
+./gradlew -Perkin.desktopOnly :desktop:packageNativeMsi :desktop:packageNativePortableZip
 ```
-
-The portable zip is built the same way and also needs `mt.exe` from the Windows SDK:
-
-```bash
-./gradlew -Perkin.desktopOnly :desktop:packagePortableZip
-```
-
-`-Perkin.desktopOnly` skips the Android modules, so no Android SDK is needed there.
 
 ### Linux
 
-One script builds the service, the app and the `.deb`, `.rpm` and Arch packages with
-[nFPM](https://nfpm.goreleaser.com) 2.47 ([prebuilt binaries](https://github.com/goreleaser/nfpm/releases/tag/v2.47.0)):
+One script builds the service and the app and installs the Flatpak for the current user. It
+needs `flatpak-builder` and the Flathub remote:
 
 ```bash
-bash scripts/build-linux-packages.sh          # FORMATS="archlinux" for just one
-sudo pacman -U desktop/build/linux-packages/ERKIN-<version>-linux-x86_64.pkg.tar.zst
+bash scripts/build-flatpak.sh
+flatpak run io.github.yulbax.erkin
 ```
-
-The packages install to `/opt/erkin` and ship `erkin.service`; removing the package stops
-and removes the service again.
 
 ## Built with
 
 - [mihomo](https://github.com/MetaCubeX/mihomo) — the VPN core
 - [ByeDPI](https://github.com/hufrea/byedpi) — the DPI-bypass engine
-- Kotlin Multiplatform, Compose Multiplatform, Room, Koin, JNA,
+- Kotlin Multiplatform, Compose Multiplatform, Room, Koin, JNA, GraalVM Native Image,
   [ComposeNativeTray](https://github.com/kdroidfilter/ComposeNativeTray)
 
 ## License

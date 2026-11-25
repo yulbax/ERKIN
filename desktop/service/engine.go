@@ -7,6 +7,7 @@ import (
 	"net/netip"
 	"sync"
 
+	"github.com/metacubex/mihomo/log"
 	"github.com/yulbax/erkin/mihomocore"
 )
 
@@ -16,6 +17,7 @@ type tunDevice struct {
 }
 
 type tunnelSession interface {
+	followResolvers(apply func(config string))
 	close()
 }
 
@@ -41,6 +43,7 @@ func (e *engine) start(config string, resolvedProxy string, resolver string) err
 	}
 	tun := tunDeviceOf(config)
 	if tun.name != "" {
+		dropStaleTunnels(tun.name)
 		if err := releaseAdapter(tun.name, tun.addresses); err != nil {
 			return err
 		}
@@ -60,7 +63,21 @@ func (e *engine) start(config string, resolvedProxy string, resolver string) err
 	e.running = true
 	e.tun = tun
 	e.tunnel = tunnel
+	if tunnel != nil {
+		tunnel.followResolvers(func(adopted string) { e.reapply(tunnel, adopted, resolvedProxy, resolver) })
+	}
 	return nil
+}
+
+func (e *engine) reapply(tunnel tunnelSession, config string, resolvedProxy string, resolver string) {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	if !e.running || e.tunnel != tunnel {
+		return
+	}
+	if err := mihomocore.Apply(config, true, resolvedProxy, resolver); err != nil {
+		log.Errorln("[DNS] could not switch to the new network resolvers: %s", err)
+	}
 }
 
 func (e *engine) stop() error {

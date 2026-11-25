@@ -8,18 +8,30 @@ import (
 	"net/netip"
 	"os"
 	"os/user"
+	"slices"
 	"time"
 	"unsafe"
 
 	"github.com/godbus/dbus/v5"
+	"github.com/metacubex/mihomo/log"
 	"golang.org/x/sys/unix"
 )
 
 const (
 	networkManager          = "org.freedesktop.NetworkManager"
 	networkManagerPath      = "/org/freedesktop/NetworkManager"
+	settingsPath            = "/org/freedesktop/NetworkManager/Settings"
+	settingsInterface       = "org.freedesktop.NetworkManager.Settings"
+	settingsConnection      = "org.freedesktop.NetworkManager.Settings.Connection"
+	unknownDevice           = "org.freedesktop.NetworkManager.UnknownDevice"
+	addInMemory             = 2
+	tunType                 = "tun"
+	routeAllDomains         = "~."
 	dnsManagerPath          = "/org/freedesktop/NetworkManager/DnsManager"
 	dnsConfiguration        = "org.freedesktop.NetworkManager.DnsManager.Configuration"
+	propertiesInterface     = "org.freedesktop.DBus.Properties"
+	propertiesChanged       = "PropertiesChanged"
+	resolverChangeBuffer    = 8
 	systemResolver          = "system://"
 	activeConnectionState   = "org.freedesktop.NetworkManager.Connection.Active.State"
 	activeConnectionReady   = 2
@@ -32,8 +44,13 @@ const (
 )
 
 type userTunnel struct {
-	bus    *dbus.Conn
-	active dbus.ObjectPath
+	bus       *dbus.Conn
+	active    dbus.ObjectPath
+	profile   dbus.ObjectPath
+	name      string
+	config    string
+	fd        int
+	resolvers []string
 }
 
 func openTunnel(config string) (string, tunnelSession, error) {
@@ -56,6 +73,7 @@ func openTunnel(config string) (string, tunnelSession, error) {
 		tunnel.close()
 		return "", nil, err
 	}
+	tunnel.name, tunnel.config, tunnel.fd, tunnel.resolvers = tun.name, config, fd, resolvers
 	return adopted, tunnel, nil
 }
 
@@ -70,24 +88,87 @@ func activateUserTunnel(tun tunDevice) (*userTunnel, []string, error) {
 	}
 	resolvers := networkResolvers(bus, tun.name)
 	settings := tunnelSettings(tun, owner.Username, os.Getuid())
-	options := map[string]dbus.Variant{
-		"persist":         dbus.MakeVariant("volatile"),
-		"bind-activation": dbus.MakeVariant("dbus-client"),
-	}
-	var connection, active dbus.ObjectPath
-	var result map[string]dbus.Variant
-	call := bus.Object(networkManager, networkManagerPath).Call(
-		networkManager+".AddAndActivateConnection2", 0, settings, dbus.ObjectPath("/"), dbus.ObjectPath("/"), options)
-	if err = call.Store(&connection, &active, &result); err != nil {
+	active, profile, err := addAndActivate(bus, settings)
+	if err != nil {
 		bus.Close()
 		return nil, nil, err
 	}
-	tunnel := &userTunnel{bus: bus, active: active}
+	tunnel := &userTunnel{bus: bus, active: active, profile: profile}
 	if err = tunnel.waitUntilReady(); err != nil {
 		tunnel.close()
 		return nil, nil, err
 	}
 	return tunnel, resolvers, nil
+}
+
+func addAndActivate(bus *dbus.Conn, settings map[string]map[string]dbus.Variant) (dbus.ObjectPath, dbus.ObjectPath, error) {
+	options := map[string]dbus.Variant{
+		"persist":         dbus.MakeVariant("volatile"),
+		"bind-activation": dbus.MakeVariant("dbus-client"),
+	}
+	var connection, active, profile dbus.ObjectPath
+	var result map[string]dbus.Variant
+	manager := bus.Object(networkManager, networkManagerPath)
+	err := manager.Call(networkManager+".AddAndActivateConnection2", 0, settings, dbus.ObjectPath("/"), dbus.ObjectPath("/"), options).
+		Store(&connection, &active, &result)
+	if dbusErrorName(err) != unknownDevice {
+		return active, "", err
+	}
+	err = bus.Object(networkManager, settingsPath).Call(settingsInterface+".AddConnection2", 0, settings, uint32(addInMemory), map[string]dbus.Variant{}).
+		Store(&profile, &result)
+	if err != nil {
+		return "", "", err
+	}
+	if err = manager.Call(networkManager+".ActivateConnection", 0, profile, dbus.ObjectPath("/"), dbus.ObjectPath("/")).Store(&active); err != nil {
+		_ = bus.Object(networkManager, profile).Call(settingsConnection+".Delete", 0).Err
+		return "", "", err
+	}
+	return active, profile, nil
+}
+
+func dbusErrorName(err error) string {
+	var value dbus.Error
+	if errors.As(err, &value) {
+		return value.Name
+	}
+	var pointer *dbus.Error
+	if errors.As(err, &pointer) {
+		return pointer.Name
+	}
+	return ""
+}
+
+func dropStaleTunnels(name string) {
+	if os.Geteuid() == 0 {
+		return
+	}
+	bus, err := dbus.ConnectSystemBus()
+	if err != nil {
+		return
+	}
+	defer bus.Close()
+	var profiles []dbus.ObjectPath
+	if bus.Object(networkManager, settingsPath).Call(settingsInterface+".ListConnections", 0).Store(&profiles) != nil {
+		return
+	}
+	for _, profile := range profiles {
+		var settings map[string]map[string]dbus.Variant
+		if bus.Object(networkManager, profile).Call(settingsConnection+".GetSettings", 0).Store(&settings) != nil {
+			continue
+		}
+		if isOwnTunnel(settings, name) {
+			_ = bus.Object(networkManager, profile).Call(settingsConnection+".Delete", 0).Err
+		}
+	}
+}
+
+func isOwnTunnel(settings map[string]map[string]dbus.Variant, name string) bool {
+	connection := settings["connection"]
+	text := func(key string) string {
+		value, _ := connection[key].Value().(string)
+		return value
+	}
+	return text("id") == serviceName && text("type") == tunType && text("interface-name") == name
 }
 
 func networkResolvers(bus *dbus.Conn, tunName string) []string {
@@ -126,7 +207,7 @@ func tunnelSettings(tun tunDevice, username string, uid int) map[string]map[stri
 	settings := map[string]map[string]dbus.Variant{
 		"connection": {
 			"id":             dbus.MakeVariant(serviceName),
-			"type":           dbus.MakeVariant("tun"),
+			"type":           dbus.MakeVariant(tunType),
 			"interface-name": dbus.MakeVariant(tun.name),
 			"autoconnect":    dbus.MakeVariant(false),
 			"permissions":    dbus.MakeVariant([]string{"user:" + username}),
@@ -176,6 +257,7 @@ func familySettings(prefix netip.Prefix) map[string]dbus.Variant {
 		"dns":             dns,
 		"dns-priority":    dbus.MakeVariant(int32(exclusiveDnsPriority)),
 		"ignore-auto-dns": dbus.MakeVariant(true),
+		"dns-search":      dbus.MakeVariant([]string{routeAllDomains}),
 	}
 }
 
@@ -197,8 +279,48 @@ func (t *userTunnel) waitUntilReady() error {
 	return errors.New("the connection did not come up in time")
 }
 
+func (t *userTunnel) followResolvers(apply func(config string)) {
+	err := t.bus.AddMatchSignal(
+		dbus.WithMatchObjectPath(dnsManagerPath),
+		dbus.WithMatchInterface(propertiesInterface),
+		dbus.WithMatchMember(propertiesChanged),
+	)
+	if err != nil {
+		log.Warnln("[DNS] network resolver changes will not be followed: %s", err)
+		return
+	}
+	changes := make(chan *dbus.Signal, resolverChangeBuffer)
+	t.bus.Signal(changes)
+	go func() {
+		for change := range changes {
+			if change.Path != dnsManagerPath {
+				continue
+			}
+			if adopted, changed := t.adoptResolvers(networkResolvers(t.bus, t.name)); changed {
+				log.Warnln("[DNS] network resolvers changed to %v", t.resolvers)
+				apply(adopted)
+			}
+		}
+	}()
+}
+
+func (t *userTunnel) adoptResolvers(resolvers []string) (string, bool) {
+	if len(resolvers) == 0 || slices.Equal(slices.Sorted(slices.Values(resolvers)), slices.Sorted(slices.Values(t.resolvers))) {
+		return "", false
+	}
+	adopted, err := adoptTun(t.config, t.fd, resolvers)
+	if err != nil {
+		return "", false
+	}
+	t.resolvers = resolvers
+	return adopted, true
+}
+
 func (t *userTunnel) close() {
 	_ = t.bus.Object(networkManager, networkManagerPath).Call(networkManager+".DeactivateConnection", 0, t.active).Err
+	if t.profile != "" {
+		_ = t.bus.Object(networkManager, t.profile).Call(settingsConnection+".Delete", 0).Err
+	}
 	_ = t.bus.Close()
 }
 

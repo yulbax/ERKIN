@@ -5,7 +5,7 @@ import java.io.File
 import java.util.UUID
 
 object DesktopDeviceIdentity {
-    private const val FILE_NAME = "device-id"
+    const val FILE_NAME = "device-id"
 
     fun load(osName: String): DeviceIdentity = DeviceIdentity(
         hwid = hwid(File(DesktopPaths.dataDir, FILE_NAME)),

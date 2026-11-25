@@ -22,6 +22,9 @@ object LinuxSystem : DesktopSystem {
     override fun userDataDir(windowsName: String, unixName: String): File =
         System.getenv("XDG_DATA_HOME")?.takeIf { FlatpakSandbox.isActive }?.let { File(it, unixName) }
             ?: File(System.getProperty("user.home"), ".local/share/$unixName")
+
+    override fun hostDataDir(unixName: String): File? =
+        File(System.getProperty("user.home"), ".local/share/$unixName").takeIf { FlatpakSandbox.isActive }
 }
 
 object LinuxServiceHost : ServiceHost {

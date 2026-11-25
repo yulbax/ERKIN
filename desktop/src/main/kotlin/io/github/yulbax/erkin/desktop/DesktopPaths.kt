@@ -7,11 +7,13 @@ import java.io.File
 object DesktopPaths {
     val isPortable: Boolean = System.getProperty("erkin.portable").toBoolean()
 
-    val dataDir: File = adoptLegacyData(desktopSystem.userDataDir("ERKIN", "erkin"), desktopSystem.userDataDir("FRKN", "frkn")).apply { mkdirs() }
+    val dataDir: File = adoptLegacyData(desktopSystem.userDataDir("ERKIN", "erkin"), desktopSystem.userDataDir("FRKN", "frkn"))
+        .apply { mkdirs() }
+        .also { HostDataImport.into(it, desktopSystem.hostDataDir("erkin")) }
 
     val database: File = File(dataDir, AppDatabase.FILE_NAME)
     val logFile: File = File(dataDir, "erkin.log")
-    val languageFile: File = File(dataDir, "language")
+    val languageFile: File = File(dataDir, LANGUAGE_FILE)
     val windowFile: File = File(dataDir, "window")
 
     val instanceSocket: File = desktopSystem.instanceSocket(dataDir)
@@ -39,4 +41,6 @@ object DesktopPaths {
     }
 
     private const val LEGACY_DATABASE = "frkn.db"
+
+    const val LANGUAGE_FILE = "language"
 }
