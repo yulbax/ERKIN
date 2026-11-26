@@ -15,6 +15,7 @@ object DesktopPaths {
     val database: File = File(dataDir, AppDatabase.FILE_NAME)
     val logFile: File = File(dataDir, "erkin.log")
     val languageFile: File = File(dataDir, "language")
+    val windowFile: File = File(dataDir, "window")
 
     val instanceSocket: File = System.getenv("TEMP")?.takeIf { isWindows }?.let { File(it, "erkin-instance.sock") }
         ?: File(dataDir, "instance.sock")

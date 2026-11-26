@@ -16,12 +16,12 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberDialogState
-import androidx.compose.ui.window.rememberWindowState
 import dev.nucleusframework.composenativetray.tray.api.Tray
 import io.github.yulbax.erkin.data.AppDao
 import io.github.yulbax.erkin.data.AppDatabase
 import io.github.yulbax.erkin.data.RoutedApps
 import io.github.yulbax.erkin.data.SettingsRepository
+import io.github.yulbax.erkin.desktop.WindowMemory.Remember
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.ui.components.DataTooNewMessage
 import io.github.yulbax.erkin.ui.components.ExitConfirmDialog
@@ -64,7 +64,7 @@ fun main() {
 
     application {
         val icon = remember { BitmapPainter(Image.makeFromEncoded(appIconBytes()).toComposeImageBitmap()) }
-        val state = rememberWindowState(width = 440.dp, height = 860.dp)
+        val state = remember { WindowMemory.initialState() }
         var visible by remember { mutableStateOf(true) }
         var confirmExit by remember { mutableStateOf(false) }
         val connection by vpnState.collectAsState()
@@ -114,6 +114,7 @@ fun main() {
                 WindowLimits.clampWidth(window)
                 WindowsDwm.roundCorners(window)
             }
+            Remember(state)
             LaunchedEffect(state.placement) {
                 if (state.placement != WindowPlacement.Floating) state.placement = WindowPlacement.Floating
             }
