@@ -382,18 +382,21 @@ private fun HostRow(
                     null, ServicePurpose.CORE -> null
                     ServicePurpose.REQUEST -> stringResource(Res.string.connections_purpose_request)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        listOfNotNull(purpose, routeLabel(host.route, servers), origin).joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    sharedRule?.let {
-                        Spacer(Modifier.width(6.dp))
-                        RuleChip(it, color)
+                val route = routeLabel(host.route, servers).takeUnless { host.blocked }
+                val line = listOfNotNull(purpose, route, origin).joinToString(" · ")
+                if (line.isNotEmpty() || sharedRule != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (line.isNotEmpty()) {
+                            Text(
+                                line,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false).padding(end = 6.dp)
+                            )
+                        }
+                        sharedRule?.let { RuleChip(it, color) }
                     }
                 }
             }
