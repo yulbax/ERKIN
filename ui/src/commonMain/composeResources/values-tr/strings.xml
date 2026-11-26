@@ -354,7 +354,6 @@
     <string name="subscription_updated">güncellendi: %1$s</string>
     <string name="subscription_expired">süresi doldu</string>
     <string name="subscription_show_servers">Sunucuları göster</string>
-    <string name="subscription_hide_servers">Sunucuları gizle</string>
     <plurals name="subscription_days_left">
         <item quantity="one">%1$d gün kaldı</item>
         <item quantity="other">%1$d gün kaldı</item>

@@ -378,7 +378,6 @@
     <string name="subscription_updated">updated %1$s</string>
     <string name="subscription_expired">expired</string>
     <string name="subscription_show_servers">Show servers</string>
-    <string name="subscription_hide_servers">Hide servers</string>
     <plurals name="subscription_days_left">
         <item quantity="one">%1$d day left</item>
         <item quantity="other">%1$d days left</item>

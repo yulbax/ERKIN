@@ -362,7 +362,6 @@
     <string name="subscription_updated">обновлено %1$s</string>
     <string name="subscription_expired">истекла</string>
     <string name="subscription_show_servers">Показать серверы</string>
-    <string name="subscription_hide_servers">Скрыть серверы</string>
     <plurals name="subscription_days_left">
         <item quantity="one">осталось %1$d день</item>
         <item quantity="few">осталось %1$d дня</item>

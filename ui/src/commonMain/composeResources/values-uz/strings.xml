@@ -354,7 +354,6 @@
     <string name="subscription_updated">yangilangan: %1$s</string>
     <string name="subscription_expired">muddati tugagan</string>
     <string name="subscription_show_servers">Serverlarni koʻrsatish</string>
-    <string name="subscription_hide_servers">Serverlarni yashirish</string>
     <plurals name="subscription_days_left">
         <item quantity="one">%1$d kun qoldi</item>
         <item quantity="other">%1$d kun qoldi</item>
