@@ -81,6 +81,10 @@
     <string name="show_server">Göster</string>
     <string name="hidden_servers">Gizlenenler · %1$d</string>
     <string name="interface_section">Arayüz</string>
+    <string name="theme_mode">Tema</string>
+    <string name="theme_system">Sistem</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
     <string name="home_card_position">Bağlantı kartı</string>
     <string name="home_card_top">Üstte</string>
     <string name="home_card_bottom">Altta</string>

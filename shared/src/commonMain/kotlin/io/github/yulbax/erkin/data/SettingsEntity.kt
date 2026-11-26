@@ -36,8 +36,11 @@ data class SettingsEntity(
     val chainsHintSeen: Boolean = false,
     val serverSort: String = ServerSort.DEFAULT.wire,
     val homeCardPosition: String = HomeCardPosition.DEFAULT.wire,
-    val byeDpiSearchSni: String = ""
+    val byeDpiSearchSni: String = "",
+    val themeMode: String = ThemeMode.DEFAULT.wire
 ) {
+    fun themeMode(): ThemeMode = ThemeMode.fromWire(themeMode) ?: ThemeMode.DEFAULT
+
     fun homeCardPosition(): HomeCardPosition = HomeCardPosition.fromWire(homeCardPosition) ?: HomeCardPosition.DEFAULT
 
     fun serverSort(): ServerSort = ServerSort.fromWire(serverSort) ?: ServerSort.DEFAULT
@@ -79,5 +82,23 @@ enum class HomeCardPosition(val wire: String) {
         val DEFAULT = TOP
 
         fun fromWire(wire: String): HomeCardPosition? = entries.firstOrNull { it.wire == wire }
+    }
+}
+
+enum class ThemeMode(val wire: String) {
+    SYSTEM("system"),
+    LIGHT("light"),
+    DARK("dark");
+
+    fun isDark(systemDark: Boolean): Boolean = when (this) {
+        SYSTEM -> systemDark
+        LIGHT -> false
+        DARK -> true
+    }
+
+    companion object {
+        val DEFAULT = SYSTEM
+
+        fun fromWire(wire: String): ThemeMode? = entries.firstOrNull { it.wire == wire }
     }
 }

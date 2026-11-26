@@ -29,6 +29,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import io.github.yulbax.erkin.data.profile.ServerSort
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.HomeCardPosition
+import io.github.yulbax.erkin.data.ThemeMode
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
@@ -49,6 +50,8 @@ class SettingsViewModel(
         }
     }
     fun setHomeCardPosition(value: HomeCardPosition) = update { it.copy(homeCardPosition = value.wire) }
+
+    fun setThemeMode(value: ThemeMode) = update { it.copy(themeMode = value.wire) }
     fun setNewAppsConnectionType(value: ConnectionType) = update { it.copy(newAppsConnectionType = value.wire) }
 
     fun setMtu(value: Int) = updateNetwork { it.copy(mtu = value.coerceIn(NetworkOptions.MTU_RANGE)) }
@@ -114,6 +117,7 @@ data class SettingsUiState(
     val autoConnect: Boolean = false,
     val serverSort: ServerSort = ServerSort.DEFAULT,
     val homeCardPosition: HomeCardPosition = HomeCardPosition.DEFAULT,
+    val themeMode: ThemeMode = ThemeMode.DEFAULT,
     val newAppsConnectionType: ConnectionType = ConnectionType.DIRECT,
     val network: NetworkOptions = NetworkOptions.DEFAULT
 )
@@ -123,6 +127,7 @@ private fun SettingsEntity.toUiState() = SettingsUiState(
     autoConnect = autoConnect,
     serverSort = serverSort(),
     homeCardPosition = homeCardPosition(),
+    themeMode = themeMode(),
     newAppsConnectionType = newAppsConnectionType(platformNewAppsConnectionType),
     network = networkOptions()
 )

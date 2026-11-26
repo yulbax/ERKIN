@@ -81,6 +81,10 @@
     <string name="show_server">显示</string>
     <string name="hidden_servers">已隐藏 · %1$d</string>
     <string name="interface_section">界面</string>
+    <string name="theme_mode">主题</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
     <string name="home_card_position">连接卡片</string>
     <string name="home_card_top">顶部</string>
     <string name="home_card_bottom">底部</string>

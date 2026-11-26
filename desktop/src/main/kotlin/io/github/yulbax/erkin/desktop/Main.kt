@@ -30,6 +30,7 @@ import io.github.yulbax.erkin.ui.platform.AppLocale
 import io.github.yulbax.erkin.ui.platform.ProvideAppLocale
 import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.theme.ERKINTheme
+import io.github.yulbax.erkin.ui.theme.rememberDarkTheme
 import io.github.yulbax.erkin.util.VpnLauncher
 import io.github.yulbax.erkin.vpn.VpnController
 import io.github.yulbax.erkin.vpn.VpnStateRepository
@@ -123,8 +124,9 @@ fun main() {
             LaunchedEffect(visible) {
                 if (visible) window.toFront()
             }
-            ProvideAppLocale {
-                ERKINTheme {
+            val dark = rememberDarkTheme()
+            if (dark != null) ProvideAppLocale {
+                ERKINTheme(darkTheme = dark) {
                     WindowFrame {
                         MainScreen(
                             topBarFrame = { bar -> WindowDraggableArea { bar() } },

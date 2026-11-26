@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "erkin.db"
-        const val VERSION = 34
+        const val VERSION = 35
 
         fun isNewerThanThisBuild(database: File): Boolean {
             if (!database.isFile) return false
@@ -315,10 +315,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val THEME_MODE_MIGRATION = object : Migration(34, 35) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE settings ADD COLUMN themeMode TEXT NOT NULL DEFAULT 'system'")
+            }
+        }
+
         fun migrations(appsCanBypass: Boolean): Array<Migration> =
             MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION +
                 HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION + HOME_CARD_MIGRATION + SEARCH_SNI_MIGRATION +
-                SUBSCRIPTION_NOTES_MIGRATION + SUBSCRIPTION_RULES_MIGRATION
+                SUBSCRIPTION_NOTES_MIGRATION + SUBSCRIPTION_RULES_MIGRATION + THEME_MODE_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {

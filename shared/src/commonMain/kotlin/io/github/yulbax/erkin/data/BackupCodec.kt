@@ -118,6 +118,7 @@ object BackupCodec {
             (settings.newAppsConnectionType.isBlank() || ConnectionType.fromWire(settings.newAppsConnectionType) != null) &&
             ServerSort.fromWire(settings.serverSort) != null &&
             HomeCardPosition.fromWire(settings.homeCardPosition) != null &&
+            ThemeMode.fromWire(settings.themeMode) != null &&
             settings.byeDpiSearchSni.length <= MAX_DNS_LENGTH &&
             (settings.preferredFingerprint.isBlank() ||
                 TlsFingerprint.fromWire(settings.preferredFingerprint) != null)

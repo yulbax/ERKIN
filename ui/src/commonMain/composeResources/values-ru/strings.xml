@@ -81,6 +81,10 @@
     <string name="show_server">Показать</string>
     <string name="hidden_servers">Скрытые · %1$d</string>
     <string name="interface_section">Интерфейс</string>
+    <string name="theme_mode">Тема</string>
+    <string name="theme_system">Системная</string>
+    <string name="theme_light">Светлая</string>
+    <string name="theme_dark">Тёмная</string>
     <string name="home_card_position">Карточка подключения</string>
     <string name="home_card_top">Сверху</string>
     <string name="home_card_bottom">Снизу</string>

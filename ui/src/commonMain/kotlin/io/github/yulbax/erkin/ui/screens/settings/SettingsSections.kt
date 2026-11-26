@@ -55,14 +55,25 @@ import io.github.yulbax.erkin.data.profile.ServerSort
 import org.jetbrains.compose.resources.StringResource
 import io.github.yulbax.erkin.vpn.core.TlsFingerprint
 import io.github.yulbax.erkin.data.HomeCardPosition
+import io.github.yulbax.erkin.data.ThemeMode
 
 @Composable
 internal fun InterfaceSection(ui: SettingsUiState, viewModel: SettingsViewModel) {
+    val themes = ThemeMode.entries.associateWith { stringResource(it.label) }
     val positions = HomeCardPosition.entries.associateWith { stringResource(it.label) }
     val sorts = ServerSort.entries.associateWith { stringResource(it.label) }
     GroupCard(
         title = stringResource(Res.string.interface_section),
         items = listOf(
+            {
+                DropdownSetting(
+                    label = stringResource(Res.string.theme_mode),
+                    options = ThemeMode.entries,
+                    selected = ui.themeMode,
+                    optionLabel = themes::getValue,
+                    onSelect = viewModel::setThemeMode
+                )
+            },
             {
                 DropdownSetting(
                     label = stringResource(Res.string.home_card_position),
@@ -84,6 +95,13 @@ internal fun InterfaceSection(ui: SettingsUiState, viewModel: SettingsViewModel)
         )
     )
 }
+
+private val ThemeMode.label: StringResource
+    get() = when (this) {
+        ThemeMode.SYSTEM -> Res.string.theme_system
+        ThemeMode.LIGHT -> Res.string.theme_light
+        ThemeMode.DARK -> Res.string.theme_dark
+    }
 
 private val HomeCardPosition.label: StringResource
     get() = when (this) {

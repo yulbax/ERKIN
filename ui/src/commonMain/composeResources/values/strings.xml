@@ -83,6 +83,10 @@
     <string name="show_server">Show</string>
     <string name="hidden_servers">Hidden · %1$d</string>
     <string name="interface_section">Interface</string>
+    <string name="theme_mode">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
     <string name="home_card_position">Connection card</string>
     <string name="home_card_top">At the top</string>
     <string name="home_card_bottom">At the bottom</string>

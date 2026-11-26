@@ -81,6 +81,10 @@
     <string name="show_server">نمایش</string>
     <string name="hidden_servers">پنهان‌شده‌ها · %1$d</string>
     <string name="interface_section">رابط کاربری</string>
+    <string name="theme_mode">پوسته</string>
+    <string name="theme_system">سیستم</string>
+    <string name="theme_light">روشن</string>
+    <string name="theme_dark">تیره</string>
     <string name="home_card_position">کارت اتصال</string>
     <string name="home_card_top">بالا</string>
     <string name="home_card_bottom">پایین</string>

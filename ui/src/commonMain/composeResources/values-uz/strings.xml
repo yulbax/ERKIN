@@ -81,6 +81,10 @@
     <string name="show_server">Koʻrsatish</string>
     <string name="hidden_servers">Yashirilganlar · %1$d</string>
     <string name="interface_section">Interfeys</string>
+    <string name="theme_mode">Mavzu</string>
+    <string name="theme_system">Tizim</string>
+    <string name="theme_light">Yorugʻ</string>
+    <string name="theme_dark">Qorongʻi</string>
     <string name="home_card_position">Ulanish kartasi</string>
     <string name="home_card_top">Yuqorida</string>
     <string name="home_card_bottom">Pastda</string>

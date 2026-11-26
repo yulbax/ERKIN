@@ -1,16 +1,20 @@
 package io.github.yulbax.erkin
 
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.lifecycleScope
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.ui.screens.MainScreen
 import io.github.yulbax.erkin.ui.theme.ERKINTheme
+import io.github.yulbax.erkin.ui.theme.rememberDarkTheme
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServer
 import io.github.yulbax.erkin.ui.viewmodel.IncomingServers
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +31,12 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         if (savedInstanceState == null) receive(intent)
         setContent {
-            ERKINTheme {
+            val dark = rememberDarkTheme() ?: return@setContent
+            LaunchedEffect(dark) {
+                val bars = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
+                enableEdgeToEdge(statusBarStyle = bars, navigationBarStyle = bars)
+            }
+            ERKINTheme(darkTheme = dark) {
                 MainScreen()
             }
         }
