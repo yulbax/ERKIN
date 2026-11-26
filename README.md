@@ -69,8 +69,11 @@ themselves.
   `amneziawg://` links, and OpenVPN `.ovpn` files or `ovpn://` links. On Android a `.ovpn`
   file opens straight in ERKIN, and an OpenVPN server that needs a login asks for it.
 - **Subscriptions and groups.** Servers added together form a group; a subscription keeps
-  its group up to date and shows its traffic, expiry date and last update. Each group
-  remembers its server, and servers can move between groups.
+  its group up to date and shows its traffic, expiry date, last update and the provider's
+  announcement and links. Each group remembers its server, and servers can move between groups.
+- **Subscription rules.** A Clash/mihomo subscription can bring its rules. They are off by
+  default and, when on, apply after your own rules while the main server comes from that
+  subscription.
 - **Latency.** Test the servers on any page of the server picker and sort a group by ping;
   while connected, the servers bound to apps and rules are checked in the background.
 - **Self-healing.** A health check watches the VPN and ByeDPI; when the server stops
