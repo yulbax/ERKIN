@@ -197,11 +197,10 @@ func (p countingProxy) DialContext(ctx context.Context, metadata *C.Metadata) (C
 	if err != nil {
 		return nil, err
 	}
-	row := traffic.open(metadata, p.Proxy.Name(), time.Now())
+	row := p.track(metadata, conn.Chains())
 	if row == nil {
 		return conn, nil
 	}
-	traffic.learnMatch(row, tunnel.Rules(), metadata, p.Proxy.Name())
 	return &countingConn{Conn: conn, row: row}, nil
 }
 
@@ -210,12 +209,26 @@ func (p countingProxy) ListenPacketContext(ctx context.Context, metadata *C.Meta
 	if err != nil {
 		return nil, err
 	}
-	row := traffic.open(metadata, p.Proxy.Name(), time.Now())
+	row := p.track(metadata, conn.Chains())
 	if row == nil {
 		return conn, nil
 	}
-	traffic.learnMatch(row, tunnel.Rules(), metadata, p.Proxy.Name())
 	return &countingPacketConn{PacketConn: conn, row: row}, nil
+}
+
+func (p countingProxy) track(metadata *C.Metadata, chains C.Chain) *trafficRow {
+	row := traffic.open(metadata, exitOf(chains, p.Proxy.Name()), time.Now())
+	if row != nil {
+		traffic.learnMatch(row, tunnel.Rules(), metadata, p.Proxy.Name())
+	}
+	return row
+}
+
+func exitOf(chains C.Chain, name string) string {
+	if server := chains.Last(); server != "" {
+		return server
+	}
+	return name
 }
 
 func upstreamOf(tracker statistic.Tracker) any {

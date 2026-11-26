@@ -244,6 +244,7 @@ class HealthMonitorTest {
                     engine = FakeEngine,
                     byeDpiPort = byeDpiPort,
                     vpnActive = true,
+                    activeTag = "p1",
                     activeServer = 1,
                     boundServers = setOf(2, 3),
                     onVpnFailing = {},

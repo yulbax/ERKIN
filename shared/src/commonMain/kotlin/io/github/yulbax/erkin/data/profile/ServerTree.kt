@@ -33,7 +33,8 @@ sealed interface ServerNode {
         val hidden: List<ProfileEntity> = emptyList(),
         val notes: SubscriptionNotes? = null,
         val rules: SubscriptionRules? = null,
-        val rulesEnabled: Boolean = false
+        val rulesEnabled: Boolean = false,
+        val wholeGroup: Boolean = false
     ) : ServerNode {
         val current: ProfileEntity = members.ifEmpty { hidden }.shownServer(rememberedId)
 
@@ -56,6 +57,9 @@ class ServerTree(
     val root: List<ServerNode> = nodesOf(profiles, groups)
 
     private val testOrder: List<Long> = (root.map { it.server } + root.flatMap { it.others }).map { it.id }
+
+    fun wholeGroupOf(profile: ProfileEntity?): ServerGroupEntity? =
+        profile?.groupId?.let(groups::get)?.takeIf { it.runsWhole(profiles) }
 
     fun group(id: Long): ServerNode.Group? = root.firstOrNull { it is ServerNode.Group && it.id == id } as ServerNode.Group?
 
@@ -114,6 +118,7 @@ class ServerTree(
                         notes = stored.notes.takeIf { stored.kind is GroupKind.Subscription },
                         rules = stored.subscriptionRules.takeIf { stored.kind is GroupKind.Subscription },
                         rulesEnabled = stored.rulesEnabled,
+                        wholeGroup = stored.runsWhole(profiles),
                         members = members.filterNot { it.hidden },
                         rememberedId = stored.currentId,
                         updatedAt = stored.updatedAt.takeIf { stored.kind is GroupKind.Subscription && it > 0 },
@@ -143,3 +148,9 @@ fun List<ProfileEntity>.matching(query: String): List<ProfileEntity> {
 }
 
 fun List<ProfileEntity>.offered(): List<ProfileEntity> = filterNot { it.hidden }
+
+fun List<ProfileEntity>.runnableIn(groupId: Long): List<ProfileEntity> = filter { it.groupId == groupId && it.isLink }.offered()
+
+fun List<ProfileEntity>.canRunWhole(groupId: Long): Boolean = runnableIn(groupId).size > 1
+
+fun ServerGroupEntity.runsWhole(profiles: List<ProfileEntity>): Boolean = wholeGroup && profiles.canRunWhole(id)

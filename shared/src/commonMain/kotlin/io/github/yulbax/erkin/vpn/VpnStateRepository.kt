@@ -1,5 +1,6 @@
 package io.github.yulbax.erkin.vpn
 
+import io.github.yulbax.erkin.vpn.core.GroupHealth
 import io.github.yulbax.erkin.vpn.core.ProbeResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +22,8 @@ data class ConnectionStats(
     val uplink: Long = 0,
     val downlink: Long = 0,
     val unreachableServers: Set<Long> = emptySet(),
-    val deniedServers: Set<Long> = emptySet()
+    val deniedServers: Set<Long> = emptySet(),
+    val groupHealth: GroupHealth? = null
 ) {
     fun afterProbes(round: Map<Long, ProbeResult>): ConnectionStats =
         copy(deniedServers = deniedServers - round.keys + round.filterValues { it == ProbeResult.AccessDenied }.keys)

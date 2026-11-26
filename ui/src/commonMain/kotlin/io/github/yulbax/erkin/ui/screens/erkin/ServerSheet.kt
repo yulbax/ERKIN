@@ -48,6 +48,7 @@ internal sealed interface ServerSheetMode {
     class Manage(
         val actions: GroupActions,
         val servers: ServerBulkActions,
+        val lead: (@Composable (close: () -> Unit) -> Unit)? = null,
         val row: @Composable (node: ServerNode, check: RowCheck, handle: @Composable () -> Unit, close: () -> Unit) -> Unit
     ) : ServerSheetMode
 }
@@ -95,7 +96,7 @@ private fun PickSheet(folder: ServerFolder, choices: ServerChoices, mode: Server
         PickerList(state = rememberLazyListState(initialFirstVisibleItemIndex = shown.firstShownRow)) {
             items(shown.rows, key = { it.key }) { row ->
                 when (row) {
-                    is ServerPickerRow.Main -> LeadChoice(stringResource(Res.string.app_server_main, serverName(row.name)), row.checked) {
+                    is ServerPickerRow.Main -> LeadChoice(stringResource(Res.string.app_server_main, mainName(row)), row.checked) {
                         close { mode.onPick(null) }
                     }
                     is ServerPickerRow.ByeDpi -> LeadChoice(stringResource(Res.string.chain_byedpi), row.checked) {
@@ -162,7 +163,8 @@ private fun ManageSheet(folder: ServerFolder, choices: ServerChoices, mode: Serv
             hidden = hidden,
             visibleInFolder = group?.profileIds.orEmpty().toSet(),
             listState = listState,
-            sidePadding = 12.dp
+            sidePadding = 12.dp,
+            lead = mode.lead?.takeIf { query.isBlank() }?.let { content -> { content { close {} } } }
         )
     }
 }
@@ -212,6 +214,10 @@ private fun GroupChoice(row: ServerPickerRow.Group, onOpen: () -> Unit) {
         }
     )
 }
+
+@Composable
+private fun mainName(row: ServerPickerRow.Main): String =
+    if (row.wholeGroup) wholeGroupName(row.name) else serverName(row.name)
 
 @Composable
 private fun LeadChoice(title: String, checked: Boolean, onClick: () -> Unit) {

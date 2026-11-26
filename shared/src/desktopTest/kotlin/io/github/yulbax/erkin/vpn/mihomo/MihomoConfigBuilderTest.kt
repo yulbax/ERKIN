@@ -8,6 +8,7 @@ import io.github.yulbax.erkin.data.profile.SubscriptionRules
 import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
+import io.github.yulbax.erkin.vpn.core.EngineBalancer
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.Ipv6Mode
@@ -566,6 +567,32 @@ class MihomoConfigBuilderTest {
 
         assertFalse(config.containsKey("rule-providers"))
         assertEquals(4, config.rules().size)
+    }
+
+    @Test
+    fun aWholeGroupIsTheMainExitAsALoadBalancerThatKeepsASiteOnOneServer() {
+        val second = vless.copy(tag = "p2")
+        val engine = engine(
+            listOf(vless, second), "g9", emptyList(), listOf("org.vpn"),
+            rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "example.org", RuleTarget.VPN))
+        ).copy(balancer = EngineBalancer("g9", listOf("p1", "p2")))
+        val config = Json.parseToJsonElement(MihomoConfigBuilder.build(engine, PROBE, MihomoPlatform.Android())).jsonObject
+
+        val group = config.getValue("proxy-groups").jsonArray.single().jsonObject
+        assertEquals("g9", group.getValue("name").jsonPrimitive.content)
+        assertEquals("load-balance", group.getValue("type").jsonPrimitive.content)
+        assertEquals("consistent-hashing", group.getValue("strategy").jsonPrimitive.content)
+        assertEquals(listOf("p1", "p2"), group.getValue("proxies").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(
+            listOf("IN-NAME,probe-in,g9", "DOMAIN-SUFFIX,example.org,g9", "PROCESS-NAME,org.vpn,g9", "MATCH,REJECT"),
+            config.rules()
+        )
+        assertTrue(config.getValue("dns").jsonObject.getValue("nameserver").jsonArray.single().jsonPrimitive.content.endsWith("#g9"))
+    }
+
+    @Test
+    fun aSingleServerHasNoProxyGroups() {
+        assertFalse(build(vpn = listOf("org.vpn")).containsKey("proxy-groups"))
     }
 
     private fun engine(

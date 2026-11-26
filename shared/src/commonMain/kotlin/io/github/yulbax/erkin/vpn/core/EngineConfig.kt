@@ -20,7 +20,8 @@ data class EngineConfig(
     val serverTags: Map<Long, String> = emptyMap(),
     val bypassPackages: List<String> = emptyList(),
     val newApps: ConnectionType = ConnectionType.BYPASS,
-    val subscriptionRules: AppliedSubscriptionRules? = null
+    val subscriptionRules: AppliedSubscriptionRules? = null,
+    val balancer: EngineBalancer? = null
 ) {
     val tunnelsEveryApp: Boolean get() = newApps != ConnectionType.BYPASS
 
@@ -30,6 +31,8 @@ data class EngineConfig(
             rules.any { it.target == RuleTarget.BYEDPI } ||
             proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
 }
+
+data class EngineBalancer(val tag: String, val members: List<String>)
 
 data class EngineProxy(
     val tag: String,

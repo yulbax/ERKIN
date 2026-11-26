@@ -380,6 +380,10 @@
     <string name="subscription_page">Кабинет</string>
     <string name="subscription_of_total">из %1$s</string>
     <string name="subscription_percent">%1$d%</string>
+    <string name="server_group_whole">Вся группа</string>
+    <string name="server_group_whole_on">Сайты распределяются по работающим серверам</string>
+    <string name="server_group_whole_off">Распределять сайты по серверам</string>
+    <string name="server_skipped">пропускается</string>
     <string name="subscription_rules_section">Из подписки</string>
     <string name="subscription_rules_title">Правила · %1$d</string>
     <string name="subscription_rules_after_yours">после ваших правил</string>

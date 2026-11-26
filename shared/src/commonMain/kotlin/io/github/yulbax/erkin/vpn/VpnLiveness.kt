@@ -42,9 +42,7 @@ internal class VpnLiveness(
     suspend fun run() {
         val active = params.activeServer
         while (true) {
-            val result = active
-                ?.let { checks.check(listOf(it), runningOnly = true)?.get(it) }
-                ?: ProbeResult.NoAnswer
+            val result = params.activeTag.takeIf { it.isNotEmpty() }?.let { checks.checkRunning(it) } ?: ProbeResult.NoAnswer
             active?.let { id -> stateRepository.updateStats { it.afterProbes(mapOf(id to result)) } }
             if (apply(result) == LivenessAction.LOGIN_REJECTED) return
             delay(if (result is ProbeResult.Answered) checkInterval else retryDelay)

@@ -16,8 +16,11 @@ interface VpnEngine {
 
 interface EngineListener {
     fun onThroughput(uplinkBytesPerSec: Long, downlinkBytesPerSec: Long)
+    fun onGroupHealth(health: GroupHealth?)
     fun onStopRequested()
 }
+
+data class GroupHealth(val alive: Int, val total: Int)
 
 fun interface DefaultInterfaceListener {
     fun onDefaultInterfaceChanged(name: String, index: Int)

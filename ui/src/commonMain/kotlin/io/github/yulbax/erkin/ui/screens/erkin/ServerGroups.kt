@@ -120,15 +120,17 @@ internal fun GroupRow(
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val whole = item.wholeGroup
     ServerRowLayout(
         title = item.name,
-        subtitle = serverName(item.current.name),
-        details = "${item.members.size} · ${item.current.type}",
+        subtitle = if (whole) stringResource(Res.string.server_group_whole) else serverName(item.current.name),
+        details = if (whole) "${item.members.size}" else "${item.members.size} · ${item.current.type}",
         isSelected = isSelected,
         mode = mode,
-        result = result,
-        testing = testing,
-        isBest = isBest,
+        result = result.takeUnless { whole },
+        testing = testing && !whole,
+        isBest = isBest && !whole,
+        subtitleIcon = WHOLE_GROUP_ICON.takeIf { whole },
         onClick = onClick,
         onLongClick = onLongClick,
         modifier = modifier,

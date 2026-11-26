@@ -47,8 +47,10 @@ class ServerLatencyProbe(
         }
     }
 
+    suspend fun measureRunning(tag: String): ProbeResult = measured(tag, listOf(loaded(tag)), NetworkOptions(), null, runningOnly = true)
+
     private fun runningPlans(ids: Collection<Long>) =
-        Plans(ids.map { id -> id to listOf(EngineProxy(ProxyTag.of(id), LOADED_PROXY)) }, NetworkOptions())
+        Plans(ids.map { id -> id to listOf(loaded(ProxyTag.of(id))) }, NetworkOptions())
 
     private suspend fun describedPlans(queue: Collection<Long>?): Plans {
         val inputs = store.load()
@@ -65,9 +67,12 @@ class ServerLatencyProbe(
     private suspend fun resultOf(id: Long, proxies: List<EngineProxy>, options: NetworkOptions, port: Int?, runningOnly: Boolean): ProbeResult {
         val throughByeDpi = proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
         val tested = proxies.map { proxy -> if (port == null && proxy.dialerProxy == BYEDPI_PROXY_TAG) proxy.copy(dialerProxy = null) else proxy }
-        val result = parse(tester.measure(tested, options, ProbeUrls.VPN, ServerProbePolicy.TIMEOUT, port, runningOnly))[id] ?: ProbeResult.NoAnswer
+        val result = measured(ProxyTag.of(id), tested, options, port, runningOnly)
         return if (result == ProbeResult.NoAnswer && port == null && throughByeDpi) ProbeResult.NeedsConnection else result
     }
+
+    private suspend fun measured(tag: String, proxies: List<EngineProxy>, options: NetworkOptions, port: Int?, runningOnly: Boolean): ProbeResult =
+        byTag(tester.measure(proxies, options, ProbeUrls.VPN, ServerProbePolicy.TIMEOUT, port, runningOnly))[tag] ?: ProbeResult.NoAnswer
 
     companion object {
         private const val CONCURRENCY = 10
@@ -75,10 +80,13 @@ class ServerLatencyProbe(
         private const val LOADED_PROXY = """{"type":"direct"}"""
 
         fun parse(results: String): Map<Long, ProbeResult> =
+            byTag(results).mapNotNull { (tag, result) -> ProxyTag.profileId(tag)?.let { it to result } }.toMap()
+
+        private fun byTag(results: String): Map<String, ProbeResult> =
             Json.parseToJsonElement(results).jsonObject.mapNotNull { (tag, value) ->
-                val id = ProxyTag.profileId(tag) ?: return@mapNotNull null
-                val ms = value.jsonPrimitive.intOrNull ?: return@mapNotNull null
-                id to ProbeResult.fromWire(ms)
+                value.jsonPrimitive.intOrNull?.let { tag to ProbeResult.fromWire(it) }
             }.toMap()
+
+        private fun loaded(tag: String) = EngineProxy(tag, LOADED_PROXY)
     }
 }

@@ -54,7 +54,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "erkin.db"
-        const val VERSION = 35
+        const val VERSION = 36
 
         fun isNewerThanThisBuild(database: File): Boolean {
             if (!database.isFile) return false
@@ -321,10 +321,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val WHOLE_GROUP_MIGRATION = object : Migration(35, 36) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL("ALTER TABLE server_groups ADD COLUMN wholeGroup INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun migrations(appsCanBypass: Boolean): Array<Migration> =
             MIGRATIONS + bypassMigration(appsCanBypass) + SERVER_GROUPS_MIGRATION + PENDING_APPS_MIGRATION +
                 HIDDEN_SERVERS_MIGRATION + SERVER_SORT_MIGRATION + HOME_CARD_MIGRATION + SEARCH_SNI_MIGRATION +
-                SUBSCRIPTION_NOTES_MIGRATION + SUBSCRIPTION_RULES_MIGRATION + THEME_MODE_MIGRATION
+                SUBSCRIPTION_NOTES_MIGRATION + SUBSCRIPTION_RULES_MIGRATION + THEME_MODE_MIGRATION +
+                WHOLE_GROUP_MIGRATION
 
         private fun bypassMigration(appsCanBypass: Boolean) = object : Migration(25, 26) {
             override fun migrate(connection: SQLiteConnection) {

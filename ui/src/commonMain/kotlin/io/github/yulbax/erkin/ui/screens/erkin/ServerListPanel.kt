@@ -41,6 +41,9 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.screens.chains.chainLabel
 import org.jetbrains.compose.resources.stringResource
 import io.github.yulbax.erkin.ui.components.LabeledFrame
+import androidx.compose.material.icons.filled.Hub
+import io.github.yulbax.erkin.ui.components.IconSource
+import io.github.yulbax.erkin.vpn.core.ProbeResult
 
 @Composable
 internal fun ServerListPanel(c: ErkinScreenContent, modifier: Modifier) {
@@ -186,12 +189,14 @@ private fun ServerListRow(
 ) {
     val profile = item.profile
     val group = item.group
+    val whole = sheet != null && c.runsWhole(sheet)
+    val skipped = whole && c.servers.results[profile.id]?.let { it !is ProbeResult.Answered } == true
     val chainLabel = chainLabel(profile, c.servers.profiles)
     val groupServers = profile.groupId?.let { id -> c.servers.profiles.filter { it.groupId == id } }.orEmpty()
     val menuEnd = ServerMenuEnd.of(profile, profile.groupId?.let(c.servers.groups::get), groupServers)
     ServerRow(
         profile = profile,
-        isSelected = profile.id == c.servers.selected?.id,
+        isSelected = !whole && profile.id == c.servers.selected?.id,
         actions = ServerActions(
             onEdit = { c.onEdit(profile) },
             onShare = if (chainLabel == null) ({ c.onShare(profile) }) else null,
@@ -219,11 +224,12 @@ private fun ServerListRow(
             }
         },
         onLongClick = check.onToggle,
-        modifier = if (profile.hidden) Modifier.alpha(HIDDEN_ALPHA) else Modifier,
+        modifier = if (profile.hidden || skipped) Modifier.alpha(HIDDEN_ALPHA) else Modifier,
         result = c.servers.results[profile.id],
         testing = profile.id in c.servers.testingIds,
-        isBest = profile.id == c.servers.fastest,
+        isBest = !whole && profile.id == c.servers.fastest,
         chainLabel = chainLabel,
+        note = if (skipped) stringResource(Res.string.server_skipped) else null,
         groupIcon = group?.kind?.rowIcon,
         groupName = group?.displayName?.takeIf { c.filtering },
         mode = mode
@@ -241,7 +247,36 @@ private fun GroupListRow(c: ErkinScreenContent, item: ServerNode.Group, mode: Ro
         testing = current.id in c.servers.testingIds,
         isBest = current.id == c.servers.fastest,
         mode = mode,
-        onClick = { if (check.selecting) check.onToggle() else c.onSelect(current) },
+        onClick = { if (check.selecting) check.onToggle() else c.onSelectGroup(item.id) },
         onLongClick = check.onToggle
     )
 }
+
+private fun ErkinScreenContent.runsWhole(group: ServerNode.Group): Boolean =
+    servers.tree.wholeGroupOf(servers.selected)?.id == group.id
+
+@Composable
+internal fun WholeGroupRow(c: ErkinScreenContent, group: ServerNode.Group, onSelected: () -> Unit) {
+    val on = c.runsWhole(group)
+    ServerRowLayout(
+        title = stringResource(Res.string.server_group_whole),
+        subtitle = stringResource(if (on) Res.string.server_group_whole_on else Res.string.server_group_whole_off),
+        isSelected = on,
+        mode = RowMode.Normal,
+        result = null,
+        testing = false,
+        isBest = false,
+        onClick = {
+            c.onSelectWholeGroup(group.id)
+            onSelected()
+        },
+        onLongClick = {},
+        titleIcon = WHOLE_GROUP_ICON,
+        menu = {}
+    )
+}
+
+internal val WHOLE_GROUP_ICON = RowIcon(IconSource.Vector(Icons.Default.Hub), Res.string.server_group_whole)
+
+@Composable
+internal fun wholeGroupName(groupName: String): String = "$groupName · ${stringResource(Res.string.server_group_whole)}"

@@ -141,6 +141,7 @@ internal fun FolderList(
     sidePadding: Dp = 0.dp,
     topPadding: Dp = 0.dp,
     keepBarRoom: Boolean = false,
+    lead: (@Composable () -> Unit)? = null,
     overlay: @Composable BoxScope.() -> Unit = {}
 ) {
     var hiddenShown by remember { mutableStateOf(false) }
@@ -167,6 +168,7 @@ internal fun FolderList(
             ),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            lead?.let { content -> item(key = LEAD_KEY) { content() } }
             items(order, key = { it.key }) { node ->
                 ReorderableItem(reorderState, key = node.key) { dragging ->
                     val elevation by animateDpAsState(if (dragging) 6.dp else 0.dp)
@@ -273,5 +275,6 @@ internal fun CollapsibleHeader(text: String, icon: ImageVector, expanded: Boolea
 }
 
 private const val HIDDEN_HEADER_KEY = "hidden"
+private const val LEAD_KEY = "lead"
 private val BAR_ROOM = 72.dp
 private val LIST_END = 24.dp

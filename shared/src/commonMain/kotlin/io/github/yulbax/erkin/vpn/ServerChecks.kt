@@ -52,6 +52,21 @@ class ServerChecks(
         return measure(queue, runningOnly, onResult)
     }
 
+    suspend fun checkRunning(tag: String): ProbeResult {
+        val id = ProxyTag.profileId(tag)
+        id?.let { server -> background.update { it + server } }
+        val result = try {
+            probe.measureRunning(tag)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (t: Throwable) {
+            log.w(TAG, "latency test failed", t)
+            ProbeResult.NoAnswer
+        }
+        id?.let { server -> results.update { it + (server to result) } }
+        return result
+    }
+
     suspend fun firstAnswering(queue: Collection<Long>): Long? {
         background.update { it + queue }
         val first = CompletableDeferred<Long?>()

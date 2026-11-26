@@ -368,6 +368,10 @@
     <string name="subscription_page">حساب</string>
     <string name="subscription_of_total">از %1$s</string>
     <string name="subscription_percent">%1$d%</string>
+    <string name="server_group_whole">کل گروه</string>
+    <string name="server_group_whole_on">سایت‌ها بین سرورهای فعال پخش می‌شوند</string>
+    <string name="server_group_whole_off">پخش سایت‌ها بین سرورها</string>
+    <string name="server_skipped">رد می‌شود</string>
     <string name="subscription_rules_section">از اشتراک</string>
     <string name="subscription_rules_title">قوانین · %1$d</string>
     <string name="subscription_rules_after_yours">بعد از قوانین شما</string>

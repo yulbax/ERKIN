@@ -14,6 +14,7 @@ import io.github.yulbax.erkin.data.profile.SubscriptionRules
 import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
+import io.github.yulbax.erkin.vpn.core.EngineBalancer
 import io.github.yulbax.erkin.vpn.core.RoutingRule
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleMatch
@@ -23,6 +24,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -380,6 +382,45 @@ class EngineConfigComposerTest {
 
     private fun applied(target: SubscriptionTarget) =
         AppliedSubscriptionRules(3, SubscriptionRules(listOf(SubscriptionRule("DOMAIN,a.example", emptyList(), target)), emptyList(), emptyList()))
+
+    @Test
+    fun aWholeGroupBalancesItsVisibleServersAndKeepsABoundMemberBound() {
+        val chat = App("org.example.chat", "Chat", isSystemApp = false, connectionType = ConnectionType.VPN, serverId = 2)
+        val web = App("org.example.web", "Web", isSystemApp = false, connectionType = ConnectionType.VPN)
+        val config = EngineConfigComposer.compose(groupInputs(listOf(chat, web), whole = true), OWN, BYEDPI_PORT)
+
+        assertEquals(EngineBalancer("g9", listOf("p1", "p2")), config.engineConfig.balancer)
+        assertEquals("g9", config.engineConfig.activeProxyTag)
+        assertEquals("Timeweb", config.configName)
+        assertEquals(listOf("p1", "p2"), config.engineConfig.proxies.map { it.tag })
+        assertEquals(mapOf("org.example.chat" to "p2"), config.engineConfig.vpnTargets)
+    }
+
+    @Test
+    fun theSameGroupWithoutTheWholeGroupRunsItsSelectedServer() {
+        val web = App("org.example.web", "Web", isSystemApp = false, connectionType = ConnectionType.VPN)
+        val single = EngineConfigComposer.compose(groupInputs(listOf(web), whole = false), OWN, BYEDPI_PORT)
+        val whole = EngineConfigComposer.compose(groupInputs(listOf(web), whole = true), OWN, BYEDPI_PORT)
+
+        assertNull(single.engineConfig.balancer)
+        assertEquals("p1", single.engineConfig.activeProxyTag)
+        assertEquals("g9", whole.selectedTag)
+    }
+
+    private fun groupInputs(apps: List<App>, whole: Boolean): SessionInputs {
+        val parsed = requireNotNull(LinkParser.parse(VLESS))
+        fun member(id: Long, hidden: Boolean = false) = ProfileEntity(
+            id = id, name = "s$id", type = parsed.protocol.wire, link = VLESS, outboundJson = parsed.proxyJson(), groupId = 9, hidden = hidden
+        )
+        val profiles = listOf(member(1).copy(selected = true), member(2), member(3, hidden = true))
+        return SessionInputs(
+            selected = profiles.first(),
+            profiles = profiles,
+            settings = SettingsEntity(),
+            apps = apps,
+            wholeGroup = WholeGroup(9, "Timeweb").takeIf { whole }
+        )
+    }
 
     private fun inputs(apps: List<App>): SessionInputs {
         val parsed = requireNotNull(LinkParser.parse(VLESS))

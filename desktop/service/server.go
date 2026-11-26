@@ -49,6 +49,12 @@ type response struct {
 	Kind    string          `json:"kind,omitempty"`
 	Count   int64           `json:"count,omitempty"`
 	Log     *logEvent       `json:"log,omitempty"`
+	Group   *groupHealth    `json:"group,omitempty"`
+}
+
+type groupHealth struct {
+	Alive int32 `json:"alive"`
+	Total int32 `json:"total"`
 }
 
 type logEvent struct {
@@ -287,6 +293,11 @@ func (s *server) dispatch(conn io.ReadWriteCloser, message request) response {
 		result.OK = true
 	case "traffic":
 		result.Up, result.Down, result.OK = s.engine.traffic()
+	case "group":
+		if health := mihomocore.GroupHealthOf(message.Name, message.URL); health != nil {
+			result.Group = &groupHealth{Alive: health.Alive, Total: health.Total}
+		}
+		result.OK = true
 	default:
 		result.Error = "unknown op: " + message.Op
 	}

@@ -27,6 +27,8 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import io.github.yulbax.erkin.vpn.core.GroupHealth
+import kotlinx.serialization.json.intOrNull
 
 class ServiceClient private constructor(
     private val input: InputStream,
@@ -112,6 +114,15 @@ class ServiceClient private constructor(
 
     fun traffic(): Traffic? = call("traffic").takeIf { it.ok }?.let { reply ->
         Traffic(reply["up"]?.jsonPrimitive?.longOrNull ?: 0, reply["down"]?.jsonPrimitive?.longOrNull ?: 0)
+    }
+
+    fun groupHealth(name: String, url: String): GroupHealth? = call("group") {
+        put("name", name)
+        put("url", url)
+    }.takeIf { it.ok }?.let { reply ->
+        (reply["group"] as? JsonObject)?.let { group ->
+            GroupHealth(group["alive"]?.jsonPrimitive?.intOrNull ?: 0, group["total"]?.jsonPrimitive?.intOrNull ?: 0)
+        }
     }
 
     fun connections(): String = call("connections").let { reply ->

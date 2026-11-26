@@ -58,6 +58,7 @@ import io.github.yulbax.erkin.ui.res.*
 import io.github.yulbax.erkin.ui.res.local_network_denied
 import io.github.yulbax.erkin.data.ConnectionType
 import io.github.yulbax.erkin.data.HomeCardPosition
+import io.github.yulbax.erkin.data.profile.canRunWhole
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.GroupKind
@@ -194,6 +195,8 @@ fun ErkinScreen(
         onTest = profileViewModel::test,
         onReorder = profileViewModel::reorder,
         onSelect = { profileViewModel.select(it) },
+        onSelectGroup = profileViewModel::selectGroup,
+        onSelectWholeGroup = profileViewModel::selectWholeGroup,
         onEdit = { profile ->
             when (profile.kind) {
                 is ServerKind.Link -> editing = profile
@@ -235,7 +238,11 @@ fun ErkinScreen(
             ServerSheet(
                 folder = ServerFolder.Group(id),
                 choices = servers.choices,
-                mode = ServerSheetMode.Manage(content.groups, bulk) { node, check, handle, close ->
+                mode = ServerSheetMode.Manage(
+                    actions = content.groups,
+                    servers = bulk,
+                    lead = if (servers.profiles.canRunWhole(item.id)) ({ close: () -> Unit -> WholeGroupRow(content, item, onSelected = close) }) else null
+                ) { node, check, handle, close ->
                     FolderNodeRow(content, node, check, handle, sheet = item, onSelected = close)
                 },
                 onDismiss = { sheetId = null }
@@ -401,6 +408,11 @@ private fun shareText(servers: ServersUiState, groupId: Long): String? = when (v
     null -> null
 }
 
+@Composable
+private fun mainServerLabel(c: ErkinScreenContent, profile: ProfileEntity): String =
+    c.servers.tree.wholeGroupOf(profile)?.let { group -> wholeGroupName(group.displayName) }
+        ?: listOfNotNull(serverName(profile.name), profile.type.takeIf { profile.kind is ServerKind.Link }).joinToString(" · ")
+
 internal class ErkinScreenContent(
     val ui: ErkinUiState,
     val state: VpnState,
@@ -420,6 +432,8 @@ internal class ErkinScreenContent(
     val onTest: (servers: List<Long>) -> Deferred<List<Long>?>,
     val onReorder: (List<Long>) -> Unit,
     val onSelect: (ProfileEntity) -> Unit,
+    val onSelectGroup: (groupId: Long) -> Unit,
+    val onSelectWholeGroup: (groupId: Long) -> Unit,
     val onEdit: (ProfileEntity) -> Unit,
     val onShare: (ProfileEntity) -> Unit,
     val onDelete: (ProfileEntity) -> Unit,
@@ -549,9 +563,7 @@ private fun ColumnScope.ConnectionSection(c: ErkinScreenContent, cardBelow: Bool
             enabled = enabled,
             onToggle = c.onToggle,
             modifier = Modifier.zIndex(1f),
-            server = c.servers.selected?.takeIf { c.ui.hasVpnApps }?.let { profile ->
-                listOfNotNull(serverName(profile.name), profile.type.takeIf { profile.kind is ServerKind.Link }).joinToString(" · ")
-            }
+            server = c.servers.selected?.takeIf { c.ui.hasVpnApps }?.let { profile -> mainServerLabel(c, profile) }
         )
     }
 
@@ -594,6 +606,8 @@ private fun ChannelsRow(c: ErkinScreenContent, cardBelow: Boolean = false) {
             noServers = c.servers.profiles.isEmpty(),
             latencyMs = c.stats.vpnLatencyMs,
             country = c.stats.vpnCountry,
+            wholeGroup = c.servers.tree.wholeGroupOf(c.servers.selected) != null,
+            groupHealth = c.stats.groupHealth,
             shape = if (cardBelow) RoundedCornerShape(topStart = corner) else RoundedCornerShape(bottomStart = corner),
             topInset = topInset,
             bottomInset = bottomInset,

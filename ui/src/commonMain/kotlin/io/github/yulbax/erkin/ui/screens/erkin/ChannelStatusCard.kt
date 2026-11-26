@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import io.github.yulbax.erkin.vpn.ExitCountry
+import io.github.yulbax.erkin.vpn.core.GroupHealth
 import androidx.compose.foundation.layout.RowScope
 import io.github.yulbax.erkin.ui.screens.apps.warningColor
 import io.github.yulbax.erkin.ui.screens.apps.channelColor
@@ -57,6 +58,8 @@ internal fun ChannelStatusCard(
     reachable: Int = 0,
     total: Int = 0,
     checking: Boolean = false,
+    wholeGroup: Boolean = false,
+    groupHealth: GroupHealth? = null,
     onClick: (() -> Unit)? = null
 ) {
     val byedpiBlocked = type == ConnectionType.BYEDPI && active && !up && !checking && total > 0 && reachable == 0
@@ -104,6 +107,7 @@ internal fun ChannelStatusCard(
                     !active -> Status(stringResource(if (hasApps) Res.string.channel_status_off else Res.string.channel_status_no_apps), muted)
                     byedpiBlocked -> Status("$reachable/$total", muted)
                     !up -> WaveDots(color = muted)
+                    wholeGroup -> groupHealth?.let { Status("${it.alive}/${it.total}", muted) } ?: WaveDots(color = muted)
                     type == ConnectionType.VPN && country == ExitCountry.Pending && !waitedForCountry -> WaveDots(color = muted)
                     type == ConnectionType.BYEDPI -> when {
                         total > 0 -> Status("$reachable/$total", muted)

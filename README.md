@@ -74,6 +74,9 @@ themselves.
 - **Subscription rules.** A Clash/mihomo subscription can bring its rules. They are off by
   default and, when on, apply after your own rules while the main server comes from that
   subscription.
+- **Whole group.** Run every server of a group or subscription at once. Sites are spread
+  across the servers that answer, each site always through the same one, and servers that
+  stop answering are skipped.
 - **Latency.** Test the servers on any page of the server picker and sort a group by ping;
   while connected, the servers bound to apps and rules are checked in the background.
 - **Self-healing.** A health check watches the VPN and ByeDPI. When the server stops

@@ -3,6 +3,7 @@ package io.github.yulbax.erkin.vpn
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.util.Telemetry
 import io.github.yulbax.erkin.vpn.core.EngineListener
+import io.github.yulbax.erkin.vpn.core.GroupHealth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -82,6 +83,8 @@ class VpnController(
 
     override fun onThroughput(uplinkBytesPerSec: Long, downlinkBytesPerSec: Long) =
         session.onThroughput(uplinkBytesPerSec, downlinkBytesPerSec)
+
+    override fun onGroupHealth(health: GroupHealth?) = session.onGroupHealth(health)
 
     override fun onStopRequested() = stop(token = null, force = true)
 

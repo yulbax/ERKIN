@@ -247,10 +247,13 @@ class ConfigBackupRepository(
     private suspend fun restoreRemembered(backups: List<ProfileBackup>, ids: Map<Long, Long>) {
         val groupDao = database.serverGroupDao()
         val stored = database.profileDao().getAll().associateBy { it.id }
-        backups.filter { it.remembered }.mapNotNull { ids[it.id]?.let(stored::get) }.forEach { profile ->
+        backups.filter { it.remembered }.forEach { backup ->
+            val profile = ids[backup.id]?.let(stored::get) ?: return@forEach
             val group = profile.groupId?.let { groupDao.get(it) } ?: return@forEach
             val remembers = group.currentId?.let(stored::get)?.groupId == group.id
-            if (!remembers) groupDao.updateCurrent(group.id, profile.id)
+            if (remembers) return@forEach
+            groupDao.updateCurrent(group.id, profile.id)
+            if (backup.wholeGroup) groupDao.setWholeGroup(group.id, true)
         }
     }
 

@@ -114,7 +114,7 @@ sealed interface ServerPickerRow {
     val key: Any
     val holdsCurrent: Boolean
 
-    data class Main(val name: String, val checked: Boolean) : ServerPickerRow {
+    data class Main(val name: String, val checked: Boolean, val wholeGroup: Boolean = false) : ServerPickerRow {
         override val key: Any get() = "main"
         override val holdsCurrent: Boolean get() = checked
     }
@@ -192,7 +192,10 @@ internal fun serverPickerPage(
         )
     }
     val leading = when (lead) {
-        PickerLead.MAIN_SERVER -> choices.main?.let { ServerPickerRow.Main(it.name, checked = current == CurrentServer.Main) }
+        PickerLead.MAIN_SERVER -> choices.main?.let { main ->
+            val whole = choices.tree.wholeGroupOf(main)
+            ServerPickerRow.Main(whole?.displayName ?: main.name, checked = current == CurrentServer.Main, wholeGroup = whole != null)
+        }
         PickerLead.BYEDPI -> ServerPickerRow.ByeDpi(checked = current == CurrentServer.ByeDpi)
         PickerLead.NONE -> null
     }

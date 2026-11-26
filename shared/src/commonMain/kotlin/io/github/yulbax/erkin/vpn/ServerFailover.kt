@@ -2,7 +2,7 @@ package io.github.yulbax.erkin.vpn
 
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.GroupKind
-import io.github.yulbax.erkin.data.profile.isLink
+import io.github.yulbax.erkin.data.profile.runnableIn
 import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ProbeResult
 
@@ -19,7 +19,7 @@ class ServerFailover(
             log.i(TAG, "server $serverId is not in a group; nothing to switch to")
             return false
         }
-        val candidates = inputs.profiles.filter { it.isLink && !it.hidden && it.groupId == group.id && it.id != serverId }
+        val candidates = inputs.profiles.runnableIn(group.id).filter { it.id != serverId }
         val target = checks.firstAnswering(candidates.map { it.id })?.let { id -> candidates.first { it.id == id } }
         if (target == null) {
             log.w(TAG, "no other server of group ${group.id} answers; keeping server $serverId")
@@ -38,9 +38,13 @@ class ServerFailover(
     }
 
     suspend fun refreshAndReplace(): Boolean {
+        refreshSubscription()
+        return replace(testAgain = false)
+    }
+
+    suspend fun refreshSubscription() {
         val group = store.selectedGroup()
         (group?.kind as? GroupKind.Subscription)?.let { refresh(group.id, it.url) }
-        return replace(testAgain = false)
     }
 
     private suspend fun refresh(id: Long, url: String) {

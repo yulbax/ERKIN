@@ -17,6 +17,7 @@ data class ProfileBackup(
     val subscriptionName: String? = null,
     val groupId: Long? = null,
     val remembered: Boolean = false,
+    val wholeGroup: Boolean = false,
     val hidden: Boolean = false
 ) {
     fun toEntity(groupId: Long? = null) = ProfileEntity(
@@ -42,6 +43,7 @@ data class ProfileBackup(
             subscriptionName = group?.name,
             groupId = group?.takeIf { it.kind == GroupKind.Local }?.id,
             remembered = group?.currentId == profile.id,
+            wholeGroup = group?.takeIf { it.currentId == profile.id }?.wholeGroup == true,
             hidden = profile.hidden
         )
     }

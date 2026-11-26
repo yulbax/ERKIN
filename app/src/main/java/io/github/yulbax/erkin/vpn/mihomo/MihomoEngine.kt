@@ -5,6 +5,8 @@ import io.github.yulbax.erkin.util.ErkinLog
 import io.github.yulbax.erkin.vpn.isInstalled
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
+import io.github.yulbax.erkin.vpn.core.GroupHealth
+import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.core.TunAddress
 import io.github.yulbax.erkin.vpn.core.TunConfig
 import io.github.yulbax.erkin.vpn.core.TunPlatform
@@ -30,6 +32,7 @@ class MihomoEngine(
 
     private var tunConfig: TunConfig? = null
     private var traffic: ScheduledExecutorService? = null
+    @Volatile private var balancer: String? = null
 
     private val platform = object : Platform {
         override fun protect(fd: Int): Boolean = tunPlatform.protectFd(fd)
@@ -84,6 +87,7 @@ class MihomoEngine(
 
     private fun reload(config: EngineConfig) {
         log.i(TAG, "reloading the core on the current tun")
+        balancer = config.balancer?.tag
         Mihomocore.reload(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
     }
 
@@ -113,6 +117,7 @@ class MihomoEngine(
     }
 
     private fun startCore(config: EngineConfig, tun: TunConfig, fd: Int) {
+        balancer = config.balancer?.tag
         log.i(TAG, "system dns: ${MihomoRuntime.describeSystemDns()}")
         val ipv6 = tun.inet6.isNotEmpty()
         val gateway = buildList {
@@ -142,8 +147,14 @@ class MihomoEngine(
         Executors.newSingleThreadScheduledExecutor { Thread(it, "mihomo-traffic").apply { isDaemon = true } }.apply {
             scheduleAtFixedRate({
                 runCatching { Mihomocore.currentTraffic() }.getOrNull()?.let { listener.onThroughput(it.up, it.down) }
+                reportGroupHealth()
             }, 1, 1, TimeUnit.SECONDS)
         }
+
+    private fun reportGroupHealth() {
+        val health = balancer?.let { tag -> runCatching { Mihomocore.groupHealthOf(tag, ProbeUrls.VPN) }.getOrNull() }
+        listener.onGroupHealth(health?.let { GroupHealth(it.alive, it.total) })
+    }
 
     private fun splitAddress(address: String): Pair<String, Int> {
         val host = address.substringBeforeLast(':').removePrefix("[").removeSuffix("]")

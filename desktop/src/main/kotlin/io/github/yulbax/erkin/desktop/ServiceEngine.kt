@@ -1,6 +1,7 @@
 package io.github.yulbax.erkin.desktop
 
 import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.vpn.ProbeUrls
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineListener
 import io.github.yulbax.erkin.vpn.core.VpnEngine
@@ -28,6 +29,7 @@ class ServiceEngine(
     private val desktopOs = if (DesktopPaths.isWindows) DesktopOs.WINDOWS else DesktopOs.LINUX
 
     @Volatile private var client: ServiceClient? = null
+    @Volatile private var balancer: String? = null
     private var traffic: ScheduledExecutorService? = null
 
     @Synchronized
@@ -50,6 +52,7 @@ class ServiceEngine(
     }
 
     private fun launch(config: EngineConfig) {
+        balancer = config.balancer?.tag
         val connected = service.control()
         connected.start(buildConfig(config), MihomoConfigBuilder.BYEDPI_PROXY, config.network.byeDpiDns.nameserver())
         client = connected
@@ -65,6 +68,7 @@ class ServiceEngine(
                     val now = runCatching { service.running()?.traffic() }.getOrNull() ?: return@scheduleAtFixedRate
                     last?.let { listener.onThroughput(now.up - it.up, now.down - it.down) }
                     last = now
+                    listener.onGroupHealth(balancer?.let { tag -> runCatching { service.running()?.groupHealth(tag, ProbeUrls.VPN) }.getOrNull() })
                 }, 0, 1, TimeUnit.SECONDS)
             }
     }

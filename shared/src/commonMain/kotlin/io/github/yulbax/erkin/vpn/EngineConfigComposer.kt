@@ -10,8 +10,10 @@ import io.github.yulbax.erkin.data.profile.ServerKind
 import io.github.yulbax.erkin.data.profile.SubscriptionTarget
 import io.github.yulbax.erkin.data.profile.isLink
 import io.github.yulbax.erkin.data.profile.kind
+import io.github.yulbax.erkin.data.profile.runnableIn
 import io.github.yulbax.erkin.rulelist.InstalledRuleList
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
+import io.github.yulbax.erkin.vpn.core.EngineBalancer
 import io.github.yulbax.erkin.vpn.core.EngineConfig
 import io.github.yulbax.erkin.vpn.core.EngineProxy
 import io.github.yulbax.erkin.vpn.core.EngineRequirement
@@ -27,10 +29,13 @@ sealed interface ProxyRef {
 object ProxyTag {
     private const val PREFIX = "p"
     private const val HOP = 'h'
+    private const val GROUP = "g"
 
     fun of(profileId: Long): String = "$PREFIX$profileId"
 
     fun hop(chainId: Long, index: Int): String = "${of(chainId)}$HOP$index"
+
+    fun group(groupId: Long): String = "$GROUP$groupId"
 
     fun parse(tag: String): ProxyRef? {
         val body = tag.takeIf { it.startsWith(PREFIX) }?.removePrefix(PREFIX) ?: return null
@@ -86,10 +91,15 @@ object EngineConfigComposer {
         val managed = subscription?.rules?.managedLists.orEmpty()
             .mapNotNull { list -> ruleLists(list.url)?.takeIf { list.kind in it.kinds }?.let { list to it } }.toMap()
         val applied = subscription?.available { it in managed }
-        val active = selected?.let { proxiesFor(it, inputs.profiles) }.orEmpty()
+        val whole = inputs.wholeGroup?.takeIf { hasServers }
+        val members = whole?.let { inputs.profiles.runnableIn(it.id) }
+        val balancer = members?.let { EngineBalancer(ProxyTag.group(whole.id), it.map { member -> ProxyTag.of(member.id) }) }
+        val mains = members?.map { proxiesFor(it, inputs.profiles) }
+            ?: listOfNotNull(selected?.let { proxiesFor(it, inputs.profiles) })
+        val active = mains.flatten()
         val boundIds = foreignApps.filter { it.connectionType == ConnectionType.VPN }.mapNotNull { it.serverId } +
             rules.filter { it.target == RuleTarget.VPN }.mapNotNull { it.serverId }
-        val bound = boundServers(boundIds, selected, inputs.profiles)
+        val bound = boundServers(boundIds, selected?.takeIf { balancer == null }, hasServers, inputs.profiles)
         val proxies = (active + bound.values.flatten()).distinctBy { it.tag }
         val vpnTargets = foreignApps.mapNotNull { app ->
             app.serverId?.takeIf { it in bound }?.let { app.packageName to ProxyTag.of(it) }
@@ -98,7 +108,7 @@ object EngineConfigComposer {
         return AppliedConfig(
             engineConfig = EngineConfig(
                 proxies = proxies,
-                activeProxyTag = selected?.let { ProxyTag.of(it.id) }.orEmpty(),
+                activeProxyTag = balancer?.tag ?: selected?.let { ProxyTag.of(it.id) }.orEmpty(),
                 byeDpiPackages = routed.byeDpiPackages,
                 vpnPackages = routed.vpnPackages,
                 tunneledPackages = routed.tunneledPackages,
@@ -113,15 +123,16 @@ object EngineConfigComposer {
                 serverTags = bound.keys.associateWith(ProxyTag::of),
                 bypassPackages = routed.bypassPackages,
                 newApps = newApps,
-                subscriptionRules = applied
+                subscriptionRules = applied,
+                balancer = balancer
             ),
-            configName = selected?.name?.ifBlank { "(unnamed)" } ?: when {
+            configName = balancer?.let { whole.name } ?: selected?.name?.ifBlank { "(unnamed)" } ?: when {
                 everyApp.hasByeDpi || newApps == ConnectionType.BYEDPI -> "(ByeDPI only)"
                 everyApp.hasBlocked -> "(Block only)"
                 else -> "(Direct only)"
             },
             membershipKey = proxies.joinToString("|") { "${it.tag}:${it.descriptor}:${it.dialerProxy.orEmpty()}" },
-            sessionRequirements = (listOf(active) + bound.values).flatMapTo(mutableSetOf()) {
+            sessionRequirements = (mains + bound.values).flatMapTo(mutableSetOf()) {
                 it.lastOrNull()?.sessionRequirements.orEmpty()
             },
             routingKey = "new=${newApps.wire}#" + ruledApps.sortedBy { it.packageName }
@@ -144,12 +155,13 @@ object EngineConfigComposer {
 
     private fun boundServers(
         serverIds: List<Long>,
-        selected: ProfileEntity?,
+        main: ProfileEntity?,
+        hasServers: Boolean,
         profiles: List<ProfileEntity>
     ): Map<Long, List<EngineProxy>> {
-        if (selected == null) return emptyMap()
+        if (!hasServers) return emptyMap()
         return serverIds.asSequence()
-            .filter { it != selected.id }
+            .filter { it != main?.id }
             .distinct()
             .mapNotNull { id -> profiles.firstOrNull { it.id == id } }
             .mapNotNull { profile -> runCatching { proxiesFor(profile, profiles) }.getOrNull()?.let { profile.id to it } }

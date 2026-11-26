@@ -5,6 +5,8 @@ import io.github.yulbax.erkin.data.isExecutablePath
 import io.github.yulbax.erkin.data.profile.SubscriptionRule
 import io.github.yulbax.erkin.data.profile.SubscriptionRules
 import io.github.yulbax.erkin.data.profile.SubscriptionTarget
+import io.github.yulbax.erkin.vpn.ProbeUrls
+import io.github.yulbax.erkin.vpn.ServerProbePolicy
 import io.github.yulbax.erkin.vpn.core.BYEDPI_PROXY_TAG
 import io.github.yulbax.erkin.vpn.core.BuiltInOutbound
 import io.github.yulbax.erkin.vpn.core.EngineConfig
@@ -77,6 +79,7 @@ object MihomoConfigBuilder {
     private const val DESKTOP_TUN_INET6 = "fdfe:dcba:9876::1/126"
     private const val SYSTEM_NAMESERVER = "system://"
     private const val RULE_LIST_FORMAT = "mrs"
+    private const val BALANCER_CHECK_INTERVAL_S = 60
     private val BLOCK_QUIC_RULE = "AND,((NETWORK,UDP),(DST-PORT,443)),$REJECT"
     private val LOCAL_DOMAINS = listOf("+.lan", "+.local", "+.localdomain", "+.home.arpa", "+.internal", "localhost")
 
@@ -94,15 +97,17 @@ object MihomoConfigBuilder {
         val probePort = probe.port
         val probeUser = probe.username
         val probePass = probe.password
-        val active = proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull()
-        val vpnTarget = active?.tag ?: DIRECT
-        val exits = proxies.filter { it.tag == vpnTarget || it.tag in engine.vpnTargets.values || it.tag in engine.serverTags.values }
+        val balancer = engine.balancer
+        val mainTag = balancer?.tag ?: (proxies.firstOrNull { it.tag == activeProxyTag } ?: proxies.firstOrNull())?.tag
+        val vpnTarget = mainTag ?: DIRECT
+        val mainExits = balancer?.members?.toSet() ?: setOfNotNull(mainTag)
+        val exits = proxies.filter { it.tag in mainExits || it.tag in engine.vpnTargets.values || it.tag in engine.serverTags.values }
         val ipv6 = options.ipv6Mode.ipv6Enabled && exits.none { EngineRequirement.IPV4_ONLY in it.sessionRequirements }
         val vpnTargetOf = { app: String -> engine.vpnTargets[app] ?: vpnTarget }
         val desktop = platform as? MihomoPlatform.Desktop
         val ruleTarget = { rule: RoutingRule ->
             when (rule.target) {
-                RuleTarget.VPN -> rule.serverId?.let(engine.serverTags::get) ?: active?.tag ?: REJECT
+                RuleTarget.VPN -> rule.serverId?.let(engine.serverTags::get) ?: mainTag ?: REJECT
                 RuleTarget.BYEDPI -> BYEDPI_PROXY
                 RuleTarget.DIRECT -> DIRECT
                 RuleTarget.BLOCK -> REJECT
@@ -158,7 +163,7 @@ object MihomoConfigBuilder {
                 putJsonArray("nameserver") {
                     val remote = RemoteDns.nameserver(options.dnsRemote)
                         ?: requireNotNull(RemoteDns.nameserver(NetworkOptions.DEFAULT.dnsRemote))
-                    add(active?.let { "$remote#${it.tag}" } ?: remote)
+                    add(mainTag?.let { "$remote#$it" } ?: remote)
                 }
                 putJsonArray("direct-nameserver") { add(directNameserver) }
                 putJsonObject("nameserver-policy") { put(LOCAL_DOMAINS.joinToString(","), directNameserver) }
@@ -202,6 +207,20 @@ object MihomoConfigBuilder {
             putJsonArray("proxies") {
                 proxies.mapNotNull { MihomoProxy.of(it, options.preferredFingerprint) }.forEach { add(it) }
                 add(byeDpiProxy(byeDpiPort))
+            }
+            balancer?.let { group ->
+                putJsonArray("proxy-groups") {
+                    add(buildJsonObject {
+                        put("name", group.tag)
+                        put("type", "load-balance")
+                        put("strategy", "consistent-hashing")
+                        putJsonArray("proxies") { group.members.forEach { add(it) } }
+                        put("url", ProbeUrls.VPN)
+                        put("interval", BALANCER_CHECK_INTERVAL_S)
+                        put("timeout", ServerProbePolicy.TIMEOUT.inWholeMilliseconds)
+                        put("lazy", false)
+                    })
+                }
             }
             val lists = rules.mapNotNull(RuleLists::url).distinct()
                 .flatMap { url -> engine.ruleLists[url].orEmpty().map { url to it } }

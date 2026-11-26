@@ -264,6 +264,14 @@ class ProfileViewModel(
         viewModelScope.launch(Dispatchers.IO) { profileRepository.select(profile) }
     }
 
+    fun selectGroup(groupId: Long) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.selectGroup(groupId) }
+    }
+
+    fun selectWholeGroup(groupId: Long) {
+        viewModelScope.launch(Dispatchers.IO) { profileRepository.selectWholeGroup(groupId) }
+    }
+
     fun setHidden(ids: Collection<Long>, hidden: Boolean) {
         viewModelScope.launch(Dispatchers.IO) { profileRepository.setHidden(ids, hidden) }
     }

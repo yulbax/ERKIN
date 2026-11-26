@@ -256,3 +256,54 @@ func TestTheRuleOfAConnectionIsLearnedWhenItOpens(t *testing.T) {
 		t.Fatalf("expected no rule when the first matching rule leads elsewhere, got %+v", rows["site.example"])
 	}
 }
+
+type renamedAdapter struct {
+	C.ProxyAdapter
+	name string
+}
+
+func (a renamedAdapter) Name() string { return a.name }
+
+type balancingProxy struct {
+	C.Proxy
+}
+
+func (b balancingProxy) Name() string { return "g9" }
+
+func (b balancingProxy) DialContext(ctx context.Context, metadata *C.Metadata) (C.Conn, error) {
+	conn, err := b.Proxy.DialContext(ctx, metadata)
+	if err == nil {
+		conn.AppendToChains(renamedAdapter{b.Proxy, "g9"})
+	}
+	return conn, err
+}
+
+func TestAConnectionThroughAGroupIsCountedUnderTheServerThatCarriedIt(t *testing.T) {
+	server, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+	go func() {
+		conn, acceptErr := server.Accept()
+		if acceptErr == nil {
+			_ = conn.Close()
+		}
+	}()
+	saved := traffic
+	traffic = newTrafficLedger(10)
+	defer func() { traffic = saved }()
+
+	port := server.Addr().(*net.TCPAddr).Port
+	metadata := &C.Metadata{NetWork: C.TCP, Type: C.TUN, DstIP: netip.MustParseAddr("127.0.0.1"), DstPort: uint16(port)}
+	conn, err := countingProxy{balancingProxy{adapter.NewProxy(outbound.NewDirect())}}.DialContext(context.Background(), metadata)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = conn.Close()
+
+	rows := traffic.snapshot(time.Now()).Rows
+	if len(rows) != 1 || rows[0].Route != "DIRECT" {
+		t.Fatalf("expected the connection under the server that carried it, got %+v", rows)
+	}
+}

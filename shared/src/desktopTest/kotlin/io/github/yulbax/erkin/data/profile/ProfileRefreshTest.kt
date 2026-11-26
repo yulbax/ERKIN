@@ -10,6 +10,7 @@ import io.github.yulbax.erkin.proxy.ClashRulesReader
 import io.github.yulbax.erkin.proxy.LinkParser
 import io.github.yulbax.erkin.proxy.ProxyProtocol
 import io.github.yulbax.erkin.util.AppLog
+import io.github.yulbax.erkin.vpn.WholeGroup
 import io.github.yulbax.erkin.vpn.core.RuleLists
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
 import java.util.Base64
@@ -517,6 +518,55 @@ class ProfileRefreshTest {
         repository.add("vless://id@other.example:443?security=tls#Other")
         repository.select(database.profileDao().getAll().first { it.name == "Other" })
         assertNull(store.load().subscriptionRules)
+    }
+
+    @Test
+    fun aWholeGroupStaysPickedUntilOneOfItsServersIsPicked() = runBlocking {
+        val store = RoomVpnSessionStore(database, repository, DueSubscriptionRefresher(repository, log), ConnectionType.BYPASS)
+        subscription.links = listOf(
+            "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        )
+        repository.add(SUBSCRIPTION_URL)
+        repository.add("vless://id@other.example:443?security=tls#Other")
+        val group = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL))
+        val (_, germany, other) = database.profileDao().getAll()
+
+        repository.select(other)
+        repository.selectWholeGroup(group.id)
+        assertEquals(WholeGroup(group.id, group.displayName), store.load().wholeGroup)
+        assertEquals(group.id, store.load().selected?.groupId)
+
+        repository.select(other)
+        assertNull(store.load().wholeGroup)
+        repository.selectGroup(group.id)
+        assertEquals(WholeGroup(group.id, group.displayName), store.load().wholeGroup)
+
+        repository.select(germany)
+        assertNull(store.load().wholeGroup)
+        assertEquals(germany.id, store.load().selected?.id)
+    }
+
+    @Test
+    fun aWholeGroupWithOneVisibleServerRunsThatServer() = runBlocking {
+        val store = RoomVpnSessionStore(database, repository, DueSubscriptionRefresher(repository, log), ConnectionType.BYPASS)
+        subscription.links = listOf(
+            "vless://$UUID@a.example:443?security=tls&sni=a.example#Netherlands",
+            "vless://$UUID@b.example:443?security=tls&sni=b.example#Germany"
+        )
+        repository.add(SUBSCRIPTION_URL)
+        val group = requireNotNull(database.serverGroupDao().find(SUBSCRIPTION_URL))
+        val (netherlands, germany) = database.profileDao().getAll()
+        repository.select(netherlands)
+        repository.selectWholeGroup(group.id)
+
+        repository.setHidden(listOf(germany.id), true)
+        val tree = ServerTree(database.profileDao().getAll(), database.serverGroupDao().getAll().associateBy { it.id })
+
+        assertNull(store.load().wholeGroup)
+        assertNull(tree.wholeGroupOf(store.load().selected))
+        repository.setHidden(listOf(germany.id), false)
+        assertEquals(WholeGroup(group.id, group.displayName), store.load().wholeGroup)
     }
 
     @Test

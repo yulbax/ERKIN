@@ -5,6 +5,7 @@ import io.github.yulbax.erkin.util.AppLog
 import io.github.yulbax.erkin.vpn.core.ByeDpiArgs
 import io.github.yulbax.erkin.vpn.core.ByeDpiProcess
 import io.github.yulbax.erkin.vpn.core.ByeDpiQualityCheck
+import io.github.yulbax.erkin.vpn.core.GroupHealth
 import io.github.yulbax.erkin.vpn.core.VpnEngine
 import io.github.yulbax.erkin.vpn.core.freeLoopbackPort
 import kotlinx.coroutines.CancellationException
@@ -154,7 +155,7 @@ class VpnSession(
     }
 
     fun serverFailing() {
-        if (!isRunning || failoverJob?.isActive == true) return
+        if (!isRunning || failoverJob?.isActive == true || appliedConfig?.engineConfig?.balancer != null) return
         log.i(TAG, "the server does not answer; looking for another server of its group")
         failoverJob = scope.launch {
             try {
@@ -168,9 +169,10 @@ class VpnSession(
     }
 
     private fun switchServer() {
+        val wholeGroup = appliedConfig?.engineConfig?.balancer != null
         failoverJob = scope.launch {
             try {
-                failover.refreshAndReplace()
+                if (wholeGroup) failover.refreshSubscription() else failover.refreshAndReplace()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
@@ -242,6 +244,11 @@ class VpnSession(
     fun onThroughput(uplinkBytesPerSec: Long, downlinkBytesPerSec: Long) {
         if (!isRunning) return
         stateRepository.updateStats { it.copy(uplink = uplinkBytesPerSec, downlink = downlinkBytesPerSec) }
+    }
+
+    fun onGroupHealth(health: GroupHealth?) {
+        if (!isRunning) return
+        stateRepository.updateStats { it.copy(groupHealth = health) }
     }
 
     fun markStopping() {
@@ -346,6 +353,7 @@ class VpnSession(
                 engine = engine,
                 byeDpiPort = byeDpiProbePort.takeIf { byeDpi.isRunning },
                 vpnActive = config.vpnActive,
+                activeTag = config.engineConfig.activeProxyTag,
                 activeServer = ProxyTag.profileId(config.engineConfig.activeProxyTag),
                 boundServers = config.engineConfig.serverTags.keys,
                 onVpnFailing = { requestWork(Command.ServerFailing) },

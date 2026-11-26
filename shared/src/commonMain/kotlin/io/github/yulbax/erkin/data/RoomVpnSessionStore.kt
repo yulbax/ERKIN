@@ -5,8 +5,10 @@ import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
 import io.github.yulbax.erkin.data.profile.ProfileRepository
 import io.github.yulbax.erkin.data.profile.ServerGroupEntity
+import io.github.yulbax.erkin.data.profile.runsWhole
 import io.github.yulbax.erkin.vpn.SessionInputs
 import io.github.yulbax.erkin.vpn.VpnSessionStore
+import io.github.yulbax.erkin.vpn.WholeGroup
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -25,14 +27,17 @@ class RoomVpnSessionStore(
         val profileDao = database.profileDao()
         val settings = database.settingsDao().getSettings() ?: SettingsEntity()
         val selected = profileDao.getSelected()
+        val profiles = profileDao.getAll()
+        val group = selected?.groupId?.let { database.serverGroupDao().get(it) }
         return SessionInputs(
             selected = selected,
-            profiles = profileDao.getAll(),
+            profiles = profiles,
             settings = settings,
             apps = database.appDao().getAllAppsSnapshot(),
             rules = database.routingRuleDao().getAll().mapNotNull { it.toRule() },
             newAppsChannel = settings.newAppsConnectionType(platformNewAppsChannel),
-            subscriptionRules = selected?.groupId?.let { database.serverGroupDao().get(it) }?.appliedRules
+            subscriptionRules = group?.appliedRules,
+            wholeGroup = group?.takeIf { it.runsWhole(profiles) }?.let { WholeGroup(it.id, it.displayName) }
         )
     }
 
@@ -45,7 +50,7 @@ class RoomVpnSessionStore(
                 database.routingRuleDao().observeAll(),
                 database.settingsDao().observeSettings().map { it?.newAppsConnectionType }
             ) { profiles, selected, apps, rules, newApps -> listOf(profiles, selected, apps, rules, newApps) },
-            database.serverGroupDao().observeAll().map { groups -> groups.map { Triple(it.id, it.rulesEnabled, it.rules) } }
+            database.serverGroupDao().observeAll().map { groups -> groups.map { listOf(it.id, it.rulesEnabled, it.rules, it.wholeGroup) } }
         ) { routing, subscriptionRules -> listOf(routing, subscriptionRules) }
             .distinctUntilChanged()
             .map { }

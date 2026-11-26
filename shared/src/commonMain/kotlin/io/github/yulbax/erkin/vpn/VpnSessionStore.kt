@@ -17,8 +17,11 @@ data class SessionInputs(
     val apps: List<App>,
     val rules: List<RoutingRule> = emptyList(),
     val newAppsChannel: ConnectionType = ConnectionType.BYPASS,
-    val subscriptionRules: AppliedSubscriptionRules? = null
+    val subscriptionRules: AppliedSubscriptionRules? = null,
+    val wholeGroup: WholeGroup? = null
 )
+
+data class WholeGroup(val id: Long, val name: String)
 
 interface VpnSessionStore {
     suspend fun refreshProfiles()

@@ -16,6 +16,7 @@ data class HealthParams(
     val engine: VpnEngine,
     val byeDpiPort: Int?,
     val vpnActive: Boolean,
+    val activeTag: String,
     val activeServer: Long?,
     val boundServers: Set<Long>,
     val onVpnFailing: () -> Unit,

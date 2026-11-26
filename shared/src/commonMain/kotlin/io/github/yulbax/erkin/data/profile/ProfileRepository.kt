@@ -237,7 +237,27 @@ class ProfileRepository(
     suspend fun applySort() = reshape {}
 
     suspend fun select(profile: ProfileEntity) {
-        change { profileDao.selectExclusive(profile.id) }
+        change {
+            profileDao.selectExclusive(profile.id)
+            profile.groupId?.let { database.serverGroupDao().setWholeGroup(it, false) }
+        }
+    }
+
+    suspend fun selectGroup(groupId: Long) {
+        change { selectShownServer(groupId) }
+    }
+
+    suspend fun selectWholeGroup(groupId: Long) {
+        change {
+            if (selectShownServer(groupId)) database.serverGroupDao().setWholeGroup(groupId, true)
+        }
+    }
+
+    private suspend fun selectShownServer(groupId: Long): Boolean {
+        val group = database.serverGroupDao().get(groupId) ?: return false
+        val shown = profileDao.getAll().filter { it.groupId == groupId }.offered().ifEmpty { return false }
+        profileDao.selectExclusive(shown.shownServer(group.currentId).id)
+        return true
     }
 
     suspend fun saveChain(existing: ProfileEntity?, name: String, chain: ProxyChain): Boolean {

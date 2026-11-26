@@ -22,6 +22,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ConfigBackupRepositoryTest {
@@ -250,6 +251,26 @@ class ConfigBackupRepositoryTest {
 
             target.apply(exported.copy(profiles = exported.profiles?.map { it.copy(remembered = it.name == "Riga") }), only)
             assertEquals(restored.getValue("Oslo").id, fresh.serverGroupDao().getAll().single().currentId)
+        } finally {
+            fresh.close()
+        }
+    }
+
+    @Test
+    fun aGroupPickedWholeIsPickedWholeAfterARestore() = runBlocking {
+        val profiles = ProfileRepository(database, database.profileDao(), NoSubscriptions, SilentLog)
+        val links = listOf("Riga", "Oslo").joinToString("\n") { "vless://id@${it.lowercase()}.example:443?security=tls#$it" }
+        profiles.add(links, null, AddTarget.Main("Group"))
+        profiles.selectWholeGroup(database.serverGroupDao().getAll().single().id)
+        val only = BackupSelection(settings = false, apps = false, profiles = true, rules = false)
+        val exported = requireNotNull(BackupCodec.decode(repository.export(only)))
+
+        val fresh = AppDatabase.build(Room.inMemoryDatabaseBuilder<AppDatabase>(), appsCanBypass = true)
+        try {
+            val target = ConfigBackupRepository(fresh, ProfileRepository(fresh, fresh.profileDao(), NoSubscriptions, SilentLog), ByeDpiSiteLists(fresh), appsCanBypass = true)
+            target.apply(exported, only)
+
+            assertTrue(fresh.serverGroupDao().getAll().single().wholeGroup)
         } finally {
             fresh.close()
         }

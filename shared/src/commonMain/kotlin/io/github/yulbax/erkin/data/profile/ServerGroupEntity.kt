@@ -22,6 +22,7 @@ data class ServerGroupEntity(
     val updateHours: Int? = null,
     val rules: String? = null,
     val rulesEnabled: Boolean = false,
+    val wholeGroup: Boolean = false,
     val updatedAt: Long = 0,
     val currentId: Long? = null
 ) {

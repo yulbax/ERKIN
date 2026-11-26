@@ -75,12 +75,13 @@ internal fun ServerRow(
     chainLabel: String? = null,
     groupIcon: RowIcon? = null,
     groupName: String? = null,
+    note: String? = null,
     mode: RowMode = RowMode.Normal
 ) {
     ServerRowLayout(
         title = serverName(profile.name),
         subtitle = listOfNotNull(groupName, chainLabel).joinToString(" · "),
-        details = profile.type.takeIf { chainLabel == null },
+        details = listOfNotNull(profile.type.takeIf { chainLabel == null }, note).joinToString(" · ").ifEmpty { null },
         isSelected = isSelected,
         mode = mode,
         result = result,
