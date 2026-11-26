@@ -10,3 +10,5 @@
 Bağlantı kartı yalnızca kullanılan tüm kanallar yanıt verdiğinde Bağlandı der. Yanıt yok, VPN sunucusunun ya da ByeDPI’ın yanıt vermediği anlamına gelir; hangisi olduğu alttaki satırda yazar. ByeDPI’a dokunmak sayfasını açar.
 
 VPN sunucusu yanıt vermeyi keserse ERKIN üç kez yeniden bağlanır. Bu işe yaramazsa aboneliği yeniler ve en hızlı sunucusuna geçer.
+
+Bir aboneliğin sayfası kartıyla açılır: trafik ve bitiş tarihi; karta dokununca son güncelleme, sağlayıcının duyurusu ve Destek ile Hesap düğmeleri. ERKIN aboneliği sağlayıcının istediği sıklıkta ya da günde bir kez yeniler. Bir Clash aboneliği kendi yönlendirme kurallarını da getirebilir: kartta Uygula’yı açın; ana sunucu o abonelikten geldiği sürece sizin kurallarınızdan sonra çalışırlar.

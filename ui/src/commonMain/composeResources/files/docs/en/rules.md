@@ -19,4 +19,5 @@ The download button in the Rules top bar opens Rule sets: ad and telemetry lists
 Connections shows where apps go while ERKIN is connected: the traffic of the session per channel and the apps with their addresses. Only apps that go through ERKIN appear, so every app except Bypass ones.
 
 - An app shows the addresses it opened, how much traffic went and by which channel or rule.
+- A site has a strip in its channel's colour. A site routed by a rule shows the rule as a chip, a rule list by its name. A site with several addresses opens to list them, and an address names its own rule when they differ.
 - The ⋮ menu of an address creates a rule for that address or the whole site, for this app only. The Rules tab lists the app's rules.

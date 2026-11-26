@@ -19,4 +19,5 @@ Kurallar başlık çubuğundaki indirme düğmesi Kural setleri’ni açar: rekl
 Bağlantılar, ERKIN bağlıyken uygulamaların nereye gittiğini gösterir: oturumun kanal başına trafiği ve adresleriyle birlikte uygulamalar. Yalnızca ERKIN üzerinden giden uygulamalar, yani Bypass’takiler dışındaki tüm uygulamalar görünür.
 
 - Bir uygulamada açtığı adresler, ne kadar trafik gittiği ve hangi kanal ya da kuralla gittiği görünür.
+- Bir sitenin solunda kanalının renginde bir şerit vardır. Bir kuralla yönlendirilen site kuralı bir etikette gösterir, kural listesi adıyla görünür. Birden çok adresi olan bir site açılıp onları listeler; kurallar farklıysa her adres kendi kuralını gösterir.
 - Bir adresin ⋮ menüsü yalnızca bu uygulama için o adres ya da tüm site için kural oluşturur. Kurallar sekmesi uygulamanın kurallarını listeler.

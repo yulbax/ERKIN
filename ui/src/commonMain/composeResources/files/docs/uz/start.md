@@ -10,3 +10,5 @@
 Ulanish kartasi «Ulangan» deb faqat ishlatilayotgan barcha kanallar javob berganda koʻrsatadi. «Javob yoʻq» VPN-server yoki ByeDPI javob bermayotganini bildiradi: qaysi biri ekanligi yozuvda aytiladi. ByeDPI ustiga bosilsa, uning boʻlimi ochiladi.
 
 VPN-server javob bermasa, ERKIN uch marta qayta ulanadi. Bu yordam bermasa, u obunani yangilaydi va undagi eng tez serverga oʻtadi.
+
+Obuna oynasi uning kartasi bilan boshlanadi: trafik va amal qilish muddati, bosilganda esa oxirgi yangilanish vaqti, provayder eʼloni hamda «Yordam» va «Kabinet» tugmalari. ERKIN obunani provayder soʻraganicha tez-tez yoki kuniga bir marta yangilaydi. Clash obunasi oʻz marshrutlash qoidalarini ham olib kelishi mumkin: kartada «Qo‘llash»ni yoqing, shunda ular sizning qoidalaringizdan keyin, asosiy server shu obunadan olingan paytda ishlaydi.

@@ -19,4 +19,5 @@ Qoida mos kelgan ulanishlarni ilova kanalidan qatʼi nazar Direct, ByeDPI, VPN y
 «Ulanishlar» boʻlimi ERKIN ulangan paytda ilovalar qayerga borayotganini koʻrsatadi: seans davomidagi trafik kanallar boʻyicha va manzillari bilan ilovalar roʻyxati. Faqat ERKIN orqali boradigan ilovalar, yaʼni Bypass’dagilardan tashqari hammasi koʻrinadi.
 
 - Ilovada u qaysi manzillarni ochgani, qancha trafik ketgani va qaysi kanal yoki qoida boʻyicha ketgani koʻrinadi.
+- Saytning chap tomonida uning kanali rangidagi chiziq bor. Sayt qoida boʻyicha yoʻnaltirilgan boʻlsa, yonida shu qoida yozilgan belgi turadi, qoidalar toʻplami esa nomi bilan koʻrinadi. Bir nechta manzilli sayt ochilib, ularning roʻyxatini koʻrsatadi; qoidalar har xil boʻlsa, har bir manzil oʻz qoidasini koʻrsatadi.
 - Manzil yonidagi ⋮ menyusi shu manzil yoki butun sayt uchun faqat shu ilovaga qoida yaratadi. «Qoidalar» varagʻida ilova qoidalari.
