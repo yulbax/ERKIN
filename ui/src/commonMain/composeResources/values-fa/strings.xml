@@ -398,6 +398,8 @@
     <string name="connections_tab_rules">قوانین · %1$d</string>
     <string name="connections_by_rule">قانون</string>
     <string name="connections_by_app_rule">قانون برنامه</string>
+    <string name="connections_subscription_rule_named">اشتراک: %1$s</string>
+    <string name="connections_collapse">بستن</string>
     <string name="connections_unknown_app">برنامهٔ ناشناخته</string>
     <string name="connections_channel">کانال: %1$s</string>
     <string name="connections_rule_menu">قانون برای این نشانی</string>

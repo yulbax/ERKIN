@@ -339,10 +339,13 @@ private fun RuleRow(
 @Composable
 private fun RoutingRuleEntity.displayValue(listState: RuleListState?): String {
     val match = RuleMatch.fromWire(type) ?: return value
-    return when (match.ui.input) {
-        RuleInput.Text -> match.display(value)
-        RuleInput.RuleSet -> ruleSetName(value, listState)
-    }
+    return ruleValueName(match, value, listState)
+}
+
+@Composable
+internal fun ruleValueName(match: RuleMatch, value: String, listState: RuleListState?): String = when (match.ui.input) {
+    RuleInput.Text -> match.display(value)
+    RuleInput.RuleSet -> ruleSetName(value, listState)
 }
 
 private const val HINT_KEY = "hint"

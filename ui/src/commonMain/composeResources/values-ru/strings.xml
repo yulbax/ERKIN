@@ -418,6 +418,8 @@
     </plurals>
     <string name="connections_by_rule">правило</string>
     <string name="connections_by_app_rule">правило приложения</string>
+    <string name="connections_subscription_rule_named">подписка: %1$s</string>
+    <string name="connections_collapse">свернуть</string>
     <string name="connections_unknown_app">Неизвестное приложение</string>
     <string name="connections_channel">Канал: %1$s</string>
     <string name="connections_rule_menu">Правило для адреса</string>

@@ -398,6 +398,8 @@
     <string name="connections_tab_rules">Kurallar · %1$d</string>
     <string name="connections_by_rule">kural</string>
     <string name="connections_by_app_rule">uygulama kuralı</string>
+    <string name="connections_subscription_rule_named">abonelik: %1$s</string>
+    <string name="connections_collapse">daralt</string>
     <string name="connections_unknown_app">Bilinmeyen uygulama</string>
     <string name="connections_channel">Kanal: %1$s</string>
     <string name="connections_rule_menu">Bu adres için kural</string>

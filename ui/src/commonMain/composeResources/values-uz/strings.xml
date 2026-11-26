@@ -398,6 +398,8 @@
     <string name="connections_tab_rules">Qoidalar · %1$d</string>
     <string name="connections_by_rule">qoida</string>
     <string name="connections_by_app_rule">ilova qoidasi</string>
+    <string name="connections_subscription_rule_named">obuna: %1$s</string>
+    <string name="connections_collapse">yigʻish</string>
     <string name="connections_unknown_app">Nomaʼlum ilova</string>
     <string name="connections_channel">Kanal: %1$s</string>
     <string name="connections_rule_menu">Manzil uchun qoida</string>

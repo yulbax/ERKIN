@@ -1,6 +1,5 @@
 package io.github.yulbax.erkin.data
 
-import io.github.yulbax.erkin.data.profile.AppliedSubscriptionRules
 import io.github.yulbax.erkin.data.profile.DueSubscriptionRefresher
 import io.github.yulbax.erkin.data.profile.ProfileEntity
 import io.github.yulbax.erkin.data.profile.ProfileOperationResult
@@ -33,12 +32,9 @@ class RoomVpnSessionStore(
             apps = database.appDao().getAllAppsSnapshot(),
             rules = database.routingRuleDao().getAll().mapNotNull { it.toRule() },
             newAppsChannel = settings.newAppsConnectionType(platformNewAppsChannel),
-            subscriptionRules = selected?.groupId?.let { database.serverGroupDao().get(it) }?.appliedRules()
+            subscriptionRules = selected?.groupId?.let { database.serverGroupDao().get(it) }?.appliedRules
         )
     }
-
-    private fun ServerGroupEntity.appliedRules(): AppliedSubscriptionRules? =
-        subscriptionRules?.takeIf { rulesEnabled && it.rules.isNotEmpty() }?.let { AppliedSubscriptionRules(id, it) }
 
     override fun routingChanges(): Flow<Unit> =
         combine(

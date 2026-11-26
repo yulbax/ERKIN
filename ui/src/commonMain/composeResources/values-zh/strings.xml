@@ -391,6 +391,8 @@
     <string name="connections_tab_rules">规则 · %1$d</string>
     <string name="connections_by_rule">规则</string>
     <string name="connections_by_app_rule">应用规则</string>
+    <string name="connections_subscription_rule_named">订阅：%1$s</string>
+    <string name="connections_collapse">收起</string>
     <string name="connections_unknown_app">未知应用</string>
     <string name="connections_channel">通道：%1$s</string>
     <string name="connections_rule_menu">为此地址创建规则</string>

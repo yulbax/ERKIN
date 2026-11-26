@@ -412,6 +412,8 @@
     <string name="connections_tab_rules">Правила · %1$d</string>
     <string name="connections_by_rule">правило</string>
     <string name="connections_by_app_rule">правило застосунку</string>
+    <string name="connections_subscription_rule_named">підписка: %1$s</string>
+    <string name="connections_collapse">згорнути</string>
     <string name="connections_unknown_app">Невідомий застосунок</string>
     <string name="connections_channel">Канал: %1$s</string>
     <string name="connections_rule_menu">Правило для адреси</string>

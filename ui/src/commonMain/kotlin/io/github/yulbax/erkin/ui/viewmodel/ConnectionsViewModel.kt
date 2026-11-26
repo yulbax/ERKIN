@@ -12,6 +12,7 @@ import io.github.yulbax.erkin.vpn.ProbeResults
 import io.github.yulbax.erkin.vpn.VpnStateRepository
 import io.github.yulbax.erkin.vpn.connections.AppActivity
 import io.github.yulbax.erkin.vpn.connections.ConnectionMonitor
+import io.github.yulbax.erkin.vpn.connections.RuleIndex
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -54,6 +55,10 @@ class ConnectionsViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), emptyList())
 
     val serverChoices: StateFlow<ServerChoices> = serverChoicesOf(profileRepository, vpnStateRepository, probeResults)
+
+    val ruleIndex: StateFlow<RuleIndex> = combine(rules.rules, profileRepository.groups) { own, groups ->
+        RuleIndex(own.mapNotNull { it.toRule() }, groups.mapNotNull { it.appliedRules })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000.milliseconds), RuleIndex.EMPTY)
 
     fun rulesOf(app: String): Flow<List<RoutingRuleEntity>> = rules.rules.map { list -> list.filter { it.app == app } }
 

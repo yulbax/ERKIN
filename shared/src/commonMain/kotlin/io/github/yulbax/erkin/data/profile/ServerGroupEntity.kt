@@ -35,6 +35,9 @@ data class ServerGroupEntity(
 
     val subscriptionRules: SubscriptionRules? get() = SubscriptionRules.decode(rules)
 
+    val appliedRules: AppliedSubscriptionRules?
+        get() = subscriptionRules?.takeIf { rulesEnabled && it.rules.isNotEmpty() }?.let { AppliedSubscriptionRules(id, it) }
+
     val displayName: String get() = name ?: title ?: url?.let(::hostOf).orEmpty()
 
     val hidesServers: Boolean get() = kind is GroupKind.Subscription

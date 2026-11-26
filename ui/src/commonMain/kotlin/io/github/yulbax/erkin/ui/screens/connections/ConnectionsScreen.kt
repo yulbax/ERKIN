@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -49,6 +50,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import io.github.yulbax.erkin.vpn.connections.ServicePurpose
+import io.github.yulbax.erkin.vpn.connections.AddressActivity
+import io.github.yulbax.erkin.vpn.connections.MatchedRule
+import io.github.yulbax.erkin.rulelist.RuleListState
+import io.github.yulbax.erkin.ui.screens.rules.ruleValueName
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
@@ -138,6 +143,7 @@ fun AppConnections(
     val choices by rulesViewModel.serverChoices.collectAsStateWithLifecycle()
     val ruleSets by rulesViewModel.listStates.collectAsStateWithLifecycle()
     val knownApps by rulesViewModel.apps.collectAsStateWithLifecycle()
+    val ruleIndex by viewModel.ruleIndex.collectAsStateWithLifecycle()
 
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
         item { AppHeader(app, servers) }
@@ -171,7 +177,8 @@ fun AppConnections(
                     expanded = host.key in expanded,
                     onToggle = { expanded = if (host.key in expanded) expanded - host.key else expanded + host.key },
                     onRule = { scope: RuleScope -> ruleFor = host to scope }.takeUnless { app.isService },
-                    onCopy = copy
+                    onCopy = copy,
+                    ruleName = { address -> matchedRuleName(address.rule?.let { ruleIndex.match(it, app.ruleApp) }, ruleSets) }
                 )
             }
         } else if (rules.isEmpty()) {
@@ -348,49 +355,66 @@ private fun HostRow(
     expanded: Boolean,
     onToggle: () -> Unit,
     onRule: ((RuleScope) -> Unit)?,
-    onCopy: (String) -> Unit
+    onCopy: (String) -> Unit,
+    ruleName: @Composable (AddressActivity) -> String?
 ) {
     val single = host.single
     val many = host.addresses.size > 1
+    val color = channelColor(host.route.channel)
+    val ruleNames = host.addresses.map { ruleName(it) }
+    val sharedRule = ruleNames.distinct().singleOrNull()
     Column {
         Row(
-            Modifier.fillMaxWidth().clickable(enabled = many, onClick = onToggle).padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(enabled = many, onClick = onToggle)
+                .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(Modifier.size(10.dp).clip(CircleShape).background(channelColor(host.route.channel)))
-            Spacer(Modifier.width(14.dp))
+            Box(Modifier.width(3.dp).fillMaxHeight().clip(RoundedCornerShape(2.dp)).background(color))
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(host.host, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 val origin = when (host.origin) {
                     RouteOrigin.APP_CHANNEL -> null
                     RouteOrigin.RULE -> stringResource(Res.string.connections_by_rule)
                     RouteOrigin.APP_RULE -> stringResource(Res.string.connections_by_app_rule)
-                }
+                }.takeIf { sharedRule == null }
                 val purpose = when (host.purpose) {
                     null, ServicePurpose.CORE -> null
                     ServicePurpose.REQUEST -> stringResource(Res.string.connections_purpose_request)
                 }
-                val count = if (many) pluralStringResource(Res.plurals.connections_addresses, host.addresses.size, host.addresses.size) else null
-                Text(
-                    listOfNotNull(purpose, routeLabel(host.route, servers), origin, count).joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        listOfNotNull(purpose, routeLabel(host.route, servers), origin).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    sharedRule?.let {
+                        Spacer(Modifier.width(6.dp))
+                        RuleChip(it, color)
+                    }
+                }
             }
-            Text(
-                if (host.blocked) pluralStringResource(Res.plurals.connections_attempts, host.attempts, host.attempts) else "↓ ${formatBytes(host.down)}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            if (many) {
-                Icon(
-                    if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 4.dp).size(20.dp)
-                )
+            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 8.dp)) {
+                Text(hostAmount(host.blocked, host.attempts, host.down), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (many) {
+                    Row(Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            if (expanded) stringResource(Res.string.connections_collapse)
+                            else pluralStringResource(Res.plurals.connections_addresses, host.addresses.size, host.addresses.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Icon(
+                            if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
             HostMenu(
                 address = single?.name,
@@ -400,25 +424,53 @@ private fun HostRow(
             )
         }
         if (many && expanded) {
-            host.addresses.forEach { address ->
+            host.addresses.forEachIndexed { index, address ->
                 Row(
-                    Modifier.fillMaxWidth().padding(start = 40.dp, end = 4.dp, top = 2.dp, bottom = 2.dp),
+                    Modifier.fillMaxWidth().padding(start = 31.dp, end = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        address.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (!host.blocked) {
-                        Text("↓ ${formatBytes(address.down)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Column(Modifier.weight(1f)) {
+                        Text(address.name, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        ruleNames[index]?.takeIf { sharedRule == null }?.let { RuleChip(it, color) }
                     }
+                    Text(
+                        hostAmount(host.blocked, address.connections, address.down),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
                     HostMenu(address = address.name, site = null, onRule = onRule, onCopy = onCopy)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun hostAmount(blocked: Boolean, attempts: Int, down: Long): String =
+    if (blocked) pluralStringResource(Res.plurals.connections_attempts, attempts, attempts) else "↓ ${formatBytes(down)}"
+
+@Composable
+private fun RuleChip(text: String, color: Color) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(color.copy(alpha = RULE_CHIP_ALPHA)).padding(horizontal = 6.dp, vertical = 1.dp)
+    )
+}
+
+private const val RULE_CHIP_ALPHA = 0.16f
+
+@Composable
+private fun matchedRuleName(rule: MatchedRule?, ruleSets: Map<String, RuleListState>): String? = when (rule) {
+    null -> null
+    is MatchedRule.Own -> ruleValueName(rule.rule.match, rule.rule.value, ruleSets[rule.rule.value])
+    is MatchedRule.Subscription -> {
+        val (type, value) = rule.rule.display
+        stringResource(Res.string.connections_subscription_rule_named, "$type $value")
     }
 }
 

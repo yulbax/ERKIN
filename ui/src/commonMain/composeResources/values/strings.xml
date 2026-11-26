@@ -426,6 +426,8 @@
     </plurals>
     <string name="connections_by_rule">rule</string>
     <string name="connections_by_app_rule">app rule</string>
+    <string name="connections_subscription_rule_named">subscription: %1$s</string>
+    <string name="connections_collapse">collapse</string>
     <string name="connections_unknown_app">Unknown app</string>
     <string name="connections_channel">Channel: %1$s</string>
     <string name="connections_rule_menu">Rule for this address</string>

@@ -8,7 +8,8 @@ data class AddressActivity(
     val connections: Int,
     val up: Long,
     val down: Long,
-    val lastSeen: Long
+    val lastSeen: Long,
+    val rule: CoreRule? = null
 )
 
 data class HostActivity(
@@ -67,7 +68,8 @@ object ConnectionLedger {
                                 connections = rows.sumOf { it.connections }.toInt(),
                                 up = rows.sumOf { it.up },
                                 down = rows.sumOf { it.down },
-                                lastSeen = rows.maxOf { it.lastSeen }
+                                lastSeen = rows.maxOf { it.lastSeen },
+                                rule = if (key.origin == RouteOrigin.APP_CHANNEL) null else ruleOf(rows)
                             )
                         }.sortedWith(compareByDescending<AddressActivity> { it.active }.thenByDescending { it.up + it.down }.thenByDescending { it.connections })
                     )
@@ -79,6 +81,9 @@ object ConnectionLedger {
                 )
             }
             .sortedWith(compareBy<AppActivity> { it.isService }.thenByDescending { it.up + it.down }.thenByDescending { it.attempts })
+
+    private fun ruleOf(rows: List<TrafficRow>): CoreRule? =
+        rows.filter { it.rule.isNotEmpty() }.maxByOrNull { it.lastSeen }?.let { CoreRule(it.rule, it.payload) }
 
     private fun appOf(row: TrafficRow): String =
         if (ServicePurpose.of(row.inbound, row.inName) != null) SERVICE_APP else row.process.ifEmpty { row.path }
