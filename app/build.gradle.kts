@@ -31,7 +31,7 @@ val buildHash = runCatching {
 }.getOrDefault("")
 
 val testing = providers.gradleProperty("erkin.testing").map(String::toBoolean).getOrElse(false)
-val baseVersionCode = 20600
+val baseVersionCode = 30000
 val updateAbis = listOf("universal", "armeabi-v7a", "arm64-v8a", "x86_64")
 val playVersionCodeSuffix = 90
 
