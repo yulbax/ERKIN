@@ -3,14 +3,11 @@ package io.github.yulbax.erkin.data.profile
 import io.github.yulbax.erkin.vpn.core.RuleListSource
 import io.github.yulbax.erkin.vpn.core.RuleSetFormat
 import io.github.yulbax.erkin.vpn.core.RuleSetKind
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 enum class SubscriptionTarget(val wire: String) {
     VPN("VPN"),
@@ -114,62 +111,46 @@ data class SubscriptionRules(
     fun isWaiting(rule: SubscriptionRule, waitingUrls: Set<String>): Boolean =
         rule.providers.any { name -> providers.firstOrNull { it.name == name }?.managed?.url in waitingUrls }
 
-    fun encode(): String = JsonObject(
-        mapOf(
-            RULES to JsonArray(rules.map { rule ->
-                JsonObject(
-                    mapOf(
-                        CONDITION to JsonPrimitive(rule.condition),
-                        OPTIONS to JsonArray(rule.options.map(::JsonPrimitive)),
-                        TARGET to JsonPrimitive(rule.target.wire)
-                    )
-                )
-            }),
-            PROVIDERS to JsonObject(providers.associate { it.name to it.definition }),
-            SKIPPED to JsonArray(skipped.map { item ->
-                JsonObject(mapOf(TEXT to JsonPrimitive(item.text), REASON to JsonPrimitive(item.reason.wire)))
-            })
+    fun encode(): String = storage.encodeToString(
+        StoredRules.serializer(),
+        StoredRules(
+            rules = rules.map { StoredRule(it.condition, it.options, it.target.wire) },
+            providers = providers.associate { it.name to it.definition },
+            skipped = skipped.map { StoredSkip(it.text, it.reason.wire) }
         )
-    ).toString()
+    )
 
     companion object {
-        private const val RULES = "rules"
-        private const val PROVIDERS = "providers"
-        private const val SKIPPED = "skipped"
-        private const val CONDITION = "condition"
-        private const val OPTIONS = "options"
-        private const val TARGET = "target"
-        private const val TEXT = "text"
-        private const val REASON = "reason"
+        private val storage = Json { ignoreUnknownKeys = true }
 
         fun providerName(groupId: Long, name: String): String = "sub$groupId-$name"
 
         fun decode(json: String?): SubscriptionRules? {
             if (json == null) return null
-            return runCatching {
-                val root = Json.parseToJsonElement(json).jsonObject
-                SubscriptionRules(
-                    rules = root.getValue(RULES).jsonArray.mapNotNull { element ->
-                        val item = element.jsonObject
-                        SubscriptionRule(
-                            condition = item.getValue(CONDITION).jsonPrimitive.content,
-                            options = item.getValue(OPTIONS).jsonArray.map { it.jsonPrimitive.content },
-                            target = SubscriptionTarget.fromWire(item.getValue(TARGET).jsonPrimitive.contentOrNull) ?: return@mapNotNull null
-                        )
-                    },
-                    providers = root.getValue(PROVIDERS).jsonObject.map { SubscriptionProvider(it.key, it.value.jsonObject) },
-                    skipped = root.getValue(SKIPPED).jsonArray.mapNotNull { element ->
-                        val item = element.jsonObject
-                        SkippedRule(
-                            text = item.getValue(TEXT).jsonPrimitive.content,
-                            reason = SkipReason.fromWire(item.getValue(REASON).jsonPrimitive.contentOrNull) ?: return@mapNotNull null
-                        )
-                    }
-                )
-            }.getOrNull()
+            val stored = runCatching { storage.decodeFromString(StoredRules.serializer(), json) }.getOrNull() ?: return null
+            return SubscriptionRules(
+                rules = stored.rules.mapNotNull { rule ->
+                    SubscriptionTarget.fromWire(rule.target)?.let { SubscriptionRule(rule.condition, rule.options, it) }
+                },
+                providers = stored.providers.map { (name, definition) -> SubscriptionProvider(name, definition) },
+                skipped = stored.skipped.mapNotNull { skip -> SkipReason.fromWire(skip.reason)?.let { SkippedRule(skip.text, it) } }
+            )
         }
     }
 }
+
+@Serializable
+private data class StoredRules(
+    val rules: List<StoredRule>,
+    val providers: Map<String, JsonObject>,
+    val skipped: List<StoredSkip>
+)
+
+@Serializable
+private data class StoredRule(val condition: String, val options: List<String>, val target: String)
+
+@Serializable
+private data class StoredSkip(val text: String, val reason: String)
 
 data class AppliedSubscriptionRules(val groupId: Long, val rules: SubscriptionRules) {
     fun available(isInstalled: (ManagedList) -> Boolean): AppliedSubscriptionRules = copy(rules = rules.available(isInstalled))

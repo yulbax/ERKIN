@@ -104,6 +104,22 @@ class SubscriptionRulesTest {
         assertEquals(listOf(SkippedRule("GEOIP,CN,DIRECT", SkipReason.GEODATA)), SubscriptionRules.decode(blob)?.skipped)
     }
 
+    @Test
+    fun theStoredFormatStaysTheSame() {
+        val rules = SubscriptionRules(
+            rules = listOf(SubscriptionRule("RULE-SET,ads", listOf("no-resolve"), SubscriptionTarget.BLOCK)),
+            providers = listOf(managedProvider("ads", "https://example.org/ads.mrs")),
+            skipped = listOf(SkippedRule("IP-ASN,13335,DIRECT", SkipReason.GEODATA))
+        )
+
+        assertEquals(
+            """{"rules":[{"condition":"RULE-SET,ads","options":["no-resolve"],"target":"BLOCK"}],""" +
+                """"providers":{"ads":{"type":"http","format":"mrs","behavior":"domain","url":"https://example.org/ads.mrs"}},""" +
+                """"skipped":[{"text":"IP-ASN,13335,DIRECT","reason":"GEODATA"}]}""",
+            rules.encode()
+        )
+    }
+
     private fun managedProvider(name: String, url: String) = SubscriptionProvider(
         name,
         JsonObject(mapOf("type" to JsonPrimitive("http"), "format" to JsonPrimitive("mrs"), "behavior" to JsonPrimitive("domain"), "url" to JsonPrimitive(url)))
