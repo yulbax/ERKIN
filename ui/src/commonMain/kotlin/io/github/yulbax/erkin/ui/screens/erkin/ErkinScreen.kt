@@ -588,7 +588,7 @@ private fun ChannelsRow(c: ErkinScreenContent, cardBelow: Boolean = false) {
         val cardModifier = Modifier.weight(1f).fillMaxHeight()
         ChannelStatusCard(
             type = ConnectionType.VPN,
-            active = c.connected,
+            active = c.stats.vpnActive,
             up = c.stats.vpnUp,
             hasApps = c.ui.hasVpnApps,
             noServers = c.servers.profiles.isEmpty(),

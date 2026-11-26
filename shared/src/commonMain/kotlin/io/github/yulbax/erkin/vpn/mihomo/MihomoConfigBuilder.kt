@@ -108,8 +108,7 @@ object MihomoConfigBuilder {
                 RuleTarget.BLOCK -> REJECT
             }
         }
-        val byeDpiProbePort = desktop?.byeDpiProbePort
-            ?.takeIf { byeDpiPackages.isNotEmpty() || engine.newApps == ConnectionType.BYEDPI }
+        val byeDpiProbePort = desktop?.byeDpiProbePort?.takeIf { engine.usesByeDpi }
         val defaultTarget = when (engine.newApps) {
             ConnectionType.VPN -> vpnTarget
             ConnectionType.BYEDPI -> BYEDPI_PROXY

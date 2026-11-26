@@ -23,6 +23,12 @@ data class EngineConfig(
     val subscriptionRules: AppliedSubscriptionRules? = null
 ) {
     val tunnelsEveryApp: Boolean get() = newApps != ConnectionType.BYPASS
+
+    val usesByeDpi: Boolean
+        get() = byeDpiPackages.isNotEmpty() ||
+            newApps == ConnectionType.BYEDPI ||
+            rules.any { it.target == RuleTarget.BYEDPI } ||
+            proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
 }
 
 data class EngineProxy(

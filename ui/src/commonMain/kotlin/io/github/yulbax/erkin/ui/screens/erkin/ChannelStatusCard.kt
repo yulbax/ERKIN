@@ -61,7 +61,7 @@ internal fun ChannelStatusCard(
 ) {
     val byedpiBlocked = type == ConnectionType.BYEDPI && active && !up && !checking && total > 0 && reachable == 0
     val tone = when {
-        noServers || !hasApps || !active -> ChannelTone.OFF
+        noServers || !active -> ChannelTone.OFF
         byedpiBlocked -> ChannelTone.BLOCKED
         up -> ChannelTone.UP
         else -> ChannelTone.WAITING
@@ -101,8 +101,7 @@ internal fun ChannelStatusCard(
             ) {
                 when {
                     noServers -> Status(stringResource(Res.string.channel_status_no_servers), muted)
-                    !hasApps -> Status(stringResource(Res.string.channel_status_no_apps), muted)
-                    !active -> Status(stringResource(Res.string.channel_status_off), muted)
+                    !active -> Status(stringResource(if (hasApps) Res.string.channel_status_off else Res.string.channel_status_no_apps), muted)
                     byedpiBlocked -> Status("$reachable/$total", muted)
                     !up -> WaveDots(color = muted)
                     type == ConnectionType.VPN && country == ExitCountry.Pending && !waitedForCountry -> WaveDots(color = muted)

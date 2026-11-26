@@ -281,6 +281,22 @@ class MihomoConfigBuilderTest {
     }
 
     @Test
+    fun aDesktopChecksByeDpiWhenOnlyARuleUsesIt() {
+        val platform = MihomoPlatform.Desktop(DesktopOs.LINUX, emptyList(), byeDpiProbePort = 3080)
+        val onlyRule = build(
+            platform = platform,
+            byeDpi = emptyList(),
+            vpn = listOf("telegram"),
+            rules = listOf(RoutingRule(RuleMatch.DOMAIN_SUFFIX, "youtube.com", RuleTarget.BYEDPI))
+        )
+        val unused = build(platform = platform, byeDpi = emptyList(), vpn = listOf("telegram"))
+
+        assertTrue("IN-NAME,byedpi-probe-in,byedpi" in onlyRule.rules())
+        assertTrue(onlyRule.getValue("listeners").jsonArray.any { it.jsonObject["name"]?.jsonPrimitive?.content == "byedpi-probe-in" })
+        assertFalse("IN-NAME,byedpi-probe-in,byedpi" in unused.rules())
+    }
+
+    @Test
     fun userRulesOverrideAppChannelsButNotTheServiceRules() {
         val rules = listOf(
             RoutingRule(RuleMatch.DOMAIN_SUFFIX, "ru", RuleTarget.DIRECT),

@@ -111,6 +111,7 @@ class HealthMonitor(
                 vpnUp = s.vpnUp,
                 vpnLatencyMs = s.vpnDelayMs ?: 0,
                 vpnCountry = s.vpnCountry,
+                vpnActive = s.vpnActive,
                 byedpiActive = s.byedpiActive,
                 byedpiUp = s.byedpiUp
             )

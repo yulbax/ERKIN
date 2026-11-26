@@ -52,11 +52,7 @@ data class AppliedConfig(
     val vpnActive: Boolean
 ) {
     val selectedTag: String get() = engineConfig.activeProxyTag
-    val needsByeDpi: Boolean
-        get() = engineConfig.byeDpiPackages.isNotEmpty() ||
-            engineConfig.newApps == ConnectionType.BYEDPI ||
-            engineConfig.rules.any { it.target == RuleTarget.BYEDPI } ||
-            engineConfig.proxies.any { it.dialerProxy == BYEDPI_PROXY_TAG }
+    val needsByeDpi: Boolean get() = engineConfig.usesByeDpi
 
     fun isStructuralChangeFrom(other: AppliedConfig): Boolean =
         membershipKey != other.membershipKey ||
