@@ -37,7 +37,7 @@ concurrency:
 env:
   CORE_CACHE_REV: "1"    # bump to force a fresh mihomo.aar, erkin-service and ciadpi.exe rebuild (busts the caches)
   GO_VERSION: "1.27.3"
-  GRAALVM_VERSION: "25"
+  GRAALVM_VERSION: "25.5.5.0.3"
   NDK_VERSION: "28.0.13004108"
   ANDROID_COMPILE_SDK: "37.0"
   BUILD_TOOLS: "36.1.0"
@@ -272,7 +272,8 @@ jobs:
           path: desktop/libs/windows
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: ${{ env.GRAALVM_VERSION }}
+          version: ${{ env.GRAALVM_VERSION }}
+          java-version: "25"
           distribution: graalvm-community
       - uses: android-actions/setup-android@v3
         with:
@@ -306,7 +307,8 @@ jobs:
           path: desktop/libs/linux
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: ${{ env.GRAALVM_VERSION }}
+          version: ${{ env.GRAALVM_VERSION }}
+          java-version: "25"
           distribution: graalvm-community
       - uses: android-actions/setup-android@v3
         with:
@@ -458,10 +460,11 @@ jobs:
           gh release upload "$TAG" --clobber assets/*
           scripts/label-release-assets.sh "$TAG" "$GITHUB_SHA" assets/*
 
-  # ── Publish the signed Flatpak repository to GitHub Pages once the release is out. ──
+  # ── Publish the signed Flatpak repository to GitHub Pages once the release is out or its Flatpak is rebuilt. ──
   pages:
-    needs: [check, release]
-    if: needs.check.outputs.should_release == 'true'
+    needs: [check, release, respin]
+    if: >-
+      !cancelled() && (needs.release.result == 'success' || (needs.respin.result == 'success' && inputs.linux))
     runs-on: ubuntu-latest
     permissions:
       pages: write
