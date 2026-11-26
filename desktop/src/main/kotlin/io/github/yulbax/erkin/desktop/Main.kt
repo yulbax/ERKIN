@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.dp
@@ -41,6 +42,7 @@ import org.jetbrains.skia.Image
 import org.koin.core.context.startKoin
 import kotlin.concurrent.thread
 
+@OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     val activations = Channel<Unit>(Channel.CONFLATED)
     val instance = SingleInstance(DesktopPaths.dataDir, DesktopPaths.instanceSocket)
@@ -104,7 +106,7 @@ fun main() {
             visible = visible,
             title = "ERKIN",
             icon = icon,
-            undecorated = true,
+            decoration = WindowFrameDecoration,
             state = state
         ) {
             LaunchedEffect(Unit) {

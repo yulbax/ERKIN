@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -36,6 +37,7 @@ import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.FrameWindowScope
+import androidx.compose.ui.window.WindowDecoration
 import java.awt.Cursor
 import java.awt.Dimension
 import java.awt.MouseInfo
@@ -60,6 +62,9 @@ object WindowLimits {
         if (window.width > MAX_WIDTH) window.setSize(MAX_WIDTH, window.height)
     }
 }
+
+@OptIn(ExperimentalComposeUiApi::class)
+val WindowFrameDecoration: WindowDecoration = WindowDecoration.Undecorated(resizerThickness = 0.dp)
 
 @Composable
 fun FrameWindowScope.WindowFrame(content: @Composable () -> Unit) {
