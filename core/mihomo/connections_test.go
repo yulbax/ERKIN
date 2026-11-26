@@ -222,3 +222,37 @@ func TestTheRuleOfAnOpenConnectionIsLearnedWhenTheTableIsRead(t *testing.T) {
 		t.Fatalf("expected the open connection to report its rule, got %+v", table.Rows)
 	}
 }
+
+type rejectRule struct{ suffix string }
+
+func (r rejectRule) RuleType() C.RuleType { return C.DomainSuffix }
+func (r rejectRule) Match(metadata *C.Metadata, _ C.RuleMatchHelper) (bool, string) {
+	return metadata.Host == r.suffix, "REJECT"
+}
+func (r rejectRule) Adapter() string         { return "REJECT" }
+func (r rejectRule) Payload() string         { return r.suffix }
+func (r rejectRule) ProviderNames() []string { return nil }
+
+func TestTheRuleOfAConnectionIsLearnedWhenItOpens(t *testing.T) {
+	ledger := newTrafficLedger(10)
+	rules := []C.Rule{rejectRule{"ads.example"}, suffixRule{}}
+	blocked := &C.Metadata{NetWork: C.TCP, Host: "ads.example"}
+	allowed := &C.Metadata{NetWork: C.TCP, Host: "site.example"}
+
+	row := ledger.open(blocked, "REJECT", time.UnixMilli(1))
+	ledger.learnMatch(row, rules, blocked, "REJECT")
+	ledger.close(row, time.UnixMilli(2))
+	other := ledger.open(allowed, "REJECT", time.UnixMilli(3))
+	ledger.learnMatch(other, rules, allowed, "REJECT")
+
+	rows := map[string]trafficInfo{}
+	for _, info := range ledger.snapshot(time.UnixMilli(4)).Rows {
+		rows[info.Host] = info
+	}
+	if rows["ads.example"].Rule != C.DomainSuffix.String() || rows["ads.example"].Payload != "ads.example" {
+		t.Fatalf("expected the closed rejected connection to keep its rule, got %+v", rows["ads.example"])
+	}
+	if rows["site.example"].Rule != "" {
+		t.Fatalf("expected no rule when the first matching rule leads elsewhere, got %+v", rows["site.example"])
+	}
+}

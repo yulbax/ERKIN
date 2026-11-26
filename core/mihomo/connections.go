@@ -13,6 +13,7 @@ import (
 	"github.com/metacubex/mihomo/common/buf"
 	N "github.com/metacubex/mihomo/common/net"
 	C "github.com/metacubex/mihomo/constant"
+	"github.com/metacubex/mihomo/tunnel"
 	"github.com/metacubex/mihomo/tunnel/statistic"
 )
 
@@ -132,6 +133,25 @@ func (l *trafficLedger) learnRule(row *trafficRow, rule string, payload string) 
 	row.rule, row.payload = rule, payload
 }
 
+func (l *trafficLedger) learnMatch(row *trafficRow, rules []C.Rule, metadata *C.Metadata, adapter string) {
+	if rule := matchedRule(rules, metadata, adapter); rule != nil {
+		l.learnRule(row, rule.RuleType().String(), rule.Payload())
+	}
+}
+
+func matchedRule(rules []C.Rule, metadata *C.Metadata, adapter string) C.Rule {
+	helper := C.RuleMatchHelper{ResolveIP: func() {}, FindProcess: func() {}}
+	for _, rule := range rules {
+		if matched, target := rule.Match(metadata, helper); matched {
+			if target != adapter {
+				return nil
+			}
+			return rule
+		}
+	}
+	return nil
+}
+
 func (l *trafficLedger) snapshot(now time.Time) trafficTable {
 	l.access.Lock()
 	defer l.access.Unlock()
@@ -181,6 +201,7 @@ func (p countingProxy) DialContext(ctx context.Context, metadata *C.Metadata) (C
 	if row == nil {
 		return conn, nil
 	}
+	traffic.learnMatch(row, tunnel.Rules(), metadata, p.Proxy.Name())
 	return &countingConn{Conn: conn, row: row}, nil
 }
 
@@ -193,30 +214,8 @@ func (p countingProxy) ListenPacketContext(ctx context.Context, metadata *C.Meta
 	if row == nil {
 		return conn, nil
 	}
+	traffic.learnMatch(row, tunnel.Rules(), metadata, p.Proxy.Name())
 	return &countingPacketConn{PacketConn: conn, row: row}, nil
-}
-
-type ruleWatch struct {
-	learned atomic.Bool
-}
-
-func (w *ruleWatch) learnFrom(row *trafficRow, tracker statistic.Tracker) {
-	info := tracker.Info()
-	traffic.learnRule(row, info.Rule, info.RulePayload)
-	w.learned.Store(true)
-}
-
-func (w *ruleWatch) learnOnClose(row *trafficRow, self any) {
-	if w.learned.Load() {
-		return
-	}
-	statistic.DefaultManager.Range(func(tracker statistic.Tracker) bool {
-		if upstreamOf(tracker) != self {
-			return true
-		}
-		w.learnFrom(row, tracker)
-		return false
-	})
 }
 
 func upstreamOf(tracker statistic.Tracker) any {
@@ -229,11 +228,12 @@ func upstreamOf(tracker statistic.Tracker) any {
 
 func learnActiveRules() {
 	statistic.DefaultManager.Range(func(tracker statistic.Tracker) bool {
+		info := tracker.Info()
 		switch counted := upstreamOf(tracker).(type) {
 		case *countingConn:
-			counted.rules.learnFrom(counted.row, tracker)
+			traffic.learnRule(counted.row, info.Rule, info.RulePayload)
 		case *countingPacketConn:
-			counted.rules.learnFrom(counted.row, tracker)
+			traffic.learnRule(counted.row, info.Rule, info.RulePayload)
 		}
 		return true
 	})
@@ -242,7 +242,6 @@ func learnActiveRules() {
 type countingConn struct {
 	C.Conn
 	row    *trafficRow
-	rules  ruleWatch
 	closed atomic.Bool
 }
 
@@ -285,7 +284,6 @@ func (c *countingConn) UnwrapWriter() (io.Writer, []N.CountFunc) {
 
 func (c *countingConn) Close() error {
 	if c.closed.CompareAndSwap(false, true) {
-		c.rules.learnOnClose(c.row, c)
 		traffic.close(c.row, time.Now())
 	}
 	return c.Conn.Close()
@@ -294,7 +292,6 @@ func (c *countingConn) Close() error {
 type countingPacketConn struct {
 	C.PacketConn
 	row    *trafficRow
-	rules  ruleWatch
 	closed atomic.Bool
 }
 
@@ -318,7 +315,6 @@ func (c *countingPacketConn) WriteTo(b []byte, addr net.Addr) (int, error) {
 
 func (c *countingPacketConn) Close() error {
 	if c.closed.CompareAndSwap(false, true) {
-		c.rules.learnOnClose(c.row, c)
 		traffic.close(c.row, time.Now())
 	}
 	return c.PacketConn.Close()
