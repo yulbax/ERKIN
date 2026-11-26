@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class ServerChecks(
     private val probe: ServerLatencyProbe,
@@ -49,6 +50,24 @@ class ServerChecks(
     ): Map<Long, ProbeResult>? {
         background.update { it + queue }
         return measure(queue, runningOnly, onResult)
+    }
+
+    suspend fun firstAnswering(queue: Collection<Long>): Long? {
+        background.update { it + queue }
+        val first = CompletableDeferred<Long?>()
+        scope.launch {
+            try {
+                probe.measureEach(queue).collect { (id, result) ->
+                    results.update { it + (id to result) }
+                    if (result is ProbeResult.Answered) first.complete(id)
+                }
+            } catch (t: Throwable) {
+                if (t !is CancellationException) log.w(TAG, "latency test failed", t)
+            } finally {
+                first.complete(null)
+            }
+        }
+        return first.await()
     }
 
     private suspend fun measure(

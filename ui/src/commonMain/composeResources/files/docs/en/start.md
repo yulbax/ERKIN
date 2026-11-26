@@ -9,6 +9,6 @@
 
 The connection card says Connected only when every channel in use answers. No response means the VPN server or ByeDPI does not answer; the line below says which. Tapping ByeDPI opens its page.
 
-If the VPN server stops answering, ERKIN reconnects three times. If that does not help, it refreshes the subscription and switches to its fastest server.
+If the VPN server stops answering, ERKIN switches at once to the first other server of its group or subscription that answers. A server that worked before is tested again first, so a short change of network keeps it. If no other server answers, ERKIN reloads the core, then refreshes the subscription and looks again.
 
 A subscription's sheet opens with its card: the traffic and the expiry, and when tapped, the last update, the provider's announcement and the Support and Account buttons. ERKIN refreshes a subscription as often as its provider asks, or once a day. A Clash subscription can also bring its own routing rules: turn on Apply in the card, and they work after your own rules while the main server comes from that subscription.

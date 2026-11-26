@@ -18,6 +18,7 @@ data class HealthParams(
     val vpnActive: Boolean,
     val activeServer: Long?,
     val boundServers: Set<Long>,
+    val onVpnFailing: () -> Unit,
     val onVpnDown: suspend () -> Unit,
     val onLoginRejected: suspend () -> Unit,
     val onVpnUp: () -> Unit,

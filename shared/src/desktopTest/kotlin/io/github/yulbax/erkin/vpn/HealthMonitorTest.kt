@@ -246,6 +246,7 @@ class HealthMonitorTest {
                     vpnActive = true,
                     activeServer = 1,
                     boundServers = setOf(2, 3),
+                    onVpnFailing = {},
                     onVpnDown = { vpnDowns.incrementAndGet() },
                     onLoginRejected = { rejections.incrementAndGet() },
                     onVpnUp = {},

@@ -19,6 +19,6 @@ class RecoveryLadder(private val reconnectsBeforeSwitch: Int = RECONNECTS_BEFORE
     }
 
     companion object {
-        const val RECONNECTS_BEFORE_SWITCH = 3
+        const val RECONNECTS_BEFORE_SWITCH = 1
     }
 }

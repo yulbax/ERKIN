@@ -20,6 +20,9 @@ sealed interface Command {
     data object Stop : Command
     data object RejectLogin : Command
     data object ReapplyApps : Command
+    data object ServerFailing : Command {
+        override val stopsSessionOnFailure: Boolean get() = false
+    }
 }
 
 class VpnCommandBus {

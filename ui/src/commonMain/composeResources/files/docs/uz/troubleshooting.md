@@ -2,7 +2,7 @@
 
 **ByeDPI: «saytlar ochilmayapti».** ByeDPI → «Strategiya tanlash», soʻng eng yaxshi natijali strategiyani qoʻllang. Yordam bermasa, «Sozlamalar → Tarmoq»da «ByeDPI uchun DNS»ni oʻzgartiring yoki uning shifrlashini oʻchiring.
 
-**VPN ishlamayapti.** Bosh ekranda — «Kechikishni tekshirish», soʻng javob berayotgan serverni tanlang. Obuna boʻlsa, uni yangilang. Obuna serveri ishlash vaqtida javob bermay qolsa, ERKIN uch marta qayta ulangandan soʻng oʻzi eng tez serverga oʻtadi.
+**VPN ishlamayapti.** Bosh ekranda — «Kechikishni tekshirish», soʻng javob berayotgan serverni tanlang. Obuna boʻlsa, uni yangilang. Guruh yoki obuna serveri ishlash vaqtida javob bermay qolsa, ERKIN oʻzi undagi javob berayotgan boshqa serverga oʻtadi.
 
 **Bosh ekranda «Javob yoʻq».** Uning ostidagi yozuv nima javob bermayotganini aytadi: VPN-server yoki ByeDPI. ByeDPI uchun uning boʻlimida strategiya tanlang.
 

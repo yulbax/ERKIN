@@ -76,8 +76,9 @@ themselves.
   subscription.
 - **Latency.** Test the servers on any page of the server picker and sort a group by ping;
   while connected, the servers bound to apps and rules are checked in the background.
-- **Self-healing.** A health check watches the VPN and ByeDPI; when the server stops
-  answering, ERKIN reconnects and then switches to the fastest server of the subscription.
+- **Self-healing.** A health check watches the VPN and ByeDPI. When the server stops
+  answering, ERKIN switches at once to another server of its group or subscription that
+  answers; if none does, it reloads the core and refreshes the subscription.
 
 ### ByeDPI
 

@@ -174,6 +174,7 @@ class VpnController(
             Command.RestartByeDpi -> session.restartByeDpi()
             Command.RejectLogin -> session.rejectLogin()
             Command.ReapplyApps -> session.reapplyApps()
+            Command.ServerFailing -> session.serverFailing()
             Command.Start, Command.Stop -> Unit
         }
     }

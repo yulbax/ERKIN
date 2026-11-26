@@ -16,11 +16,11 @@ class VpnLivenessTest {
     }
 
     @Test
-    fun theFourthFailureInARowRecoversTheVpn() {
+    fun theFirstFailureLooksForAnotherServerAndEverySecondRecoversTheVpn() {
         val actions = actionsOf(*Array(4) { ProbeResult.NoAnswer })
 
         assertEquals(
-            listOf(LivenessAction.NONE, LivenessAction.NONE, LivenessAction.NONE, LivenessAction.VPN_DOWN),
+            listOf(LivenessAction.VPN_FAILING, LivenessAction.VPN_DOWN, LivenessAction.NONE, LivenessAction.VPN_DOWN),
             actions
         )
     }
@@ -29,7 +29,7 @@ class VpnLivenessTest {
     fun aRejectedLoginStopsTheVpnAtOnce() {
         val actions = actionsOf(ProbeResult.NoAnswer, ProbeResult.LoginRejected)
 
-        assertEquals(listOf(LivenessAction.NONE, LivenessAction.LOGIN_REJECTED), actions)
+        assertEquals(listOf(LivenessAction.VPN_FAILING, LivenessAction.LOGIN_REJECTED), actions)
     }
 
     @Test
@@ -41,6 +41,6 @@ class VpnLivenessTest {
         )
 
         assertEquals(LivenessAction.VPN_UP, failures[3])
-        assertEquals(listOf(LivenessAction.NONE, LivenessAction.NONE, LivenessAction.NONE), failures.drop(4))
+        assertEquals(listOf(LivenessAction.VPN_FAILING, LivenessAction.VPN_DOWN, LivenessAction.NONE), failures.drop(4))
     }
 }

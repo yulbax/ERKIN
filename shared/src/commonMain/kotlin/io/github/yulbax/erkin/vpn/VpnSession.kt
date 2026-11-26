@@ -52,6 +52,7 @@ class VpnSession(
     private var routeWatchJob: Job? = null
     private var byeDpiCheckJob: Job? = null
     private var failoverJob: Job? = null
+    @Volatile private var serverAnswered = false
     private val recovery = RecoveryLadder()
 
     val isIdle: Boolean get() = phase == Phase.Idle
@@ -66,6 +67,7 @@ class VpnSession(
         generation++
         rapidByeDpiExits = 0
         recovery.reset()
+        serverAnswered = false
         log.i(TAG, "start requested system=$systemInitiated")
         stateRepository.update(VpnState.Connecting)
         appliedConfig = null
@@ -109,7 +111,10 @@ class VpnSession(
             return ReloadOutcome.Done
         }
 
-        if (serverSwitched) recovery.reset()
+        if (serverSwitched) {
+            recovery.reset()
+            serverAnswered = false
+        }
         resetChannels()
         applyReload(desired)
         startHealth()
@@ -148,10 +153,24 @@ class VpnSession(
         }
     }
 
+    fun serverFailing() {
+        if (!isRunning || failoverJob?.isActive == true) return
+        log.i(TAG, "the server does not answer; looking for another server of its group")
+        failoverJob = scope.launch {
+            try {
+                if (failover.replace(testAgain = serverAnswered)) requestWork(Command.Reload)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (t: Throwable) {
+                log.w(TAG, "server switch failed", t)
+            }
+        }
+    }
+
     private fun switchServer() {
         failoverJob = scope.launch {
             try {
-                failover.switchToFastest()
+                failover.refreshAndReplace()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (t: Throwable) {
@@ -329,9 +348,13 @@ class VpnSession(
                 vpnActive = config.vpnActive,
                 activeServer = ProxyTag.profileId(config.engineConfig.activeProxyTag),
                 boundServers = config.engineConfig.serverTags.keys,
+                onVpnFailing = { requestWork(Command.ServerFailing) },
                 onVpnDown = { requestWork(Command.Recover) },
                 onLoginRejected = { requestWork(Command.RejectLogin) },
-                onVpnUp = recovery::reset,
+                onVpnUp = {
+                    recovery.reset()
+                    serverAnswered = true
+                },
                 onByedpiChanged = { requestWork(Command.CheckByeDpi) }
             )
         )

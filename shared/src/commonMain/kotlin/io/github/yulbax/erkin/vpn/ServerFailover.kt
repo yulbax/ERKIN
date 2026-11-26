@@ -11,29 +11,36 @@ class ServerFailover(
     private val checks: ServerChecks,
     private val log: AppLog
 ) {
-    suspend fun switchToFastest() {
+    suspend fun replace(testAgain: Boolean): Boolean {
+        val inputs = store.load()
+        val serverId = inputs.selected?.id ?: return false
         val group = store.selectedGroup()
         if (group == null) {
-            log.i(TAG, "the selected server is not in a group; nothing to switch to")
-            return
+            log.i(TAG, "server $serverId is not in a group; nothing to switch to")
+            return false
         }
-        when (val kind = group.kind) {
-            is GroupKind.Subscription -> refresh(group.id, kind.url)
-            GroupKind.Local -> Unit
+        val candidates = inputs.profiles.filter { it.isLink && !it.hidden && it.groupId == group.id && it.id != serverId }
+        val target = checks.firstAnswering(candidates.map { it.id })?.let { id -> candidates.first { it.id == id } }
+        if (target == null) {
+            log.w(TAG, "no other server of group ${group.id} answers; keeping server $serverId")
+            return false
         }
-        val inputs = store.load()
-        val candidates = inputs.profiles.filter { it.isLink && !it.hidden && it.groupId == group.id }
-        val ids = candidates.map { it.id }.toSet()
-        val results = checks.check(ids).orEmpty()
-        val target = fastest(results)?.let { id -> candidates.first { it.id == id } }
-        when {
-            target == null -> log.w(TAG, "no server of group ${group.id} answers; keeping the current one")
-            target.id == inputs.selected?.id -> log.i(TAG, "the current server answers the latency test; keeping it")
-            else -> {
-                log.i(TAG, "switching to the fastest server ${target.id} (${results[target.id]})")
-                store.select(target)
+        if (testAgain) {
+            val result = checks.check(listOf(serverId))?.get(serverId)
+            if (result is ProbeResult.Answered) {
+                log.i(TAG, "server $serverId answers again ($result); keeping it")
+                return false
             }
         }
+        log.i(TAG, "switching from server $serverId to ${target.id}, the first server of group ${group.id} to answer")
+        store.select(target)
+        return true
+    }
+
+    suspend fun refreshAndReplace(): Boolean {
+        val group = store.selectedGroup()
+        (group?.kind as? GroupKind.Subscription)?.let { refresh(group.id, it.url) }
+        return replace(testAgain = false)
     }
 
     private suspend fun refresh(id: Long, url: String) {
@@ -53,12 +60,7 @@ class ServerFailover(
         }
     }
 
-    companion object {
-        private const val TAG = "ServerFailover"
-
-        fun fastest(results: Map<Long, ProbeResult>): Long? =
-            results.mapNotNull { (id, result) -> (result as? ProbeResult.Answered)?.let { id to it.ms } }
-                .minByOrNull { it.second }
-                ?.first
+    private companion object {
+        const val TAG = "ServerFailover"
     }
 }

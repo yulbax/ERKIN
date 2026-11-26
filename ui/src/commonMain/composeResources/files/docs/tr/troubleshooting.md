@@ -2,7 +2,7 @@
 
 **ByeDPI: siteler açılmıyor.** ByeDPI → Strateji bul, ardından en iyi sonucu veren stratejiyi uygulayın. İşe yaramazsa Ayarlar → Ağ’da ByeDPI DNS’i değiştirin veya şifrelemesini kapatın.
 
-**VPN çalışmıyor.** Ana ekranda Gecikmeyi test et’i çalıştırın ve yanıt veren bir sunucu seçin. Abonelikse yenileyin. Abonelik sunucusu bağlıyken yanıt vermeyi keserse, ERKIN üç yeniden bağlanmadan sonra en hızlı sunucuya kendisi geçer.
+**VPN çalışmıyor.** Ana ekranda Gecikmeyi test et’i çalıştırın ve yanıt veren bir sunucu seçin. Abonelikse yenileyin. Bir grubun ya da aboneliğin sunucusu bağlıyken yanıt vermeyi keserse, ERKIN kendiliğinden onun yanıt veren başka bir sunucusuna geçer.
 
 **Ana ekranda Yanıt yok.** Altındaki satır neyin yanıt vermediğini söyler: VPN sunucusu ya da ByeDPI. ByeDPI için sayfasında bir strateji bulun.
 

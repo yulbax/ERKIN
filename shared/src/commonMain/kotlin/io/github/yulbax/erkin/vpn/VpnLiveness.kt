@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.getAndUpdate
 import kotlin.time.Duration
 
-internal enum class LivenessAction { NONE, VPN_UP, VPN_DOWN, LOGIN_REJECTED }
+internal enum class LivenessAction { NONE, VPN_UP, VPN_FAILING, VPN_DOWN, LOGIN_REJECTED }
 
 internal data class LivenessStep(val counters: LivenessCounters, val action: LivenessAction)
 
@@ -17,7 +17,11 @@ internal data class LivenessCounters(val failures: Int = 0) {
         result == ProbeResult.LoginRejected -> LivenessStep(this, LivenessAction.LOGIN_REJECTED)
         else -> {
             val next = LivenessCounters(failures = failures + 1)
-            val action = if (next.failures % ServerProbePolicy.FAILURES_TO_RECOVER == 0) LivenessAction.VPN_DOWN else LivenessAction.NONE
+            val action = when {
+                next.failures % ServerProbePolicy.FAILURES_TO_RECOVER == 0 -> LivenessAction.VPN_DOWN
+                next.failures == 1 -> LivenessAction.VPN_FAILING
+                else -> LivenessAction.NONE
+            }
             LivenessStep(next, action)
         }
     }
@@ -61,6 +65,7 @@ internal class VpnLiveness(
                 params.onVpnUp()
             }
             LivenessAction.LOGIN_REJECTED -> params.onLoginRejected()
+            LivenessAction.VPN_FAILING -> params.onVpnFailing()
             LivenessAction.VPN_DOWN -> params.onVpnDown()
             LivenessAction.NONE -> Unit
         }
