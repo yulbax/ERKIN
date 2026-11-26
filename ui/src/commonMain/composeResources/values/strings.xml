@@ -192,6 +192,7 @@
     <string name="link_or_subscription_url">Link or subscription URL</string>
     <string name="add">Add</string>
     <string name="share_server_chooser">Share Server</string>
+    <string name="share_copied">Copied to clipboard</string>
     <plurals name="set_apps_snackbar">
         <item quantity="one">Set %1$d app to %2$s</item>
         <item quantity="other">Set %1$d apps to %2$s</item>

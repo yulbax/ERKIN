@@ -186,6 +186,7 @@
     <string name="link_or_subscription_url">لینک یا آدرس اشتراک</string>
     <string name="add">افزودن</string>
     <string name="share_server_chooser">اشتراک‌گذاری سرور</string>
+    <string name="share_copied">در کلیپ‌بورد کپی شد</string>
     <plurals name="set_apps_snackbar">
         <item quantity="one">%1$d برنامه روی %2$s تنظیم شد</item>
         <item quantity="other">%1$d برنامه روی %2$s تنظیم شد</item>

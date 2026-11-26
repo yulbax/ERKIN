@@ -45,6 +45,8 @@ import java.awt.RenderingHints
 import androidx.compose.ui.text.font.FontFamily
 import io.github.yulbax.erkin.ui.res.Res
 import io.github.yulbax.erkin.ui.res.noto_flags
+import io.github.yulbax.erkin.ui.res.share_copied
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.Font
 
 @Composable
@@ -60,12 +62,13 @@ actual fun rememberLocalNetworkRequest(onResult: (granted: Boolean) -> Unit): ()
 actual fun localNetworkAllowed(): Boolean = true
 
 @Composable
-actual fun rememberSharer(): Sharer = remember { DesktopSharer() }
+actual fun rememberSharer(): Sharer {
+    val copy = rememberCopyText(stringResource(Res.string.share_copied))
+    return remember(copy) { DesktopSharer(copy) }
+}
 
-private class DesktopSharer : Sharer {
-    override fun shareText(text: String, title: String) {
-        Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(text), null)
-    }
+private class DesktopSharer(private val copy: (String) -> Unit) : Sharer {
+    override fun shareText(text: String, title: String) = copy(text)
 
     override suspend fun shareFile(prefix: String, extension: String, mimeType: String, content: String, title: String) {
         val target = chooseFile(title, FileDialog.SAVE, "$prefix.$extension") ?: return

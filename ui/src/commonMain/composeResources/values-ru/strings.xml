@@ -190,6 +190,7 @@
     <string name="link_or_subscription_url">Ссылка или URL подписки</string>
     <string name="add">Добавить</string>
     <string name="share_server_chooser">Поделиться сервером</string>
+    <string name="share_copied">Скопировано в буфер обмена</string>
     <plurals name="set_apps_snackbar">
         <item quantity="one">Назначено %1$d приложение на %2$s</item>
         <item quantity="few">Назначено %1$d приложения на %2$s</item>

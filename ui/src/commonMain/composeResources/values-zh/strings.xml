@@ -184,6 +184,7 @@
     <string name="link_or_subscription_url">链接或订阅 URL</string>
     <string name="add">添加</string>
     <string name="share_server_chooser">分享服务器</string>
+    <string name="share_copied">已复制到剪贴板</string>
     <plurals name="set_apps_snackbar">
         <item quantity="other">已将 %1$d 个应用设为 %2$s</item>
     </plurals>

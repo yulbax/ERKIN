@@ -190,6 +190,7 @@
     <string name="link_or_subscription_url">Посилання або URL підписки</string>
     <string name="add">Додати</string>
     <string name="share_server_chooser">Поділитися сервером</string>
+    <string name="share_copied">Скопійовано в буфер обміну</string>
     <plurals name="set_apps_snackbar">
         <item quantity="one">Призначено %1$d застосунок на %2$s</item>
         <item quantity="few">Призначено %1$d застосунки на %2$s</item>

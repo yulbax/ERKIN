@@ -186,6 +186,7 @@
     <string name="link_or_subscription_url">Havola yoki obuna manzili</string>
     <string name="add">Qoʻshish</string>
     <string name="share_server_chooser">Serverni ulashish</string>
+    <string name="share_copied">Buferga nusxalandi</string>
     <plurals name="set_apps_snackbar">
         <item quantity="one">%1$d ta ilova %2$s ga oʻrnatildi</item>
         <item quantity="other">%1$d ta ilova %2$s ga oʻrnatildi</item>

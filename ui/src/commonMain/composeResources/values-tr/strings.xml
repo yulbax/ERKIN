@@ -186,6 +186,7 @@
     <string name="link_or_subscription_url">Bağlantı veya abonelik adresi</string>
     <string name="add">Ekle</string>
     <string name="share_server_chooser">Sunucuyu paylaş</string>
+    <string name="share_copied">Panoya kopyalandı</string>
     <plurals name="set_apps_snackbar">
         <item quantity="one">%1$d uygulama %2$s olarak ayarlandı</item>
         <item quantity="other">%1$d uygulama %2$s olarak ayarlandı</item>
